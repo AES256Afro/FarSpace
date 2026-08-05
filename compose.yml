@@ -1,0 +1,64 @@
+name: farspace
+
+services:
+  farspace:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: farspace-web:local
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8095:8080"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 256m
+    cpus: 1.0
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    networks:
+      - farspace
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    profiles:
+      - tunnel
+    restart: unless-stopped
+    command:
+      - tunnel
+      - --no-autoupdate
+      - --loglevel
+      - info
+      - run
+    environment:
+      TUNNEL_TOKEN_FILE: /run/secrets/cloudflare-tunnel-token
+    secrets:
+      - cloudflare-tunnel-token
+    depends_on:
+      farspace:
+        condition: service_healthy
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 256m
+    cpus: 1.0
+    networks:
+      - farspace
+
+networks:
+  farspace:
+    driver: bridge
+
+secrets:
+  cloudflare-tunnel-token:
+    file: ./secrets/cloudflare-tunnel-token
