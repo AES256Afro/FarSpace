@@ -6,6 +6,7 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 import { ShipSystemId, removeCargo, cargoUsed } from "../world";
 import { clamp, dist } from "../core/mathx";
+import { sfx } from "../core/sfx";
 
 const T = 10; // tile size px
 
@@ -121,6 +122,7 @@ export class InteriorScene implements Scene {
               }
             }
             sys.health = Math.min(100, sys.health + 20);
+            sfx.repair();
             this.say(`${sys.name.toUpperCase()} AT ${Math.round(sys.health)}%`);
           }
         } else {

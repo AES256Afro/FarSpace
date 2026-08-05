@@ -285,6 +285,33 @@ export function genSun(rng: RNG, radius: number, color: string): Sprite {
   return c;
 }
 
+// ---------- Defense platform ----------
+// Small armed satellite: solar wings, core, gun barrel.
+
+export function genPlatform(rng: RNG, hostile: boolean): Sprite {
+  const [c, ctx] = make(14, 14);
+  // solar wings
+  ctx.fillStyle = "#2a4a7a";
+  ctx.fillRect(0, 5, 4, 4);
+  ctx.fillRect(10, 5, 4, 4);
+  ctx.fillStyle = "#3a6ea5";
+  ctx.fillRect(1, 6, 2, 2);
+  ctx.fillRect(11, 6, 2, 2);
+  // core
+  ctx.fillStyle = "#8c95a8";
+  ctx.fillRect(4, 4, 6, 6);
+  ctx.fillStyle = "#b8c2d6";
+  ctx.fillRect(5, 4, 4, 2);
+  // gun barrels
+  ctx.fillStyle = "#5d6680";
+  ctx.fillRect(6, 0, 2, 4);
+  ctx.fillRect(6, 10, 2, 4);
+  // status light
+  ctx.fillStyle = hostile ? "#ff5a5a" : "#63f2c8";
+  ctx.fillRect(6, 6, 2, 2);
+  return c;
+}
+
 // ---------- Tiny crew portraits (for bar / crew UI) ----------
 
 const SKIN = ["#e8b48c", "#c78a5a", "#8c5a3a", "#f0d0b0", "#a86f48"];

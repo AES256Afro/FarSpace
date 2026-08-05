@@ -7,6 +7,7 @@ import { StationScene } from "./scenes/station";
 import { InteriorScene } from "./scenes/interior";
 import { GalaxyScene } from "./scenes/galaxy";
 import { StationWalkScene } from "./scenes/stationwalk";
+import { initAudioUnlock } from "./core/sfx";
 
 const canvas = document.getElementById("game") as HTMLCanvasElement;
 const game = new Game(canvas);
@@ -19,6 +20,7 @@ game.scenes["galaxy"] = new GalaxyScene();
 game.scenes["stationwalk"] = new StationWalkScene();
 
 game.setScene("title");
+initAudioUnlock();
 
 // dev/debug handle
 (window as unknown as { game: Game }).game = game;

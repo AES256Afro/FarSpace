@@ -14,7 +14,16 @@ export class TitleScene implements Scene {
     const opts = hasSave ? 2 : 1;
     if (g.input.wasPressed("ArrowUp")) this.cursor = (this.cursor + opts - 1) % opts;
     if (g.input.wasPressed("ArrowDown")) this.cursor = (this.cursor + 1) % opts;
-    if (g.input.wasPressed("Enter") || g.input.wasPressed(" ")) {
+    // mouse: hover to select, click to activate
+    let clicked = false;
+    for (let i = 0; i < opts; i++) {
+      const y = 140 + i * 14;
+      if (g.input.mouseY >= y - 3 && g.input.mouseY < y + 9) {
+        this.cursor = i;
+        if (g.input.mousePressed) clicked = true;
+      }
+    }
+    if (clicked || g.input.wasPressed("Enter") || g.input.wasPressed(" ")) {
       if (this.cursor === 0 && hasSave) {
         g.setScene(g.world.player.dockedAt ? "station" : "flight");
       } else {

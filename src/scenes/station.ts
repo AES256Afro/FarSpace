@@ -7,6 +7,7 @@ import { RNG } from "../core/rng";
 import { clamp } from "../core/mathx";
 import { COMMODITIES, commodity, faction } from "../data/data";
 import { StationDef, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation } from "../world";
+import { sfx } from "../core/sfx";
 
 const TABS = ["MARKET", "SHIPYARD", "MISSIONS", "BAR", "NEWS"] as const;
 
@@ -17,6 +18,7 @@ export class StationScene implements Scene {
   barLine = "";
   station!: StationDef;
   returnTo: "flight" | "stationwalk" = "flight";
+  rowBoxes: [number, number][] = []; // selectable row hitboxes recorded during draw
 
   enter(g: Game): void {
     const found = findStation(g.world, g.world.player.dockedAt!);
@@ -52,12 +54,35 @@ export class StationScene implements Scene {
     if (inp.wasPressed("F5")) g.save();
     if (inp.wasPressed("ArrowLeft") || inp.wasPressed("q")) { this.tab = (this.tab + TABS.length - 1) % TABS.length; this.cursor = 0; }
     if (inp.wasPressed("ArrowRight") || inp.wasPressed("e")) { this.tab = (this.tab + 1) % TABS.length; this.cursor = 0; }
-    if (inp.wasPressed("ArrowUp")) this.cursor--;
-    if (inp.wasPressed("ArrowDown")) this.cursor++;
+    if (inp.wasPressed("ArrowUp")) { this.cursor--; sfx.blip(); }
+    if (inp.wasPressed("ArrowDown")) { this.cursor++; sfx.blip(); }
+    if (g.input.wheel) this.cursor += Math.sign(g.input.wheel);
+
+    // mouse: click tabs, hover/click list rows
+    let clickedRow = false;
+    if (inp.mousePressed) {
+      let tx = 8;
+      for (let i = 0; i < TABS.length; i++) {
+        const w = textWidth(TABS[i]) + 12;
+        if (inp.mouseY >= 36 && inp.mouseY <= 50 && inp.mouseX >= tx - 4 && inp.mouseX < tx + w - 4) {
+          this.tab = i;
+          this.cursor = 0;
+        }
+        tx += w;
+      }
+    }
+    if (inp.mouseX > 4 && inp.mouseX < 476) {
+      const row = this.rowBoxes.findIndex(([y0, y1]) => inp.mouseY >= y0 && inp.mouseY <= y1);
+      if (row >= 0) {
+        this.cursor = row;
+        if (inp.mousePressed) clickedRow = true;
+      }
+    }
 
     const p = g.world.player;
     const st = this.station;
-    const enter = inp.wasPressed("Enter") || inp.wasPressed(" ");
+    const enter = inp.wasPressed("Enter") || inp.wasPressed(" ") || clickedRow;
+    if (enter) sfx.select();
 
     switch (TABS[this.tab]) {
       case "MARKET": {
@@ -244,6 +269,7 @@ export class StationScene implements Scene {
   // ---------- Draw ----------
 
   draw(g: Game, ctx: CanvasRenderingContext2D): void {
+    this.rowBoxes = [];
     const p = g.world.player;
     const st = this.station;
     const fac = faction(st.factionId);
@@ -289,6 +315,7 @@ export class StationScene implements Scene {
   }
 
   row(ctx: CanvasRenderingContext2D, y: number, selected: boolean): void {
+    this.rowBoxes.push([y - 2, y + 8]);
     if (selected) {
       ctx.fillStyle = "#13203a";
       ctx.fillRect(4, y - 2, VW - 8, 10);

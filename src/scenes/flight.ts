@@ -6,24 +6,38 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 import { RNG } from "../core/rng";
 import { clamp, TAU, angDiff, dist } from "../core/mathx";
-import { SYSTEM_SIZE, hasIllegalCargo, addCargo, findStation } from "../world";
+import { SYSTEM_SIZE, hasIllegalCargo, addCargo, navRoute } from "../world";
 import { faction, commodity } from "../data/data";
+import { sfx } from "../core/sfx";
 
 interface Bullet {
   x: number; y: number; vx: number; vy: number;
   life: number; hostile: boolean; dmg: number;
+  fromPlayer?: boolean;
 }
 
 interface Npc {
-  kind: "pirate" | "trader" | "patrol";
+  kind: "pirate" | "trader" | "patrol" | "fighter";
   x: number; y: number; vx: number; vy: number; angle: number;
   hull: number; hullMax: number;
   fireCd: number;
-  targetIdx: number; // for traders: which station they head to
+  targetIdx: number; // traders: destination station; fighters: home station
 }
 
 interface Particle {
   x: number; y: number; vx: number; vy: number; life: number; color: string;
+}
+
+// Defense platform: armed satellite anchored to a station, gate, or planet.
+interface Platform {
+  anchor: "station" | "gate" | "planet";
+  anchorIdx: number;    // index into the system's stations/jumpPoints/planets
+  orbitR: number;
+  orbitAngle: number;
+  orbitSpeed: number;
+  x: number; y: number;
+  fireCd: number;
+  hostileToPlayer: boolean; // pirate-owned platforms in corsair space
 }
 
 interface Loot {
@@ -33,13 +47,14 @@ interface Loot {
 const ACCEL = 90;
 const ROT_SPEED = 3.4;
 const MAX_SPEED = 260;
-const BULLET_SPEED = 340;
+const BULLET_SPEED = 420;
 
 export class FlightScene implements Scene {
   bullets: Bullet[] = [];
   npcs: Npc[] = [];
   particles: Particle[] = [];
   loot: Loot[] = [];
+  platforms: Platform[] = [];
   fireCd = 0;
   mapOpen = false;
   zoom = 1;
@@ -63,7 +78,66 @@ export class FlightScene implements Scene {
     const nPirates = Math.round(sys.pirateActivity * 5);
     for (let i = 0; i < nPirates; i++) this.spawnNpc(g, "pirate", rng);
     for (let i = 0; i < sys.stations.length; i++) this.spawnNpc(g, "trader", rng);
-    if (sys.factionId !== "vex") this.spawnNpc(g, "patrol", rng);
+    if (sys.factionId !== "vex") {
+      this.spawnNpc(g, "patrol", rng);
+      // station-aligned fighter wings keep the docking lanes safe
+      sys.stations.forEach((st, i) => {
+        const wing = st.military ? 3 : 2;
+        for (let k = 0; k < wing; k++) {
+          const sx = Math.cos(st.angle) * st.orbit;
+          const sy = Math.sin(st.angle) * st.orbit;
+          const a = rng.range(0, TAU);
+          this.npcs.push({
+            kind: "fighter",
+            x: sx + Math.cos(a) * 120, y: sy + Math.sin(a) * 120,
+            vx: 0, vy: 0, angle: a,
+            hull: 60, hullMax: 60,
+            fireCd: rng.range(0, 0.5),
+            targetIdx: i,
+          });
+        }
+      });
+    }
+
+    // defense platforms: stations, guarded gates, controlled planetary orbits
+    this.platforms = [];
+    const hostile = sys.factionId === "vex"; // corsair hardware fires on civilians
+    sys.stations.forEach((st, i) => {
+      const n = st.military ? 4 : 2;
+      for (let k = 0; k < n; k++) {
+        this.platforms.push({
+          anchor: "station", anchorIdx: i,
+          orbitR: 70 + (k % 2) * 20,
+          orbitAngle: (k / n) * TAU,
+          orbitSpeed: 0.25,
+          x: 0, y: 0, fireCd: rng.range(0, 1), hostileToPlayer: hostile,
+        });
+      }
+    });
+    sys.jumpPoints.forEach((jp, i) => {
+      if (!jp.guarded) return;
+      for (let k = 0; k < 2; k++) {
+        this.platforms.push({
+          anchor: "gate", anchorIdx: i,
+          orbitR: 75,
+          orbitAngle: k * Math.PI,
+          orbitSpeed: 0.18,
+          x: 0, y: 0, fireCd: rng.range(0, 1), hostileToPlayer: hostile,
+        });
+      }
+    });
+    if (!hostile) {
+      sys.planets.forEach((pl, i) => {
+        if (!rng.chance(0.7)) return; // most controlled worlds keep orbital guns
+        this.platforms.push({
+          anchor: "planet", anchorIdx: i,
+          orbitR: pl.radius + 26,
+          orbitAngle: rng.range(0, TAU),
+          orbitSpeed: 0.5,
+          x: 0, y: 0, fireCd: rng.range(0, 1), hostileToPlayer: false,
+        });
+      });
+    }
   }
 
   spawnNpc(g: Game, kind: Npc["kind"], rng: RNG): void {
@@ -164,17 +238,22 @@ export class FlightScene implements Scene {
 
     // shield regen
     p.shield = Math.min(p.shieldMax, p.shield + dt * 2);
+    // solar collectors trickle-charge the fuel cells — slow, but you're never
+    // truly stranded in the dark
+    if (p.fuel < 20) p.fuel = Math.min(20, p.fuel + dt * 0.4);
 
     // firing
     this.fireCd -= dt;
     if (g.input.isDown(" ") && this.fireCd <= 0 && weaponsSys.health > 5) {
       this.fireCd = 0.22;
+      sfx.laser();
       this.bullets.push({
         x: p.x + Math.cos(p.angle) * 12,
         y: p.y + Math.sin(p.angle) * 12,
         vx: p.vx + Math.cos(p.angle) * BULLET_SPEED,
         vy: p.vy + Math.sin(p.angle) * BULLET_SPEED,
         life: 1.4, hostile: false, dmg: 10 * (0.4 + 0.6 * weaponsSys.health / 100),
+        fromPlayer: true,
       });
     }
 
@@ -183,6 +262,7 @@ export class FlightScene implements Scene {
 
     this.updateBullets(g, dt);
     this.updateNpcs(g, dt);
+    this.updatePlatforms(g, dt);
     this.updateParticles(dt);
     this.updateLoot(g, dt);
 
@@ -220,6 +300,8 @@ export class FlightScene implements Scene {
   }
 
   boom(x: number, y: number, n: number, color: string): void {
+    if (n >= 12) sfx.boom(n >= 18);
+    else sfx.hit();
     for (let i = 0; i < n; i++) {
       const a = Math.random() * TAU;
       const s = 20 + Math.random() * 90;
@@ -237,7 +319,8 @@ export class FlightScene implements Scene {
         // must roughly face it
         const ang = Math.atan2(a.y - p.y, a.x - p.x);
         if (Math.abs(angDiff(p.angle, ang)) < 0.5) {
-          a.ore -= dt * 1.2;
+          a.ore -= dt * 2.5;
+          if (Math.random() < dt * 8) sfx.mine();
           if (Math.random() < dt * 6) {
             this.particles.push({
               x: a.x + (Math.random() - 0.5) * a.radius, y: a.y + (Math.random() - 0.5) * a.radius,
@@ -268,20 +351,20 @@ export class FlightScene implements Scene {
       b.life -= dt;
       if (b.life <= 0) continue;
       if (b.hostile) {
-        if (dist(b.x, b.y, p.x, p.y) < 10) {
+        if (dist(b.x, b.y, p.x, p.y) < 12) {
           b.life = 0;
           this.damagePlayer(g, b.dmg);
         }
       } else {
         for (const n of this.npcs) {
           if (n.hull <= 0) continue;
-          if (dist(b.x, b.y, n.x, n.y) < 10) {
+          if (dist(b.x, b.y, n.x, n.y) < 12) {
             b.life = 0;
             n.hull -= b.dmg;
             this.boom(b.x, b.y, 3, PAL.danger);
-            if (n.hull <= 0) this.npcKilled(g, n);
-            // shooting non-pirates raises heat
-            if (n.kind !== "pirate") g.world.player.wanted = Math.min(1, g.world.player.wanted + 0.15);
+            if (n.hull <= 0) this.npcKilled(g, n, b.fromPlayer === true);
+            // shooting non-pirates yourself raises heat
+            if (b.fromPlayer && n.kind !== "pirate") g.world.player.wanted = Math.min(1, g.world.player.wanted + 0.15);
             break;
           }
         }
@@ -310,15 +393,17 @@ export class FlightScene implements Scene {
     }
   }
 
-  npcKilled(g: Game, n: Npc): void {
+  npcKilled(g: Game, n: Npc, byPlayer: boolean): void {
     this.boom(n.x, n.y, 20, PAL.thrust);
     if (n.kind === "pirate") {
-      g.world.player.kills++;
-      // progress bounty missions in this system
-      for (const m of g.world.player.missions) {
-        if (m.kind === "bounty" && m.accepted && !m.done && m.targetSystemId === g.world.player.systemId) {
-          m.kills = (m.kills ?? 0) + 1;
-          g.toast(`BOUNTY ${m.kills}/${m.killsNeeded}`);
+      if (byPlayer) {
+        g.world.player.kills++;
+        // progress bounty missions in this system
+        for (const m of g.world.player.missions) {
+          if (m.kind === "bounty" && m.accepted && !m.done && m.targetSystemId === g.world.player.systemId) {
+            m.kills = (m.kills ?? 0) + 1;
+            g.toast(`BOUNTY ${m.kills}/${m.killsNeeded}`);
+          }
         }
       }
       // pirates drop loot
@@ -340,10 +425,44 @@ export class FlightScene implements Scene {
       if (n.hull <= 0) continue;
       n.fireCd -= dt;
       let tx = n.x, ty = n.y, wantFire = false, speed = 60;
+      let fireHostile = true; // does this npc's shot target the player?
       if (n.kind === "pirate") {
+        // defended space is off-limits: break off if a platform is close
+        let threat: Platform | null = null;
+        for (const pf of this.platforms) {
+          if (dist(n.x, n.y, pf.x, pf.y) < 360) { threat = pf; break; }
+        }
         const d = dist(n.x, n.y, p.x, p.y);
-        if (d < 700) { tx = p.x; ty = p.y; wantFire = d < 260; speed = 95; }
-        else { tx = n.x + Math.cos(n.angle) * 100; ty = n.y + Math.sin(n.angle) * 100; }
+        if (threat) {
+          tx = n.x - (threat.x - n.x); ty = n.y - (threat.y - n.y); speed = 110;
+        } else if (d < 700 && !this.inSafeZone(g, p.x, p.y)) {
+          tx = p.x; ty = p.y; wantFire = d < 260; speed = 95;
+        } else {
+          tx = n.x + Math.cos(n.angle) * 100; ty = n.y + Math.sin(n.angle) * 100;
+        }
+      } else if (n.kind === "fighter") {
+        speed = 110;
+        const sys2 = g.world.systems[p.systemId];
+        const st = sys2.stations[n.targetIdx % Math.max(1, sys2.stations.length)];
+        const hx = st ? Math.cos(st.angle) * st.orbit : 0;
+        const hy = st ? Math.sin(st.angle) * st.orbit : 0;
+        let target: Npc | null = null;
+        for (const o of this.npcs) {
+          if (o.kind === "pirate" && o.hull > 0 && dist(hx, hy, o.x, o.y) < 800) { target = o; break; }
+        }
+        if (p.wanted > 0.6 && dist(hx, hy, p.x, p.y) < 500) {
+          // lawbreakers get no shelter
+          tx = p.x; ty = p.y; wantFire = dist(n.x, n.y, p.x, p.y) < 280; fireHostile = true;
+        } else if (target) {
+          tx = target.x; ty = target.y;
+          wantFire = dist(n.x, n.y, target.x, target.y) < 280;
+          fireHostile = false;
+        } else {
+          // lazy racetrack around home station
+          const a = Math.atan2(n.y - hy, n.x - hx) + 0.6;
+          tx = hx + Math.cos(a) * 120; ty = hy + Math.sin(a) * 120;
+          speed = 70;
+        }
       } else if (n.kind === "trader") {
         const st = sys.stations[n.targetIdx % Math.max(1, sys.stations.length)];
         if (st) {
@@ -362,37 +481,116 @@ export class FlightScene implements Scene {
         // hunt pirates, or the player if wanted
         if (p.wanted > 0.5) {
           const d = dist(n.x, n.y, p.x, p.y);
-          if (d < 900) { target = p; wantFire = d < 260; }
+          if (d < 900) { target = p; wantFire = d < 260; fireHostile = true; }
         }
         if (!target) {
           for (const o of this.npcs) {
             if (o.kind === "pirate" && o.hull > 0 && dist(n.x, n.y, o.x, o.y) < 900) { target = o; break; }
           }
-          if (target && dist(n.x, n.y, target.x, target.y) < 260) wantFire = true;
+          if (target && dist(n.x, n.y, target.x, target.y) < 260) { wantFire = true; fireHostile = false; }
         }
         if (target) { tx = target.x; ty = target.y; }
         else { tx = n.x + Math.cos(n.angle) * 100; ty = n.y + Math.sin(n.angle) * 100; }
       }
-      const want = Math.atan2(ty - n.y, tx - n.x);
-      n.angle += clamp(angDiff(n.angle, want), -2.2 * dt, 2.2 * dt);
-      n.vx += Math.cos(n.angle) * speed * dt;
-      n.vy += Math.sin(n.angle) * speed * dt;
-      const s = Math.hypot(n.vx, n.vy);
+      // seek steering: accelerate toward a desired velocity, slow down on arrival
       const maxs = n.kind === "pirate" ? 160 : 130;
-      if (s > maxs) { n.vx = (n.vx / s) * maxs; n.vy = (n.vy / s) * maxs; }
+      const dx = tx - n.x, dy = ty - n.y;
+      const dd = Math.hypot(dx, dy) || 1;
+      // pirates keep a fighting distance instead of ramming
+      let desSpeed = Math.min(maxs, dd * 0.8);
+      let dirX = dx / dd, dirY = dy / dd;
+      if (n.kind === "pirate" && dd < 140 && (tx === p.x || ty === p.y)) {
+        // strafe orbit when close to the player
+        dirX = -dy / dd; dirY = dx / dd;
+        desSpeed = maxs * 0.4;
+      }
+      n.vx += clamp(dirX * desSpeed - n.vx, -speed * 2.5 * dt, speed * 2.5 * dt);
+      n.vy += clamp(dirY * desSpeed - n.vy, -speed * 2.5 * dt, speed * 2.5 * dt);
+      const want = Math.atan2(ty - n.y, tx - n.x);
+      n.angle += clamp(angDiff(n.angle, want), -3 * dt, 3 * dt);
       n.x += n.vx * dt;
       n.y += n.vy * dt;
       if (wantFire && n.fireCd <= 0) {
-        n.fireCd = n.kind === "patrol" ? 0.5 : 0.7;
-        const aim = Math.atan2((n.kind === "patrol" && p.wanted > 0.5 ? p.y : ty) - n.y, tx - n.x);
+        n.fireCd = n.kind === "patrol" || n.kind === "fighter" ? 0.5 : 0.7;
+        // lead the shot: aim where the target will be, compensating for our own drift
+        const tvx = tx === p.x ? p.vx : 0;
+        const tvy = ty === p.y ? p.vy : 0;
+        const tof = Math.hypot(tx - n.x, ty - n.y) / 300;
+        const aimX = tx + (tvx - n.vx) * tof;
+        const aimY = ty + (tvy - n.vy) * tof;
+        const aim = Math.atan2(aimY - n.y, aimX - n.x);
+        if (dist(n.x, n.y, p.x, p.y) < 450) sfx.enemyLaser();
         this.bullets.push({
           x: n.x + Math.cos(aim) * 10, y: n.y + Math.sin(aim) * 10,
           vx: n.vx + Math.cos(aim) * 300, vy: n.vy + Math.sin(aim) * 300,
-          life: 1.3, hostile: true, dmg: n.kind === "patrol" ? 8 : 6,
+          life: 1.8, hostile: fireHostile, dmg: n.kind === "patrol" || n.kind === "fighter" ? 8 : 6,
         });
       }
     }
     this.npcs = this.npcs.filter((n) => n.hull > 0);
+  }
+
+  // Defended bubble: near any defense platform (they anchor stations, guarded
+  // gates, and controlled orbits). Pirates won't hunt here.
+  inSafeZone(g: Game, x: number, y: number): boolean {
+    if (g.world.systems[g.world.player.systemId].factionId === "vex") return false;
+    for (const pf of this.platforms) {
+      if (dist(x, y, pf.x, pf.y) < 350) return true;
+    }
+    return false;
+  }
+
+  platformPos(g: Game, pf: Platform): [number, number] {
+    const sys = g.world.systems[g.world.player.systemId];
+    let cx = 0, cy = 0;
+    if (pf.anchor === "station") {
+      const st = sys.stations[pf.anchorIdx];
+      if (!st) return [pf.x, pf.y];
+      cx = Math.cos(st.angle) * st.orbit;
+      cy = Math.sin(st.angle) * st.orbit;
+    } else if (pf.anchor === "gate") {
+      const jp = sys.jumpPoints[pf.anchorIdx];
+      if (!jp) return [pf.x, pf.y];
+      cx = jp.x; cy = jp.y;
+    } else {
+      const pl = sys.planets[pf.anchorIdx];
+      if (!pl) return [pf.x, pf.y];
+      cx = Math.cos(pl.angle) * pl.orbit;
+      cy = Math.sin(pl.angle) * pl.orbit;
+    }
+    return [cx + Math.cos(pf.orbitAngle) * pf.orbitR, cy + Math.sin(pf.orbitAngle) * pf.orbitR];
+  }
+
+  updatePlatforms(g: Game, dt: number): void {
+    const p = g.world.player;
+    for (const pf of this.platforms) {
+      pf.orbitAngle += pf.orbitSpeed * dt;
+      const [x, y] = this.platformPos(g, pf);
+      pf.x = x; pf.y = y;
+      pf.fireCd -= dt;
+      if (pf.fireCd > 0) continue;
+      // acquire target: pirates first; the player if wanted or in corsair space
+      let tx: number | null = null, ty = 0, tvx = 0, tvy = 0, hostileShot = false;
+      for (const n of this.npcs) {
+        if (n.kind === "pirate" && n.hull > 0 && dist(x, y, n.x, n.y) < 320) {
+          tx = n.x; ty = n.y; tvx = n.vx; tvy = n.vy;
+          break;
+        }
+      }
+      if (tx === null && (pf.hostileToPlayer || p.wanted > 0.6) && dist(x, y, p.x, p.y) < 320) {
+        tx = p.x; ty = p.y; tvx = p.vx; tvy = p.vy; hostileShot = true;
+      }
+      if (tx === null) continue;
+      pf.fireCd = 0.65;
+      const tof = dist(x, y, tx, ty) / 360;
+      const aim = Math.atan2(ty + tvy * tof - y, tx + tvx * tof - x);
+      if (dist(x, y, p.x, p.y) < 450) sfx.enemyLaser();
+      this.bullets.push({
+        x: x + Math.cos(aim) * 8, y: y + Math.sin(aim) * 8,
+        vx: Math.cos(aim) * 360, vy: Math.sin(aim) * 360,
+        life: 1.2, hostile: hostileShot, dmg: 9,
+      });
+    }
   }
 
   updateParticles(dt: number): void {
@@ -409,6 +607,7 @@ export class FlightScene implements Scene {
       if (dist(l.x, l.y, p.x, p.y) < 16) {
         if (addCargo(p, l.commodityId, l.qty)) {
           g.toast(`+${l.qty} ${commodity(l.commodityId).name.toUpperCase()}`);
+          sfx.pickup();
           l.life = 0;
         }
       }
@@ -426,6 +625,7 @@ export class FlightScene implements Scene {
       if (dist(p.x, p.y, sx, sy) < 60) {
         p.dockedAt = st.id;
         p.vx = 0; p.vy = 0;
+        sfx.dock();
         g.setScene("station");
         return;
       }
@@ -472,6 +672,7 @@ export class FlightScene implements Scene {
       }
     }
     p.fuel -= 10;
+    sfx.jump();
     const fromId = p.systemId;
     p.systemId = targetId;
     // arrive at the gate on the far side that points back where we came from
@@ -624,13 +825,27 @@ export class FlightScene implements Scene {
       ctx.fillRect(sx - 1, sy - 1, 2, 2);
     }
 
+    // defense platforms
+    {
+      const sysHostile = sys.factionId === "vex";
+      const pfSpr = g.platformSprite(sysHostile);
+      for (const pf of this.platforms) {
+        const [sx, sy] = toScreen(pf.x, pf.y);
+        if (sx < -20 || sx > VW + 20 || sy < -20 || sy > VH + 20) continue;
+        const s = pfSpr.width * z;
+        ctx.drawImage(pfSpr, sx - s / 2, sy - s / 2, s, s);
+      }
+    }
+
     // npcs
     for (const n of this.npcs) {
-      const spr = n.kind === "pirate" ? g.pirateShip() : n.kind === "patrol" ? g.patrolShip() : g.traderShip();
+      const spr = n.kind === "pirate" ? g.pirateShip()
+        : n.kind === "patrol" || n.kind === "fighter" ? g.patrolShip()
+        : g.traderShip();
       const [sx, sy] = toScreen(n.x, n.y);
       if (sx < -40 || sx > VW + 40 || sy < -40 || sy > VH + 40) continue;
       this.drawRotated(ctx, spr, sx, sy, n.angle, z);
-      const col = n.kind === "pirate" ? PAL.danger : n.kind === "patrol" ? PAL.info : PAL.gold;
+      const col = n.kind === "pirate" ? PAL.danger : n.kind === "patrol" || n.kind === "fighter" ? PAL.info : PAL.gold;
       ctx.fillStyle = col;
       ctx.fillRect(sx - 6, sy - 12, Math.round(12 * (n.hull / n.hullMax)), 1);
     }
@@ -657,8 +872,51 @@ export class FlightScene implements Scene {
       this.drawRotated(ctx, g.playerShip(), sx, sy, p.angle, z);
     }
 
+    this.drawEdgeMarkers(g, ctx, camX, camY, z);
     this.drawHud(g, ctx);
     if (this.mapOpen) this.drawSystemMap(g, ctx);
+  }
+
+  // Edge-of-screen markers pointing at stations, gates, and nearby hostiles
+  drawEdgeMarkers(g: Game, ctx: CanvasRenderingContext2D, camX: number, camY: number, z: number): void {
+    const p = g.world.player;
+    const sys = g.world.systems[p.systemId];
+    const mark = (wx: number, wy: number, color: string, label?: string) => {
+      const sx = (wx - camX) * z;
+      const sy = (wy - camY) * z;
+      if (sx > 8 && sx < VW - 8 && sy > 8 && sy < VH - 30) return; // on screen already
+      const cx = VW / 2, cy = VH / 2 - 11;
+      const dx = sx - cx, dy = sy - cy;
+      const t = Math.max(Math.abs(dx) / (VW / 2 - 8), Math.abs(dy) / (VH / 2 - 22));
+      const ex = cx + dx / t, ey = cy + dy / t;
+      ctx.fillStyle = color;
+      ctx.fillRect(Math.round(ex) - 1, Math.round(ey) - 1, 3, 3);
+      if (label) {
+        const dist10 = Math.round(Math.hypot(wx - p.x, wy - p.y) / 100) / 10;
+        const txt = `${label} ${dist10}K`;
+        const tx = clamp(ex - textWidth(txt) / 2, 2, VW - textWidth(txt) - 2);
+        const ty = clamp(ey + (ey < cy ? 5 : -8), 8, VH - 34);
+        drawText(ctx, txt, tx, ty, color);
+      }
+    };
+    for (const st of sys.stations) {
+      mark(Math.cos(st.angle) * st.orbit, Math.sin(st.angle) * st.orbit, st.military ? PAL.danger : PAL.ui, st.military ? "BASE" : "STN");
+    }
+    // nav course guidance: highlight the next gate on the plotted route
+    let navGateTarget: string | null = null;
+    if (p.navTarget && p.navTarget !== p.systemId) {
+      const route = navRoute(g.world, p.systemId, p.navTarget);
+      if (route && route.length > 1) navGateTarget = route[1];
+    } else if (p.navTarget === p.systemId) {
+      p.navTarget = null; // arrived
+    }
+    for (const jp of sys.jumpPoints) {
+      const isNav = jp.targetSystemId === navGateTarget;
+      mark(jp.x, jp.y, isNav ? PAL.gold : PAL.info, isNav ? "NAV>" : "GATE");
+    }
+    for (const n of this.npcs) {
+      if (n.kind === "pirate" && dist(n.x, n.y, p.x, p.y) < 900) mark(n.x, n.y, PAL.danger);
+    }
   }
 
   drawRotated(ctx: CanvasRenderingContext2D, spr: HTMLCanvasElement, x: number, y: number, ang: number, z: number): void {
@@ -720,6 +978,9 @@ export class FlightScene implements Scene {
     drawText(ctx, sys.name, 270, VH - 19, fac.color);
     drawText(ctx, fac.name, 270, VH - 11, PAL.greyDark);
     if (p.wanted > 0.3) drawText(ctx, "WANTED", VW - 76, VH - 19, PAL.danger);
+    if (this.inSafeZone(g, p.x, p.y) && p.wanted <= 0.6) {
+      drawText(ctx, "PROTECTED SPACE", VW - 130, VH - 11, PAL.good);
+    }
     drawText(ctx, "TAB MAP", VW - 36, VH - 19, PAL.greyDark);
     drawText(ctx, "I SHIP", VW - 36, VH - 11, PAL.greyDark);
 

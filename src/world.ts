@@ -109,6 +109,7 @@ export interface PlayerState {
   dockedAt: string | null;
   kills: number;
   wanted: number; // heat with law enforcement 0..1
+  navTarget?: string | null; // plotted course destination (galaxy map)
 }
 
 export interface World {
@@ -418,6 +419,30 @@ export function removeCargo(p: PlayerState, id: string, qty: number): boolean {
 
 export function hasIllegalCargo(p: PlayerState): boolean {
   return Object.entries(p.cargo).some(([id, q]) => q > 0 && COMMODITIES.find((c) => c.id === id)?.illegal);
+}
+
+// BFS shortest jump-route between systems; returns [from, ..., to] or null
+export function navRoute(world: World, fromId: string, toId: string): string[] | null {
+  if (fromId === toId) return [fromId];
+  const prev = new Map<string, string>();
+  const queue = [fromId];
+  const seen = new Set([fromId]);
+  while (queue.length) {
+    const cur = queue.shift()!;
+    for (const l of world.systems[cur].links) {
+      if (seen.has(l)) continue;
+      seen.add(l);
+      prev.set(l, cur);
+      if (l === toId) {
+        const path = [toId];
+        let p = toId;
+        while (prev.has(p)) { p = prev.get(p)!; path.unshift(p); }
+        return path;
+      }
+      queue.push(l);
+    }
+  }
+  return null;
 }
 
 export function findStation(world: World, stationId: string): { sys: SystemDef; st: StationDef } | null {

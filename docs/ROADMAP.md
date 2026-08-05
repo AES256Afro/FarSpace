@@ -18,6 +18,13 @@
       physical repairs consume spare parts
 - [x] Missions: delivery, bounty, mining contracts
 - [x] Save/load (localStorage), galaxy map with nav routes
+- [x] Walkable station promenades: kiosks, wandering NPCs, airlock
+- [x] Nav path system: plot a course on the galaxy map, radar guides you gate to gate
+- [x] Defense platforms around stations, guarded gates, and controlled orbits
+- [x] Station-aligned fighter wings; protected-space safe zones around civilization
+- [x] Procedural WebAudio SFX (lasers, mining, docking, jumps, UI)
+- [x] Flight radar: edge markers for stations, gates, and nearby hostiles
+- [x] Mouse support in menus
 - [x] Deployed to https://fsociety.work
 
 ## Milestone 2 — The Living Economy

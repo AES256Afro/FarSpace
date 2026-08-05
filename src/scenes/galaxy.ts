@@ -5,6 +5,8 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 import { faction } from "../data/data";
 import { dist } from "../core/mathx";
+import { navRoute } from "../world";
+import { sfx } from "../core/sfx";
 
 const OX = 90; // map viewport offset
 const OY = 30;
@@ -29,7 +31,20 @@ export class GalaxyScene implements Scene {
         const d = dist(inp.mouseX, inp.mouseY, OX + sys.gx, OY + sys.gy);
         if (d < bestD) { bestD = d; best = id; }
       }
-      if (best) this.selected = best;
+      if (best) {
+        if (this.selected === best && best !== g.world.player.systemId) {
+          // second click on the same system: plot / clear course
+          const p = g.world.player;
+          p.navTarget = p.navTarget === best ? null : best;
+          sfx.select();
+        }
+        this.selected = best;
+      }
+    }
+    if (g.input.wasPressed("n") && this.selected) {
+      const p = g.world.player;
+      p.navTarget = p.navTarget === this.selected ? null : this.selected;
+      sfx.select();
     }
   }
 
@@ -68,6 +83,22 @@ export class GalaxyScene implements Scene {
       ctx.moveTo(OX + cur.gx, OY + cur.gy);
       ctx.lineTo(OX + o.gx, OY + o.gy);
       ctx.stroke();
+    }
+    // plotted nav course
+    if (w.player.navTarget) {
+      const route = navRoute(w, w.player.systemId, w.player.navTarget);
+      if (route && route.length > 1) {
+        ctx.strokeStyle = PAL.gold;
+        for (let i = 0; i < route.length - 1; i++) {
+          const a = w.systems[route[i]], b = w.systems[route[i + 1]];
+          ctx.beginPath();
+          ctx.moveTo(OX + a.gx, OY + a.gy);
+          ctx.lineTo(OX + b.gx, OY + b.gy);
+          ctx.stroke();
+        }
+        const dst = w.systems[w.player.navTarget];
+        drawText(ctx, `COURSE: ${dst.name} (${route.length - 1} JUMPS)`, OX, VH - 22, PAL.gold);
+      }
     }
     // systems
     for (const sys of Object.values(w.systems)) {
@@ -121,6 +152,6 @@ export class GalaxyScene implements Scene {
         y += 8;
       }
     }
-    drawText(ctx, "CLICK SYSTEM FOR INTEL - TRAVEL VIA JUMP GATES - ESC BACK", VW / 2 - textWidth("CLICK SYSTEM FOR INTEL - TRAVEL VIA JUMP GATES - ESC BACK") / 2, VH - 10, PAL.greyDark);
+    drawText(ctx, "CLICK: INTEL - CLICK AGAIN/N: PLOT COURSE - ESC BACK", VW / 2 - textWidth("CLICK: INTEL - CLICK AGAIN/N: PLOT COURSE - ESC BACK") / 2, VH - 10, PAL.greyDark);
   }
 }
