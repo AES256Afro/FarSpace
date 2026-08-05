@@ -795,6 +795,20 @@ export class FlightScene implements Scene {
       Math.round((wy - camY) * z),
     ];
 
+    // nebula backdrop with slow parallax, tiled across the viewport
+    {
+      const neb = g.nebulaSprite(sys.id);
+      ctx.globalAlpha = 0.55;
+      const px = -((camX * 0.06 * z) % VW);
+      const py = -((camY * 0.06 * z) % VH);
+      for (const ox of [px - VW, px, px + VW]) {
+        for (const oy of [py - VH, py, py + VH]) {
+          ctx.drawImage(neb, Math.round(ox), Math.round(oy));
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
+
     // parallax starfield (3 layers, deterministic hash)
     this.drawStars(ctx, camX, camY, z);
 

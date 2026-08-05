@@ -3,6 +3,8 @@
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
+import { genPlanet } from "../gfx/sprites";
+import { RNG } from "../core/rng";
 
 export class TitleScene implements Scene {
   t = 0;
@@ -36,6 +38,10 @@ export class TitleScene implements Scene {
   draw(g: Game, ctx: CanvasRenderingContext2D): void {
     ctx.fillStyle = PAL.bg;
     ctx.fillRect(0, 0, VW, VH);
+    // nebula wash
+    ctx.globalAlpha = 0.5;
+    ctx.drawImage(g.nebulaSprite("title"), 0, 0);
+    ctx.globalAlpha = 1;
     // starfield
     for (let i = 0; i < 120; i++) {
       const hx = (Math.imul(i + 3, 2654435761) >>> 0) % VW;
@@ -43,6 +49,26 @@ export class TitleScene implements Scene {
       const tw = Math.sin(this.t * 2 + i) > 0.7;
       ctx.fillStyle = tw ? PAL.starBright : i % 5 === 0 ? PAL.starMid : PAL.starDim;
       ctx.fillRect(hx, hy, 1, 1);
+    }
+    // hero planet rising from the corner
+    {
+      const pl = g.sprite("title-planet", () => genPlanet(new RNG(0x717713), 70, 0));
+      ctx.drawImage(pl, VW - 110, VH - 110);
+    }
+    // your ship, drifting across on patrol
+    {
+      const ship = g.playerShip();
+      const sx = ((this.t * 14) % (VW + 80)) - 40;
+      const sy = 44 + Math.sin(this.t * 0.6) * 6;
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.drawImage(ship, -12, -12);
+      ctx.restore();
+      // engine sparkle
+      if (Math.floor(this.t * 10) % 2 === 0) {
+        ctx.fillStyle = PAL.thrust;
+        ctx.fillRect(Math.round(sx) - 14, Math.round(sy), 2, 1);
+      }
     }
     // big pixel logo
     const title = "FARSPACE";

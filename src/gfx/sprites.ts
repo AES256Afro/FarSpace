@@ -285,6 +285,36 @@ export function genSun(rng: RNG, radius: number, color: string): Sprite {
   return c;
 }
 
+// ---------- Nebula backdrop ----------
+// Soft dithered color clouds, generated once per system, drawn with parallax.
+
+const NEBULA_TINTS = ["#1a2440", "#2a1a40", "#401a2e", "#1a4034", "#40331a", "#1a3340"];
+
+export function genNebula(rng: RNG, w: number, h: number): Sprite {
+  const [c, ctx] = make(w, h);
+  const tint = rng.pick(NEBULA_TINTS);
+  const blobs = rng.int(4, 7);
+  for (let b = 0; b < blobs; b++) {
+    const bx = rng.range(0, w), by = rng.range(0, h);
+    const br = rng.range(40, 110);
+    const shade2 = shade(tint, rng.range(0.7, 1.5));
+    // dithered pixel cloud: sparse fill that thins toward the rim
+    const step = 2;
+    for (let y = -br; y < br; y += step) {
+      for (let x = -br; x < br; x += step) {
+        const d = Math.sqrt(x * x + y * y) / br;
+        if (d > 1) continue;
+        if (rng.next() < (1 - d) * 0.4) {
+          ctx.fillStyle = shade2;
+          const px = Math.round(bx + x), py = Math.round(by + y);
+          if (px >= 0 && px < w && py >= 0 && py < h) ctx.fillRect(px, py, step, step);
+        }
+      }
+    }
+  }
+  return c;
+}
+
 // ---------- Defense platform ----------
 // Small armed satellite: solar wings, core, gun barrel.
 

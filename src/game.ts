@@ -3,7 +3,7 @@
 import { Input } from "./core/input";
 import { RNG } from "./core/rng";
 import { World, generateWorld } from "./world";
-import { Sprite, genShip, genPlanet, genStation, genAsteroid, genGate, genSun, genPortrait, genPlatform } from "./gfx/sprites";
+import { Sprite, genShip, genPlanet, genStation, genAsteroid, genGate, genSun, genPortrait, genPlatform, genNebula } from "./gfx/sprites";
 
 export const VW = 480;
 export const VH = 270;
@@ -131,6 +131,11 @@ export class Game {
   }
   platformSprite(hostile: boolean): Sprite {
     return this.sprite(`platform-${hostile}`, () => genPlatform(new RNG(this.world.seed ^ 0x9d9d), hostile));
+  }
+  nebulaSprite(sysId: string): Sprite {
+    let h = 0;
+    for (const ch of sysId) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    return this.sprite(`nebula-${sysId}`, () => genNebula(new RNG(this.world.seed ^ h ^ 0x4e4e), 480, 270));
   }
   sunSprite(sysId: string, radius: number, color: string): Sprite {
     return this.sprite(`sun-${sysId}`, () => genSun(new RNG(this.world.seed ^ sysId.length), radius, color));
