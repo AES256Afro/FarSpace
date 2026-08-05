@@ -62,6 +62,8 @@ export class FlightScene implements Scene {
   scanMsg = "";
   spawnTimer = 4;
   camShake = 0;
+  sosTimer = 45;
+  sos: { trader: Npc; pirates: Npc[]; reward: number; ttl: number } | null = null;
 
   enter(g: Game): void {
     this.bullets = [];
@@ -266,13 +268,28 @@ export class FlightScene implements Scene {
     this.updateParticles(dt);
     this.updateLoot(g, dt);
 
-    // pirate respawn pressure
+    // pirate respawn pressure — they lurk near the belts, not on top of you
     this.spawnTimer -= dt;
     if (this.spawnTimer <= 0) {
       this.spawnTimer = 20 + Math.random() * 25;
       const alive = this.npcs.filter((n) => n.kind === "pirate").length;
-      if (alive < sys.pirateActivity * 6) this.spawnNpc(g, "pirate", new RNG((Math.random() * 1e9) >>> 0));
+      if (alive < sys.pirateActivity * 6) {
+        const rng = new RNG((Math.random() * 1e9) >>> 0);
+        const rock = sys.asteroids.length ? sys.asteroids[rng.int(0, sys.asteroids.length - 1)] : null;
+        if (rock) {
+          this.npcs.push({
+            kind: "pirate",
+            x: rock.x + rng.range(-200, 200), y: rock.y + rng.range(-200, 200),
+            vx: 0, vy: 0, angle: rng.range(0, TAU),
+            hull: 40, hullMax: 40, fireCd: 0, targetIdx: 0,
+          });
+        } else {
+          this.spawnNpc(g, "pirate", rng);
+        }
+      }
     }
+
+    this.updateSos(g, dt);
 
     // interactions: dock / jump
     if (this.scanTimer > 0) {
@@ -412,7 +429,7 @@ export class FlightScene implements Scene {
         const id = pool[Math.floor(Math.random() * pool.length)];
         this.loot.push({ x: n.x, y: n.y, commodityId: id, qty: 1 + Math.floor(Math.random() * 3), life: 60 });
       }
-    } else {
+    } else if (byPlayer) {
       g.world.player.wanted = Math.min(1, g.world.player.wanted + 0.4);
       g.toast("WARRANT ISSUED - PATROLS ALERTED");
     }
@@ -438,7 +455,17 @@ export class FlightScene implements Scene {
         } else if (d < 700 && !this.inSafeZone(g, p.x, p.y)) {
           tx = p.x; ty = p.y; wantFire = d < 260; speed = 95;
         } else {
-          tx = n.x + Math.cos(n.angle) * 100; ty = n.y + Math.sin(n.angle) * 100;
+          // no player in reach: prey on traders
+          let prey: Npc | null = null;
+          for (const o of this.npcs) {
+            if (o.kind === "trader" && o.hull > 0 && dist(n.x, n.y, o.x, o.y) < 500) { prey = o; break; }
+          }
+          if (prey) {
+            tx = prey.x; ty = prey.y; speed = 95;
+            if (dist(n.x, n.y, prey.x, prey.y) < 240) { wantFire = true; fireHostile = false; }
+          } else {
+            tx = n.x + Math.cos(n.angle) * 100; ty = n.y + Math.sin(n.angle) * 100;
+          }
         }
       } else if (n.kind === "fighter") {
         speed = 110;
@@ -528,6 +555,47 @@ export class FlightScene implements Scene {
       }
     }
     this.npcs = this.npcs.filter((n) => n.hull > 0);
+  }
+
+  // Distress calls: a trader comes under corsair attack somewhere nearby.
+  // Save them before their hull gives out and they pay you on the spot.
+  updateSos(g: Game, dt: number): void {
+    const p = g.world.player;
+    const sys = g.world.systems[p.systemId];
+    if (this.sos) {
+      const s = this.sos;
+      s.ttl -= dt;
+      const traderAlive = s.trader.hull > 0 && this.npcs.includes(s.trader);
+      const piratesAlive = s.pirates.filter((x) => x.hull > 0 && this.npcs.includes(x));
+      if (!traderAlive) {
+        g.toast("DISTRESS CALL LOST - TRADER DESTROYED");
+        this.sos = null;
+      } else if (piratesAlive.length === 0) {
+        p.credits += s.reward;
+        g.toast(`TRADER SAVED +${s.reward}CR`);
+        sfx.pickup();
+        this.sos = null;
+      } else if (s.ttl <= 0) {
+        this.sos = null; // they limped away; event expires quietly
+      }
+      return;
+    }
+    this.sosTimer -= dt;
+    if (this.sosTimer > 0) return;
+    this.sosTimer = 70 + Math.random() * 60;
+    if (sys.pirateActivity < 0.1) return;
+    const a = Math.random() * TAU;
+    const r = 700 + Math.random() * 500;
+    const tx = p.x + Math.cos(a) * r, ty = p.y + Math.sin(a) * r;
+    const trader: Npc = { kind: "trader", x: tx, y: ty, vx: 0, vy: 0, angle: 0, hull: 50, hullMax: 50, fireCd: 0, targetIdx: 0 };
+    const pirates: Npc[] = [];
+    for (let i = 0; i < 2; i++) {
+      pirates.push({ kind: "pirate", x: tx + 120 * Math.cos(i * 3), y: ty + 120 * Math.sin(i * 3), vx: 0, vy: 0, angle: 0, hull: 40, hullMax: 40, fireCd: 1, targetIdx: 0 });
+    }
+    this.npcs.push(trader, ...pirates);
+    this.sos = { trader, pirates, reward: 150 + Math.floor(Math.random() * 200), ttl: 90 };
+    g.toast("DISTRESS CALL - TRADER UNDER ATTACK");
+    sfx.alarm();
   }
 
   // Defended bubble: near any defense platform (they anchor stations, guarded
@@ -917,6 +985,7 @@ export class FlightScene implements Scene {
     for (const n of this.npcs) {
       if (n.kind === "pirate" && dist(n.x, n.y, p.x, p.y) < 900) mark(n.x, n.y, PAL.danger);
     }
+    if (this.sos && this.sos.trader.hull > 0) mark(this.sos.trader.x, this.sos.trader.y, PAL.gold, "SOS");
   }
 
   drawRotated(ctx: CanvasRenderingContext2D, spr: HTMLCanvasElement, x: number, y: number, ang: number, z: number): void {

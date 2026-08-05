@@ -25,6 +25,8 @@
 - [x] Procedural WebAudio SFX (lasers, mining, docking, jumps, UI)
 - [x] Flight radar: edge markers for stations, gates, and nearby hostiles
 - [x] Mouse support in menus
+- [x] Distress calls: rescue traders under corsair attack for on-the-spot rewards
+- [x] Pirates lurk near belts and prey on real trader traffic
 - [x] Deployed to https://fsociety.work
 
 ## Milestone 2 — The Living Economy
