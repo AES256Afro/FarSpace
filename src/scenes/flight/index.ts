@@ -9,6 +9,7 @@ import { faction } from "../../data/data";
 import { hull } from "../../data/hulls";
 import { sfx } from "../../core/sfx";
 import { music } from "../../core/music";
+import * as wire from "../../core/wire";
 import type { Bullet, Npc, Particle, Platform, Loot, Sos } from "./types";
 import { BULLET_SPEED } from "./types";
 import {
@@ -356,6 +357,7 @@ export class FlightScene implements Scene {
         g.world.events.push({ t: g.world.time, kind: "discovery", systemId: p.systemId, text: `An anomaly (${an.name}) was surveyed by an independent pilot` });
         g.world.player.discoveries = (g.world.player.discoveries ?? 0) + 1;
         sfx.pickup();
+        void wire.post("discovery", `surveyed anomaly ${an.name}`, sys.name);
         return;
       }
     }

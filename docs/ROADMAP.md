@@ -153,14 +153,16 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
 - [x] Aegis Carrier hull: hangar that launches two escort drones which fight
       pirates and re-arm at dock; a multi-deck interior; five crew berths
 
-## Milestone 9 — Shared Universe
+## Milestone 9 — Shared Universe ✅ (Sep 2026)
 **Goal:** other pilots exist.
 
-- [ ] Fleet Wire: a global event feed (arc completions, discoveries, rescues,
+- [x] Fleet Wire: a global event feed (arc completions, discoveries, rescues,
       wars) every player sees on the news net and the title screen, posted
-      under a chosen call sign
-- [ ] Leaderboards: discoveries, arcs completed, credits — top 20 per board
-- [ ] Bigger neighbourhood: extend the real-star catalog to ~50 ly
+      under a chosen call sign; per-IP rate limits, no accounts; station WIRE tab
+- [x] Leaderboards: discoveries, arcs, credits, kills — top 20 per board, each
+      call sign's best kept; scores post on every save
+- [x] Bigger neighbourhood: catalog extended to ~50 ly (76 systems) as a third
+      new-game option; 20 ly stays the default
 
 ## Later
 - [ ] Ground exploration beyond outposts and ruins (planet-scale maps)

@@ -5,6 +5,7 @@ import { RNG } from "./core/rng";
 import { World, generateWorld, WreckDef } from "./world";
 import { loadSave, writeSave, SAVE_KEY } from "./save";
 import * as cloud from "./core/cloud";
+import { syncScores } from "./core/wire";
 import { hull } from "./data/hulls";
 import {
   Sprite, genShip, genPlanet, genStation, genAsteroid, genGate, genSun, genPortrait,
@@ -64,6 +65,7 @@ export class Game {
   save(): void {
     writeSave(this.world);
     this.toast("GAME SAVED");
+    syncScores(this.world);
     if (cloud.getCode()) {
       this.cloudStatus = "SYNCING";
       void cloud.push(this.world).then((r) => {
@@ -106,8 +108,8 @@ export class Game {
     this.setScene(this.world.player.dockedAt ? "station" : "flight");
   }
 
-  newGame(realGalaxy: boolean): void {
-    this.world = generateWorld((Math.random() * 0xffffffff) >>> 0, { realGalaxy });
+  newGame(realGalaxy: boolean, maxLy = 20): void {
+    this.world = generateWorld((Math.random() * 0xffffffff) >>> 0, { realGalaxy, maxLy });
     this.spriteCache.clear();
   }
 

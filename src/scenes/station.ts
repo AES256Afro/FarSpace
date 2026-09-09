@@ -14,9 +14,10 @@ import {
   crewWages, genCrewCandidate, applyHull, pushEvent, ARCS,
 } from "../world";
 import { sfx } from "../core/sfx";
+import * as wire from "../core/wire";
 import { music } from "../core/music";
 
-const TABS = ["MARKET", "SHIPYARD", "SHIPS", "MISSIONS", "BAR", "STORAGE", "NEWS"] as const;
+const TABS = ["MARKET", "SHIPYARD", "SHIPS", "MISSIONS", "BAR", "STORAGE", "NEWS", "WIRE"] as const;
 
 export class StationScene implements Scene {
   touchMode = "menu" as const;
@@ -29,6 +30,9 @@ export class StationScene implements Scene {
   returnTo: "flight" | "stationwalk" = "flight";
   rowBoxes: [number, number][] = [];
   arrivedOnce = "";
+  wireEvents: wire.WireEvent[] = [];
+  boards: Record<string, wire.BoardEntry[]> = {};
+  wireLoaded = false;
 
   enter(g: Game): void {
     const found = findStation(g.world, g.world.player.dockedAt!);
@@ -185,7 +189,27 @@ export class StationScene implements Scene {
       case "NEWS":
         this.cursor = clamp(this.cursor, 0, g.world.news.length - 1);
         break;
+      case "WIRE":
+        if (!this.wireLoaded) { this.wireLoaded = true; void this.loadWire(); }
+        if (inp.wasPressed("c")) { void this.chooseCallsign(g); }
+        break;
     }
+  }
+
+  async loadWire(): Promise<void> {
+    this.wireEvents = await wire.fetchWire(true);
+    for (const b of ["discoveries", "arcs", "credits", "kills"]) this.boards[b] = await wire.fetchBoard(b);
+  }
+
+  async chooseCallsign(g: Game): Promise<void> {
+    const raw = window.prompt("Choose a call sign (2-16 letters, digits, space, - or _):", wire.getCallsign() ?? "");
+    if (raw === null) return;
+    const c = raw.trim().toUpperCase();
+    if (!wire.validCallsign(c)) { g.toast("CALL SIGN NOT ACCEPTED"); return; }
+    wire.setCallsign(c);
+    g.toast(`CALL SIGN SET: ${c}`);
+    wire.syncScores(g.world);
+    setTimeout(() => { void this.loadWire(); }, 800);
   }
 
   acceptMission(g: Game, m: Mission): void {
@@ -223,6 +247,7 @@ export class StationScene implements Scene {
           : `${faction(m.arcFaction).name} moves on "${arc.title}" — sources credit a freelance captain`,
       });
       if (finished) { adjustRep(g.world, m.arcFaction, 25); g.toast(`ARC COMPLETE: ${arc.title.toUpperCase()}`); }
+      void wire.post("arc", finished ? `completed "${arc.title}" for the ${faction(m.arcFaction).name}` : `advanced "${arc.title}" (stage ${m.arcStage + 1})`, g.world.systems[p.systemId].name);
     }
     g.toast(`MISSION COMPLETE +${m.reward}CR`);
     sfx.pickup();
@@ -358,6 +383,7 @@ export class StationScene implements Scene {
       case "BAR": this.drawBar(g, ctx, top); break;
       case "STORAGE": this.drawStorage(g, ctx, top); break;
       case "NEWS": this.drawNews(g, ctx, top); break;
+      case "WIRE": this.drawWire(g, ctx, top); break;
     }
     if (g.toastTimer > 0) drawText(ctx, g.toastMsg, VW / 2 - textWidth(g.toastMsg) / 2, VH - 10, PAL.ui);
     if (g.hint) drawText(ctx, g.hint, VW / 2 - textWidth(g.hint) / 2, VH - 20, PAL.gold);
@@ -529,6 +555,32 @@ export class StationScene implements Scene {
     const stored = Object.keys(box);
     if (!stored.length) { drawText(ctx, "EMPTY", 12, y, PAL.greyDark); }
     for (const id of stored) { this.row(ctx, y, idx === this.cursor); drawText(ctx, `${commodity(id).name} x${box[id]}  → LOAD`, 12, y, PAL.ui); y += 11; idx++; }
+  }
+
+  drawWire(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
+    const cs = wire.getCallsign();
+    drawText(ctx, `FLEET WIRE - EVERY PILOT, LIVE.  CALL SIGN: ${cs ?? "NONE (PRESS C)"}`, 8, top, PAL.info);
+    let y = top + 12;
+    if (!this.wireEvents.length) drawText(ctx, this.wireLoaded ? "NOTHING ON THE WIRE YET - BE THE FIRST." : "TUNING...", 8, y, PAL.greyDark);
+    for (const e of this.wireEvents.slice(0, 9)) {
+      drawText(ctx, `${wire.ageLabel(e.t).padStart(3)} ${e.callsign}`, 8, y, PAL.gold);
+      drawText(ctx, `${e.text} - ${e.system}`.slice(0, 96), 84, y, PAL.grey);
+      y += 9;
+    }
+    y = top + 12 + 9 * 9 + 6;
+    drawText(ctx, "LEADERBOARDS", 8, y, PAL.greyDark); y += 9;
+    const cols = [["discoveries", "DISCOVERIES"], ["arcs", "ARCS"], ["credits", "CREDITS"], ["kills", "KILLS"]];
+    cols.forEach(([id, label], ci) => {
+      const x = 8 + ci * 118;
+      drawText(ctx, label, x, y, PAL.ui);
+      const rows = this.boards[id] ?? [];
+      for (let i = 0; i < Math.min(5, rows.length); i++) {
+        const r = rows[i];
+        drawText(ctx, `${i + 1}. ${r.callsign.slice(0, 10)}`, x, y + 9 + i * 8, r.callsign === cs ? PAL.gold : PAL.grey);
+        drawText(ctx, `${r.score}`, x + 88, y + 9 + i * 8, PAL.greyDark);
+      }
+      if (!rows.length) drawText(ctx, "-", x, y + 9, PAL.greyDark);
+    });
   }
 
   drawNews(g: Game, ctx: CanvasRenderingContext2D, top: number): void {

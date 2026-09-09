@@ -58,7 +58,7 @@ export class GalaxyScene implements Scene {
       ctx.fillRect(hx, hy, 1, 1);
     }
     const w = g.world;
-    const title = w.realGalaxy ? "SOL NEIGHBOURHOOD - 20 LY" : "GALAXY MAP";
+    const title = w.realGalaxy ? `SOL NEIGHBOURHOOD - ${w.galaxyLy ?? 20} LY` : "GALAXY MAP";
     drawText(ctx, title, VW / 2 - textWidth(title) / 2, 6, PAL.ui);
 
     ctx.strokeStyle = PAL.uiBorder;

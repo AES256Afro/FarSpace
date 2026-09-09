@@ -10,6 +10,7 @@ import { PAL } from "../../gfx/palette";
 import { sfx } from "../../core/sfx";
 import { addCargo, stationExports, adjustRep } from "../../world";
 import { commodity } from "../../data/data";
+import * as wire from "../../core/wire";
 
 // ---------- Population ----------
 
@@ -550,6 +551,7 @@ export function updateSos(fs: FlightScene, g: Game, dt: number): void {
       g.toast(`TRADER SAVED +${s.reward}CR`);
       sfx.pickup();
       g.world.events.push({ t: g.world.time, kind: "rescue", systemId: p.systemId, text: "A freighter was rescued from corsairs by an independent pilot" });
+      void wire.post("rescue", "answered a distress call and saved a freighter", sys.name);
       fs.sos = null;
     } else if (s.ttl <= 0) {
       fs.sos = null;

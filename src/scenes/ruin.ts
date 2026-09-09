@@ -10,6 +10,7 @@ import { addCargo, Poi, pushEvent, adjustRep } from "../world";
 import { commodity } from "../data/data";
 import { sfx } from "../core/sfx";
 import { music } from "../core/music";
+import * as wire from "../core/wire";
 import { T, moveWalker, deckOrigin, drawTiles, drawPerson, tooltip, footer } from "./walkbase";
 
 const W = 44, H = 20;
@@ -151,7 +152,7 @@ export class RuinScene implements Scene {
     if (crate && inp.wasPressed("e")) {
       if (addCargo(p, crate.id, crate.qty)) {
         crate.taken = true; g.toast(`+${crate.qty} ${commodity(crate.id).name.toUpperCase()}`); sfx.pickup();
-        if (crate.id === "relics") { p.discoveries += 1; if (this.crates.filter((c) => c.id === "relics").every((c) => c.taken)) { pushEvent(g.world, { t: g.world.time, kind: "discovery", systemId: p.systemId, text: `Relics recovered from ${this.poi.name} by an independent pilot` }); const sys = g.world.systems[p.systemId]; adjustRep(g.world, sys.factionId, 3); } }
+        if (crate.id === "relics") { p.discoveries += 1; if (this.crates.filter((c) => c.id === "relics").every((c) => c.taken)) { pushEvent(g.world, { t: g.world.time, kind: "discovery", systemId: p.systemId, text: `Relics recovered from ${this.poi.name} by an independent pilot` }); const sys = g.world.systems[p.systemId]; adjustRep(g.world, sys.factionId, 3); void wire.post("relics", `cleared the ruins at ${this.poi.name} of relics`, sys.name); } }
       } else g.toast("CARGO FULL");
     }
     const atExit = Math.hypot(this.exit.tx * T + T / 2 - this.px, this.exit.ty * T + T / 2 - this.py) < 14;

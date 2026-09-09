@@ -211,6 +211,7 @@ export interface PlayerState {
 export interface World {
   version: number;
   savedAt?: number;
+  galaxyLy?: number;
   seed: number;
   time: number;
   realGalaxy: boolean;
@@ -582,6 +583,7 @@ function genSystem(rng: RNG, id: string, gx: number, gy: number, factionId: stri
 
 export interface GenOptions {
   realGalaxy?: boolean;
+  maxLy?: number; // real galaxy radius (default 20)
 }
 
 function assignFactions(rng: RNG, positions: { x: number; y: number }[]): string[] {
@@ -654,7 +656,7 @@ export function generateWorld(seed: number, opts: GenOptions = {}): World {
 
   if (opts.realGalaxy) {
     // Sol neighbourhood: project the catalog top-down (x,y in ly) onto the map
-    const stars = STARS.filter((s) => s.ly <= 20);
+    const stars = STARS.filter((s) => s.ly <= (opts.maxLy ?? 20));
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     const xy = stars.map((s) => { const [x, y] = starXYZ(s); return { x, y }; });
     for (const q of xy) { minX = Math.min(minX, q.x); maxX = Math.max(maxX, q.x); minY = Math.min(minY, q.y); maxY = Math.max(maxY, q.y); }
@@ -730,7 +732,7 @@ export function generateWorld(seed: number, opts: GenOptions = {}): World {
   };
 
   const world: World = {
-    version: 0, seed, time: 0, realGalaxy: !!opts.realGalaxy,
+    version: 0, seed, time: 0, realGalaxy: !!opts.realGalaxy, galaxyLy: opts.realGalaxy ? (opts.maxLy ?? 20) : undefined,
     systems, player, news: [], events: [], wars: [],
     missionCounter: 0, econTick: 0, shockTick: 0, warTick: 0,
   };

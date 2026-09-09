@@ -7,19 +7,25 @@ import { genPlanet } from "../gfx/sprites";
 import { RNG } from "../core/rng";
 import { sfx } from "../core/sfx";
 import * as cloud from "../core/cloud";
+import * as wire from "../core/wire";
 import { music } from "../core/music";
 
 export class TitleScene implements Scene {
   touchMode = "menu" as const;
   t = 0;
   cursor = 0;
+  ticker: wire.WireEvent[] = [];
+  tickerLoaded = false;
 
   options(g: Game): { label: string; sub: string; act: () => void }[] {
     const opts: { label: string; sub: string; act: () => void }[] = [];
     const code = cloud.getCode();
     if (g.hasSave()) opts.push({ label: "CONTINUE", sub: code ? "Loads whichever of local / cloud is newer" : "Pick up where you left off", act: () => { void g.continueGame(); } });
     opts.push({ label: "NEW GAME - SOL NEIGHBOURHOOD", sub: "The real stars within 20 light-years", act: () => { g.newGame(true); g.setScene("flight"); } });
+    opts.push({ label: "NEW GAME - SOL 50 LY", sub: "A bigger neighbourhood: every catalogued star out to 50 light-years", act: () => { g.newGame(true, 50); g.setScene("flight"); } });
     opts.push({ label: "NEW GAME - UNCHARTED", sub: "A procedural galaxy", act: () => { g.newGame(false); g.setScene("flight"); } });
+    const cs = wire.getCallsign();
+    opts.push({ label: cs ? `CALL SIGN: ${cs}` : "CHOOSE A CALL SIGN", sub: "Your name on the Fleet Wire and the leaderboards", act: () => { void this.callsign(g); } });
     if (code) {
       opts.push({ label: `CLOUD: ${code}`, sub: "F5 in game saves here too. Enter this code on another device to link it", act: () => { g.toast(`YOUR CODE: ${code}`); } });
       opts.push({ label: "CLOUD: DOWNLOAD LATEST", sub: "Replace the local save with the cloud copy", act: () => { void this.download(g, code); } });
@@ -31,6 +37,15 @@ export class TitleScene implements Scene {
     opts.push({ label: "EXPORT SAVE FILE", sub: "Download the current save as JSON", act: () => { cloud.exportFile(g.world); g.toast("SAVE FILE DOWNLOADED"); } });
     opts.push({ label: "IMPORT SAVE FILE", sub: "Load a save JSON from this device", act: () => { void this.importFile(g); } });
     return opts;
+  }
+
+  async callsign(g: Game): Promise<void> {
+    const raw = window.prompt("Choose a call sign (2-16 letters, digits, space, - or _):", wire.getCallsign() ?? "");
+    if (raw === null) return;
+    const c = raw.trim().toUpperCase();
+    if (!wire.validCallsign(c)) { g.toast("CALL SIGN NOT ACCEPTED"); return; }
+    wire.setCallsign(c);
+    g.toast(`CALL SIGN SET: ${c}`);
   }
 
   async link(g: Game): Promise<void> {
@@ -63,12 +78,13 @@ export class TitleScene implements Scene {
   update(g: Game, dt: number): void {
     this.t += dt;
     music.setMood("title", 0);
+    if (!this.tickerLoaded) { this.tickerLoaded = true; void wire.fetchWire().then((e) => { this.ticker = e; }); }
     const opts = this.options(g);
     if (g.input.wasPressed("ArrowUp")) { this.cursor = (this.cursor + opts.length - 1) % opts.length; sfx.blip(); }
     if (g.input.wasPressed("ArrowDown")) { this.cursor = (this.cursor + 1) % opts.length; sfx.blip(); }
     let clicked = false;
     for (let i = 0; i < opts.length; i++) {
-      const y = 112 + i * 13;
+      const y = 108 + i * 12;
       if (g.input.mouseY >= y - 3 && g.input.mouseY < y + 10) {
         this.cursor = i;
         if (g.input.mousePressed) clicked = true;
@@ -114,14 +130,19 @@ export class TitleScene implements Scene {
 
     const opts = this.options(g);
     opts.forEach((o, i) => {
-      const y = 112 + i * 13;
+      const y = 108 + i * 12;
       const sel = i === this.cursor;
       if (sel && Math.floor(this.t * 3) % 2 === 0) drawText(ctx, ">", VW / 2 - textWidth(o.label) / 2 - 10, y, PAL.gold);
       drawText(ctx, o.label, VW / 2 - textWidth(o.label) / 2, y, sel ? PAL.white : PAL.greyDark);
     });
     const sub = opts[this.cursor]?.sub ?? "";
-    drawText(ctx, sub, VW / 2 - textWidth(sub) / 2, 112 + opts.length * 13 + 4, PAL.uiDim);
-    const ver = `V0.8${g.input.padConnected ? " - GAMEPAD CONNECTED" : ""}`;
+    drawText(ctx, sub, VW / 2 - textWidth(sub) / 2, 108 + opts.length * 12 + 3, PAL.uiDim);
+    if (this.ticker.length) {
+      const e = this.ticker[Math.floor(this.t / 6) % this.ticker.length];
+      const line = `FLEET WIRE: ${e.callsign} ${e.text} - ${e.system} (${wire.ageLabel(e.t)})`.slice(0, 110);
+      drawText(ctx, line, VW / 2 - textWidth(line) / 2, VH - 38, PAL.info);
+    }
+    const ver = `V0.9${g.input.padConnected ? " - GAMEPAD CONNECTED" : ""}`;
     drawText(ctx, ver, VW / 2 - textWidth(ver) / 2, VH - 26, PAL.greyDark);
     const keys = "WSAD FLY - SPACE FIRE - M MINE - E DOCK/JUMP - TAB MAP - H MUSIC - TOUCH + GAMEPAD";
     drawText(ctx, keys, VW / 2 - textWidth(keys) / 2, VH - 14, PAL.uiDim);

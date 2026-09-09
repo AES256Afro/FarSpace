@@ -222,3 +222,16 @@ describe("milestone 8 content", () => {
     expect(pois.some((p) => p.kind === "ruin")).toBe(true);
   });
 });
+
+describe("milestone 9 content", () => {
+  it("50 ly galaxy has more systems than 20 ly and stays connected", () => {
+    const small = generateWorld(31, { realGalaxy: true });
+    const big = generateWorld(31, { realGalaxy: true, maxLy: 50 });
+    expect(Object.keys(big.systems).length).toBeGreaterThan(Object.keys(small.systems).length);
+    expect(big.galaxyLy).toBe(50);
+    for (const id of Object.keys(big.systems)) expect(navRoute(big, big.player.systemId, id)).not.toBeNull();
+    const names = new Set(Object.values(big.systems).map((s) => s.name));
+    expect(names.has("Arcturus")).toBe(true);
+    expect(names.size).toBe(Object.keys(big.systems).length);
+  });
+});
