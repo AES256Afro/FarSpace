@@ -235,3 +235,15 @@ describe("milestone 9 content", () => {
     expect(names.size).toBe(Object.keys(big.systems).length);
   });
 });
+
+describe("cloud save size", () => {
+  it("a 50 ly world serialises well under the worker's 3 MB cap", () => {
+    const w = generateWorld(77, { realGalaxy: true, maxLy: 50 });
+    const bytes = JSON.stringify(w).length;
+    // eslint-disable-next-line no-console
+    console.log(`50 ly save: ${(bytes / 1024).toFixed(0)} KB, ${Object.keys(w.systems).length} systems`);
+    expect(bytes).toBeLessThan(2_500_000);
+    const small = JSON.stringify(generateWorld(77, { realGalaxy: true })).length;
+    console.log(`20 ly save: ${(small / 1024).toFixed(0)} KB`);
+  });
+});
