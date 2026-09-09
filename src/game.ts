@@ -1,9 +1,14 @@
-// Game shell: canvas, scaling, scene management, sprite cache, save/load.
+// Game shell: canvas, scaling, scene management, sprite cache, save/load, hints.
 
 import { Input } from "./core/input";
 import { RNG } from "./core/rng";
-import { World, generateWorld } from "./world";
-import { Sprite, genShip, genPlanet, genStation, genAsteroid, genGate, genSun, genPortrait, genPlatform, genNebula } from "./gfx/sprites";
+import { World, generateWorld, WreckDef } from "./world";
+import { loadSave, writeSave, SAVE_KEY } from "./save";
+import { hull } from "./data/hulls";
+import {
+  Sprite, genShip, genPlanet, genStation, genAsteroid, genGate, genSun, genPortrait,
+  genPlatform, genNebula, genWreck, genGlobe,
+} from "./gfx/sprites";
 
 export const VW = 480;
 export const VH = 270;
@@ -12,6 +17,7 @@ export interface Scene {
   update(g: Game, dt: number): void;
   draw(g: Game, ctx: CanvasRenderingContext2D): void;
   enter?(g: Game): void;
+  touchMode?: "flight" | "walk" | "menu";
 }
 
 export class Game {
@@ -22,13 +28,17 @@ export class Game {
   input: Input;
   world: World;
   scene!: Scene;
+  sceneName = "";
   scale = 1;
-  ox = 0;
-  oy = 0;
   toastMsg = "";
   toastTimer = 0;
+  hint = "";
+  hintTimer = 0;
   spriteCache = new Map<string, Sprite>();
   scenes: Record<string, Scene> = {};
+  wreckTarget: WreckDef | null = null;
+  orbitPlanetIdx = 0;
+  landedPoiId: string | null = null;
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -40,41 +50,41 @@ export class Game {
     this.bctx.imageSmoothingEnabled = false;
     this.input = new Input(canvas, () => ({ scale: this.scale, ox: 0, oy: 0 }));
     window.addEventListener("resize", () => this.resize());
-    this.world = this.loadOrNew();
+    this.world = loadSave() ?? generateWorld(0xfa25face);
     this.resize();
   }
 
-  loadOrNew(): World {
-    try {
-      const raw = localStorage.getItem("farspace-save");
-      if (raw) {
-        const w = JSON.parse(raw) as World;
-        if (w.seed !== undefined && w.player) return w;
-      }
-    } catch { /* corrupted save -> new game */ }
-    return generateWorld(0xfa25face);
+  hasSave(): boolean {
+    try { return !!localStorage.getItem(SAVE_KEY); } catch { return false; }
   }
 
   save(): void {
-    localStorage.setItem("farspace-save", JSON.stringify(this.world));
+    writeSave(this.world);
     this.toast("GAME SAVED");
   }
 
   load(): void {
-    const raw = localStorage.getItem("farspace-save");
-    if (!raw) { this.toast("NO SAVE FOUND"); return; }
-    this.world = JSON.parse(raw) as World;
+    const w = loadSave();
+    if (!w) { this.toast("NO SAVE FOUND"); return; }
+    this.world = w;
+    this.spriteCache.clear();
     this.toast("GAME LOADED");
     this.setScene(this.world.player.dockedAt ? "station" : "flight");
   }
 
-  newGame(): void {
-    this.world = generateWorld((Math.random() * 0xffffffff) >>> 0);
+  newGame(realGalaxy: boolean): void {
+    this.world = generateWorld((Math.random() * 0xffffffff) >>> 0, { realGalaxy });
+    this.spriteCache.clear();
   }
 
   setScene(name: string): void {
     this.scene = this.scenes[name];
+    this.sceneName = name;
     this.scene.enter?.(this);
+  }
+
+  touchMode(): "flight" | "walk" | "menu" {
+    return this.scene?.touchMode ?? "menu";
   }
 
   toast(msg: string): void {
@@ -82,17 +92,26 @@ export class Game {
     this.toastTimer = 2.5;
   }
 
-  resize(): void {
-    const w = window.innerWidth, h = window.innerHeight;
-    this.scale = Math.max(1, Math.floor(Math.min(w / VW, h / VH)));
-    this.canvas.width = VW * this.scale;
-    this.canvas.height = VH * this.scale;
-    this.canvas.style.width = `${VW * this.scale}px`;
-    this.canvas.style.height = `${VH * this.scale}px`;
-    this.ctx.imageSmoothingEnabled = false;
+  // One-time contextual guidance; remembered in the save
+  showHint(key: string, text: string): void {
+    const p = this.world.player;
+    if (p.hints[key]) return;
+    p.hints[key] = true;
+    this.hint = text;
+    this.hintTimer = 7;
   }
 
-  // ---------- Sprite cache (regenerated deterministically on demand) ----------
+  resize(): void {
+    const w = window.innerWidth, h = window.innerHeight;
+    // integer scale on desktop; allow fractional on small screens so phones fill the width
+    const raw = Math.min(w / VW, h / VH);
+    this.scale = raw >= 1 ? Math.floor(raw) : Math.max(0.5, raw);
+    this.canvas.width = Math.round(VW * this.scale);
+    this.canvas.height = Math.round(VH * this.scale);
+    this.canvas.style.width = `${Math.round(VW * this.scale)}px`;
+    this.canvas.style.height = `${Math.round(VH * this.scale)}px`;
+    this.ctx.imageSmoothingEnabled = false;
+  }
 
   sprite(key: string, gen: () => Sprite): Sprite {
     let s = this.spriteCache.get(key);
@@ -104,7 +123,8 @@ export class Game {
   }
 
   playerShip(): Sprite {
-    return this.sprite("player-ship", () => genShip(new RNG(this.world.seed ^ 0x51e9), 24, "#9aa5bd", "#63f2c8"));
+    const h = hull(this.world.player.hullId);
+    return this.sprite(`player-ship-${h.id}`, () => genShip(new RNG(this.world.seed ^ 0x51e9 ^ h.id.length), h.spriteSize, h.color, h.accent));
   }
   pirateShip(): Sprite {
     return this.sprite("pirate-ship", () => genShip(new RNG(this.world.seed ^ 0xdead), 20, "#8c6a5a", "#ff5a5a"));
@@ -117,6 +137,13 @@ export class Game {
   }
   planetSprite(sysId: string, idx: number, radius: number, palette: number): Sprite {
     return this.sprite(`planet-${sysId}-${idx}`, () => genPlanet(new RNG(this.world.seed ^ (idx * 7919) ^ sysId.length * 31), radius, palette));
+  }
+  globeSprite(sysId: string, idx: number, palette: number, rotation: number): Sprite {
+    // 12 rotation frames, cached
+    const frame = Math.floor(((rotation % (Math.PI * 2)) / (Math.PI * 2)) * 12);
+    const sys = this.world.systems[sysId];
+    const pl = sys.planets[idx];
+    return this.sprite(`globe-${sysId}-${idx}-${frame}`, () => genGlobe(new RNG(this.world.seed ^ (idx * 7919) ^ sysId.length * 31), 64, palette, pl.surface, (frame / 12) * Math.PI * 2));
   }
   stationSprite(id: string, military: boolean): Sprite {
     let h = 0;
@@ -131,6 +158,9 @@ export class Game {
   }
   platformSprite(hostile: boolean): Sprite {
     return this.sprite(`platform-${hostile}`, () => genPlatform(new RNG(this.world.seed ^ 0x9d9d), hostile));
+  }
+  wreckSprite(): Sprite {
+    return this.sprite("wreck", () => genWreck(new RNG(this.world.seed ^ 0x7e7e), 30));
   }
   nebulaSprite(sysId: string): Sprite {
     let h = 0;

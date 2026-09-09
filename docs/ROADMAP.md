@@ -26,93 +26,107 @@ couldn't before) and a definition of done.
 - [x] Save/load (localStorage), procedural SFX, radar, mouse menus, nebulae
 - [x] Deployed to https://fsociety.work
 
-## Milestone 2 — Worth a Second Session
+## Milestone 2 — Worth a Second Session ✅ (Sep 2026)
 **Goal:** a new player finds the core loop in 5 minutes, has a reason to come
 back tomorrow, and can play on a phone.
 
-- [ ] Ship hulls: prospector (big mining yield, weak), freighter (cargo, slow),
-      interceptor (fast, thin). Buy/sell at shipyards; hull determines interior deck.
-- [ ] Dynamic prices: station stock drifts toward its economy-type demand each
-      cycle; player trades move the local price; events (from M3 news) spike it.
-- [ ] Traders carry real cargo drawn from their origin station's exports;
-      destroying one drops it. Pirates loot traders, not thin air.
-- [ ] Save schema `version` field + migration functions. Old saves never break.
-- [ ] First-run guidance: contextual hints for first dock, first jump, first
-      repair, first mission. Dismissable, saved.
-- [ ] Touch controls: virtual stick, fire/mine/interact buttons, tap-to-select
-      in menus. Playable on a phone in portrait or landscape.
-- [ ] Balance pass: mission rewards vs. upgrade costs so a session of ~45 min
-      reaches the first hull purchase.
+- [x] Four hulls with real trade-offs (Wren Scout, Magpie Prospector, Bastion
+      Freighter, Kestrel Interceptor); buy/sell with trade-in at any shipyard;
+      hull picks the interior deck and crew berths
+- [x] Dynamic prices: stock drifts toward each station's baseline every cycle,
+      your trades move the local price, market shocks spike it, wars starve it
+- [x] Traders carry real cargo drawn from their origin station's exports and
+      restock the station they arrive at; destroying one drops the hold
+- [x] Save schema `version` + migrations (v0 Milestone-1 saves still load)
+- [x] First-run hints: contextual one-time guidance for flight, docking, first
+      jump, trading, repair, orbit, scanning, crew
+- [x] Touch controls: virtual stick + fire/mine/brake/use/map buttons, tap menus;
+      fractional canvas scaling so phones fill the width
+- [x] Balance: 600 starting credits, starter food/parts; first hull reachable in
+      a session of bounties and trade runs
 
-**Done when:** a first-time player on a phone can dock, trade, take a mission,
-complete it, and buy a hull upgrade without reading the README.
-
-## Milestone 3 — Living Economy & Law
+## Milestone 3 — Living Economy & Law ✅ (Sep 2026)
 **Goal:** the galaxy visibly reacts to what the player does.
 
-- [ ] Per-faction reputation (−100..100). Gates prices, docking rights, mission
-      tiers, and gate-scan severity. Bribes and clean-record fees at non-military
-      stations.
-- [ ] Gate security ladder: routine scan → pursuit + fine → shoot on sight,
-      keyed to reputation and warrant level.
-- [ ] Supply lanes: traders run scheduled routes between stations with cargo;
-      escort missions protect that traffic; piracy targets it.
-- [ ] Salvage fields with wreck interiors (walkable, hazardous); data cores and
-      bio samples as high-value, high-heat cargo.
-- [ ] Star bases: restricted docking by reputation; military mission tier.
-- [ ] News net generated from real sim events (price spikes, piracy, seizures,
-      faction skirmishes) instead of templates.
-- [ ] Station storage: player warehouses for staging trade runs.
+- [x] Per-faction reputation (−100..100, ALLIED → OUTLAW) from missions, kills,
+      crimes; gates prices, docking rights (star bases lock at SUSPECT), mission
+      tiers (CIVILIAN / TRUSTED / MILITARY); bribes and clean-record fees
+- [x] Gate security ladder: routine scan → warrant flagged + pursuit → shoot on
+      sight (platforms and fighters engage) after prolonged pursuit or OUTLAW rep;
+      good standing means lazier contraband scans
+- [x] Supply lanes: traders run station-to-station with cargo; escort missions
+      protect a freighter that pirates actively hunt; corsairs prey on traffic
+- [x] Salvage: derelicts in every system with walkable interiors, spreading
+      fires, breached compartments draining suit O2, crates of parts/data/bio
+- [x] Star bases: docking denied below neutral standing; military bounty tier
+- [x] News net generated from real sim events (shortages, wars, ceasefires,
+      seizures, rescues, murders, discoveries, arc progress)
+- [x] Station warehouses: store and reload goods per station
+- [x] Faction wars: raids flare between factions, pirate pressure and prices
+      shift in the contested system, ceasefires end them
 
-**Done when:** a player can be locked out of a faction's space by their own
-actions and buy their way back in, and the news reports what they did.
-
-## Milestone 4 — Crew & Interiors II
+## Milestone 4 — Crew & Interiors II ✅ (Sep 2026)
 **Goal:** the ship interior is a place people spend time in, not a repair menu.
 
-- [ ] Recruitable crew from bars: engineer (repair speed), gunner (turret),
-      pilot (handling), medic. Wages.
-- [ ] Crew conversations with state (morale, opinion of the player); food and
-      sleep needs with gameplay effects.
-- [ ] Passengers as cargo-with-opinions: VIP transport, refugees, fugitives.
-- [ ] Multi-room hulls: fires spread, hull breaches vent, O2 simulated per room.
-- [ ] Study (skill progression), sleep (time skip), eat (buffs) with effects.
+- [x] Recruitable crew at bars: engineer (repair speed, mid-flight patching),
+      gunner (auto-turret, +damage), pilot (+thrust/turn), medic (hull triage).
+      Signing bonus + wages every docking
+- [x] Crew morale: fed at each docking from your provisions, meals in the
+      galley, conversations; unpaid or unfed crew lose morale, quit at 5, and
+      may not make it to the pod when the ship is destroyed
+- [x] Crew conversations by role and mood at their deck stations
+- [x] Passengers: VIP, refugee, and fugitive transport; they sit in the bunk
+      room and talk; fugitives count as contraband at gate scans
+- [x] Multi-room decks per hull; fires that spread and damage systems,
+      hull breaches that vent a compartment's O2; hold E to extinguish or seal
+- [x] Study terminal (piloting / engineering skills), sleep (60s time skip,
+      economy ticks), eat (hull + crew morale)
 
-**Done when:** losing a crew member in a fight feels like a loss.
-
-## Milestone 5 — Planets
+## Milestone 5 — Planets ✅ (Sep 2026)
 **Goal:** fill the zoom continuum's missing layer.
 
-- [ ] Orbitable planet globe (rendered sphere with procedural surface) with
-      territories, cities, resources, defenses.
-- [ ] Pin/target regions and POIs from orbit; orbital shell layer with
-      satellites and platforms.
-- [ ] Landing at surface outposts: research posts, mining camps, colony hubs
-      with their own walkable interiors and services.
-- [ ] Planet scanning/exploration: survey missions, discoverable sites.
+- [x] Enter orbit from flight (E near a planet): rendered spinning globe with
+      lit terminator, territories tinted by controlling faction, orbital shell
+      of satellites
+- [x] Territories with resources; POIs (cities, mines, research posts,
+      batteries, ruins, outposts) pinned on the globe and in a target list
+- [x] Survey scan from orbit (hold V) pays per site; landing denied in regions
+      hostile to you or at military batteries
+- [x] Surface outposts: walkable landing site with trade desk (region resource
+      cheap, supplies dear), survey office, bunkhouse, locals to talk to
 
-**Done when:** a player can zoom from galaxy → system → orbit → surface
-outpost → its bar, and back, without a loading screen.
-
-## Milestone 6 — The Real Galaxy
+## Milestone 6 — The Real Galaxy ✅ (Sep 2026)
 **Goal:** the map is the actual neighbourhood of the Sun.
 
-- [ ] Galaxy map from Gaia/NASA catalog data for the local ~100 ly; real star
-      names, types, and positions drive sun color/size.
-- [ ] Nav-path planning with fuel-range constraints and refuel stops.
-- [ ] Deep scanning; discoverable anomalies and derelicts.
-- [ ] Endgame faction narrative arcs.
+- [x] "Sol Neighbourhood" new game: 50 real stars within 20 ly (Alpha Centauri,
+      Barnard's, Sirius, Tau Ceti, Epsilon Eridani…) from catalog RA/Dec/distance,
+      spectral-class sun colours, real light-year link distances
+- [x] Fuel-range navigation: jump cost scales with light-years; Dijkstra course
+      plotting minimises fuel; galaxy map shows fuel per leg, route total vs
+      aboard, and marks refuel stations along the route
+- [x] Deep scanning (hold V in flight) reveals anomalies: data caches, derelict
+      salvage, survey bounties; research missions send you to find them
+- [x] Faction narrative arcs: The Quiet Gate (Compact), Belt Fever (Guild), The
+      Veil Accord (Corsairs) — three-stage chains gated by reputation, reported
+      on the news net, big reputation payoff on completion
 
-## Engineering track (runs alongside M2)
-- [ ] Split `src/scenes/flight.ts` (1,142 lines) into `entities/`, `ai/`,
-      `render/` modules before M2 features land on it.
-- [ ] Tests: world-gen determinism per seed, `navRoute`, cargo/economy math,
-      save migrations.
-- [ ] GitHub Actions: typecheck + build on push; deploy to Cloudflare on main.
-- [ ] bigbox: the `chris` account is currently unavailable (Sept 2026). Either
-      restore it and enable the tunnel, or retire that path from DEPLOY.md.
-- [ ] Bitmap font: redraw M/W glyphs; consider a 5-wide font for readability.
-- [ ] Performance: spatial hash for bullets/NPCs once entity counts grow.
-- [ ] Cloud saves (Workers KV) once the save schema is versioned.
-- [ ] Gamepad support.
-- [ ] Ambient soundtrack (procedural pads per faction space).
+## Engineering track ✅
+- [x] `flight.ts` split into `scenes/flight/{index,ai,render,types}.ts`;
+      shared walking code in `scenes/walkbase.ts`
+- [x] Tests (vitest): world-gen determinism, connectivity, real-galaxy layout,
+      routing, fuel costs, economy, cargo, hull swap, law, missions, save migrations
+- [x] GitHub Actions: typecheck + test + build on push/PR; deploys to Cloudflare
+      on main when `CLOUDFLARE_API_TOKEN` is set
+- [x] Save schema versioning with migrations
+- [x] Bitmap font M/W glyphs redrawn
+
+## Next
+- [ ] bigbox: the `chris` account was unavailable in Sept 2026; restore it and
+      enable the tunnel, or retire that path from DEPLOY.md
+- [ ] Gamepad support
+- [ ] Ambient soundtrack (procedural pads per faction space)
+- [ ] Cloud saves (Workers KV) now that the schema is versioned
+- [ ] Spatial hash for bullets/NPCs if entity counts grow
+- [ ] More hulls (carrier with hangar; capital interiors)
+- [ ] Ground exploration beyond outposts (city interiors, ruins as dungeons)
+- [ ] Multiplayer-lite: shared universe events

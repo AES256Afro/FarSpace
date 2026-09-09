@@ -1,0 +1,209 @@
+import { describe, it, expect } from "vitest";
+import {
+  generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
+  addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
+  missionDeliverable, genMissionsFor,
+} from "../src/world";
+import { migrateSave, SAVE_VERSION } from "../src/save";
+import { RNG } from "../src/core/rng";
+import { STARS, starDistance } from "../src/data/stars";
+
+describe("world generation", () => {
+  it("is deterministic per seed", () => {
+    const a = generateWorld(1234);
+    const b = generateWorld(1234);
+    expect(JSON.stringify(a.systems)).toBe(JSON.stringify(b.systems));
+    expect(a.player.systemId).toBe(b.player.systemId);
+  });
+
+  it("differs across seeds", () => {
+    const a = generateWorld(1);
+    const b = generateWorld(2);
+    expect(JSON.stringify(a.systems)).not.toBe(JSON.stringify(b.systems));
+  });
+
+  it("every system is reachable and every link has a distance", () => {
+    for (const w of [generateWorld(7), generateWorld(7, { realGalaxy: true })]) {
+      const ids = Object.keys(w.systems);
+      for (const id of ids) {
+        expect(navRoute(w, w.player.systemId, id)).not.toBeNull();
+        for (const l of w.systems[id].links) {
+          expect(w.systems[id].ly[l]).toBeGreaterThan(0);
+          expect(w.systems[l].links).toContain(id);
+        }
+      }
+    }
+  });
+
+  it("real galaxy starts at Sol with Compact control", () => {
+    const w = generateWorld(99, { realGalaxy: true });
+    const sol = Object.values(w.systems).find((s) => s.name === "Sol")!;
+    expect(sol).toBeDefined();
+    expect(sol.factionId).toBe("tsc");
+    expect(w.player.systemId).toBe(sol.id);
+  });
+
+  it("starts the player docked-adjacent in safe space with a scout hull", () => {
+    const w = generateWorld(42);
+    const sys = w.systems[w.player.systemId];
+    expect(sys.factionId).not.toBe("vex");
+    expect(sys.stations.length).toBeGreaterThan(0);
+    expect(w.player.hullId).toBe("scout");
+    expect(w.player.cargoMax).toBe(40);
+  });
+
+  it("generates planets with surfaces, wrecks and anomalies", () => {
+    const w = generateWorld(3);
+    const sys = Object.values(w.systems)[0];
+    expect(sys.planets[0].surface?.regions.length).toBeGreaterThan(0);
+    expect(sys.planets[0].surface?.pois.length).toBeGreaterThan(0);
+    expect(sys.anomalies.length).toBeGreaterThan(0);
+  });
+});
+
+describe("navigation", () => {
+  it("routes minimise fuel and report it", () => {
+    const w = generateWorld(5);
+    const ids = Object.keys(w.systems);
+    const from = ids[0], to = ids[ids.length - 1];
+    const route = navRoute(w, from, to)!;
+    expect(route[0]).toBe(from);
+    expect(route[route.length - 1]).toBe(to);
+    expect(routeFuel(w, route)).toBeGreaterThan(0);
+    for (let i = 0; i < route.length - 1; i++) expect(w.systems[route[i]].links).toContain(route[i + 1]);
+  });
+
+  it("fuel cost grows with distance and is clamped", () => {
+    const w = generateWorld(5);
+    for (const sys of Object.values(w.systems)) for (const l of sys.links) {
+      const c = jumpFuelCost(w, sys.id, l);
+      expect(c).toBeGreaterThanOrEqual(6);
+      expect(c).toBeLessThanOrEqual(40);
+    }
+    expect(jumpFuelCost(w, "nope", "nada")).toBe(10);
+  });
+
+  it("star catalog distances are symmetric and Alpha Cen is nearest to Sol", () => {
+    const sol = STARS[0], ac = STARS[1];
+    expect(starDistance(sol, ac)).toBeCloseTo(4.37, 1);
+    expect(starDistance(ac, sol)).toBeCloseTo(starDistance(sol, ac), 6);
+    const nearest = STARS.slice(1).reduce((a, b) => (starDistance(sol, a) < starDistance(sol, b) ? a : b));
+    expect(nearest.name).toBe("Alpha Centauri");
+  });
+});
+
+describe("economy", () => {
+  it("prices rise as stock falls", () => {
+    const w = generateWorld(8);
+    const st = Object.values(w.systems).flatMap((s) => s.stations)[0];
+    const id = Object.keys(st.prices)[0];
+    st.stock[id] = 100;
+    const cheap = stationPrice(st, id);
+    st.stock[id] = 0;
+    const dear = stationPrice(st, id);
+    expect(dear).toBeGreaterThan(cheap);
+  });
+
+  it("ticks drift stock toward baseline and refresh prices", () => {
+    const w = generateWorld(8);
+    const st = Object.values(w.systems).flatMap((s) => s.stations)[0];
+    const id = Object.keys(st.prices)[0];
+    st.stock[id] = 0;
+    refreshPrices(st);
+    const before = st.prices[id];
+    tickWorld(w, 31);
+    expect(st.stock[id]).toBeGreaterThan(0);
+    expect(st.prices[id]).toBeLessThan(before);
+  });
+
+  it("cargo helpers respect capacity", () => {
+    const w = generateWorld(8);
+    const p = w.player;
+    p.cargo = {};
+    expect(addCargo(p, "ore", 40)).toBe(true);
+    expect(addCargo(p, "ore", 1)).toBe(false);
+    expect(cargoUsed(p)).toBe(40);
+    expect(removeCargo(p, "ore", 41)).toBe(false);
+    expect(removeCargo(p, "ore", 40)).toBe(true);
+    expect(p.cargo.ore).toBeUndefined();
+  });
+
+  it("hull swap applies stats", () => {
+    const w = generateWorld(8);
+    applyHull(w.player, "freighter");
+    expect(w.player.cargoMax).toBe(140);
+    expect(w.player.hullMax).toBe(180);
+    expect(w.player.hull).toBe(180);
+  });
+});
+
+describe("law & reputation", () => {
+  it("escalates with wanted level and reputation", () => {
+    const w = generateWorld(9);
+    const sid = w.player.systemId;
+    expect(lawLevelFor(w, sid)).toBe(0);
+    w.player.wanted = 0.6;
+    expect(lawLevelFor(w, sid)).toBe(1);
+    w.player.wanted = 0;
+    adjustRep(w, w.systems[sid].factionId, -80);
+    expect(lawLevelFor(w, sid)).toBe(2);
+  });
+
+  it("clamps reputation", () => {
+    const w = generateWorld(9);
+    adjustRep(w, "tsc", 500);
+    expect(w.player.rep.tsc).toBe(100);
+    adjustRep(w, "tsc", -900);
+    expect(w.player.rep.tsc).toBe(-100);
+  });
+});
+
+describe("missions", () => {
+  it("generates a board and recognises deliverable missions", () => {
+    const w = generateWorld(11);
+    const sys = w.systems[w.player.systemId];
+    const st = sys.stations[0];
+    const board = genMissionsFor(w, st, new RNG(1));
+    expect(board.length).toBeGreaterThan(0);
+    const mining = board.find((m) => m.kind === "mining");
+    if (mining) {
+      mining.accepted = true;
+      w.player.cargo.ore = mining.qty!;
+      expect(missionDeliverable(w, mining, st)).toBe(true);
+      w.player.cargo.ore = 0;
+      expect(missionDeliverable(w, mining, st)).toBe(false);
+    }
+  });
+
+  it("offers the faction arc at neutral rep", () => {
+    const w = generateWorld(11);
+    const sys = w.systems[w.player.systemId];
+    const board = genMissionsFor(w, sys.stations[0], new RNG(2));
+    expect(board.some((m) => m.kind === "arc")).toBe(true);
+  });
+});
+
+describe("save migrations", () => {
+  it("upgrades a v0 (milestone 1) save to the current version", () => {
+    const old = generateWorld(13) as unknown as Record<string, unknown>;
+    // strip everything added after v0
+    delete old.version; delete old.events; delete old.wars; delete old.econTick;
+    const p = old.player as Record<string, unknown>;
+    delete p.rep; delete p.hullId; delete p.crew; delete p.skills; delete p.storage; delete p.arcs; delete p.hints;
+    for (const sys of Object.values(old.systems as Record<string, Record<string, unknown>>)) { delete sys.wrecks; delete sys.anomalies; delete sys.ly; }
+    const w = migrateSave(JSON.parse(JSON.stringify(old)))!;
+    expect(w).not.toBeNull();
+    expect(w.version).toBe(SAVE_VERSION);
+    expect(w.player.rep).toEqual({});
+    expect(w.player.hullId).toBe("scout");
+    expect(w.player.crew).toEqual([]);
+    expect(Object.values(w.systems)[0].wrecks).toEqual([]);
+    expect(navRoute(w, w.player.systemId, Object.keys(w.systems)[1])).not.toBeNull();
+  });
+
+  it("rejects garbage", () => {
+    expect(migrateSave(null)).toBeNull();
+    expect(migrateSave({})).toBeNull();
+    expect(migrateSave({ player: {}, systems: {}, version: 999 })).not.toBeNull();
+  });
+});

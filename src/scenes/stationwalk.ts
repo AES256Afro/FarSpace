@@ -37,9 +37,9 @@ interface Kiosk {
 const KIOSKS: Kiosk[] = [
   { ch: "M", label: "COMMODITY MARKET", tab: 0 },
   { ch: "Y", label: "SHIPYARD DESK", tab: 1 },
-  { ch: "B", label: "MISSION BOARD", tab: 2 },
-  { ch: "R", label: "THE LOUNGE BAR", tab: 3 },
-  { ch: "N", label: "GALNET TERMINAL", tab: 4 },
+  { ch: "B", label: "MISSION BOARD", tab: 3 },
+  { ch: "R", label: "THE LOUNGE BAR", tab: 4 },
+  { ch: "N", label: "GALNET TERMINAL", tab: 6 },
   { ch: "A", label: "AIRLOCK - YOUR SHIP", tab: null },
 ];
 
@@ -52,6 +52,7 @@ interface WalkerNpc {
 }
 
 export class StationWalkScene implements Scene {
+  touchMode = "walk" as const;
   px = 37 * T;
   py = 3 * T + 5;
   npcs: WalkerNpc[] = [];

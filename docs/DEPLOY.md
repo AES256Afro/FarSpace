@@ -14,7 +14,20 @@ npm run deploy   # = build + wrangler deploy
 Requires a wrangler login on the Cloudflare account that owns the
 fsociety.work zone (account c3975c2a296ba301ef3ec984049ceb5b).
 
+## CI
+
+`.github/workflows/ci.yml` runs typecheck, tests, and a build on every push and
+pull request. On `main` it also deploys to Cloudflare — but only if the repo
+secret `CLOUDFLARE_API_TOKEN` exists (Workers Scripts:Edit + Workers Routes:Edit
+on account c3975c2a296ba301ef3ec984049ceb5b). Until that secret is added the
+deploy step prints a skip notice and `npm run deploy` from a logged-in machine
+remains the release path.
+
 ## B. bigbox (Docker + Cloudflare Tunnel), Gridless-style
+
+> Status (Sept 2026): SSH to bigbox as `chris` returns "This account is
+> currently not available". The container there is stale. Restore the account
+> and re-run the sync below, or treat Cloudflare Workers as the only origin.
 
 Topology once the tunnel is enabled:
 

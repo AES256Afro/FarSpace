@@ -98,11 +98,13 @@ Services:
   and portrait is unique but consistent per seed.
 - Palette: deep-space blues/blacks, neon signal colors for UI, warm interior tones.
 
-## Controls (current slice)
+## Controls
 
 | Context | Keys |
 |---|---|
-| Flight | W/S thrust, A/D rotate, Space fire, M mining laser, X flip-and-burn assist, E dock/jump/interact, Tab system map, G galaxy map, I board own ship |
-| Interior | WASD walk, E interact |
-| Station | Arrows/mouse navigate tabs, E/Enter select, Esc undock |
-| Global | F5 save, F9 load, Esc back |
+| Flight | W/S thrust, A/D rotate, Space fire, M mining laser, X flip-and-burn assist, V (hold) deep scan, E dock/jump/orbit/board, Tab system map, G galaxy map, I board own ship |
+| Interiors (ship, station, wreck, outpost) | WASD walk, E interact, hold E to repair / seal / extinguish |
+| Orbit | Arrows or click to target a POI, V (hold) survey, E land, Esc leave |
+| Station | Arrows/mouse navigate tabs, Enter select, B/S buy/sell, P walk the deck, Esc undock |
+| Galaxy map | Click for intel, click again or N to plot a course |
+| Global | F5 save, F9 load, Esc back; touch: left-half stick + on-screen buttons |

@@ -21,10 +21,22 @@ See [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) for the full design and
 
 | Context | Keys |
 |---|---|
-| Flight | **W/S** thrust · **A/D** rotate · **Space** fire · **M** mining laser · **X** brake assist · **E** dock / jump · **Tab** system map · **G** galaxy map · **I** board ship |
-| Ship interior | **WASD** walk · **E** interact / repair |
-| Station | **↑/↓** navigate · **Enter** select · **Esc** undock |
-| Global | **F5** save · **F9** load |
+| Flight | **W/S** thrust · **A/D** rotate · **Space** fire · **M** mining laser · **X** brake assist · **V** (hold) deep scan · **E** dock / jump / orbit / board wreck · **Tab** system map · **G** galaxy map · **I** board ship |
+| Ship / station / wreck / outpost | **WASD** walk · **E** interact · **E** (hold) repair, seal, extinguish |
+| Orbit | **↑/↓** or click to target a site · **V** (hold) survey scan · **E** land · **Esc** leave orbit |
+| Station menus | **↑/↓ / ←/→** or click · **Enter** select · **B/S** buy/sell · **P** walk the deck · **Esc** undock |
+| Galaxy map | click a system for intel · click again (or **N**) to plot a course |
+| Global | **F5** save · **F9** load · touch: left stick + on-screen buttons |
+
+## What's in the game
+
+Four hulls, a dynamic economy with shocks and faction wars, reputation with five
+factions and a law ladder from routine scans to shoot-on-sight, escort and
+passenger and research missions, three faction story arcs, recruitable crew who
+talk and quit, ship interiors with fires and breaches, derelicts to board,
+planets to orbit and survey with landable outposts, and a "Sol Neighbourhood"
+galaxy of 50 real nearby stars with fuel-range course plotting. Full list in
+the [roadmap](docs/ROADMAP.md).
 
 ## Development
 
@@ -41,4 +53,8 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestone 1 (vertical slice) is live. See the [roadmap](docs/ROADMAP.md).
+Milestones 1–6 are live (v0.6). See the [roadmap](docs/ROADMAP.md) for what's next.
+
+```bash
+npm test         # vitest: world-gen, routing, economy, law, missions, save migrations
+```

@@ -369,3 +369,97 @@ export function genPortrait(rng: RNG): Sprite {
   ctx.fillRect(7, 5, 1, 1);
   return c;
 }
+
+// ---------- Wreck ----------
+// A broken hull: dark plating, torn edge, a couple of dead running lights.
+
+export function genWreck(rng: RNG, size: number): Sprite {
+  const [c, ctx] = make(size, size);
+  const half = size / 2;
+  for (let x = 2; x < size - 2; x++) {
+    const t = x / size;
+    const hw = Math.max(1, Math.round(Math.sin(t * Math.PI) * (size / 4)));
+    // torn: randomly missing chunks toward the tail
+    const torn = t < 0.35 && rng.chance(0.45);
+    for (let y = -hw; y <= hw; y++) {
+      if (torn && rng.chance(0.6)) continue;
+      const f = 0.55 - (Math.abs(y) / hw) * 0.2;
+      ctx.fillStyle = shade("#8a93ab", f);
+      ctx.fillRect(x, Math.round(half + y), 1, 1);
+    }
+  }
+  // scorch
+  ctx.fillStyle = "#1a1416";
+  for (let i = 0; i < size / 2; i++) ctx.fillRect(rng.int(2, size - 3), rng.int(Math.round(half) - 3, Math.round(half) + 3), 1, 1);
+  // one dying light
+  ctx.fillStyle = "#ff5a5a";
+  ctx.fillRect(Math.round(size * 0.7), Math.round(half), 1, 1);
+  return c;
+}
+
+// ---------- Planet globe (orbit view) ----------
+// Renders a lit sphere by sampling a procedural equirectangular map, tinted by
+// the surface's region ownership. `rot` spins the globe (radians).
+
+import type { PlanetSurface } from "../world";
+
+export function genGlobe(rng: RNG, radius: number, paletteIdx: number, surface: PlanetSurface | null, rot: number): Sprite {
+  const size = radius * 2 + 4;
+  const [c, ctx] = make(size, size);
+  const pal = PLANET_PALETTES[paletteIdx % PLANET_PALETTES.length];
+  const cx = size / 2, cy = size / 2;
+  const noise = rng.fork(3);
+  const rows: number[] = [];
+  for (let i = 0; i < 64; i++) rows.push(noise.next());
+  const regions = surface?.regions ?? [];
+  for (let py = 0; py < size; py++) {
+    for (let px = 0; px < size; px++) {
+      const dx = (px - cx + 0.5) / radius, dy = (py - cy + 0.5) / radius;
+      const d2 = dx * dx + dy * dy;
+      if (d2 > 1) continue;
+      const dz = Math.sqrt(1 - d2);
+      // sphere point → lat/lon
+      const lat = Math.asin(-dy);
+      let lon = Math.atan2(dx, dz) + rot;
+      lon = ((lon + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
+      const latD = (lat * 180) / Math.PI, lonD = (lon * 180) / Math.PI;
+      // terrain from banded noise on lat/lon
+      const v = 0.5 + Math.sin(lonD * 0.12 + rows[Math.abs(Math.round(latD / 6)) % 64] * 9) * 0.25 + Math.cos(latD * 0.15 + rows[Math.abs(Math.round(lonD / 8)) % 64] * 7) * 0.2;
+      let idx = clampInt(Math.floor(v * pal.length), 0, pal.length - 1);
+      let color = pal[idx];
+      // region tint: nearest region seed on the sphere (great-circle-ish distance)
+      if (regions.length) {
+        let best = Infinity, bi = 0;
+        for (let i = 0; i < regions.length; i++) {
+          const r = regions[i];
+          let dl = Math.abs(lonD - r.lon); if (dl > 180) dl = 360 - dl;
+          const dd = (latD - r.lat) ** 2 + (dl * Math.cos((latD * Math.PI) / 180)) ** 2;
+          if (dd < best) { best = dd; bi = i; }
+        }
+        const reg = regions[bi];
+        if (reg.factionId && idx >= 2) color = mix(color, reg.color, 0.35);
+      }
+      // lighting from upper-left, terminator on the right
+      const light = 0.45 + 0.7 * Math.max(0, (-dx * 0.6 - dy * 0.4 + dz * 0.7));
+      ctx.fillStyle = shade(color, light);
+      ctx.fillRect(px, py, 1, 1);
+    }
+  }
+  ctx.strokeStyle = shade(pal[3], 1.2);
+  ctx.globalAlpha = 0.3;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius + 0.5, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  return c;
+}
+
+function clampInt(v: number, lo: number, hi: number): number {
+  return v < lo ? lo : v > hi ? hi : v;
+}
+
+function mix(a: string, b: string, t: number): string {
+  const pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16);
+  const ch = (sh: number) => Math.round(((pa >> sh) & 255) * (1 - t) + ((pb >> sh) & 255) * t);
+  return `rgb(${ch(16)},${ch(8)},${ch(0)})`;
+}

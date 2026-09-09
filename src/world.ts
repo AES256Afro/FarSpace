@@ -1,18 +1,55 @@
-// World model + procedural galaxy generation. Pure data — scenes render it.
+// World model + procedural galaxy generation + world simulation rules.
+// Pure data and pure functions — scenes render it. No DOM here (tests run in node).
 
 import { RNG, hashStr } from "./core/rng";
+import { clamp } from "./core/mathx";
 import {
   FACTIONS, ECONOMY, COMMODITIES, StationType,
   genSystemName, genStationName, genPersonName, planetName,
 } from "./data/data";
+import { STARS, starXYZ, starDistance } from "./data/stars";
+import { hull } from "./data/hulls";
+import type { CrewMember, CrewRole } from "./data/crew";
+import { ROLE_INFO } from "./data/crew";
+
+// ---------- Types ----------
+
+export interface Region {
+  name: string;
+  factionId: string | null;   // null = uncontrolled
+  lat: number; lon: number;   // seed point (degrees)
+  resource: string;           // commodity id this region yields
+  color: string;
+}
+
+export type PoiKind = "city" | "mine" | "research" | "defense" | "ruin" | "outpost";
+
+export interface Poi {
+  id: string;
+  name: string;
+  kind: PoiKind;
+  lat: number; lon: number;
+  regionIdx: number;
+  landable: boolean;
+  surveyed: boolean;
+}
+
+export interface PlanetSurface {
+  regions: Region[];
+  pois: Poi[];
+  satellites: number;
+  scanned: boolean;
+  surveyFiled?: boolean;
+}
 
 export interface Planet {
   name: string;
-  orbit: number;      // orbital radius in world units
-  angle: number;      // current angle
-  speed: number;      // radians/sec
-  radius: number;     // sprite radius px
+  orbit: number;
+  angle: number;
+  speed: number;
+  radius: number;
   palette: number;
+  surface: PlanetSurface | null;
 }
 
 export interface StationDef {
@@ -24,10 +61,10 @@ export interface StationDef {
   angle: number;
   speed: number;
   factionId: string;
-  prices: Record<string, number>;
+  prices: Record<string, number>;   // recomputed from stock each tick
   stock: Record<string, number>;
   fuelPrice: number;
-  repairPrice: number; // per hull point
+  repairPrice: number;
   barPatrons: string[];
 }
 
@@ -35,7 +72,7 @@ export interface AsteroidDef {
   x: number; y: number;
   radius: number;
   rich: boolean;
-  ore: number;       // remaining ore units
+  ore: number;
   spriteSeed: number;
   rot: number; rotSpeed: number;
 }
@@ -47,24 +84,51 @@ export interface JumpPointDef {
   guarded: boolean;
 }
 
+export interface WreckDef {
+  id: string;
+  x: number; y: number;
+  looted: boolean;
+  loot: { id: string; qty: number }[];
+  hazard: number; // 0..1 how much fire/breach inside
+  name: string;
+}
+
+export type AnomalyKind = "data" | "derelict" | "survey";
+
+export interface AnomalyDef {
+  id: string;
+  name: string;
+  kind: AnomalyKind;
+  x: number; y: number;
+  discovered: boolean;
+  claimed: boolean;
+  reward: number;
+}
+
 export interface SystemDef {
   id: string;
   name: string;
-  gx: number; gy: number;    // galaxy map position
+  gx: number; gy: number;
   factionId: string;
   sunColor: string;
   sunRadius: number;
+  starClass?: string;
   planets: Planet[];
   stations: StationDef[];
   asteroids: AsteroidDef[];
   jumpPoints: JumpPointDef[];
-  pirateActivity: number;    // 0..1
-  links: string[];           // connected system ids
+  wrecks: WreckDef[];
+  anomalies: AnomalyDef[];
+  pirateActivity: number;
+  links: string[];
+  ly: Record<string, number>; // distance to each linked system, light-years
 }
+
+export type MissionKind = "delivery" | "bounty" | "mining" | "escort" | "passenger" | "research" | "arc";
 
 export interface Mission {
   id: string;
-  kind: "delivery" | "bounty" | "mining";
+  kind: MissionKind;
   title: string;
   desc: string;
   fromStationId: string;
@@ -77,6 +141,14 @@ export interface Mission {
   reward: number;
   accepted: boolean;
   done: boolean;
+  escortDone?: boolean;
+  passengerName?: string;
+  passengerKind?: "vip" | "refugee" | "fugitive";
+  anomalyId?: string;
+  arcFaction?: string;
+  arcStage?: number;
+  repReward?: number;
+  tier?: number; // 0 civilian, 1 trusted, 2 military
 }
 
 export interface NewsItem {
@@ -84,12 +156,25 @@ export interface NewsItem {
   body: string;
 }
 
+export interface WorldEvent {
+  t: number;
+  kind: "murder" | "rescue" | "seizure" | "shock" | "war" | "peace" | "discovery" | "arc" | "raid";
+  systemId: string;
+  text: string;
+}
+
+export interface War {
+  a: string; b: string;
+  systemId: string;
+  until: number;
+}
+
 export type ShipSystemId = "engines" | "life" | "weapons" | "cargo" | "reactor" | "comms";
 
 export interface ShipSystem {
   id: ShipSystemId;
   name: string;
-  health: number; // 0..100
+  health: number;
 }
 
 export interface PlayerState {
@@ -108,50 +193,307 @@ export interface PlayerState {
   missions: Mission[];
   dockedAt: string | null;
   kills: number;
-  wanted: number; // heat with law enforcement 0..1
-  navTarget?: string | null; // plotted course destination (galaxy map)
+  wanted: number;
+  navTarget?: string | null;
+  hullId: string;
+  rep: Record<string, number>;
+  hints: Record<string, boolean>;
+  crew: CrewMember[];
+  skills: { piloting: number; engineering: number };
+  storage: Record<string, Record<string, number>>;
+  discoveries: number;
+  breaches: { tx: number; ty: number }[];
+  fires: { tx: number; ty: number }[];
+  arcs: Record<string, number>; // faction id → completed stage count
 }
 
 export interface World {
+  version: number;
   seed: number;
   time: number;
+  realGalaxy: boolean;
   systems: Record<string, SystemDef>;
   player: PlayerState;
   news: NewsItem[];
+  events: WorldEvent[];
+  wars: War[];
   missionCounter: number;
+  econTick: number;
+  shockTick: number;
+  warTick: number;
 }
 
-export const SYSTEM_SIZE = 6000; // world units, square from -SIZE..SIZE
+export const SYSTEM_SIZE = 6000;
+export const START_CREDITS = 600;
 
-// ---------- Generation ----------
+// ---------- Economy ----------
 
-function genPrices(rng: RNG, type: StationType): { prices: Record<string, number>; stock: Record<string, number> } {
+function baselineStock(type: StationType, id: string): number {
+  const mult = ECONOMY[type][id] ?? 1;
+  return mult < 1 ? 80 : mult > 1.1 ? 10 : 25;
+}
+
+// Price rises as stock falls below the station's natural baseline.
+export function stationPrice(st: StationDef, id: string): number {
+  const c = COMMODITIES.find((x) => x.id === id);
+  if (!c) return 0;
+  const mult = ECONOMY[st.type][id] ?? 1;
+  if (mult === 0) return 0;
+  const base = c.base * mult;
+  const ratio = (st.stock[id] ?? 0) / baselineStock(st.type, id);
+  const f = clamp(1.5 - 0.5 * ratio, 0.6, 1.9);
+  return Math.max(1, Math.round(base * f));
+}
+
+export function refreshPrices(st: StationDef): void {
+  for (const id of Object.keys(st.prices)) st.prices[id] = stationPrice(st, id);
+}
+
+export function buyPrice(st: StationDef, id: string, rep: number): number {
+  return Math.max(1, Math.round(stationPrice(st, id) * (1 - clamp(rep, -100, 100) * 0.002)));
+}
+
+export function sellPrice(st: StationDef, id: string, rep: number): number {
+  return Math.max(1, Math.round(stationPrice(st, id) * 0.92 * (1 + clamp(rep, -100, 100) * 0.001)));
+}
+
+export function stationExports(st: StationDef): string[] {
+  return Object.keys(st.prices).filter((id) => (ECONOMY[st.type][id] ?? 1) < 1);
+}
+
+function genStock(rng: RNG, type: StationType): { prices: Record<string, number>; stock: Record<string, number> } {
   const prices: Record<string, number> = {};
   const stock: Record<string, number> = {};
   for (const c of COMMODITIES) {
     const mult = ECONOMY[type][c.id] ?? 1;
-    if (mult === 0) continue; // not traded here
-    prices[c.id] = Math.max(1, Math.round(c.base * mult * rng.range(0.85, 1.15)));
-    stock[c.id] = mult < 1 ? rng.int(30, 120) : rng.int(0, 25);
+    if (mult === 0) continue;
+    const base = baselineStock(type, c.id);
+    stock[c.id] = Math.max(0, Math.round(base * rng.range(0.6, 1.4)));
+    prices[c.id] = 0;
   }
   return { prices, stock };
 }
 
-function genSystem(rng: RNG, id: string, gx: number, gy: number, factionId: string): SystemDef {
-  const name = genSystemName(rng);
-  const sunColors = ["#ffd75a", "#ffb347", "#ff8a5a", "#8ec9f0", "#f2f4ff", "#ff5a5a"];
+// Called every frame from flight; does coarse-grained work on a timer.
+export function tickWorld(w: World, dt: number): void {
+  w.econTick += dt;
+  if (w.econTick >= 30) {
+    w.econTick = 0;
+    for (const sys of Object.values(w.systems)) {
+      const atWar = w.wars.some((x) => x.systemId === sys.id);
+      for (const st of sys.stations) {
+        for (const id of Object.keys(st.prices)) {
+          const base = baselineStock(st.type, id) * (atWar ? 0.6 : 1);
+          const cur = st.stock[id] ?? 0;
+          st.stock[id] = Math.max(0, Math.round(cur + (base - cur) * 0.08));
+        }
+        refreshPrices(st);
+      }
+    }
+  }
+  w.shockTick += dt;
+  if (w.shockTick >= 120) {
+    w.shockTick = 0;
+    const rng = new RNG((w.seed ^ Math.floor(w.time)) >>> 0);
+    const all = Object.values(w.systems).flatMap((s) => s.stations.map((st) => ({ sys: s, st })));
+    if (all.length && rng.chance(0.7)) {
+      const { sys, st } = rng.pick(all);
+      const ids = Object.keys(st.prices);
+      const id = rng.pick(ids);
+      const c = COMMODITIES.find((x) => x.id === id)!;
+      st.stock[id] = Math.max(0, Math.round((st.stock[id] ?? 0) * 0.15));
+      refreshPrices(st);
+      pushEvent(w, { t: w.time, kind: "shock", systemId: sys.id, text: `${st.name} reports a ${c.name} shortage — prices spiking in ${sys.name}` });
+    }
+  }
+  w.warTick += dt;
+  if (w.warTick >= 200) {
+    w.warTick = 0;
+    const rng = new RNG((w.seed ^ Math.floor(w.time * 7)) >>> 0);
+    w.wars = w.wars.filter((war) => {
+      if (w.time < war.until) return true;
+      const sys = w.systems[war.systemId];
+      sys.pirateActivity = Math.max(0.05, sys.pirateActivity - 0.3);
+      pushEvent(w, { t: w.time, kind: "peace", systemId: sys.id, text: `Ceasefire in ${sys.name}: ${facName(war.a)} and ${facName(war.b)} stand down` });
+      return false;
+    });
+    if (w.wars.length < 2 && rng.chance(0.5)) {
+      const candidates = Object.values(w.systems).filter((s) => s.factionId !== "vex" && !w.wars.some((x) => x.systemId === s.id));
+      if (candidates.length) {
+        const sys = rng.pick(candidates);
+        const others = FACTIONS.filter((f) => f.id !== sys.factionId && f.id !== "vex");
+        const enemy = rng.pick(others);
+        w.wars.push({ a: sys.factionId, b: enemy.id, systemId: sys.id, until: w.time + 240 });
+        sys.pirateActivity = Math.min(1, sys.pirateActivity + 0.3);
+        pushEvent(w, { t: w.time, kind: "war", systemId: sys.id, text: `${facName(enemy.id)} forces raid ${sys.name} — ${facName(sys.factionId)} declares a defense emergency` });
+      }
+    }
+  }
+}
+
+function facName(id: string): string {
+  return FACTIONS.find((f) => f.id === id)?.name ?? id;
+}
+
+export function pushEvent(w: World, e: WorldEvent): void {
+  w.events.push(e);
+  if (w.events.length > 40) w.events.splice(0, w.events.length - 40);
+  w.news = newsFromEvents(w);
+}
+
+// ---------- Reputation & law ----------
+
+export function adjustRep(w: World, factionId: string, delta: number): void {
+  const p = w.player;
+  p.rep[factionId] = clamp((p.rep[factionId] ?? 0) + delta, -100, 100);
+}
+
+export function repLabel(rep: number): string {
+  if (rep >= 75) return "ALLIED";
+  if (rep >= 40) return "TRUSTED";
+  if (rep >= 10) return "FRIENDLY";
+  if (rep > -10) return "NEUTRAL";
+  if (rep > -40) return "SUSPECT";
+  if (rep > -75) return "HOSTILE";
+  return "OUTLAW";
+}
+
+// 0 clear, 1 wanted (patrols pursue), 2 shoot on sight
+export function lawLevelFor(w: World, systemId: string): number {
+  const p = w.player;
+  const fac = w.systems[systemId].factionId;
+  if (fac === "vex") return 0;
+  const rep = p.rep[fac] ?? 0;
+  if (rep <= -75 || p.wanted >= 0.95) return 2;
+  if (p.wanted > 0.5 || rep <= -40) return 1;
+  return 0;
+}
+
+export function missionTier(rep: number): number {
+  return rep >= 60 ? 2 : rep >= 25 ? 1 : 0;
+}
+
+// ---------- Crew ----------
+
+export function crewBonus(p: PlayerState, role: CrewRole): number {
+  let total = 0;
+  for (const c of p.crew ?? []) {
+    if (c.role !== role) continue;
+    const eff = c.morale < 30 ? 0.5 : 1;
+    total += c.skill * eff;
+  }
+  return total;
+}
+
+export function crewWages(p: PlayerState): number {
+  return (p.crew ?? []).reduce((a, c) => a + c.wage, 0);
+}
+
+export function genCrewCandidate(rng: RNG): CrewMember {
+  const roles: CrewRole[] = ["engineer", "gunner", "pilot", "medic"];
+  const role = rng.pick(roles);
+  const skill = rng.chance(0.15) ? 3 : rng.chance(0.45) ? 2 : 1;
+  return {
+    name: genPersonName(rng),
+    role, skill,
+    morale: rng.int(55, 85),
+    wage: ROLE_INFO[role].baseWage * skill,
+  };
+}
+
+// ---------- Fuel-range navigation ----------
+
+export function jumpFuelCost(w: World, fromId: string, toId: string): number {
+  const ly = w.systems[fromId]?.ly?.[toId];
+  if (ly === undefined) return 10;
+  return clamp(Math.round(4 + ly * 1.4), 6, 40);
+}
+
+// Dijkstra on fuel cost; returns path + total fuel. Falls back to hop BFS.
+export function navRoute(w: World, fromId: string, toId: string): string[] | null {
+  if (fromId === toId) return [fromId];
+  const cost = new Map<string, number>([[fromId, 0]]);
+  const prev = new Map<string, string>();
+  const open = new Set<string>([fromId]);
+  const done = new Set<string>();
+  while (open.size) {
+    let cur = "";
+    let best = Infinity;
+    for (const id of open) { const c = cost.get(id)!; if (c < best) { best = c; cur = id; } }
+    open.delete(cur);
+    done.add(cur);
+    if (cur === toId) break;
+    for (const l of w.systems[cur].links) {
+      if (done.has(l)) continue;
+      const nc = best + jumpFuelCost(w, cur, l);
+      if (nc < (cost.get(l) ?? Infinity)) { cost.set(l, nc); prev.set(l, cur); open.add(l); }
+    }
+  }
+  if (!cost.has(toId)) return null;
+  const path = [toId];
+  let p = toId;
+  while (prev.has(p)) { p = prev.get(p)!; path.unshift(p); }
+  return path;
+}
+
+export function routeFuel(w: World, path: string[]): number {
+  let f = 0;
+  for (let i = 0; i < path.length - 1; i++) f += jumpFuelCost(w, path[i], path[i + 1]);
+  return f;
+}
+
+// ---------- Planet surfaces ----------
+
+const REGION_NAMES = ["Highlands", "Basin", "Coast", "Ridge", "Plateau", "Marches", "Expanse", "Reach", "Shelf", "Tundra"];
+const CITY_NAMES = ["New Halden", "Port Ismay", "Vaska", "Corran", "Delphi Landing", "Tessaly", "Marrow", "Oskar's Hope", "Ilium", "Redoubt"];
+
+function genSurface(rng: RNG, sysFaction: string, planetIdx: number): PlanetSurface {
+  const nRegions = rng.int(4, 7);
+  const regions: Region[] = [];
+  const palette = ["#3a6ea5", "#a5683a", "#3aa55e", "#7a5aa5", "#a53a3a", "#9aa5bd", "#c7a54a", "#4a7c8c"];
+  for (let i = 0; i < nRegions; i++) {
+    const roll = rng.next();
+    const factionId = sysFaction === "vex" ? (roll < 0.5 ? "vex" : null) : roll < 0.65 ? sysFaction : roll < 0.8 ? rng.pick(FACTIONS.filter((f) => f.id !== "vex")).id : null;
+    regions.push({
+      name: `${rng.pick(REGION_NAMES)} ${["I", "II", "III", "IV", "V", "VI", "VII"][i]}`,
+      factionId,
+      lat: rng.range(-70, 70), lon: rng.range(-180, 180),
+      resource: rng.pick(["ore", "water", "metals", "food", "bio", "data"]),
+      color: rng.pick(palette),
+    });
+  }
+  const pois: Poi[] = [];
+  const nPois = rng.int(3, 6);
+  for (let i = 0; i < nPois; i++) {
+    const regionIdx = rng.int(0, nRegions - 1);
+    const r = regions[regionIdx];
+    const kind: PoiKind = r.factionId
+      ? rng.pick(["city", "mine", "research", "defense", "outpost"] as PoiKind[])
+      : rng.pick(["ruin", "mine", "outpost", "research"] as PoiKind[]);
+    pois.push({
+      id: `poi${planetIdx}-${i}`,
+      name: kind === "city" ? rng.pick(CITY_NAMES) : `${kind === "ruin" ? "Ruins of" : kind === "mine" ? "Mine" : kind === "research" ? "Research Post" : kind === "defense" ? "Battery" : "Outpost"} ${rng.pick(REGION_NAMES)}`,
+      kind,
+      lat: clamp(r.lat + rng.range(-20, 20), -80, 80),
+      lon: r.lon + rng.range(-30, 30),
+      regionIdx,
+      landable: kind === "outpost" || kind === "research" || kind === "city" || kind === "mine",
+      surveyed: false,
+    });
+  }
+  return { regions, pois, satellites: rng.int(2, 6), scanned: false };
+}
+
+// ---------- System generation ----------
+
+function genSystem(rng: RNG, id: string, gx: number, gy: number, factionId: string, name: string, sunColor: string, starClass?: string): SystemDef {
   const sys: SystemDef = {
     id, name, gx, gy, factionId,
-    sunColor: rng.pick(sunColors),
-    sunRadius: rng.int(26, 44),
-    planets: [],
-    stations: [],
-    asteroids: [],
-    jumpPoints: [],
+    sunColor, sunRadius: rng.int(26, 44), starClass,
+    planets: [], stations: [], asteroids: [], jumpPoints: [], wrecks: [], anomalies: [],
     pirateActivity: factionId === "vex" ? rng.range(0.6, 1) : rng.range(0.05, 0.45),
-    links: [],
+    links: [], ly: {},
   };
-  // planets
   const nPlanets = rng.int(2, 5);
   let orbit = 700;
   for (let i = 0; i < nPlanets; i++) {
@@ -163,18 +505,18 @@ function genSystem(rng: RNG, id: string, gx: number, gy: number, factionId: stri
       speed: rng.range(0.002, 0.01) * (rng.chance(0.5) ? 1 : -1),
       radius: rng.int(10, 26),
       palette: rng.int(0, 7),
+      surface: genSurface(rng.fork(i + 11), factionId, i),
     });
   }
-  // stations
   const nStations = factionId === "vex" ? 1 : rng.int(1, 3);
   const types: StationType[] = ["mining", "agri", "refinery", "research", "trade"];
   for (let i = 0; i < nStations; i++) {
     const military = factionId !== "vex" && rng.chance(FACTIONS.find((f) => f.id === factionId)!.military * 0.5);
     const type: StationType = military ? "military" : rng.pick(types);
-    const { prices, stock } = genPrices(rng, type);
+    const { prices, stock } = genStock(rng, type);
     const patrons: string[] = [];
     for (let p = 0; p < rng.int(2, 4); p++) patrons.push(genPersonName(rng));
-    sys.stations.push({
+    const st: StationDef = {
       id: `${id}-st${i}`,
       name: genStationName(rng, military),
       type, military,
@@ -186,9 +528,10 @@ function genSystem(rng: RNG, id: string, gx: number, gy: number, factionId: stri
       fuelPrice: rng.int(2, 4),
       repairPrice: rng.int(3, 6),
       barPatrons: patrons,
-    });
+    };
+    refreshPrices(st);
+    sys.stations.push(st);
   }
-  // asteroid belt(s)
   const nBelts = rng.int(1, 2);
   for (let b = 0; b < nBelts; b++) {
     const beltR = rng.range(1200, SYSTEM_SIZE * 0.75);
@@ -197,208 +540,437 @@ function genSystem(rng: RNG, id: string, gx: number, gy: number, factionId: stri
       const a = rng.range(0, Math.PI * 2);
       const r = beltR + rng.range(-260, 260);
       sys.asteroids.push({
-        x: Math.cos(a) * r,
-        y: Math.sin(a) * r,
-        radius: rng.int(4, 12),
-        rich: rng.chance(0.3),
-        ore: rng.int(3, 10),
-        spriteSeed: rng.int(0, 1e9),
-        rot: rng.range(0, Math.PI * 2),
-        rotSpeed: rng.range(-0.3, 0.3),
+        x: Math.cos(a) * r, y: Math.sin(a) * r,
+        radius: rng.int(4, 12), rich: rng.chance(0.3), ore: rng.int(3, 10),
+        spriteSeed: rng.int(0, 1e9), rot: rng.range(0, Math.PI * 2), rotSpeed: rng.range(-0.3, 0.3),
       });
     }
+  }
+  const nWrecks = rng.int(0, 2) + (factionId === "vex" ? 1 : 0);
+  for (let i = 0; i < nWrecks; i++) {
+    const a = rng.range(0, Math.PI * 2);
+    const r = rng.range(1500, SYSTEM_SIZE * 0.8);
+    const loot: { id: string; qty: number }[] = [
+      { id: rng.pick(["parts", "metals", "fuel", "med"]), qty: rng.int(2, 5) },
+    ];
+    if (rng.chance(0.5)) loot.push({ id: rng.pick(["data", "bio", "contra", "lux"]), qty: rng.int(1, 3) });
+    sys.wrecks.push({
+      id: `${id}-wk${i}`, x: Math.cos(a) * r, y: Math.sin(a) * r,
+      looted: false, loot, hazard: rng.range(0.2, 0.9),
+      name: `${rng.pick(["ISV", "MV", "CSV", "FDM"])} ${rng.pick(["Halcyon", "Perdita", "Sable", "Oren", "Kestrel", "Juno"])}`,
+    });
+  }
+  const nAnom = rng.int(1, 3);
+  for (let i = 0; i < nAnom; i++) {
+    const a = rng.range(0, Math.PI * 2);
+    const r = rng.range(1000, SYSTEM_SIZE * 0.9);
+    const kind: AnomalyKind = rng.pick(["data", "derelict", "survey"]);
+    sys.anomalies.push({
+      id: `${id}-an${i}`,
+      name: `${rng.pick(["Signal", "Echo", "Contact", "Return"])} ${rng.pick(["Alpha", "Kilo", "Sigma", "Zeta", "Nine", "Tango"])}`,
+      kind, x: Math.cos(a) * r, y: Math.sin(a) * r,
+      discovered: false, claimed: false,
+      reward: rng.int(150, 450),
+    });
   }
   return sys;
 }
 
-export function generateWorld(seed: number): World {
-  const rng = new RNG(seed);
-  const systems: Record<string, SystemDef> = {};
-  // Lay out 10 systems on a rough grid with jitter
-  const N = 10;
-  const positions: { x: number; y: number }[] = [];
-  for (let i = 0; i < N; i++) {
-    let x = 0, y = 0, ok = false;
-    for (let tries = 0; tries < 50 && !ok; tries++) {
-      x = rng.range(30, 290);
-      y = rng.range(30, 190);
-      ok = positions.every((p) => (p.x - x) ** 2 + (p.y - y) ** 2 > 55 * 55);
-    }
-    positions.push({ x, y });
-  }
-  // faction territories: nearest-of-4 seeds; last faction (vex) gets outliers
-  const factionSeeds = FACTIONS.slice(0, 4).map(() => ({ x: rng.range(40, 280), y: rng.range(40, 180) }));
-  const ids: string[] = [];
-  for (let i = 0; i < N; i++) {
-    const id = `sys${i}`;
-    ids.push(id);
+// ---------- Galaxy generation ----------
+
+export interface GenOptions {
+  realGalaxy?: boolean;
+}
+
+function assignFactions(rng: RNG, positions: { x: number; y: number }[]): string[] {
+  const seeds = FACTIONS.slice(0, 4).map(() => ({ x: rng.range(40, 280), y: rng.range(40, 180) }));
+  return positions.map((pos) => {
     let fi = 0, best = Infinity;
-    factionSeeds.forEach((s, j) => {
-      const d = (s.x - positions[i].x) ** 2 + (s.y - positions[i].y) ** 2;
+    seeds.forEach((s, j) => {
+      const d = (s.x - pos.x) ** 2 + (s.y - pos.y) ** 2;
       if (d < best) { best = d; fi = j; }
     });
-    const factionId = best > 90 * 90 && rng.chance(0.6) ? "vex" : FACTIONS[fi].id;
-    systems[id] = genSystem(rng.fork(i + 1), id, positions[i].x, positions[i].y, factionId);
-  }
-  // Links: connect each system to 1-3 nearest neighbours (undirected)
+    return best > 90 * 90 && rng.chance(0.6) ? "vex" : FACTIONS[fi].id;
+  });
+}
+
+function connect(rng: RNG, systems: Record<string, SystemDef>, ids: string[], positions: { x: number; y: number }[], lyOf: (i: number, j: number) => number): void {
+  const N = ids.length;
   for (let i = 0; i < N; i++) {
     const dists = ids
       .map((id, j) => ({ id, d: (positions[i].x - positions[j].x) ** 2 + (positions[i].y - positions[j].y) ** 2, j }))
       .filter((e) => e.j !== i)
       .sort((a, b) => a.d - b.d);
     const want = rng.int(1, 3);
-    for (let k = 0; k < want; k++) {
+    for (let k = 0; k < Math.min(want, dists.length); k++) {
       const other = dists[k].id;
+      const j = dists[k].j;
       if (!systems[ids[i]].links.includes(other)) systems[ids[i]].links.push(other);
       if (!systems[other].links.includes(ids[i])) systems[other].links.push(ids[i]);
+      const ly = lyOf(i, j);
+      systems[ids[i]].ly[other] = ly;
+      systems[other].ly[ids[i]] = ly;
     }
   }
-  // ensure connectivity: BFS from sys0, attach any orphans to nearest visited
-  const visited = new Set<string>(["sys0"]);
-  const queue = ["sys0"];
+  const visited = new Set<string>([ids[0]]);
+  const queue = [ids[0]];
   while (queue.length) {
     const cur = queue.shift()!;
     for (const l of systems[cur].links) if (!visited.has(l)) { visited.add(l); queue.push(l); }
   }
   for (const id of ids) {
     if (!visited.has(id)) {
-      // link to any visited system
       const target = [...visited][rng.int(0, visited.size - 1)];
       systems[id].links.push(target);
       systems[target].links.push(id);
+      const ly = lyOf(ids.indexOf(id), ids.indexOf(target));
+      systems[id].ly[target] = ly;
+      systems[target].ly[id] = ly;
       visited.add(id);
     }
   }
-  // jump point entities within each system (one per link)
   for (const id of ids) {
     const sys = systems[id];
     sys.links.forEach((l, k) => {
       const a = (k / sys.links.length) * Math.PI * 2 + 0.7;
       const r = SYSTEM_SIZE * 0.85;
       sys.jumpPoints.push({
-        id: `${id}-jp${k}`,
-        x: Math.cos(a) * r,
-        y: Math.sin(a) * r,
-        targetSystemId: l,
-        guarded: systems[id].factionId !== "vex",
+        id: `${id}-jp${k}`, x: Math.cos(a) * r, y: Math.sin(a) * r,
+        targetSystemId: l, guarded: sys.factionId !== "vex",
       });
     });
   }
+}
 
-  // Start in a non-pirate system with a station
-  const startId = ids.find((i) => systems[i].factionId !== "vex" && systems[i].stations.length > 0) ?? "sys0";
+export function generateWorld(seed: number, opts: GenOptions = {}): World {
+  const rng = new RNG(seed);
+  const systems: Record<string, SystemDef> = {};
+  const ids: string[] = [];
+  const positions: { x: number; y: number }[] = [];
+  const sunColors = ["#ffd75a", "#ffb347", "#ff8a5a", "#8ec9f0", "#f2f4ff", "#ff5a5a"];
+  let lyOf: (i: number, j: number) => number;
+
+  if (opts.realGalaxy) {
+    // Sol neighbourhood: project the catalog top-down (x,y in ly) onto the map
+    const stars = STARS.filter((s) => s.ly <= 20);
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    const xy = stars.map((s) => { const [x, y] = starXYZ(s); return { x, y }; });
+    for (const q of xy) { minX = Math.min(minX, q.x); maxX = Math.max(maxX, q.x); minY = Math.min(minY, q.y); maxY = Math.max(maxY, q.y); }
+    stars.forEach((s, i) => {
+      const id = `star${i}`;
+      ids.push(id);
+      positions.push({
+        x: 30 + ((xy[i].x - minX) / (maxX - minX || 1)) * 260,
+        y: 30 + ((xy[i].y - minY) / (maxY - minY || 1)) * 160,
+      });
+    });
+    const factions = assignFactions(rng, positions);
+    stars.forEach((s, i) => {
+      // Sol is Compact home; nothing pirate within 6 ly of home
+      const fac = i === 0 ? "tsc" : s.ly < 6 ? "tsc" : factions[i];
+      systems[ids[i]] = genSystem(rng.fork(i + 1), ids[i], positions[i].x, positions[i].y, fac, s.name, s.color, s.cls);
+    });
+    lyOf = (i, j) => Math.round(starDistance(stars[i], stars[j]) * 10) / 10;
+  } else {
+    const N = 10;
+    for (let i = 0; i < N; i++) {
+      let x = 0, y = 0, ok = false;
+      for (let tries = 0; tries < 50 && !ok; tries++) {
+        x = rng.range(30, 290);
+        y = rng.range(30, 190);
+        ok = positions.every((p) => (p.x - x) ** 2 + (p.y - y) ** 2 > 55 * 55);
+      }
+      positions.push({ x, y });
+      ids.push(`sys${i}`);
+    }
+    const factions = assignFactions(rng, positions);
+    for (let i = 0; i < N; i++) {
+      const r2 = rng.fork(i + 1);
+      systems[ids[i]] = genSystem(r2, ids[i], positions[i].x, positions[i].y, factions[i], genSystemName(r2), r2.pick(sunColors));
+    }
+    lyOf = (i, j) => Math.round(Math.hypot(positions[i].x - positions[j].x, positions[i].y - positions[j].y) / 9 * 10) / 10;
+  }
+  connect(rng, systems, ids, positions, lyOf);
+
+  const startId = ids.find((i) => systems[i].factionId !== "vex" && systems[i].stations.length > 0) ?? ids[0];
   const startSys = systems[startId];
   const st = startSys.stations[0];
   const sx = Math.cos(st.angle) * st.orbit;
   const sy = Math.sin(st.angle) * st.orbit;
+  const h = hull("scout");
 
   const player: PlayerState = {
-    credits: 400,
+    credits: START_CREDITS,
     systemId: startId,
     x: sx + 80, y: sy + 40,
     vx: 0, vy: 0, angle: 0,
-    hull: 100, hullMax: 100,
-    shield: 50, shieldMax: 50,
-    fuel: 100, fuelMax: 100,
+    hull: h.hullMax, hullMax: h.hullMax,
+    shield: h.shieldMax, shieldMax: h.shieldMax,
+    fuel: h.fuelMax, fuelMax: h.fuelMax,
     oxygen: 100, oxygenMax: 100,
-    cargo: {},
-    cargoMax: 40,
-    systems: [
-      { id: "reactor", name: "Reactor Core", health: 100 },
-      { id: "engines", name: "Main Engines", health: 100 },
-      { id: "life", name: "Air Scrubbers", health: 100 },
-      { id: "weapons", name: "Weapon Mounts", health: 100 },
-      { id: "cargo", name: "Cargo Bay", health: 100 },
-      { id: "comms", name: "Comms Array", health: 100 },
-    ],
+    cargo: { food: 3, parts: 1 },
+    cargoMax: h.cargoMax,
+    systems: defaultSystems(),
     missions: [],
     dockedAt: null,
     kills: 0,
     wanted: 0,
+    hullId: "scout",
+    rep: {},
+    hints: {},
+    crew: [],
+    skills: { piloting: 0, engineering: 0 },
+    storage: {},
+    discoveries: 0,
+    breaches: [],
+    fires: [],
+    arcs: {},
   };
 
-  const world: World = { seed, time: 0, systems, player, news: [], missionCounter: 0 };
-  world.news = genNews(new RNG(seed ^ 0xbeef), world);
+  const world: World = {
+    version: 0, seed, time: 0, realGalaxy: !!opts.realGalaxy,
+    systems, player, news: [], events: [], wars: [],
+    missionCounter: 0, econTick: 0, shockTick: 0, warTick: 0,
+  };
+  world.news = newsFromEvents(world);
   return world;
 }
 
+export function defaultSystems(): ShipSystem[] {
+  return [
+    { id: "reactor", name: "Reactor Core", health: 100 },
+    { id: "engines", name: "Main Engines", health: 100 },
+    { id: "life", name: "Air Scrubbers", health: 100 },
+    { id: "weapons", name: "Weapon Mounts", health: 100 },
+    { id: "cargo", name: "Cargo Bay", health: 100 },
+    { id: "comms", name: "Comms Array", health: 100 },
+  ];
+}
+
 // ---------- Missions ----------
+
+export const ARCS: Record<string, { title: string; stages: { title: string; desc: string; kind: MissionKind; reward: number }[] }> = {
+  tsc: {
+    title: "The Quiet Gate",
+    stages: [
+      { title: "Compact: Courier Run", desc: "Carry sealed Compact dispatches to a neighbouring station. Do not open them.", kind: "delivery", reward: 500 },
+      { title: "Compact: Clear the Lane", desc: "Corsairs are choking a Compact supply lane. Break them.", kind: "bounty", reward: 900 },
+      { title: "Compact: The Quiet Gate", desc: "Survey the anomaly the Compact has been hiding from the news net. What you find decides who controls this gate.", kind: "research", reward: 1800 },
+    ],
+  },
+  fdm: {
+    title: "Belt Fever",
+    stages: [
+      { title: "Guild: Ore Quota", desc: "The Guild needs ore and needs it quiet. Fill the quota.", kind: "mining", reward: 450 },
+      { title: "Guild: Ride Shotgun", desc: "A Guild hauler is carrying something worth killing for. Get it home.", kind: "escort", reward: 900 },
+      { title: "Guild: Belt Fever", desc: "Board the derelict the Guild lost in the belt. Bring back what the crew died for.", kind: "research", reward: 1600 },
+    ],
+  },
+  vex: {
+    title: "The Veil Accord",
+    stages: [
+      { title: "Veil: Proof of Nerve", desc: "Run contraband through a guarded gate for the Corsairs. No scans, no seizures.", kind: "delivery", reward: 700 },
+      { title: "Veil: Blood Debt", desc: "A Compact patrol killed a Corsair captain. The Veil wants a patrol in return.", kind: "bounty", reward: 1200 },
+      { title: "Veil: The Accord", desc: "Broker the Veil's terms at a Compact star base. If they'll let you dock.", kind: "delivery", reward: 2500 },
+    ],
+  },
+};
 
 export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mission[] {
   const missions: Mission[] = [];
   const sys = Object.values(world.systems).find((s) => s.stations.includes(station))!;
   const linked = sys.links.map((l) => world.systems[l]);
-  const n = rng.int(2, 4);
+  const rep = world.player.rep[station.factionId] ?? 0;
+  const tier = missionTier(rep);
+  const n = rng.int(2, 4) + tier;
+  const kinds: MissionKind[] = ["delivery", "bounty", "mining", "escort", "passenger"];
+  if (tier >= 1) kinds.push("research", "research");
+  if (station.military) kinds.push("bounty", "bounty");
   for (let i = 0; i < n; i++) {
-    const kind = rng.pick(["delivery", "bounty", "mining"] as const);
+    const kind = rng.pick(kinds);
     const idn = `m${world.missionCounter++}`;
+    const payMult = 1 + tier * 0.35;
     if (kind === "delivery" && linked.length) {
       const target = rng.pick(linked);
       const tStation = target.stations.length ? rng.pick(target.stations) : null;
       if (!tStation) continue;
       const com = rng.pick(COMMODITIES.filter((c) => !c.illegal || rng.chance(0.15)));
       const qty = rng.int(3, 10);
-      const reward = Math.round(com.base * qty * 1.6 + 120 + (com.illegal ? 400 : 0));
       missions.push({
-        id: idn, kind, accepted: false, done: false,
+        id: idn, kind, accepted: false, done: false, tier,
         title: `Deliver ${qty} ${com.name}`,
         desc: `Take ${qty}x ${com.name} to ${tStation.name} in ${target.name}.${com.illegal ? " Discreetly. Avoid gate scans." : ""}`,
-        fromStationId: station.id,
-        targetSystemId: target.id,
-        targetStationId: tStation.id,
-        commodityId: com.id, qty, reward,
+        fromStationId: station.id, targetSystemId: target.id, targetStationId: tStation.id,
+        commodityId: com.id, qty,
+        reward: Math.round((com.base * qty * 1.6 + 120 + (com.illegal ? 400 : 0)) * payMult),
+        repReward: 3,
       });
     } else if (kind === "bounty") {
       const target = linked.length && rng.chance(0.6) ? rng.pick(linked) : sys;
-      const kills = rng.int(2, 4);
+      const kills = rng.int(2, 4) + tier;
       missions.push({
-        id: idn, kind, accepted: false, done: false,
-        title: `Bounty: ${kills} corsairs`,
+        id: idn, kind, accepted: false, done: false, tier,
+        title: `${station.military ? "Military " : ""}Bounty: ${kills} corsairs`,
         desc: `Destroy ${kills} Veil Corsair raiders in ${target.name}. Payment on return.`,
-        fromStationId: station.id,
-        targetSystemId: target.id,
+        fromStationId: station.id, targetSystemId: target.id,
         killsNeeded: kills, kills: 0,
-        reward: 250 * kills + rng.int(0, 200),
+        reward: Math.round((250 * kills + rng.int(0, 200)) * payMult),
+        repReward: 4,
       });
-    } else {
+    } else if (kind === "mining") {
       const qty = rng.int(6, 14);
       missions.push({
-        id: idn, kind, accepted: false, done: false,
+        id: idn, kind, accepted: false, done: false, tier,
         title: `Mining: ${qty} Raw Ore`,
         desc: `Deliver ${qty}x Raw Ore to ${station.name}. Mine it or buy it — we don't care.`,
-        fromStationId: station.id,
-        targetSystemId: sys.id,
-        targetStationId: station.id,
+        fromStationId: station.id, targetSystemId: sys.id, targetStationId: station.id,
         commodityId: "ore", qty,
-        reward: 26 * qty + rng.int(20, 120),
+        reward: Math.round((26 * qty + rng.int(20, 120)) * payMult),
+        repReward: 2,
+      });
+    } else if (kind === "escort" && sys.stations.length > 1) {
+      const dest = rng.pick(sys.stations.filter((s) => s !== station));
+      missions.push({
+        id: idn, kind, accepted: false, done: false, tier,
+        title: `Escort freighter to ${dest.name}`,
+        desc: `A freighter leaves when you undock. Keep it alive until it reaches ${dest.name}. Corsairs will come.`,
+        fromStationId: station.id, targetSystemId: sys.id, targetStationId: dest.id,
+        reward: Math.round((380 + rng.int(0, 220)) * payMult),
+        repReward: 5,
+      });
+    } else if (kind === "passenger" && linked.length) {
+      const target = rng.pick(linked);
+      const tStation = target.stations.length ? rng.pick(target.stations) : null;
+      if (!tStation) continue;
+      const pk = rng.pick(["vip", "refugee", "fugitive"] as const);
+      const name = genPersonName(rng);
+      missions.push({
+        id: idn, kind, accepted: false, done: false, tier,
+        title: `${pk === "vip" ? "VIP" : pk === "refugee" ? "Refugee" : "Discreet"} transport: ${name}`,
+        desc: pk === "vip" ? `${name} wants ${tStation.name} in ${target.name}, in comfort. Expects to arrive alive.`
+          : pk === "refugee" ? `${name} needs passage to ${tStation.name}. Can't pay much. Won't say why.`
+          : `${name} needs to reach ${tStation.name} without a gate scan finding them aboard.`,
+        fromStationId: station.id, targetSystemId: target.id, targetStationId: tStation.id,
+        passengerName: name, passengerKind: pk,
+        reward: pk === "vip" ? 600 + rng.int(0, 300) : pk === "refugee" ? 120 + rng.int(0, 80) : 500 + rng.int(0, 400),
+        repReward: pk === "refugee" ? 6 : 3,
+      });
+    } else if (kind === "research") {
+      const pool = Object.values(world.systems).filter((s) => s === sys || sys.links.includes(s.id));
+      const anomSys = rng.pick(pool);
+      const an = anomSys.anomalies.find((a) => !a.claimed);
+      if (!an) continue;
+      missions.push({
+        id: idn, kind, accepted: false, done: false, tier,
+        title: `Research: survey ${an.name}`,
+        desc: `Deep-scan ${anomSys.name} (hold V) to locate ${an.name}, investigate it, and report back here.`,
+        fromStationId: station.id, targetSystemId: anomSys.id, targetStationId: station.id,
+        anomalyId: an.id,
+        reward: Math.round((420 + rng.int(0, 300)) * payMult),
+        repReward: 5,
       });
     }
   }
+  // faction narrative arc: next stage if reputation allows
+  const arc = ARCS[station.factionId];
+  const stage = world.player.arcs[station.factionId] ?? 0;
+  if (arc && stage < arc.stages.length && rep >= stage * 25 && !world.player.missions.some((m) => m.kind === "arc" && m.arcFaction === station.factionId)) {
+    const s = arc.stages[stage];
+    const m: Mission = {
+      id: `arc-${station.factionId}-${stage}`, kind: "arc", accepted: false, done: false, tier: stage,
+      title: s.title, desc: s.desc,
+      fromStationId: station.id, targetSystemId: sys.id, targetStationId: station.id,
+      reward: s.reward, arcFaction: station.factionId, arcStage: stage, repReward: 15,
+    };
+    if (s.kind === "delivery") {
+      const target = linked.length ? rng.pick(linked) : sys;
+      const tStation = target.stations[0];
+      if (tStation) {
+        m.targetSystemId = target.id; m.targetStationId = tStation.id;
+        m.commodityId = station.factionId === "vex" ? "contra" : "data"; m.qty = 3;
+        m.desc += ` Destination: ${tStation.name}, ${target.name}.`;
+      }
+    } else if (s.kind === "bounty") {
+      m.killsNeeded = 4; m.kills = 0;
+      const target = linked.length ? rng.pick(linked) : sys;
+      m.targetSystemId = target.id;
+      m.desc += ` Hunting grounds: ${target.name}.`;
+    } else if (s.kind === "mining") {
+      m.commodityId = "ore"; m.qty = 12;
+    } else if (s.kind === "escort") {
+      const dest = sys.stations.find((x) => x !== station) ?? station;
+      m.targetStationId = dest.id;
+    } else if (s.kind === "research") {
+      const an = sys.anomalies.find((a) => !a.claimed) ?? linked.flatMap((l) => l.anomalies).find((a) => !a.claimed);
+      if (an) {
+        m.anomalyId = an.id;
+        const asys = Object.values(world.systems).find((x) => x.anomalies.includes(an))!;
+        m.targetSystemId = asys.id;
+        m.desc += ` Signal last placed in ${asys.name}.`;
+      }
+    }
+    missions.unshift(m);
+  }
   return missions;
+}
+
+// Whether an accepted mission can be turned in at this station
+export function missionDeliverable(world: World, m: Mission, station: StationDef): boolean {
+  const p = world.player;
+  if (!m.accepted || m.done) return false;
+  if (m.kind === "bounty" || (m.kind === "arc" && m.killsNeeded)) {
+    return (m.kills ?? 0) >= (m.killsNeeded ?? 1) && m.fromStationId === station.id;
+  }
+  if (m.kind === "escort" || (m.kind === "arc" && m.arcStage === 1 && m.arcFaction === "fdm")) {
+    return !!m.escortDone && m.fromStationId === station.id;
+  }
+  if (m.kind === "research" || (m.kind === "arc" && m.anomalyId)) {
+    if (m.fromStationId !== station.id) return false;
+    const an = Object.values(world.systems).flatMap((s) => s.anomalies).find((a) => a.id === m.anomalyId);
+    return !!an && an.claimed;
+  }
+  if (m.kind === "passenger") return m.targetStationId === station.id;
+  if (m.targetStationId !== station.id) return false;
+  if (m.commodityId && m.qty) return (p.cargo[m.commodityId] ?? 0) >= m.qty;
+  return false;
 }
 
 // ---------- News ----------
 
 const NEWS_TEMPLATES = [
   (a: string, b: string) => ({ headline: `TENSIONS RISE IN ${a.toUpperCase()}`, body: `Patrols doubled at jump points after corsair sightings near ${b}.` }),
-  (a: string, b: string) => ({ headline: `ORE PRICES SURGE`, body: `Refineries in ${a} pay premium rates as belt yields dip in ${b}.` }),
-  (a: string, b: string) => ({ headline: `MISSING SURVEY TEAM`, body: `A research vessel out of ${a} went dark near ${b}. Salvagers circling.` }),
   (a: string, b: string) => ({ headline: `TRADE ACCORD SIGNED`, body: `${a} and ${b} slash docking fees for guild-registered haulers.` }),
-  (a: string, b: string) => ({ headline: `BIO-CARGO SEIZED`, body: `Customs at ${a} intercepted unlicensed biological samples bound for ${b}.` }),
-  (a: string, b: string) => ({ headline: `GATE MAINTENANCE`, body: `Expect scan delays at ${a} jump points through the cycle.` }),
+  (a: string) => ({ headline: `GATE MAINTENANCE`, body: `Expect scan delays at ${a} jump points through the cycle.` }),
 ];
 
-export function genNews(rng: RNG, world: World): NewsItem[] {
-  const names = Object.values(world.systems).map((s) => s.name);
+const EVENT_HEADLINES: Record<WorldEvent["kind"], string> = {
+  murder: "CIVILIAN VESSEL DESTROYED",
+  rescue: "FREIGHTER SAVED FROM CORSAIRS",
+  seizure: "CONTRABAND SEIZED AT GATE",
+  shock: "MARKET SHOCK",
+  war: "FACTION HOSTILITIES",
+  peace: "CEASEFIRE DECLARED",
+  discovery: "ANOMALY SURVEYED",
+  arc: "GALNET SPECIAL REPORT",
+  raid: "RAID ON SUPPLY LANE",
+};
+
+export function newsFromEvents(w: World): NewsItem[] {
   const items: NewsItem[] = [];
-  for (let i = 0; i < 5; i++) {
+  const recent = w.events.slice(-6).reverse();
+  for (const e of recent) {
+    items.push({ headline: `${EVENT_HEADLINES[e.kind]} — ${w.systems[e.systemId]?.name.toUpperCase() ?? ""}`, body: e.text });
+  }
+  const rng = new RNG((w.seed ^ 0xbeef ^ w.events.length) >>> 0);
+  const names = Object.values(w.systems).map((s) => s.name);
+  while (items.length < 5) {
     const t = rng.pick(NEWS_TEMPLATES);
     items.push(t(rng.pick(names), rng.pick(names)));
   }
   return items;
 }
 
-// ---------- Cargo helpers ----------
+// ---------- Cargo & storage helpers ----------
 
 export function cargoUsed(p: PlayerState): number {
   return Object.values(p.cargo).reduce((a, b) => a + b, 0);
@@ -418,31 +990,9 @@ export function removeCargo(p: PlayerState, id: string, qty: number): boolean {
 }
 
 export function hasIllegalCargo(p: PlayerState): boolean {
-  return Object.entries(p.cargo).some(([id, q]) => q > 0 && COMMODITIES.find((c) => c.id === id)?.illegal);
-}
-
-// BFS shortest jump-route between systems; returns [from, ..., to] or null
-export function navRoute(world: World, fromId: string, toId: string): string[] | null {
-  if (fromId === toId) return [fromId];
-  const prev = new Map<string, string>();
-  const queue = [fromId];
-  const seen = new Set([fromId]);
-  while (queue.length) {
-    const cur = queue.shift()!;
-    for (const l of world.systems[cur].links) {
-      if (seen.has(l)) continue;
-      seen.add(l);
-      prev.set(l, cur);
-      if (l === toId) {
-        const path = [toId];
-        let p = toId;
-        while (prev.has(p)) { p = prev.get(p)!; path.unshift(p); }
-        return path;
-      }
-      queue.push(l);
-    }
-  }
-  return null;
+  const illegalGoods = Object.entries(p.cargo).some(([id, q]) => q > 0 && COMMODITIES.find((c) => c.id === id)?.illegal);
+  const fugitive = p.missions.some((m) => m.kind === "passenger" && m.accepted && !m.done && m.passengerKind === "fugitive");
+  return illegalGoods || fugitive;
 }
 
 export function findStation(world: World, stationId: string): { sys: SystemDef; st: StationDef } | null {
@@ -452,3 +1002,18 @@ export function findStation(world: World, stationId: string): { sys: SystemDef; 
   }
   return null;
 }
+
+// Swap hulls: stats reset to the new hull's, cargo must fit
+export function applyHull(p: PlayerState, hullId: string): void {
+  const h = hull(hullId);
+  p.hullId = hullId;
+  p.hullMax = h.hullMax; p.hull = h.hullMax;
+  p.shieldMax = h.shieldMax; p.shield = h.shieldMax;
+  p.fuelMax = h.fuelMax; p.fuel = Math.min(p.fuel, h.fuelMax);
+  p.cargoMax = h.cargoMax;
+  p.systems = defaultSystems();
+  p.breaches = [];
+  p.fires = [];
+}
+
+export { hashStr };
