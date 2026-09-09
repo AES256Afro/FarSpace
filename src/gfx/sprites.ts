@@ -423,9 +423,14 @@ export function genGlobe(rng: RNG, radius: number, paletteIdx: number, surface: 
       let lon = Math.atan2(dx, dz) + rot;
       lon = ((lon + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
       const latD = (lat * 180) / Math.PI, lonD = (lon * 180) / Math.PI;
-      // terrain from banded noise on lat/lon
-      const v = 0.5 + Math.sin(lonD * 0.12 + rows[Math.abs(Math.round(latD / 6)) % 64] * 9) * 0.25 + Math.cos(latD * 0.15 + rows[Math.abs(Math.round(lonD / 8)) % 64] * 7) * 0.2;
-      let idx = clampInt(Math.floor(v * pal.length), 0, pal.length - 1);
+      // terrain: two octaves of banded noise, polar ice caps, full palette range
+      const r1 = rows[Math.abs(Math.round(latD / 6)) % 64], r2 = rows[Math.abs(Math.round(lonD / 8)) % 64];
+      let v = 0.5
+        + Math.sin(lonD * 0.09 + r1 * 9) * 0.22
+        + Math.cos(latD * 0.13 + r2 * 7) * 0.18
+        + Math.sin(lonD * 0.31 + latD * 0.27 + r1 * 3) * 0.1;
+      if (Math.abs(latD) > 62) v += (Math.abs(latD) - 62) / 28; // ice caps brighten toward the poles
+      const idx = clampInt(Math.floor(v * pal.length), 0, pal.length - 1);
       let color = pal[idx];
       // region tint: nearest region seed on the sphere (great-circle-ish distance)
       if (regions.length) {
@@ -437,10 +442,11 @@ export function genGlobe(rng: RNG, radius: number, paletteIdx: number, surface: 
           if (dd < best) { best = dd; bi = i; }
         }
         const reg = regions[bi];
-        if (reg.factionId && idx >= 2) color = mix(color, reg.color, 0.35);
+        if (reg.factionId && idx >= 1) color = mix(color, reg.color, 0.3);
       }
       // lighting from upper-left, terminator on the right
-      const light = 0.45 + 0.7 * Math.max(0, (-dx * 0.6 - dy * 0.4 + dz * 0.7));
+      // day side lit from the upper-left, a soft terminator, never fully black
+      const light = 0.55 + 0.6 * Math.max(0, (-dx * 0.5 - dy * 0.35 + dz * 0.75));
       ctx.fillStyle = shade(color, light);
       ctx.fillRect(px, py, 1, 1);
     }
@@ -461,5 +467,6 @@ function clampInt(v: number, lo: number, hi: number): number {
 function mix(a: string, b: string, t: number): string {
   const pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16);
   const ch = (sh: number) => Math.round(((pa >> sh) & 255) * (1 - t) + ((pb >> sh) & 255) * t);
-  return `rgb(${ch(16)},${ch(8)},${ch(0)})`;
+  // hex out, so the result can go back through shade()
+  return "#" + ((ch(16) << 16) | (ch(8) << 8) | ch(0)).toString(16).padStart(6, "0");
 }

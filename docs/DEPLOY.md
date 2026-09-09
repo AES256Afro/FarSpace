@@ -14,14 +14,34 @@ npm run deploy   # = build + wrangler deploy
 Requires a wrangler login on the Cloudflare account that owns the
 fsociety.work zone (account c3975c2a296ba301ef3ec984049ceb5b).
 
-## CI
+## CI / auto-deploy
 
 `.github/workflows/ci.yml` runs typecheck, tests, and a build on every push and
-pull request. On `main` it also deploys to Cloudflare — but only if the repo
-secret `CLOUDFLARE_API_TOKEN` exists (Workers Scripts:Edit + Workers Routes:Edit
-on account c3975c2a296ba301ef3ec984049ceb5b). Until that secret is added the
-deploy step prints a skip notice and `npm run deploy` from a logged-in machine
-remains the release path.
+pull request. On a push to `main` it also deploys to Cloudflare, but only when
+the repository secret `CLOUDFLARE_API_TOKEN` exists. One-time setup:
+
+1. **Create the token** (Cloudflare dashboard → profile icon, top right →
+   *My Profile* → *API Tokens* → *Create Token* → use the **"Edit Cloudflare
+   Workers"** template). Scope it to account `Chris@chriscourtney.guru's Account`
+   (c3975c2a296ba301ef3ec984049ceb5b) and zone `fsociety.work`. That template
+   grants Workers Scripts:Edit, Workers Routes:Edit, and the account/zone reads
+   wrangler needs for custom domains. Copy the token — it is shown once.
+2. **Add it as a GitHub Actions secret**, either in the browser
+   (repo → *Settings* → *Secrets and variables* → *Actions* → *New repository
+   secret*, name `CLOUDFLARE_API_TOKEN`) or from a terminal where `gh` is
+   logged in as AES256Afro:
+
+   ```bash
+   gh secret set CLOUDFLARE_API_TOKEN --repo AES256Afro/FarSpace
+   ```
+
+   (it prompts for the value; nothing lands in shell history).
+3. Push to `main`, or re-run the latest workflow. The `deploy` job's log should
+   end with `Deployed farspace triggers` and the custom domains.
+
+The account ID is already in the workflow; no other secrets are needed. Until
+the secret exists the job prints a skip notice, and `npm run deploy` from a
+machine with `wrangler login` remains the release path.
 
 ## B. bigbox (Docker + Cloudflare Tunnel), Gridless-style
 
