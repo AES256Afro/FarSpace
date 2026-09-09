@@ -17,6 +17,7 @@ import {
 import { drawFlight } from "./render";
 
 export class FlightScene implements Scene {
+  touchMode = "flight" as const;
   bullets: Bullet[] = [];
   npcs: Npc[] = [];
   particles: Particle[] = [];
