@@ -2,6 +2,8 @@
 // Touch (core/touch.ts) and the gamepad both synthesize the same key states, so
 // scenes only ever ask "is W down" and "was E pressed".
 
+import { settings } from "./settings";
+
 export class Input {
   down = new Set<string>();
   pressed = new Set<string>();
@@ -10,6 +12,8 @@ export class Input {
   mouseDown = false;
   mousePressed = false;
   wheel = 0;
+  mouseRight = false;
+  mouseRightPressed = false;
   padConnected = false;
   private padHeld = new Set<string>();
 
@@ -18,12 +22,12 @@ export class Input {
       if (["Tab", "F5", "F9", " ", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
         e.preventDefault();
       }
-      const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+      const k = this.map(e.key.length === 1 ? e.key.toLowerCase() : e.key);
       if (!this.down.has(k)) this.pressed.add(k);
       this.down.add(k);
     });
     window.addEventListener("keyup", (e) => {
-      const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+      const k = this.map(e.key.length === 1 ? e.key.toLowerCase() : e.key);
       this.down.delete(k);
     });
     window.addEventListener("blur", () => this.down.clear());
@@ -33,11 +37,13 @@ export class Input {
       this.mouseX = (e.clientX - r.left - ox) / scale;
       this.mouseY = (e.clientY - r.top - oy) / scale;
     });
-    canvas.addEventListener("mousedown", () => {
+    canvas.addEventListener("mousedown", (e) => {
+      if (e.button === 2) { this.mouseRight = true; this.mouseRightPressed = true; return; }
       this.mouseDown = true;
       this.mousePressed = true;
     });
-    window.addEventListener("mouseup", () => (this.mouseDown = false));
+    window.addEventListener("mouseup", (e) => { if (e.button === 2) this.mouseRight = false; else this.mouseDown = false; });
+    canvas.addEventListener("contextmenu", (e) => e.preventDefault());
     canvas.addEventListener("wheel", (e) => {
       e.preventDefault();
       this.wheel += Math.sign(e.deltaY);
@@ -88,9 +94,16 @@ export class Input {
     this.padHeld.clear();
   }
 
+  // Apply the player's rebinds: physical key → action key
+  private map(k: string): string {
+    const m = settings().keymap;
+    return m[k] ?? k;
+  }
+
   flush(): void {
     this.pressed.clear();
     this.mousePressed = false;
+    this.mouseRightPressed = false;
     this.wheel = 0;
   }
 

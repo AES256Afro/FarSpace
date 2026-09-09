@@ -8,6 +8,7 @@ import { RNG } from "../core/rng";
 import { sfx } from "../core/sfx";
 import * as cloud from "../core/cloud";
 import * as wire from "../core/wire";
+import { settings, saveSettings, toggleFullscreen } from "../core/settings";
 import { music } from "../core/music";
 
 export class TitleScene implements Scene {
@@ -34,6 +35,8 @@ export class TitleScene implements Scene {
       opts.push({ label: "CLOUD: CREATE SAVE CODE", sub: "Get a code; your saves then follow you between devices", act: () => { const c = cloud.newCode(); g.toast(`CODE ${c} - SAVE (F5) TO UPLOAD`); } });
       opts.push({ label: "CLOUD: LINK WITH A CODE", sub: "Enter a code from another device", act: () => { void this.link(g); } });
     }
+    opts.push({ label: `AIM: ${settings().aim === "mouse" ? "MOUSE TURRET" : "KEYBOARD (A/D)"}`, sub: settings().aim === "mouse" ? "Guns follow the cursor; left-click fires, right-click mines" : "Guns fire along the hull; A/D to aim", act: () => { saveSettings({ aim: settings().aim === "mouse" ? "keys" : "mouse" }); sfx.blip(); } });
+    opts.push({ label: "FULLSCREEN", sub: "F toggles it any time", act: () => toggleFullscreen(g.canvas) });
     opts.push({ label: "EXPORT SAVE FILE", sub: "Download the current save as JSON", act: () => { cloud.exportFile(g.world); g.toast("SAVE FILE DOWNLOADED"); } });
     opts.push({ label: "IMPORT SAVE FILE", sub: "Load a save JSON from this device", act: () => { void this.importFile(g); } });
     return opts;
@@ -80,11 +83,12 @@ export class TitleScene implements Scene {
     music.setMood("title", 0);
     if (!this.tickerLoaded) { this.tickerLoaded = true; void wire.fetchWire().then((e) => { this.ticker = e; }); }
     const opts = this.options(g);
+    if (g.input.wasPressed("f")) toggleFullscreen(g.canvas);
     if (g.input.wasPressed("ArrowUp")) { this.cursor = (this.cursor + opts.length - 1) % opts.length; sfx.blip(); }
     if (g.input.wasPressed("ArrowDown")) { this.cursor = (this.cursor + 1) % opts.length; sfx.blip(); }
     let clicked = false;
     for (let i = 0; i < opts.length; i++) {
-      const y = 108 + i * 12;
+      const y = 100 + i * 11;
       if (g.input.mouseY >= y - 3 && g.input.mouseY < y + 10) {
         this.cursor = i;
         if (g.input.mousePressed) clicked = true;
@@ -130,13 +134,13 @@ export class TitleScene implements Scene {
 
     const opts = this.options(g);
     opts.forEach((o, i) => {
-      const y = 108 + i * 12;
+      const y = 100 + i * 11;
       const sel = i === this.cursor;
       if (sel && Math.floor(this.t * 3) % 2 === 0) drawText(ctx, ">", VW / 2 - textWidth(o.label) / 2 - 10, y, PAL.gold);
       drawText(ctx, o.label, VW / 2 - textWidth(o.label) / 2, y, sel ? PAL.white : PAL.greyDark);
     });
     const sub = opts[this.cursor]?.sub ?? "";
-    drawText(ctx, sub, VW / 2 - textWidth(sub) / 2, 108 + opts.length * 12 + 3, PAL.uiDim);
+    drawText(ctx, sub, VW / 2 - textWidth(sub) / 2, 100 + opts.length * 11 + 3, PAL.uiDim);
     if (this.ticker.length) {
       const e = this.ticker[Math.floor(this.t / 6) % this.ticker.length];
       const line = `FLEET WIRE: ${e.callsign} ${e.text} - ${e.system} (${wire.ageLabel(e.t)})`.slice(0, 110);

@@ -131,10 +131,10 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
   }
 
   // mining beam
-  if (g.input.isDown("m")) {
+  if (fs.mining) {
     for (const a of sys.asteroids) {
       if (a.ore <= 0) continue;
-      if (dist(p.x, p.y, a.x, a.y) < 90 && Math.abs(angDiff(p.angle, Math.atan2(a.y - p.y, a.x - p.x))) < 0.5) {
+      if (dist(p.x, p.y, a.x, a.y) < 90 && Math.abs(angDiff(fs.aim, Math.atan2(a.y - p.y, a.x - p.x))) < 0.5) {
         const [x1, y1] = toScreen(p.x, p.y);
         const [x2, y2] = toScreen(a.x, a.y);
         ctx.strokeStyle = PAL.mining;
@@ -212,6 +212,18 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
   {
     const [sx, sy] = toScreen(p.x, p.y);
     drawRotated(ctx, g.playerShip(), sx, sy, p.angle, z);
+    if (fs.mouseAim) {
+      // turret barrel + cursor reticle
+      ctx.strokeStyle = PAL.ui;
+      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + Math.cos(fs.aim) * 9, sy + Math.sin(fs.aim) * 9); ctx.stroke();
+      const mx = Math.round(g.input.mouseX), my = Math.round(g.input.mouseY);
+      ctx.strokeStyle = fs.mining ? PAL.mining : PAL.ui;
+      ctx.globalAlpha = 0.9;
+      ctx.strokeRect(mx - 3.5, my - 3.5, 7, 7);
+      ctx.fillStyle = ctx.strokeStyle;
+      ctx.fillRect(mx, my, 1, 1);
+      ctx.globalAlpha = 1;
+    }
   }
 
   drawEdgeMarkers(fs, g, ctx, camX, camY, z);

@@ -171,14 +171,14 @@ export function updateParticles(fs: FlightScene, dt: number): void {
 
 // ---------- Mining & loot ----------
 
-export function mine(fs: FlightScene, g: Game, dt: number, rate: number): void {
+export function mine(fs: FlightScene, g: Game, dt: number, rate: number, aim: number): void {
   const p = g.world.player;
   const sys = g.world.systems[p.systemId];
   for (const a of sys.asteroids) {
     if (a.ore <= 0) continue;
     if (dist(p.x, p.y, a.x, a.y) >= 90) continue;
     const ang = Math.atan2(a.y - p.y, a.x - p.x);
-    if (Math.abs(angDiff(p.angle, ang)) >= 0.5) continue;
+    if (Math.abs(angDiff(aim, ang)) >= 0.5) continue;
     a.ore -= dt * rate;
     if (Math.random() < dt * 8) sfx.mine();
     if (Math.random() < dt * 6) {

@@ -73,15 +73,43 @@ function noise(dur: number, vol = 1, lowpass = 2000): void {
 }
 
 let lastLaser = 0;
+let thrustNode: GainNode | null = null;
 export const sfx = {
   laser(): void {
     const now = performance.now();
     if (now - lastLaser < 60) return;
     lastLaser = now;
-    osc("square", 880, 0.12, 0.25, 220);
+    osc("triangle", 640, 0.11, 0.22, 180);
   },
   enemyLaser(): void {
-    osc("sawtooth", 440, 0.15, 0.15, 110);
+    osc("triangle", 380, 0.14, 0.13, 90);
+  },
+  torpedo(): void {
+    noise(0.35, 0.3, 700);
+    osc("sine", 90, 0.4, 0.3, 40);
+  },
+  // engine rumble: call every frame with whether the mains are lit
+  thrust(on: boolean): void {
+    const c = ac();
+    if (!c || !master) return;
+    if (!thrustNode) {
+      const src = c.createBufferSource();
+      const len = c.sampleRate * 2;
+      const buf = c.createBuffer(1, len, c.sampleRate);
+      const d = buf.getChannelData(0);
+      let last = 0;
+      for (let i = 0; i < len; i++) { last = (last + 0.05 * (Math.random() * 2 - 1)) / 1.05; d[i] = last * 3; }
+      src.buffer = buf; src.loop = true;
+      const lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 320;
+      const g = c.createGain(); g.gain.value = 0;
+      src.connect(lp); lp.connect(g); g.connect(master);
+      src.start();
+      thrustNode = g;
+    }
+    const target = on ? 0.35 : 0;
+    const now = c.currentTime;
+    thrustNode.gain.cancelScheduledValues(now);
+    thrustNode.gain.setTargetAtTime(target, now, on ? 0.08 : 0.25);
   },
   boom(big = false): void {
     noise(big ? 0.5 : 0.25, big ? 0.7 : 0.4, big ? 900 : 1400);

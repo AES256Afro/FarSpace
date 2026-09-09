@@ -8,6 +8,9 @@ import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickW
 import { faction } from "../../data/data";
 import { hull } from "../../data/hulls";
 import { sfx } from "../../core/sfx";
+import { settings, toggleFullscreen } from "../../core/settings";
+import { touch } from "../../core/touch";
+import { VW, VH } from "../../game";
 import { music } from "../../core/music";
 import * as wire from "../../core/wire";
 import type { Bullet, Npc, Particle, Platform, Loot, Sos } from "./types";
@@ -36,6 +39,8 @@ export class FlightScene implements Scene {
   sos: Sos | null = null;
   escort: { trader: Npc; missionId: string } | null = null;
   scanCharge = 0;      // deep-scan charge 0..1 (hold V)
+  aim = 0;             // gun/laser direction; equals heading in keyboard mode
+  mouseAim = false;
   pursuitTimer = 0;    // time the law has been chasing us this system
 
   enter(g: Game): void {
@@ -84,6 +89,7 @@ export class FlightScene implements Scene {
     if (g.input.wasPressed("i")) { g.setScene("interior"); return; }
     if (g.input.wasPressed("F5")) g.save();
     if (g.input.wasPressed("F9")) g.load();
+    if (g.input.wasPressed("f")) toggleFullscreen(g.canvas);
     this.zoom = clamp(this.zoom * (1 - g.input.wheel * 0.15), 0.25, 2);
     if (this.mapOpen) return;
 
@@ -110,8 +116,13 @@ export class FlightScene implements Scene {
     if (g.input.isDown("a")) p.angle -= ROT * dt;
     if (g.input.isDown("d")) p.angle += ROT * dt;
 
+    // aim: the turret follows the cursor in mouse mode (ship sits at screen centre)
+    this.mouseAim = settings().aim === "mouse" && !touch.enabled;
+    this.aim = this.mouseAim ? Math.atan2(g.input.mouseY - VH / 2, g.input.mouseX - VW / 2) : p.angle;
+
     const thrusting = g.input.isDown("w") && p.fuel > 0;
     const retro = g.input.isDown("s") && p.fuel > 0;
+    sfx.thrust(thrusting || retro || (g.input.isDown("x") && p.fuel > 0 && Math.hypot(p.vx, p.vy) > 4));
     if (thrusting) {
       p.vx += Math.cos(p.angle) * ACCEL * engineFactor * dt;
       p.vy += Math.sin(p.angle) * ACCEL * engineFactor * dt;
@@ -149,13 +160,15 @@ export class FlightScene implements Scene {
 
     // firing
     this.fireCd -= dt;
-    if (g.input.isDown(" ") && this.fireCd <= 0 && weaponsSys.health > 5) {
+    const firing = g.input.isDown(" ") || (this.mouseAim && g.input.mouseDown);
+    if (firing && this.fireCd <= 0 && weaponsSys.health > 5) {
       this.fireCd = h.fireRate;
       sfx.laser();
       const dmg = h.weaponDmg * (0.4 + 0.6 * weaponsSys.health / 100) * (1 + crewBonus(p, "gunner") * 0.2);
+      const a = this.aim;
       this.bullets.push({
-        x: p.x + Math.cos(p.angle) * 12, y: p.y + Math.sin(p.angle) * 12,
-        vx: p.vx + Math.cos(p.angle) * BULLET_SPEED, vy: p.vy + Math.sin(p.angle) * BULLET_SPEED,
+        x: p.x + Math.cos(a) * 12, y: p.y + Math.sin(a) * 12,
+        vx: p.vx + Math.cos(a) * BULLET_SPEED, vy: p.vy + Math.sin(a) * BULLET_SPEED,
         life: 1.4, hostile: false, dmg, fromPlayer: true,
       });
     }
@@ -176,7 +189,8 @@ export class FlightScene implements Scene {
       }
     }
 
-    if (g.input.isDown("m")) mine(this, g, dt, h.miningRate);
+    this.mining = g.input.isDown("m") || (this.mouseAim && g.input.mouseRight);
+    if (this.mining) mine(this, g, dt, h.miningRate, this.aim);
 
     // deep scan: hold V to charge; reveals anomalies within 900
     if (g.input.isDown("v")) {
@@ -239,6 +253,7 @@ export class FlightScene implements Scene {
     if (!p.hints?.fly && w.time > 3) g.showHint("fly", "W THRUST - A/D TURN - X BRAKE - YOU DRIFT: MOMENTUM IS REAL");
   }
   turretCd?: number;
+  mining = false;
 
   // Law escalation: 1 = wanted, patrols hunt; 2 = shoot on sight after prolonged pursuit / very low rep
   updateLaw(g: Game, dt: number): void {
