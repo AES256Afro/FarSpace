@@ -44,8 +44,11 @@ the [roadmap](docs/ROADMAP.md).
 npm install
 npm run dev      # local dev server
 npm run build    # typecheck + production build to dist/
-npm run deploy   # build + deploy to Cloudflare (fsociety.work)
+npm run deploy   # build + deploy to Cloudflare (fsociety.work) — CI does this on push to main
 ```
+
+Self-host it: `ghcr.io/aes256afro/farspace` (nginx, port 8080) or the BoxPilot
+App Catalog manifest in `deploy/boxpilot/`. See [docs/DEPLOY.md](docs/DEPLOY.md).
 
 Zero runtime dependencies. TypeScript + Canvas 2D, 480×270 internal resolution
 integer-upscaled for crisp pixels. Every sprite — ships, planets, stations,

@@ -44,7 +44,31 @@ The account ID is already in the workflow; no other secrets are needed.
 deploys to fsociety.work automatically. `npm run deploy` still works from a
 machine with `wrangler login` as a manual fallback.
 
-## B. bigbox (Docker + Cloudflare Tunnel), Gridless-style
+## B. BoxPilot App Catalog (bigbox)
+
+FarSpace ships as a container image, `ghcr.io/aes256afro/farspace:<version>`,
+built by `.github/workflows/image.yml` whenever a `v<version>` tag matching
+`package.json` is pushed (multi-arch, amd64 + arm64). The BoxPilot manifest is
+[deploy/boxpilot/farspace.yaml](../deploy/boxpilot/farspace.yaml); the same file
+is submitted to the BoxPilot catalog so it appears under **Games** in the App
+Catalog on any BoxPilot release that includes it.
+
+To add it to a BoxPilot box before that release ships (the catalog directory is
+re-read within seconds; no restart):
+
+```bash
+sudo curl -fsSL https://raw.githubusercontent.com/AES256Afro/FarSpace/main/deploy/boxpilot/farspace.yaml \
+  -o /opt/boxpilot/catalog/farspace.yaml
+```
+
+Then open BoxPilot → App Catalog → Games → FarSpace → Install. It binds the game
+on LAN port 8139 (changeable at install), runs as the unprivileged nginx user,
+and stores nothing on the host.
+
+Releasing a new version: bump `package.json` version, bump the two version
+fields in the manifest, commit, then `git tag v<version> && git push --tags`.
+
+## C. bigbox as a Cloudflare Tunnel origin (legacy, Gridless-style)
 
 > Status (Sept 2026): SSH to bigbox as `chris` returns "This account is
 > currently not available". The container there is stale. Restore the account
