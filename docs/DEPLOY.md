@@ -70,9 +70,10 @@ fields in the manifest, commit, then `git tag v<version> && git push --tags`.
 
 ## C. bigbox as a Cloudflare Tunnel origin (legacy, Gridless-style)
 
-> Status (Sept 2026): SSH to bigbox as `chris` returns "This account is
-> currently not available". The container there is stale. Restore the account
-> and re-run the sync below, or treat Cloudflare Workers as the only origin.
+> Status (Sept 2026): bigbox was reinstalled and now runs BoxPilot (SSH as
+> `bigbox@bigbox`). The App Catalog path in section B is the supported way to
+> run FarSpace there; this hand-rolled compose + tunnel stack is kept only as
+> a reference for non-BoxPilot hosts.
 
 Topology once the tunnel is enabled:
 

@@ -121,8 +121,9 @@ back tomorrow, and can play on a phone.
 - [x] Bitmap font M/W glyphs redrawn
 
 ## Next
-- [ ] bigbox: the `chris` account was unavailable in Sept 2026; restore it and
-      enable the tunnel, or retire that path from DEPLOY.md
+- [x] bigbox: reinstalled with BoxPilot; FarSpace ships as
+      `ghcr.io/aes256afro/farspace` and is in the BoxPilot App Catalog
+      (AES256Afro/BoxPilot#72), installed from the catalog on the box
 - [ ] Gamepad support
 - [ ] Ambient soundtrack (procedural pads per faction space)
 - [ ] Cloud saves (Workers KV) now that the schema is versioned
