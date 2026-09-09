@@ -30,7 +30,8 @@ See [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) for the full design and
 
 ## What's in the game
 
-**Cloud saves:** on the title screen, CREATE SAVE CODE, then F5 in game uploads.
+**Cloud saves:** on the title screen, CREATE SAVE CODE; the game autosaves on every
+dock and jump (F5 any time), locally and to the cloud.
 Enter the code on another device (LINK WITH A CODE) and CONTINUE picks the newer
 copy. Works from fsociety.work and from self-hosted copies. **Fleet Wire:** choose
 a call sign and your arc completions, rescues, surveys and relic hauls appear on

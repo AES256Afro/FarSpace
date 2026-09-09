@@ -422,6 +422,7 @@ export class FlightScene implements Scene {
     populate(this, g);
     this.launchDrones(g);
     this.startEscortIfNeeded(g);
+    g.autosave();
     g.toast(`JUMPED TO ${tsys.name.toUpperCase()}`);
     g.showHint("jump", "PRESS G FOR THE GALAXY MAP - CLICK A SYSTEM TWICE TO PLOT A COURSE");
   }

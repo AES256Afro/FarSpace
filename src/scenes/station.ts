@@ -57,6 +57,7 @@ export class StationScene implements Scene {
       this.settleCrew(g);
     }
     g.showHint("station", "ARROWS/CLICK TO BROWSE - ENTER TO ACT - ESC UNDOCKS - P WALKS THE DECK");
+    g.autosave();
   }
 
   settleCrew(g: Game): void {

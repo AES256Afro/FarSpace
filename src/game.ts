@@ -63,8 +63,13 @@ export class Game {
   cloudStatus = "";
 
   save(): void {
+    this.autosave();
+    this.toast(cloud.getCode() ? "GAME SAVED - SYNCING" : "GAME SAVED");
+  }
+
+  // Quiet save: local always, cloud when linked. Runs on dock and after jumps.
+  autosave(): void {
     writeSave(this.world);
-    this.toast("GAME SAVED");
     syncScores(this.world);
     if (cloud.getCode()) {
       this.cloudStatus = "SYNCING";
