@@ -26,16 +26,25 @@ See [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) for the full design and
 | Orbit | **↑/↓** or click to target a site · **V** (hold) survey scan · **E** land · **Esc** leave orbit |
 | Station menus | **↑/↓ / ←/→** or click · **Enter** select · **B/S** buy/sell · **P** walk the deck · **Esc** undock |
 | Galaxy map | click a system for intel · click again (or **N**) to plot a course |
-| Global | **F5** save · **F9** load · touch: left stick + on-screen buttons |
+| Global | **F5** save (local + cloud) · **F9** load · **H** music · touch: left stick + on-screen buttons · gamepad: sticks/D-pad, A use, X fire, Y mine, RB brake, LB scan, LT map, Start galaxy, Select ship |
 
 ## What's in the game
+
+**Cloud saves:** on the title screen, CREATE SAVE CODE, then F5 in game uploads.
+Enter the code on another device (LINK WITH A CODE) and CONTINUE picks the newer
+copy. Works from fsociety.work and from self-hosted copies. **Fleet Wire:** choose
+a call sign and your arc completions, rescues, surveys and relic hauls appear on
+every player's WIRE tab and the title ticker, with leaderboards for discoveries,
+arcs, credits and kills.
 
 Four hulls, a dynamic economy with shocks and faction wars, reputation with five
 factions and a law ladder from routine scans to shoot-on-sight, escort and
 passenger and research missions, three faction story arcs, recruitable crew who
 talk and quit, ship interiors with fires and breaches, derelicts to board,
 planets to orbit and survey with landable outposts, and a "Sol Neighbourhood"
-galaxy of 50 real nearby stars with fuel-range course plotting. Full list in
+galaxy of real nearby stars (20 or 50 light-years) with fuel-range course
+plotting, city districts, ruin dungeons, a carrier with escort drones, cloud
+saves, gamepad and touch, and a shared Fleet Wire. Full list in
 the [roadmap](docs/ROADMAP.md).
 
 ## Development
@@ -56,7 +65,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestones 1–6 are live (v0.6). See the [roadmap](docs/ROADMAP.md) for what's next.
+Milestones 1–9 are live (v0.9). See the [roadmap](docs/ROADMAP.md) for what's next.
 
 ```bash
 npm test         # vitest: world-gen, routing, economy, law, missions, save migrations
