@@ -14,8 +14,8 @@ export function cloudBase(): string {
     if (override) return override.replace(/\/$/, "");
   } catch { /* no storage */ }
   const h = location.hostname;
-  if (h === "fsociety.work" || h === "www.fsociety.work") return "";
-  return "https://fsociety.work";
+  if (h === "farspace.fsociety.work") return "";
+  return "https://farspace.fsociety.work";
 }
 
 export function getCode(): string | null {

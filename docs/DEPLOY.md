@@ -5,7 +5,7 @@ Two supported targets. Both serve the same static Vite build.
 ## A. Cloudflare Workers (current production for fsociety.work)
 
 The Worker (`worker/index.ts`) serves `dist/` as static assets with custom
-domains `fsociety.work` and `www.fsociety.work`, and hosts the tiny API the
+domain `farspace.fsociety.work`, and hosts the tiny API the
 game uses for cloud saves (`/api/save/:code`), the Fleet Wire (`/api/wire`) and
 leaderboards (`/api/board/:name`), all in a dedicated KV namespace (`farspace-cloud`, bound as `SAVES` in
 `wrangler.jsonc`). CORS is open, so self-hosted copies (BoxPilot) use the same
@@ -46,7 +46,7 @@ the repository secret `CLOUDFLARE_API_TOKEN` exists. One-time setup:
 
 The account ID is already in the workflow; no other secrets are needed.
 **Status: configured (2026-09-09).** Every push to `main` that passes tests
-deploys to fsociety.work automatically. `npm run deploy` still works from a
+deploys to farspace.fsociety.work automatically. `npm run deploy` still works from a
 machine with `wrangler login` as a manual fallback.
 
 ## B. BoxPilot App Catalog (bigbox)

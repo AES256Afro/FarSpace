@@ -3,7 +3,7 @@
 A pixel-art space sim about scale — fly, trade, mine, fight, and walk the corridors
 of your own ship across a living galaxy.
 
-**Play it:** https://fsociety.work
+**Play it:** https://farspace.fsociety.work
 
 ![FarSpace](docs/screenshot.png)
 

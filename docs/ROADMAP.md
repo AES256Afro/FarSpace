@@ -24,7 +24,7 @@ couldn't before) and a definition of done.
 - [x] Nav path system: plot a course on the galaxy map, radar guides gate to gate
 - [x] Defense platforms + station fighter wings; protected-space safe zones
 - [x] Save/load (localStorage), procedural SFX, radar, mouse menus, nebulae
-- [x] Deployed to https://fsociety.work
+- [x] Deployed to https://farspace.fsociety.work
 
 ## Milestone 2 — Worth a Second Session ✅ (Sep 2026)
 **Goal:** a new player finds the core loop in 5 minutes, has a reason to come

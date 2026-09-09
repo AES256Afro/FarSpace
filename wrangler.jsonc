@@ -12,7 +12,6 @@
     { "binding": "SAVES", "id": "e17be95df888439496942d63fdd6e8f2" }
   ],
   "routes": [
-    { "pattern": "fsociety.work", "custom_domain": true },
-    { "pattern": "www.fsociety.work", "custom_domain": true }
+    { "pattern": "farspace.fsociety.work", "custom_domain": true }
   ]
 }
