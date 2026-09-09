@@ -251,6 +251,7 @@ export class StationScene implements Scene {
     }
     g.toast(`MISSION COMPLETE +${m.reward}CR`);
     sfx.pickup();
+    if (m.kind === "bounty" && (m.killsNeeded ?? 0) >= 4) void wire.post("bounty", `collected a ${m.killsNeeded}-corsair bounty`, g.world.systems[p.systemId].name);
     p.missions = p.missions.filter((x) => !x.done);
     p.hints.firstMission ||= true;
   }
@@ -282,6 +283,7 @@ export class StationScene implements Scene {
     g.spriteCache.delete(`player-ship-${p.hullId}`);
     g.toast(`WELCOME ABOARD THE ${h.name.toUpperCase()}`);
     sfx.dock();
+    void wire.post("hull", `took delivery of a ${h.name}`, g.world.systems[p.systemId].name);
   }
 
   shipyardOptions(g: Game): { label: string; sub: string; action: () => void }[] {
