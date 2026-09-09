@@ -331,6 +331,7 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
   if (inSafeZone(fs, g, p.x, p.y) && law === 0) drawText(ctx, "PROTECTED SPACE", VW - 130, VH - 11, PAL.good);
   drawText(ctx, "TAB MAP", VW - 36, VH - 19, PAL.greyDark);
   drawText(ctx, "I SHIP", VW - 36, VH - 11, PAL.greyDark);
+  if (g.cloudStatus) drawText(ctx, g.cloudStatus, VW - 36 - textWidth(g.cloudStatus) - 6, VH - 11, g.cloudStatus === "SYNCED" ? PAL.uiDim : PAL.warn);
 
   let wy = 4;
   for (const s of p.systems) {

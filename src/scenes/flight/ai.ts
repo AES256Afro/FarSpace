@@ -203,8 +203,36 @@ export function updateLoot(fs: FlightScene, g: Game, dt: number): void {
 
 // ---------- Combat ----------
 
+// Uniform grid over live NPCs so bullets only test their own and neighbouring
+// cells instead of every ship in the system.
+const CELL = 64;
+function buildNpcGrid(npcs: Npc[]): Map<number, Npc[]> {
+  const grid = new Map<number, Npc[]>();
+  for (const n of npcs) {
+    if (n.hull <= 0) continue;
+    const key = cellKey(Math.floor(n.x / CELL), Math.floor(n.y / CELL));
+    const bucket = grid.get(key);
+    if (bucket) bucket.push(n); else grid.set(key, [n]);
+  }
+  return grid;
+}
+function cellKey(cx: number, cy: number): number {
+  return ((cx + 0x8000) & 0xffff) * 0x10000 + ((cy + 0x8000) & 0xffff);
+}
+function nearby(grid: Map<number, Npc[]>, x: number, y: number, out: Npc[]): Npc[] {
+  out.length = 0;
+  const cx = Math.floor(x / CELL), cy = Math.floor(y / CELL);
+  for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
+    const b = grid.get(cellKey(cx + dx, cy + dy));
+    if (b) for (const n of b) out.push(n);
+  }
+  return out;
+}
+
 export function updateBullets(fs: FlightScene, g: Game, dt: number): void {
   const p = g.world.player;
+  const grid = buildNpcGrid(fs.npcs);
+  const scratch: Npc[] = [];
   for (const b of fs.bullets) {
     b.x += b.vx * dt;
     b.y += b.vy * dt;
@@ -216,7 +244,7 @@ export function updateBullets(fs: FlightScene, g: Game, dt: number): void {
         damagePlayer(fs, g, b.dmg);
       }
     } else {
-      for (const n of fs.npcs) {
+      for (const n of nearby(grid, b.x, b.y, scratch)) {
         if (n.hull <= 0) continue;
         if (dist(b.x, b.y, n.x, n.y) < 12) {
           b.life = 0;

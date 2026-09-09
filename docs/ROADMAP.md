@@ -120,14 +120,47 @@ back tomorrow, and can play on a phone.
 - [x] Save schema versioning with migrations
 - [x] Bitmap font M/W glyphs redrawn
 
-## Next
-- [x] bigbox: reinstalled with BoxPilot; FarSpace ships as
-      `ghcr.io/aes256afro/farspace` and is in the BoxPilot App Catalog
-      (AES256Afro/BoxPilot#72), installed from the catalog on the box
-- [ ] Gamepad support
-- [ ] Ambient soundtrack (procedural pads per faction space)
-- [ ] Cloud saves (Workers KV) now that the schema is versioned
-- [ ] Spatial hash for bullets/NPCs if entity counts grow
-- [ ] More hulls (carrier with hangar; capital interiors)
-- [ ] Ground exploration beyond outposts (city interiors, ruins as dungeons)
-- [ ] Multiplayer-lite: shared universe events
+## Milestone 7 — Feel & Persistence ✅ (Sep 2026)
+**Goal:** the game feels finished in the hands, and your progress follows you
+between devices.
+
+- [x] Cloud saves: a Cloudflare Worker + KV behind fsociety.work keyed by a
+      10-character share code (no accounts). F5 saves locally and to the cloud;
+      CONTINUE takes whichever copy is newer; LINK DEVICE enters a code. CORS is
+      open so the self-hosted BoxPilot copy shares the same cloud.
+- [x] Save file export/import (JSON download / file picker) for offline moves
+- [x] Gamepad: sticks and D-pad drive the same key layer as touch; A/B/X/Y,
+      bumpers, triggers, Start/Select mapped for flight, walking, and menus
+- [x] Ambient soundtrack: procedural WebAudio pads keyed to the faction whose
+      space you're in, a low pulse that rises with nearby hostiles, silence in
+      the void; H toggles, preference remembered
+- [x] Spatial hash for bullet/NPC collisions so escort fights and war zones
+      hold frame rate on phones
+
+**Done when:** you can start on the phone, continue on the desktop, play a
+bounty with a controller and music on, and the frame rate holds in a war zone.
+
+## Milestone 8 — Boots on the Ground
+**Goal:** planets are places, not menus.
+
+- [ ] City interiors: land at a city POI for a larger walkable district with a
+      market, a bar that hires crew, a mission board with planet-side contracts,
+      residents to talk to
+- [ ] Ruins as dungeons: procedurally generated rooms and corridors, ancient
+      sentries and gas pockets, relic caches (a new high-value commodity),
+      one way out
+- [ ] Aegis Carrier hull: hangar that launches two escort drones which fight
+      pirates and re-arm at dock; a multi-deck interior; five crew berths
+
+## Milestone 9 — Shared Universe
+**Goal:** other pilots exist.
+
+- [ ] Fleet Wire: a global event feed (arc completions, discoveries, rescues,
+      wars) every player sees on the news net and the title screen, posted
+      under a chosen call sign
+- [ ] Leaderboards: discoveries, arcs completed, credits — top 20 per board
+- [ ] Bigger neighbourhood: extend the real-star catalog to ~50 ly
+
+## Later
+- [ ] Ground exploration beyond outposts and ruins (planet-scale maps)
+- [ ] Multiplayer proper

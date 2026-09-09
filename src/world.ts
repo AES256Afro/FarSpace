@@ -209,6 +209,7 @@ export interface PlayerState {
 
 export interface World {
   version: number;
+  savedAt?: number;
   seed: number;
   time: number;
   realGalaxy: boolean;

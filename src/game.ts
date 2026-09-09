@@ -4,6 +4,7 @@ import { Input } from "./core/input";
 import { RNG } from "./core/rng";
 import { World, generateWorld, WreckDef } from "./world";
 import { loadSave, writeSave, SAVE_KEY } from "./save";
+import * as cloud from "./core/cloud";
 import { hull } from "./data/hulls";
 import {
   Sprite, genShip, genPlanet, genStation, genAsteroid, genGate, genSun, genPortrait,
@@ -58,9 +59,42 @@ export class Game {
     try { return !!localStorage.getItem(SAVE_KEY); } catch { return false; }
   }
 
+  cloudStatus = "";
+
   save(): void {
     writeSave(this.world);
     this.toast("GAME SAVED");
+    if (cloud.getCode()) {
+      this.cloudStatus = "SYNCING";
+      void cloud.push(this.world).then((r) => {
+        this.cloudStatus = r.ok ? "SYNCED" : `CLOUD: ${r.error ?? "FAILED"}`;
+        if (!r.ok) this.toast(`CLOUD SYNC FAILED (${r.error ?? "?"}) - SAVED LOCALLY`);
+      });
+    }
+  }
+
+  // Adopt a world from the cloud or a file: persist locally and jump in
+  adoptWorld(w: World): void {
+    this.world = w;
+    this.spriteCache.clear();
+    writeSave(w);
+    this.setScene(w.player.dockedAt ? "station" : "flight");
+  }
+
+  /** CONTINUE: prefer the cloud copy when it is newer than the local one. */
+  async continueGame(): Promise<void> {
+    const code = cloud.getCode();
+    if (code) {
+      this.toast("CHECKING CLOUD...");
+      const remote = await cloud.pull(code);
+      const localAt = this.world.savedAt ?? 0;
+      if (remote && remote.updatedAt > localAt + 1000) {
+        this.toast("CLOUD SAVE IS NEWER - LOADED IT");
+        this.adoptWorld(remote.world);
+        return;
+      }
+    }
+    this.setScene(this.world.player.dockedAt ? "station" : "flight");
   }
 
   load(): void {

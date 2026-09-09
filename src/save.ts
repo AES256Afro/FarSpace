@@ -76,5 +76,6 @@ export function loadSave(): World | null {
 
 export function writeSave(world: World): void {
   world.version = SAVE_VERSION;
+  world.savedAt = Date.now();
   localStorage.setItem(SAVE_KEY, JSON.stringify(world));
 }

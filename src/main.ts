@@ -12,6 +12,7 @@ import { OrbitScene } from "./scenes/orbit";
 import { OutpostScene } from "./scenes/outpost";
 import { initAudioUnlock } from "./core/sfx";
 import { initTouch } from "./core/touch";
+import { music } from "./core/music";
 
 const canvas = document.getElementById("game") as HTMLCanvasElement;
 const game = new Game(canvas);
@@ -42,6 +43,9 @@ function frame(now: number): void {
   if (game.toastTimer > 0) game.toastTimer -= dt;
   if (game.hintTimer > 0) { game.hintTimer -= dt; if (game.hintTimer <= 0) game.hint = ""; }
 
+  game.input.pollGamepad(game.touchMode());
+  if (game.input.wasPressed("h")) game.toast(music.toggle() ? "MUSIC ON" : "MUSIC OFF");
+  music.start();
   game.scene.update(game, dt);
   game.scene.draw(game, game.bctx);
   game.input.flush();

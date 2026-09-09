@@ -14,6 +14,7 @@ import {
   crewWages, genCrewCandidate, applyHull, pushEvent, ARCS,
 } from "../world";
 import { sfx } from "../core/sfx";
+import { music } from "../core/music";
 
 const TABS = ["MARKET", "SHIPYARD", "SHIPS", "MISSIONS", "BAR", "STORAGE", "NEWS"] as const;
 
@@ -70,6 +71,7 @@ export class StationScene implements Scene {
 
   update(g: Game, dt: number): void {
     const inp = g.input;
+    music.setMood(this.station.factionId, 0);
     if (inp.wasPressed("Escape")) {
       if (this.returnTo === "stationwalk") g.setScene("stationwalk");
       else { g.world.player.dockedAt = null; g.setScene("flight"); g.toast("UNDOCKED"); }

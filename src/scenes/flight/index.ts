@@ -8,6 +8,7 @@ import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickW
 import { faction } from "../../data/data";
 import { hull } from "../../data/hulls";
 import { sfx } from "../../core/sfx";
+import { music } from "../../core/music";
 import type { Bullet, Npc, Particle, Platform, Loot, Sos } from "./types";
 import { BULLET_SPEED } from "./types";
 import {
@@ -185,6 +186,14 @@ export class FlightScene implements Scene {
       }
     } else {
       this.scanCharge = 0;
+    }
+
+    // soundtrack: faction pad, pulse rising with hostiles in weapons range
+    {
+      let threat = 0;
+      for (const n of this.npcs) if (n.kind === "pirate") { const d = dist(n.x, n.y, p.x, p.y); if (d < 600) threat = Math.max(threat, 1 - d / 600); }
+      if (this.lawLevel(g) >= 1) threat = Math.max(threat, 0.6);
+      music.setMood(sys.factionId, threat);
     }
 
     updateBullets(this, g, dt);

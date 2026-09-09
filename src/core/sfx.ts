@@ -19,6 +19,12 @@ function ac(): AudioContext | null {
   return ctx;
 }
 
+/** Shared context + master bus for other audio modules (music). Null until the first gesture. */
+export function audioBus(): { ctx: AudioContext; master: GainNode } | null {
+  const c = ac();
+  return c && master ? { ctx: c, master } : null;
+}
+
 export function initAudioUnlock(): void {
   const unlock = () => { ac(); };
   window.addEventListener("keydown", unlock, { once: true });
