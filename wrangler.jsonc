@@ -9,7 +9,7 @@
     "run_worker_first": ["/api/*"]
   },
   "kv_namespaces": [
-    { "binding": "SAVES", "id": "bf031cd8d2d44e3e8cc00264b99a501e" }
+    { "binding": "SAVES", "id": "e17be95df888439496942d63fdd6e8f2" }
   ],
   "routes": [
     { "pattern": "fsociety.work", "custom_domain": true },

@@ -7,7 +7,7 @@ Two supported targets. Both serve the same static Vite build.
 The Worker (`worker/index.ts`) serves `dist/` as static assets with custom
 domains `fsociety.work` and `www.fsociety.work`, and hosts the tiny API the
 game uses for cloud saves (`/api/save/:code`), the Fleet Wire (`/api/wire`) and
-leaderboards (`/api/board/:name`), all in the `SAVES` KV namespace (binding in
+leaderboards (`/api/board/:name`), all in a dedicated KV namespace (`farspace-cloud`, bound as `SAVES` in
 `wrangler.jsonc`). CORS is open, so self-hosted copies (BoxPilot) use the same
 cloud. There are no accounts: a save code is the only secret, call signs are
 first-come, and posts are rate-limited per IP.
