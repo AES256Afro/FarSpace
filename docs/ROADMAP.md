@@ -115,8 +115,8 @@ back tomorrow, and can play on a phone.
       shared walking code in `scenes/walkbase.ts`
 - [x] Tests (vitest): world-gen determinism, connectivity, real-galaxy layout,
       routing, fuel costs, economy, cargo, hull swap, law, missions, save migrations
-- [x] GitHub Actions: typecheck + test + build on push/PR; deploys to Cloudflare
-      on main when `CLOUDFLARE_API_TOKEN` is set
+- [x] GitHub Actions: typecheck + test + build on push/PR; auto-deploys to
+      fsociety.work on every green push to main
 - [x] Save schema versioning with migrations
 - [x] Bitmap font M/W glyphs redrawn
 

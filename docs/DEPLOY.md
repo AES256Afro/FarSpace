@@ -39,9 +39,10 @@ the repository secret `CLOUDFLARE_API_TOKEN` exists. One-time setup:
 3. Push to `main`, or re-run the latest workflow. The `deploy` job's log should
    end with `Deployed farspace triggers` and the custom domains.
 
-The account ID is already in the workflow; no other secrets are needed. Until
-the secret exists the job prints a skip notice, and `npm run deploy` from a
-machine with `wrangler login` remains the release path.
+The account ID is already in the workflow; no other secrets are needed.
+**Status: configured (2026-09-09).** Every push to `main` that passes tests
+deploys to fsociety.work automatically. `npm run deploy` still works from a
+machine with `wrangler login` as a manual fallback.
 
 ## B. bigbox (Docker + Cloudflare Tunnel), Gridless-style
 
