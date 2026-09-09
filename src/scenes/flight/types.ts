@@ -6,7 +6,7 @@ export interface Bullet {
   fromPlayer?: boolean;
 }
 
-export type NpcKind = "pirate" | "trader" | "patrol" | "fighter";
+export type NpcKind = "pirate" | "trader" | "patrol" | "fighter" | "drone";
 
 export interface Npc {
   kind: NpcKind;

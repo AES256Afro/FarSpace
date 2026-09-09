@@ -43,6 +43,7 @@ export const COMMODITIES: Commodity[] = [
   { id: "data", name: "Data Cores", base: 120 },
   { id: "bio", name: "Bio Samples", base: 150, illegal: true },
   { id: "contra", name: "Contraband", base: 200, illegal: true },
+  { id: "relics", name: "Relics", base: 260 },
 ];
 
 export function commodity(id: string): Commodity {
@@ -55,12 +56,12 @@ export type StationType = "mining" | "agri" | "refinery" | "research" | "trade" 
 
 // price multiplier: <1 produces (sells cheap), >1 consumes (buys dear)
 export const ECONOMY: Record<StationType, Record<string, number>> = {
-  mining:   { ore: 0.55, water: 0.8, metals: 1.1, food: 1.35, med: 1.2, parts: 1.25, fuel: 1.1, lux: 1.4, data: 1.0, bio: 1.0, contra: 1.0 },
-  agri:     { food: 0.55, water: 0.7, ore: 1.1, metals: 1.15, med: 1.1, parts: 1.2, fuel: 1.05, lux: 1.25, data: 1.0, bio: 0.9, contra: 1.0 },
-  refinery: { metals: 0.65, fuel: 0.7, ore: 1.45, water: 1.1, food: 1.2, med: 1.1, parts: 0.9, lux: 1.2, data: 1.0, bio: 1.0, contra: 1.0 },
-  research: { data: 0.7, med: 0.8, bio: 1.6, food: 1.25, water: 1.15, metals: 1.1, parts: 1.1, fuel: 1.1, ore: 1.0, lux: 1.3, contra: 1.0 },
-  trade:    { lux: 0.8, parts: 0.95, food: 1.0, water: 1.0, ore: 1.05, metals: 1.0, med: 1.0, fuel: 0.95, data: 1.15, bio: 1.2, contra: 1.3 },
-  military: { parts: 1.2, fuel: 1.15, food: 1.2, med: 1.25, metals: 1.05, ore: 1.0, water: 1.05, lux: 1.1, data: 1.3, bio: 1.1, contra: 0.0 },
+  mining:   { ore: 0.55, water: 0.8, metals: 1.1, food: 1.35, med: 1.2, parts: 1.25, fuel: 1.1, lux: 1.4, data: 1.0, bio: 1.0, contra: 1.0, relics: 1.0 },
+  agri:     { food: 0.55, water: 0.7, ore: 1.1, metals: 1.15, med: 1.1, parts: 1.2, fuel: 1.05, lux: 1.25, data: 1.0, bio: 0.9, contra: 1.0, relics: 1.0 },
+  refinery: { metals: 0.65, fuel: 0.7, ore: 1.45, water: 1.1, food: 1.2, med: 1.1, parts: 0.9, lux: 1.2, data: 1.0, bio: 1.0, contra: 1.0, relics: 1.0 },
+  research: { data: 0.7, med: 0.8, bio: 1.6, food: 1.25, water: 1.15, metals: 1.1, parts: 1.1, fuel: 1.1, ore: 1.0, lux: 1.3, contra: 1.0, relics: 1.7 },
+  trade:    { lux: 0.8, parts: 0.95, food: 1.0, water: 1.0, ore: 1.05, metals: 1.0, med: 1.0, fuel: 0.95, data: 1.15, bio: 1.2, contra: 1.3, relics: 1.4 },
+  military: { parts: 1.2, fuel: 1.15, food: 1.2, med: 1.25, metals: 1.05, ore: 1.0, water: 1.05, lux: 1.1, data: 1.3, bio: 1.1, contra: 0.0, relics: 1.2 },
 };
 
 // ---------- Name generation ----------

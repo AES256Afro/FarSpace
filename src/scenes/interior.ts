@@ -54,6 +54,20 @@ const DECKS: Record<HullDef["deck"], string[]> = {
     "#.......#..........#..........#..W...#",
     "######################################",
   ],
+  carrier: [
+    "##########################################",
+    "#....G....G....#.........#......M........#",
+    "#..............#....R....#...............#",
+    "#....G....G....D.........D.......C.......#",
+    "#..............#.........#...............#",
+    "#..B..B..B.....#....L....#..c..c..c..c..c#",
+    "#######D###########D###########D##########",
+    "#.......#.............#........#.........#",
+    "#..K..S.D......E......D..H..H..D...p.....#",
+    "#.......#.............#........#....W....#",
+    "#.......#.............#..H..H..#.........#",
+    "##########################################",
+  ],
   interceptor: [
     "##########################",
     "#....M....#.....#....C...#",
@@ -79,6 +93,7 @@ const PANELS: PanelDef[] = [
   { ch: "B", sysId: null, label: "BUNK", desc: "Sleep (skips 60s)" },
   { ch: "K", sysId: null, label: "GALLEY", desc: "Eat (needs provisions)" },
   { ch: "S", sysId: null, label: "STUDY TERMINAL", desc: "Train a skill" },
+  { ch: "H", sysId: null, label: "HANGAR BAY", desc: "Escort drones" },
 ];
 
 export class InteriorScene implements Scene {
@@ -169,7 +184,7 @@ export class InteriorScene implements Scene {
     const eng = crewBonus(p, "engineer");
     if (eng > 0) for (const s of p.systems) if (s.health < 100) s.health = Math.min(100, s.health + dt * 0.4 * eng);
 
-    const near = nearestTile(this.deck, this.px, this.py, "CELRWGMBKS");
+    const near = nearestTile(this.deck, this.px, this.py, "CELRWGMBKSH");
     const fire = p.fires.find((f) => dist(f.tx * T + T / 2, f.ty * T + T / 2, this.px, this.py) < 16);
     const breach = p.breaches.find((b) => dist(b.tx * T + T / 2, b.ty * T + T / 2, this.px, this.py) < 16);
     const crewNear = p.crew.map((c, i) => ({ c, spot: this.crewSpots()[i] })).find((x) => x.spot && dist(x.spot.tx * T + T / 2, x.spot.ty * T + T / 2, this.px, this.py) < 16);
@@ -235,6 +250,9 @@ export class InteriorScene implements Scene {
             for (const c of p.crew) c.morale = Math.min(100, c.morale + 10);
             this.say(p.crew.length ? "A HOT MEAL FOR EVERYONE. MORALE UP, +5 HULL" : "A HOT MEAL. +5 HULL");
           } else this.say("GALLEY'S EMPTY. BUY PROVISIONS AT A STATION");
+        } else if (near.ch === "H") {
+          const n = hull(p.hullId).drones ?? 0;
+          this.say(n ? `HANGAR: ${n} ESCORT DRONES RACKED. THEY LAUNCH WITH YOU AND RE-ARM AT DOCK.` : "HANGAR: EMPTY RACKS");
         } else if (near.ch === "S") {
           const which = (p.skills.piloting ?? 0) <= (p.skills.engineering ?? 0) ? "piloting" : "engineering";
           p.skills[which] = Math.min(10, (p.skills[which] ?? 0) + 0.5);
@@ -305,7 +323,7 @@ export class InteriorScene implements Scene {
     drawPerson(ctx, Math.round(ox + this.px), Math.round(oy + this.py), "#e8b48c", "#3a6ea5");
 
     // tooltips
-    const near = nearestTile(this.deck, this.px, this.py, "CELRWGMBKS");
+    const near = nearestTile(this.deck, this.px, this.py, "CELRWGMBKSH");
     const fire = p.fires.find((f) => dist(f.tx * T + T / 2, f.ty * T + T / 2, this.px, this.py) < 16);
     const breach = p.breaches.find((b) => dist(b.tx * T + T / 2, b.ty * T + T / 2, this.px, this.py) < 16);
     const crewNear = p.crew.map((c, i) => ({ c, spot: spots[i] })).find((x) => x.spot && dist(x.spot.tx * T + T / 2, x.spot.ty * T + T / 2, this.px, this.py) < 16);

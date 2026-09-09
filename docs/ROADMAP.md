@@ -140,16 +140,17 @@ between devices.
 **Done when:** you can start on the phone, continue on the desktop, play a
 bounty with a controller and music on, and the frame rate holds in a war zone.
 
-## Milestone 8 — Boots on the Ground
+## Milestone 8 — Boots on the Ground ✅ (Sep 2026)
 **Goal:** planets are places, not menus.
 
-- [ ] City interiors: land at a city POI for a larger walkable district with a
+- [x] City interiors: land at a city POI for a larger walkable district with a
       market, a bar that hires crew, a mission board with planet-side contracts,
-      residents to talk to
-- [ ] Ruins as dungeons: procedurally generated rooms and corridors, ancient
-      sentries and gas pockets, relic caches (a new high-value commodity),
-      one way out
-- [ ] Aegis Carrier hull: hangar that launches two escort drones which fight
+      residents to talk to; landing routes by POI kind (city / ruins / outpost)
+- [x] Ruins as dungeons: procedurally generated rooms and corridors, dormant
+      sentries that wake on line of sight (hold E beside one to disarm), gas
+      pockets that eat suit O2, fog of war, relic caches (a new commodity that
+      research posts and trade hubs buy at a premium), one way out
+- [x] Aegis Carrier hull: hangar that launches two escort drones which fight
       pirates and re-arm at dock; a multi-deck interior; five crew berths
 
 ## Milestone 9 — Shared Universe

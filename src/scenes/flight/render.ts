@@ -185,12 +185,12 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
 
   for (const n of fs.npcs) {
     const spr = n.kind === "pirate" ? g.pirateShip()
-      : n.kind === "patrol" || n.kind === "fighter" ? g.patrolShip()
+      : n.kind === "patrol" || n.kind === "fighter" || n.kind === "drone" ? g.patrolShip()
       : g.traderShip();
     const [sx, sy] = toScreen(n.x, n.y);
     if (sx < -40 || sx > VW + 40 || sy < -40 || sy > VH + 40) continue;
     drawRotated(ctx, spr, sx, sy, n.angle, z);
-    const col = n.kind === "pirate" ? PAL.danger : n.kind === "patrol" || n.kind === "fighter" ? PAL.info : PAL.gold;
+    const col = n.kind === "pirate" ? PAL.danger : n.kind === "patrol" || n.kind === "fighter" ? PAL.info : n.kind === "drone" ? PAL.ui : PAL.gold;
     ctx.fillStyle = col;
     ctx.fillRect(sx - 6, sy - 12, Math.round(12 * (n.hull / n.hullMax)), 1);
     if (fs.escort && fs.escort.trader === n) drawText(ctx, "ESCORT", sx - 12, sy - 20, PAL.gold);

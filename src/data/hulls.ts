@@ -18,8 +18,9 @@ export interface HullDef {
   spriteSize: number;
   color: string;
   accent: string;
-  deck: "scout" | "prospector" | "freighter" | "interceptor";
+  deck: "scout" | "prospector" | "freighter" | "interceptor" | "carrier";
   crewSlots: number;
+  drones?: number; // escort drones launched from a hangar
 }
 
 export const HULLS: HullDef[] = [
@@ -50,6 +51,13 @@ export const HULLS: HullDef[] = [
     hullMax: 110, shieldMax: 90, cargoMax: 25, fuelMax: 90,
     accel: 140, maxSpeed: 340, rotSpeed: 4.6, miningRate: 1, weaponDmg: 16, fireRate: 0.16,
     spriteSize: 22, color: "#6a7a9c", accent: "#ff5a5a", deck: "interceptor", crewSlots: 2,
+  },
+  {
+    id: "carrier", name: "Aegis Carrier", price: 14000,
+    desc: "A hangar deck and two escort drones that fight for you and re-arm at dock. Slow, thick, and never alone.",
+    hullMax: 260, shieldMax: 110, cargoMax: 90, fuelMax: 200,
+    accel: 45, maxSpeed: 170, rotSpeed: 1.6, miningRate: 2, weaponDmg: 10, fireRate: 0.3,
+    spriteSize: 40, color: "#8c95a8", accent: "#5ab3ff", deck: "carrier", crewSlots: 5, drones: 2,
   },
 ];
 

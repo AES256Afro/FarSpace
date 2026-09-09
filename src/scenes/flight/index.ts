@@ -12,7 +12,7 @@ import { music } from "../../core/music";
 import type { Bullet, Npc, Particle, Platform, Loot, Sos } from "./types";
 import { BULLET_SPEED } from "./types";
 import {
-  populate, spawnPirateNearBelt, exhaust, mine, updateBullets, updateNpcs,
+  populate, spawnPirateNearBelt, spawnDrones, exhaust, mine, updateBullets, updateNpcs,
   updatePlatforms, updateParticles, updateLoot, updateSos, boom,
 } from "./ai";
 import { drawFlight } from "./render";
@@ -46,7 +46,13 @@ export class FlightScene implements Scene {
     this.escort = null;
     this.scanCharge = 0;
     populate(this, g);
+    this.launchDrones(g);
     this.startEscortIfNeeded(g);
+  }
+
+  launchDrones(g: Game): void {
+    const n = hull(g.world.player.hullId).drones ?? 0;
+    if (n > 0) spawnDrones(this, g, n);
   }
 
   // 0 = clear, 1 = wanted (patrols pursue), 2 = shoot on sight (platforms too)
@@ -412,6 +418,7 @@ export class FlightScene implements Scene {
     this.escort = null;
     this.pursuitTimer = 0;
     populate(this, g);
+    this.launchDrones(g);
     this.startEscortIfNeeded(g);
     g.toast(`JUMPED TO ${tsys.name.toUpperCase()}`);
     g.showHint("jump", "PRESS G FOR THE GALAXY MAP - CLICK A SYSTEM TWICE TO PLOT A COURSE");

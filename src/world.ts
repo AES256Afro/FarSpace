@@ -32,6 +32,7 @@ export interface Poi {
   regionIdx: number;
   landable: boolean;
   surveyed: boolean;
+  looted?: boolean; // ruins: relic caches taken
 }
 
 export interface PlanetSurface {
@@ -478,7 +479,7 @@ function genSurface(rng: RNG, sysFaction: string, planetIdx: number): PlanetSurf
       lat: clamp(r.lat + rng.range(-20, 20), -80, 80),
       lon: r.lon + rng.range(-30, 30),
       regionIdx,
-      landable: kind === "outpost" || kind === "research" || kind === "city" || kind === "mine",
+      landable: kind !== "defense",
       surveyed: false,
     });
   }

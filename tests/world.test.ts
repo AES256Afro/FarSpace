@@ -207,3 +207,18 @@ describe("save migrations", () => {
     expect(migrateSave({ player: {}, systems: {}, version: 999 })).not.toBeNull();
   });
 });
+
+describe("milestone 8 content", () => {
+  it("ruins are landable and relics are bought everywhere at a premium", async () => {
+    const { HULLS, hull } = await import("../src/data/hulls");
+    const { COMMODITIES, ECONOMY } = await import("../src/data/data");
+    expect(hull("carrier").drones).toBe(2);
+    expect(HULLS.length).toBe(5);
+    expect(COMMODITIES.find((c) => c.id === "relics")?.base).toBeGreaterThan(200);
+    expect(ECONOMY.research.relics).toBeGreaterThan(1);
+    const w = generateWorld(21);
+    const pois = Object.values(w.systems).flatMap((s) => s.planets).flatMap((p) => p.surface?.pois ?? []);
+    for (const poi of pois) expect(poi.landable).toBe(poi.kind !== "defense");
+    expect(pois.some((p) => p.kind === "ruin")).toBe(true);
+  });
+});

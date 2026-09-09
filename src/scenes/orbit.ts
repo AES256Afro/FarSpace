@@ -83,7 +83,8 @@ export class OrbitScene implements Scene {
 
     const poi = pois[this.sel];
     if (poi && inp.wasPressed("e")) {
-      if (!poi.landable) { g.toast(`${poi.name.toUpperCase()}: NO LANDING PAD`); }
+      const canLand = poi.landable || poi.kind === "ruin";
+      if (!canLand) { g.toast(`${poi.name.toUpperCase()}: NO LANDING PAD`); }
       else {
         const reg = surf.regions[poi.regionIdx];
         const rep = reg.factionId ? (p.rep[reg.factionId] ?? 0) : 0;
@@ -92,7 +93,7 @@ export class OrbitScene implements Scene {
         else {
           g.landedPoiId = poi.id;
           sfx.dock();
-          g.setScene("outpost");
+          g.setScene(poi.kind === "city" ? "city" : poi.kind === "ruin" ? "ruin" : "outpost");
           return;
         }
       }
@@ -182,7 +183,8 @@ export class OrbitScene implements Scene {
       const reg = surf.regions[poi.regionIdx];
       drawText(ctx, `TARGET: ${poi.name.toUpperCase()}`, px, y, PAL.gold); y += 9;
       drawText(ctx, `${reg.name} - ${reg.factionId ? faction(reg.factionId).name : "unclaimed"}`, px, y, PAL.grey); y += 9;
-      drawText(ctx, poi.landable ? "[E] LAND" : "NO LANDING PAD", px, y, poi.landable ? PAL.gold : PAL.greyDark);
+      const canLand = poi.landable || poi.kind === "ruin";
+      drawText(ctx, canLand ? (poi.kind === "city" ? "[E] LAND - CITY" : poi.kind === "ruin" ? `[E] LAND - RUINS${poi.looted ? " (LOOTED)" : ""}` : "[E] LAND") : "NO LANDING PAD", px, y, canLand ? PAL.gold : PAL.greyDark);
     }
     drawText(ctx, `SATELLITES: ${surf.satellites}   HOLD V: SURVEY SCAN`, 8, VH - 22, PAL.greyDark);
     if (this.msg) drawText(ctx, this.msg, VW / 2 - textWidth(this.msg) / 2, VH - 12, PAL.ui);

@@ -10,6 +10,8 @@ import { StationWalkScene } from "./scenes/stationwalk";
 import { WreckScene } from "./scenes/wreck";
 import { OrbitScene } from "./scenes/orbit";
 import { OutpostScene } from "./scenes/outpost";
+import { CityScene } from "./scenes/city";
+import { RuinScene } from "./scenes/ruin";
 import { initAudioUnlock } from "./core/sfx";
 import { initTouch } from "./core/touch";
 import { music } from "./core/music";
@@ -26,6 +28,8 @@ game.scenes["stationwalk"] = new StationWalkScene();
 game.scenes["wreck"] = new WreckScene();
 game.scenes["orbit"] = new OrbitScene();
 game.scenes["outpost"] = new OutpostScene();
+game.scenes["city"] = new CityScene();
+game.scenes["ruin"] = new RuinScene();
 
 game.setScene("title");
 initAudioUnlock();

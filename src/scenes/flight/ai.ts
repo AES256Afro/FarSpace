@@ -110,6 +110,20 @@ export function spawnTrader(fs: FlightScene, g: Game, rng: RNG): void {
   });
 }
 
+// Carrier hangar: escort drones that shadow the player and engage nearby corsairs.
+export function spawnDrones(fs: FlightScene, g: Game, count: number): void {
+  const p = g.world.player;
+  for (let i = 0; i < count; i++) {
+    const a = (i / count) * TAU;
+    fs.npcs.push({
+      kind: "drone",
+      x: p.x + Math.cos(a) * 60, y: p.y + Math.sin(a) * 60,
+      vx: p.vx, vy: p.vy, angle: p.angle,
+      hull: 45, hullMax: 45, fireCd: 0, targetIdx: i,
+    });
+  }
+}
+
 export function spawnPirateNearBelt(fs: FlightScene, g: Game): void {
   const sys = g.world.systems[g.world.player.systemId];
   const rng = new RNG((Math.random() * 1e9) >>> 0);
@@ -303,6 +317,8 @@ export function npcKilled(fs: FlightScene, g: Game, n: Npc, byPlayer: boolean): 
       const id = pool[Math.floor(Math.random() * pool.length)];
       fs.loot.push({ x: n.x, y: n.y, commodityId: id, qty: 1 + Math.floor(Math.random() * 3), life: 60 });
     }
+  } else if (n.kind === "drone") {
+    g.toast("ESCORT DRONE LOST - RE-ARMS AT NEXT DOCK");
   } else {
     // traders drop what they were hauling, whoever killed them
     if (n.cargo) fs.loot.push({ x: n.x, y: n.y, commodityId: n.cargo.id, qty: n.cargo.qty, life: 60 });
@@ -348,6 +364,22 @@ export function updateNpcs(fs: FlightScene, g: Game, dt: number): void {
         } else {
           tx = n.x + Math.cos(n.angle) * 100; ty = n.y + Math.sin(n.angle) * 100;
         }
+      }
+    } else if (n.kind === "drone") {
+      speed = 130;
+      let target: Npc | null = null;
+      for (const o of fs.npcs) {
+        if (o.kind === "pirate" && o.hull > 0 && dist(p.x, p.y, o.x, o.y) < 450) { target = o; break; }
+      }
+      if (target) {
+        tx = target.x; ty = target.y;
+        wantFire = dist(n.x, n.y, target.x, target.y) < 260;
+        fireHostile = false;
+      } else {
+        // formation slot beside the carrier
+        const slot = n.targetIdx % 2 === 0 ? 1 : -1;
+        tx = p.x + Math.cos(p.angle + slot * 2.2) * 45; ty = p.y + Math.sin(p.angle + slot * 2.2) * 45;
+        speed = 160;
       }
     } else if (n.kind === "fighter") {
       speed = 110;
@@ -404,7 +436,7 @@ export function updateNpcs(fs: FlightScene, g: Game, dt: number): void {
       else { tx = n.x + Math.cos(n.angle) * 100; ty = n.y + Math.sin(n.angle) * 100; }
     }
 
-    const maxs = n.kind === "pirate" ? 160 : 130;
+    const maxs = n.kind === "pirate" ? 160 : n.kind === "drone" ? 300 : 130;
     const dx = tx - n.x, dy = ty - n.y;
     const dd = Math.hypot(dx, dy) || 1;
     let desSpeed = Math.min(maxs, dd * 0.8);
@@ -422,7 +454,7 @@ export function updateNpcs(fs: FlightScene, g: Game, dt: number): void {
     n.y += n.vy * dt;
 
     if (wantFire && n.fireCd <= 0) {
-      n.fireCd = n.kind === "patrol" || n.kind === "fighter" ? 0.5 : 0.7;
+      n.fireCd = n.kind === "patrol" || n.kind === "fighter" || n.kind === "drone" ? 0.5 : 0.7;
       const tvx = targetingPlayer ? p.vx : 0;
       const tvy = targetingPlayer ? p.vy : 0;
       const tof = Math.hypot(tx - n.x, ty - n.y) / 300;
@@ -431,7 +463,7 @@ export function updateNpcs(fs: FlightScene, g: Game, dt: number): void {
       fs.bullets.push({
         x: n.x + Math.cos(aim) * 10, y: n.y + Math.sin(aim) * 10,
         vx: n.vx + Math.cos(aim) * 300, vy: n.vy + Math.sin(aim) * 300,
-        life: 1.8, hostile: fireHostile, dmg: n.kind === "patrol" || n.kind === "fighter" ? 8 : 6,
+        life: 1.8, hostile: fireHostile, dmg: n.kind === "patrol" || n.kind === "fighter" ? 8 : n.kind === "drone" ? 7 : 6,
       });
     }
   }

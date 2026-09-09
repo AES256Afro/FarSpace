@@ -121,7 +121,7 @@ export class TitleScene implements Scene {
     });
     const sub = opts[this.cursor]?.sub ?? "";
     drawText(ctx, sub, VW / 2 - textWidth(sub) / 2, 112 + opts.length * 13 + 4, PAL.uiDim);
-    const ver = `V0.7${g.input.padConnected ? " - GAMEPAD CONNECTED" : ""}`;
+    const ver = `V0.8${g.input.padConnected ? " - GAMEPAD CONNECTED" : ""}`;
     drawText(ctx, ver, VW / 2 - textWidth(ver) / 2, VH - 26, PAL.greyDark);
     const keys = "WSAD FLY - SPACE FIRE - M MINE - E DOCK/JUMP - TAB MAP - H MUSIC - TOUCH + GAMEPAD";
     drawText(ctx, keys, VW / 2 - textWidth(keys) / 2, VH - 14, PAL.uiDim);
