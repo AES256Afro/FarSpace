@@ -11,6 +11,7 @@ import { faction } from "../../data/data";
 import { hull } from "../../data/hulls";
 import { inSafeZone } from "./ai";
 import { drawTouchControls } from "../../core/touch";
+import { drawTutorial } from "../../core/tutorial";
 
 export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D): void {
   const p = g.world.player;
@@ -215,6 +216,7 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
 
   drawEdgeMarkers(fs, g, ctx, camX, camY, z);
   drawHud(fs, g, ctx);
+  drawTutorial(g, ctx, 68);
   drawTouchControls(g, ctx);
   if (fs.mapOpen) drawSystemMap(g, ctx);
 }

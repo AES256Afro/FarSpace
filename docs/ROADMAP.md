@@ -40,6 +40,10 @@ back tomorrow, and can play on a phone.
 - [x] Save schema `version` + migrations (v0 Milestone-1 saves still load)
 - [x] First-run hints: contextual one-time guidance for flight, docking, first
       jump, trading, repair, orbit, scanning, crew
+- [x] Flight School: a six-step objective card for new pilots (thrust/brake →
+      dock → buy → accept a mission → jump → board your ship) that completes
+      off real game state, pays 700 credits in total, and is skippable with T;
+      existing saves start with it off (save v5)
 - [x] Touch controls: virtual stick + fire/mine/brake/use/map buttons, tap menus;
       fractional canvas scaling so phones fill the width
 - [x] Balance: 600 starting credits, starter food/parts; first hull reachable in

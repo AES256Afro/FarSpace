@@ -50,6 +50,7 @@ describe("world generation", () => {
     expect(sys.stations.length).toBeGreaterThan(0);
     expect(w.player.hullId).toBe("scout");
     expect(w.player.cargoMax).toBe(40);
+    expect(w.player.tutorial).toBe(0);
   });
 
   it("generates planets with surfaces, wrecks and anomalies", () => {
@@ -189,7 +190,7 @@ describe("save migrations", () => {
     // strip everything added after v0
     delete old.version; delete old.events; delete old.wars; delete old.econTick;
     const p = old.player as Record<string, unknown>;
-    delete p.rep; delete p.hullId; delete p.crew; delete p.skills; delete p.storage; delete p.arcs; delete p.hints;
+    delete p.rep; delete p.hullId; delete p.crew; delete p.skills; delete p.storage; delete p.arcs; delete p.hints; delete p.tutorial;
     for (const sys of Object.values(old.systems as Record<string, Record<string, unknown>>)) { delete sys.wrecks; delete sys.anomalies; delete sys.ly; }
     const w = migrateSave(JSON.parse(JSON.stringify(old)))!;
     expect(w).not.toBeNull();
@@ -197,6 +198,7 @@ describe("save migrations", () => {
     expect(w.player.rep).toEqual({});
     expect(w.player.hullId).toBe("scout");
     expect(w.player.crew).toEqual([]);
+    expect(w.player.tutorial).toBe(-1);
     expect(Object.values(w.systems)[0].wrecks).toEqual([]);
     expect(navRoute(w, w.player.systemId, Object.keys(w.systems)[1])).not.toBeNull();
   });

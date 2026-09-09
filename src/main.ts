@@ -15,6 +15,7 @@ import { RuinScene } from "./scenes/ruin";
 import { initAudioUnlock } from "./core/sfx";
 import { initTouch } from "./core/touch";
 import { music } from "./core/music";
+import { tutorialUpdate } from "./core/tutorial";
 
 const canvas = document.getElementById("game") as HTMLCanvasElement;
 const game = new Game(canvas);
@@ -51,6 +52,7 @@ function frame(now: number): void {
   if (game.input.wasPressed("h")) game.toast(music.toggle() ? "MUSIC ON" : "MUSIC OFF");
   music.start();
   game.scene.update(game, dt);
+  tutorialUpdate(game);
   game.scene.draw(game, game.bctx);
   game.input.flush();
 

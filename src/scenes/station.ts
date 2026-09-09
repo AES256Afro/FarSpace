@@ -15,6 +15,7 @@ import {
 } from "../world";
 import { sfx } from "../core/sfx";
 import * as wire from "../core/wire";
+import { drawTutorial } from "../core/tutorial";
 import { music } from "../core/music";
 
 const TABS = ["MARKET", "SHIPYARD", "SHIPS", "MISSIONS", "BAR", "STORAGE", "NEWS", "WIRE"] as const;
@@ -389,6 +390,7 @@ export class StationScene implements Scene {
     }
     if (g.toastTimer > 0) drawText(ctx, g.toastMsg, VW / 2 - textWidth(g.toastMsg) / 2, VH - 10, PAL.ui);
     if (g.hint) drawText(ctx, g.hint, VW / 2 - textWidth(g.hint) / 2, VH - 20, PAL.gold);
+    drawTutorial(g, ctx, VH - 46);
   }
 
   row(ctx: CanvasRenderingContext2D, y: number, selected: boolean): void {

@@ -3,7 +3,7 @@
 
 import type { World } from "./world";
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 export const SAVE_KEY = "farspace-save";
 
 type Migration = (w: Record<string, unknown>) => void;
@@ -46,6 +46,11 @@ const MIGRATIONS: Record<number, Migration> = {
   3: (w) => {
     const systems = w.systems as Record<string, Record<string, unknown>>;
     for (const sys of Object.values(systems)) sys.ly ??= {};
+  },
+  // 4 → 5: flight school exists; veterans don't get sent back to it
+  4: (w) => {
+    const p = w.player as Record<string, unknown>;
+    p.tutorial ??= -1;
   },
 };
 

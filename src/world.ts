@@ -206,6 +206,7 @@ export interface PlayerState {
   breaches: { tx: number; ty: number }[];
   fires: { tx: number; ty: number }[];
   arcs: Record<string, number>; // faction id → completed stage count
+  tutorial?: number; // flight school step; -1 = off/done
 }
 
 export interface World {
@@ -729,6 +730,7 @@ export function generateWorld(seed: number, opts: GenOptions = {}): World {
     breaches: [],
     fires: [],
     arcs: {},
+    tutorial: 0,
   };
 
   const world: World = {
