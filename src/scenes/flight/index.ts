@@ -911,10 +911,10 @@ export class FlightScene implements Scene {
     }
     this.chatterTimer -= dt;
     if (this.chatterTimer <= 0) {
-      this.chatterTimer = 35 + Math.random() * 40;
+      this.chatterTimer = (35 + Math.random() * 40) * ((settings().chatter ?? "normal") === "quiet" ? 2 : (settings().chatter ?? "normal") === "busy" ? 0.5 : 1);
       if (this.comms.length < 2) {
         const vrng = new RNG((g.world.seed ^ Math.floor(g.world.time * 5)) >>> 0);
-        const shipLine = vrng.chance(isOccasion("silence") ? 0.5 : 0.18) ? pickShipLine(g, vrng) : null;
+        const shipLine = (settings().voice ?? true) && vrng.chance(isOccasion("silence") ? 0.5 : 0.18) ? pickShipLine(g, vrng) : null;
         if (!shipLine && isOccasion("silence") && vrng.chance(0.6)) return;
         if (shipLine) { this.comms.push({ from: (p.shipName ?? "SHIP").toUpperCase(), text: shipLine, life: 9, color: PAL.uiDim }); return; }
         const line = pickChatter(g, new RNG((g.world.seed ^ Math.floor(g.world.time * 3)) >>> 0));

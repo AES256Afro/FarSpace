@@ -17,6 +17,7 @@ const OY = 30;
 export class GalaxyScene implements Scene {
   touchMode = "menu" as const;
   selected: string | null = null;
+  layers = true; // V hides the overlays: routes, charters, wonders, structures
   rooms: Record<string, number> = {};
   pilots = 0;
 
@@ -55,6 +56,7 @@ export class GalaxyScene implements Scene {
       if (i >= 0) p.bookmarks.splice(i, 1); else p.bookmarks.push(this.selected);
       sfx.blip();
     }
+    if (inp.wasPressed("v")) { this.layers = !this.layers; }
     if (inp.wasPressed("n") && this.selected) {
       const p = g.world.player;
       p.navTarget = p.navTarget === this.selected ? null : this.selected;
@@ -95,7 +97,7 @@ export class GalaxyScene implements Scene {
       drawText(ctx, `${cost}F`, mx - 4, my - 3, cost > w.player.fuel ? PAL.danger : PAL.greyDark);
     }
     // your trade runs of the last week, and the selected syndicate's partner lanes
-    {
+    if (this.layers) {
       const week = Date.now() - 7 * 86400_000;
       ctx.globalAlpha = 0.5; ctx.strokeStyle = PAL.gold;
       for (const r of (w.player.routes ?? []).filter((x) => x.t > week)) {
@@ -151,8 +153,8 @@ export class GalaxyScene implements Scene {
         ctx.fillStyle = PAL.gold; ctx.fillRect(Math.round(x) + 4, Math.round(y) - 4, 2, 2);
       }
       if (w.player.bookmarks?.includes(sys.id)) { ctx.fillStyle = PAL.gold; ctx.fillRect(Math.round(x) - 6, Math.round(y) - 6, 2, 2); ctx.fillRect(Math.round(x) + 4, Math.round(y) - 6, 2, 2); }
-      { const wd = wondersIn(w, sys.id)[0]; if (wd && (wd.seen || w.player.flags?.[`rumour:${wd.id}`])) { ctx.fillStyle = PAL.gold; ctx.fillRect(Math.round(x) + 6, Math.round(y) + 4, 2, 2); ctx.fillRect(Math.round(x) + 7, Math.round(y) + 3, 1, 1); } }
-      { const inf = infraAt(w, sys.id); if (inf.length) { const lit = inf.some(infraLit); if (lit && Math.floor(w.time * 1.5) % 2 === 0) { ctx.fillStyle = "#ffe9a0"; ctx.fillRect(Math.round(x) - 1, Math.round(y) - 9, 3, 3); } else if (!lit) { ctx.fillStyle = PAL.danger; ctx.fillRect(Math.round(x), Math.round(y) - 9, 2, 2); } } }
+      if (this.layers) { const wd = wondersIn(w, sys.id)[0]; if (wd && (wd.seen || w.player.flags?.[`rumour:${wd.id}`])) { ctx.fillStyle = PAL.gold; ctx.fillRect(Math.round(x) + 6, Math.round(y) + 4, 2, 2); ctx.fillRect(Math.round(x) + 7, Math.round(y) + 3, 1, 1); } }
+      if (this.layers) { const inf = infraAt(w, sys.id); if (inf.length) { const lit = inf.some(infraLit); if (lit && Math.floor(w.time * 1.5) % 2 === 0) { ctx.fillStyle = "#ffe9a0"; ctx.fillRect(Math.round(x) - 1, Math.round(y) - 9, 3, 3); } else if (!lit) { ctx.fillStyle = PAL.danger; ctx.fillRect(Math.round(x), Math.round(y) - 9, 2, 2); } } }
       const here = this.rooms[sys.name.toLowerCase()];
       if (here) { ctx.fillStyle = PAL.info; ctx.fillRect(Math.round(x) + 4, Math.round(y) - 1, 2, 2); drawText(ctx, `${here}`, x + 7, y - 4, PAL.info); }
       if (sys.id === w.player.systemId) { ctx.strokeStyle = PAL.white; ctx.strokeRect(Math.round(x) - 4.5, Math.round(y) - 4.5, 9, 9); }
@@ -209,7 +211,7 @@ export class GalaxyScene implements Scene {
       drawText(ctx, `COURSE: ${dst.name} - ${route.length - 1} JUMPS - ${fuel} FUEL (${Math.round(w.player.fuel)} ABOARD)`, OX, VH - 30, ok ? PAL.gold : PAL.warn);
       if (!ok) drawText(ctx, "NOT ENOUGH FUEL: REFUEL AT THE MARKED STATIONS ALONG THE ROUTE", OX, VH - 21, PAL.warn);
     }
-    const help = "CLICK: INTEL - CLICK AGAIN/N: PLOT COURSE - B: BOOKMARK - ESC BACK";
+    const help = `CLICK: INTEL - CLICK AGAIN/N: PLOT COURSE - B: BOOKMARK - V: LAYERS ${this.layers ? "ON" : "OFF"} - ESC BACK`;
     drawText(ctx, help, VW / 2 - textWidth(help) / 2, VH - 10, PAL.greyDark);
   }
 }

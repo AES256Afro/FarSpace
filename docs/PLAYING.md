@@ -229,6 +229,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Comfort
+
+- Settings: COMMS BAND (quiet, normal, busy) and THE SHIP'S VOICE (on or off).
+- V on the galaxy map hides the overlays when the chart gets busy.
+- Touch controls have a pause (II) and a LOG button.
+- Elite in every trade and control greets you as MASTER OF THE LANES.
+
 ## Small kindnesses
 
 - Keep the Keeper's light lit and be there an hour later: the Crossing passes

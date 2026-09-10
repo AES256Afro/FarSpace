@@ -31,6 +31,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "warVeteran", title: "WAR VETERAN", desc: "Fight for the winning side of a syndicate war", check: (w) => !!w.player.flags?.warVeteran },
   { id: "theLane", title: "THE LANE", desc: "Find the missing convoy", check: (w) => !!w.player.flags?.theLane },
   { id: "charter", title: "CHARTERED", desc: "Hold a faction charter", check: (w) => !!w.player.flags?.charter },
+  { id: "master", title: "MASTER OF THE LANES", desc: "Elite in every trade", check: (w) => !!w.player.flags?.master },
   { id: "patron", title: "PATRON", desc: "Fund a town project", check: (w) => Object.values(w.systems).some((s) => s.planets.some((pl) => pl.surface?.pois.some((p) => (p.projects ?? []).length > 0))) },
   { id: "keeper", title: "THE KEEPER'S LIGHT", desc: "Decide whose light it is", check: (w) => !!w.player.flags?.keeper },
   { id: "notable", title: "SOMEBODY", desc: "Carry one of the galaxy's notables", check: (w) => !!w.player.flags?.notable },

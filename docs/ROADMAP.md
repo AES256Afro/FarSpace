@@ -545,4 +545,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] The Crossing returns to a kept light; the cat brings gifts; the wall
       records all three campaigns
 
+## Milestone 47 — Comfort ✅ (Sep 2026)
+- [x] Settings for the comms band and the ship's voice; galaxy map layers (V);
+      touch pause and log buttons; a title for Elite in every trade
+
 ## Later

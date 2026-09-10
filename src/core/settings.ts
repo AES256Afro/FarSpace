@@ -9,6 +9,8 @@ export interface Settings {
   music: number;                  // hum volume 0..1
   sfx: number;                    // effects volume 0..1
   presence: boolean;              // share position with pilots in the same system
+  voice?: boolean;                // the ship speaks on the band (default on)
+  chatter?: "quiet" | "normal" | "busy"; // how busy the comms band is (default normal)
 }
 
 export const ACTIONS: { key: string; label: string }[] = [

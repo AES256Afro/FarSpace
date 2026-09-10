@@ -28,6 +28,8 @@ export function touchButtons(mode: "flight" | "walk" | "menu"): Btn[] {
       { key: "i", label: "SHIP", x: VW - 40, y: 14, r: 10 },
       { key: "j", label: "CRZ", x: VW - 64, y: 14, r: 10 },
       { key: "n", label: "AUTO", x: VW - 88, y: 14, r: 10 },
+      { key: "l", label: "LOG", x: VW - 112, y: 14, r: 10 },
+      { key: "Escape", label: "II", x: VW - 136, y: 14, r: 10 },
     ];
   }
   if (mode === "walk") {
