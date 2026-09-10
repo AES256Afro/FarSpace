@@ -120,6 +120,7 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
     ctx.restore(); ctx.globalAlpha = 1;
     const d = dist(p.x, p.y, wd.x, wd.y);
     if (d < 1400) { const label = wd.seen ? wd.name.toUpperCase() : "SOMETHING VAST"; drawText(ctx, label, sx - textWidth(label) / 2, sy - 40 * z - 10, PAL.gold); }
+    if (wd.kind === "ark" && d < 160) drawText(ctx, "[E] BOARD THE ARK", sx - 36, sy + 30 * z + 4, PAL.gold);
   }
   // lighthouses: a beacon mast with a slow strobe, or a depot with tank lights
   for (const inf of infraAt(g.world, sys.id)) {

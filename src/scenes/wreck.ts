@@ -4,6 +4,7 @@ import { Game, Scene, VW } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 import { RNG, hashStr } from "../core/rng";
+import { logEntry } from "../world";
 import { addCargo, WreckDef } from "../world";
 import { commodity } from "../data/data";
 import { sfx } from "../core/sfx";
@@ -56,8 +57,8 @@ export class WreckScene implements Scene {
       const [tx, ty] = spots.splice(rng.int(0, spots.length - 1), 1)[0];
       if (rng.chance(0.6)) this.fires.push({ tx, ty }); else this.breaches.push({ tx, ty });
     }
-    this.say(`${w.name.toUpperCase()} - HULL COLD. WATCH FOR FIRE.`);
-    sfx.alarm();
+    if (w.id.startsWith("ark-")) { this.say(`${w.name.toUpperCase()} - TEN KILOMETRES OF SLEEPING SHIP. THE AIR IS OLD BUT IT IS AIR.`); sfx.pa(); }
+    else { this.say(`${w.name.toUpperCase()} - HULL COLD. WATCH FOR FIRE.`); sfx.alarm(); }
   }
 
   solid(tx: number, ty: number): boolean {
@@ -70,6 +71,7 @@ export class WreckScene implements Scene {
   say(m: string): void { this.msg = m; this.msgTimer = 3; }
 
   leave(g: Game): void {
+    if (this.wreck.id.startsWith("ark-") && this.crates.every((c) => c.taken)) { (g.world.player.codex ??= {})["signal:THE SLEEPERS"] = 1; g.toast("SOMEWHERE DEEP IN THE ARK, A LIGHT COMES ON THAT WASN'T ON BEFORE."); logEntry(g.world, `Walked the corridors of ${this.wreck.name}`); flag(g, "arkWalker"); }
     if (this.crates.every((c) => c.taken)) { this.wreck.looted = true; flag(g, "wreckLooted"); gainMaterials(g, { germanium: 1 + Math.floor(Math.random() * 2), iron: 2, nickel: Math.random() < 0.5 ? 2 : 0 }); }
     g.setScene("flight");
   }

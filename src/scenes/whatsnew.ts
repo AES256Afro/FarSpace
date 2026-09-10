@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.29 - APPROACH AND LAUNCH", [
+    "DOCKING IS AN APPROACH NOW: CONTROL CLEARS A BAY AND THE SHIP GLIDES IN. LAUNCHES TOO. THE ARK CAN BE BOARDED.",
+  ]],
   ["0.28 - WONDERS", [
     "EVERY GALAXY HAS LANDMARKS NOW: A RING, A PULSAR, AN ARK, A GLASS BELT, TWIN STARS. RUMOURS IN THE BARS POINT THE WAY.",
   ]],

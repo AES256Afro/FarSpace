@@ -99,7 +99,7 @@ export class StationScene implements Scene {
     }
     g.showHint("station", "ARROWS/CLICK TO BROWSE - ENTER TO ACT - ESC UNDOCKS - P WALKS THE DECK");
     g.autosave();
-    const bay = 1 + (this.station.id.length * 7 + Math.floor(g.world.time)) % 6;
+    const bay = g.lastBay || (1 + (this.station.id.length * 7 + Math.floor(g.world.time)) % 6);
     const title = rankOf(p, "rescuer").idx >= 3 ? rankOf(p, "rescuer").title : hasCharter(g.world, this.station.factionId) ? "CHARTERED" : (p.lineage ?? []).length ? "OF THE LINE" : "";
     g.toast(`${this.station.name.toUpperCase()} CONTROL: ${p.shipName ? p.shipName + ", " : ""}${title ? title + ", " : ""}CLEARANCE GRANTED, BAY ${bay}`);
     { const c = collectCharters(p); for (const l of c.lines) g.toast(l); if (c.total !== 0) sfx.pickup(); }
@@ -315,7 +315,7 @@ export class StationScene implements Scene {
       g.world.player.lastDockedAt = this.station.id;
       if (this.routeShare > 0 && this.baseOwner) { const v = Math.min(5000, this.routeShare); this.routeShare = 0; void wire.baseActionFor(this.baseOwner, "route", { value: v }); }
       if (this.returnTo === "stationwalk") g.setScene("stationwalk");
-      else { g.world.player.dockedAt = null; g.setScene("flight"); g.toast("UNDOCKED"); }
+      else { g.world.player.dockedAt = null; g.justUndocked = true; g.setScene("flight"); g.toast("UNDOCKED"); }
       return;
     }
     if (inp.wasPressed("p")) { g.setScene("stationwalk"); return; }

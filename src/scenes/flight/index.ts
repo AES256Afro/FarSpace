@@ -81,6 +81,20 @@ export class FlightScene implements Scene {
     this.floaters = [];
     this.comms = [];
     this.wonderSeen.clear();
+    this.docking = null;
+    if (g.justUndocked) {
+      // launch sequence: out of the bay along your nose, control on the band
+      g.justUndocked = false;
+      const p = g.world.player;
+      const st = g.world.systems[p.systemId].stations.find((s) => dist(p.x, p.y, Math.cos(s.angle) * s.orbit, Math.sin(s.angle) * s.orbit) < 120);
+      if (st) {
+        const sx = Math.cos(st.angle) * st.orbit, sy = Math.sin(st.angle) * st.orbit;
+        const a = Math.atan2(p.y - sy, p.x - sx) || p.angle;
+        p.angle = a; p.vx = Math.cos(a) * 70; p.vy = Math.sin(a) * 70;
+        this.launching = 1.2;
+        this.comms.push({ from: `${st.name.toUpperCase()} CONTROL`, text: `BAY ${g.lastBay || 1} RELEASING. MIND THE TRAFFIC.`, life: 5, color: PAL.ui });
+      }
+    }
     populate(this, g);
     this.spawnDrifters(g);
     this.launchDrones(g);
@@ -136,6 +150,15 @@ export class FlightScene implements Scene {
     w.time += dt;
     tickWorld(w, dt);
 
+    if (this.updateDocking(g, dt)) { this.updateAmbient(g, dt); return; }
+    if (this.launching > 0) {
+      // the launch: the bay spits you out along your nose; controls come back in a second
+      this.launching -= dt;
+      p.x += p.vx * dt; p.y += p.vy * dt;
+      this.updateAmbient(g, dt);
+      if (this.launching <= 0) { this.comms.push({ from: "CONTROL", text: "YOU'RE CLEAR. SAFE FLYING.", life: 5, color: PAL.ui }); }
+      return;
+    }
     if (g.input.wasPressed("Tab")) this.mapOpen = !this.mapOpen;
     if (g.input.wasPressed("g")) { g.setScene("galaxy"); return; }
     if (g.input.wasPressed("i")) { g.setScene("interior"); return; }
@@ -449,10 +472,32 @@ export class FlightScene implements Scene {
     const rep = p.rep?.[st.factionId] ?? 0;
     if (st.military && rep < -20) { g.toast("DOCKING DENIED - YOUR RECORD PRECEDES YOU"); return false; }
     if (rep < -60) { g.toast("DOCKING DENIED - PERSONA NON GRATA"); return false; }
-    p.dockedAt = st.id;
-    p.vx = 0; p.vy = 0;
-    sfx.dock();
-    g.setScene("station");
+    if (this.docking) return true;
+    // the approach: control talks you in, the ship glides to the bay, then the deck
+    const bay = 1 + (st.id.length * 7 + Math.floor(g.world.time)) % 6;
+    this.docking = { st, t: 0, x0: p.x, y0: p.y, bay };
+    g.lastBay = bay;
+    this.cruise = false; this.autopilot = false;
+    this.comms.push({ from: `${st.name.toUpperCase()} CONTROL`, text: `${(p.shipName ?? "VESSEL").toUpperCase()}, CLEARED FOR BAY ${bay}. FOLLOW THE LIGHTS, WE HAVE YOU.`, life: 6, color: PAL.ui });
+    sfx.blip();
+    return true;
+  }
+  updateDocking(g: Game, dt: number): boolean {
+    const d = this.docking; if (!d) return false;
+    const p = g.world.player;
+    d.t += dt;
+    const k = Math.min(1, d.t / 1.6);
+    const ease = k * k * (3 - 2 * k);
+    const tx = Math.cos(d.st.angle) * d.st.orbit, ty = Math.sin(d.st.angle) * d.st.orbit;
+    p.x = d.x0 + (tx - d.x0) * ease; p.y = d.y0 + (ty - d.y0) * ease;
+    p.vx = (tx - d.x0) / 1.6 * (1 - k); p.vy = (ty - d.y0) / 1.6 * (1 - k);
+    p.angle += angDiff(p.angle, Math.atan2(ty - d.y0, tx - d.x0)) * Math.min(1, dt * 4);
+    if (k >= 1) {
+      this.docking = null;
+      p.dockedAt = d.st.id; p.vx = 0; p.vy = 0;
+      sfx.dock();
+      g.setScene("station");
+    }
     return true;
   }
 
@@ -737,6 +782,8 @@ export class FlightScene implements Scene {
   }
   faultTimer = 40;
   wonderSeen = new Set<string>();
+  docking: { st: StationDef; t: number; x0: number; y0: number; bay: number } | null = null;
+  launching = 0;
   chatterTimer = 25;
   trafficTimer = 40;
   updateAmbient(g: Game, dt: number): void {
@@ -1006,6 +1053,13 @@ export class FlightScene implements Scene {
     }
     for (const jp of sys.jumpPoints) {
       if (dist(p.x, p.y, jp.x, jp.y) < 70) { this.doJump(g, jp.targetSystemId, jp.guarded); return; }
+    }
+    for (const wd of wondersIn(g.world, sys.id)) {
+      if (wd.kind !== "ark" || dist(p.x, p.y, wd.x, wd.y) > 160) continue;
+      let wk = sys.wrecks.find((x) => x.id === `ark-${wd.id}`);
+      if (!wk) { wk = { id: `ark-${wd.id}`, x: wd.x, y: wd.y, looted: false, loot: [{ id: "relics", qty: 3 }, { id: "data", qty: 2 }, { id: "parts", qty: 2 }], hazard: 0.2, name: wd.name }; sys.wrecks.push(wk); }
+      if (wk.looted) { g.toast(`${wd.name.toUpperCase()}: YOU'VE WALKED ITS CORRIDORS ALREADY. IT TURNS ON, SLOWLY, WITHOUT YOU.`); return; }
+      p.vx = 0; p.vy = 0; g.wreckTarget = wk; g.setScene("wreck"); return;
     }
     for (const w of sys.wrecks) {
       if (!w.looted && dist(p.x, p.y, w.x, w.y) < 60) {

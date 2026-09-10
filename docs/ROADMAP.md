@@ -467,4 +467,9 @@ Time passes for the people on the ship, and for the ship.
 - [x] Sightings pay data, fill the codex, complete tourist fares and name
       postcards; old saves get their wonders on load
 
+## Milestone 29 — Approach and Launch ✅ (Sep 2026)
+- [x] Docking is an approach: control clears a bay, the ship glides in
+- [x] Undocking is a launch: the bay releases you, control calls you clear
+- [x] The Ark can be boarded and walked; its crates and a codex entry inside
+
 ## Later

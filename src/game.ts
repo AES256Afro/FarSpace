@@ -70,6 +70,8 @@ export class Game {
   }
 
   cloudStatus = "";
+  justUndocked = false; // the next flight enter plays the launch
+  lastBay = 0;          // the bay control cleared you for, so the deck agrees with the band
 
   save(): void {
     this.autosave();

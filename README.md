@@ -51,6 +51,9 @@ charters and enforce embargoes, station profiles and bulletins, gate traffic,
 comms chatter, void drifters near gas giants, crew who talk to each other, a
 wall of record aboard your ship, and a second campaign about a missing convoy.
 
+**Approach and launch:** docking is a glide into a cleared bay with control
+on the band; undocking is a launch; the Ark can be boarded and walked.
+
 **Wonders:** a handful of landmarks per galaxy to find by rumour, see with
 your own eyes, tour with passengers and send postcards from.
 
@@ -150,7 +153,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestones 1–28 are live (v0.28.0). See the [roadmap](docs/ROADMAP.md) for what's next.
+Milestones 1–29 are live (v0.29.0). See the [roadmap](docs/ROADMAP.md) for what's next.
 
 ```bash
 npm test         # vitest: world-gen, routing, economy, law, missions, save migrations

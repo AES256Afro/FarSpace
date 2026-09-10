@@ -195,6 +195,7 @@ export class StationWalkScene implements Scene {
       }
       if (near.def.tab === null) {
         g.world.player.dockedAt = null;
+        g.justUndocked = true;
         g.setScene("flight");
         g.toast("UNDOCKED");
         return;

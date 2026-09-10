@@ -101,6 +101,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   board: sample runs, outcrop runs, and a plant to fix on the spot. Jobs pay
   out when you walk back in.
 
+## Docking and launching
+
+- Press E near a station and control clears you for a bay: the ship glides in
+  on its own while the band talks you down. Undocking, the bay releases you
+  along your nose and control calls you clear a second later.
+- The Ark, where a galaxy has one, can be boarded: press E alongside it to
+  walk its corridors like a wreck. Something in it notices you.
+
 ## Wonders
 
 - Every galaxy has a handful of landmarks: a ring lit from inside, a pulsar,
