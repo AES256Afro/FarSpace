@@ -876,7 +876,10 @@ export class StationScene implements Scene {
     drawText(ctx, "STOCK", 235, top, PAL.greyDark);
     drawText(ctx, "HELD", 280, top, PAL.greyDark);
     drawText(ctx, "TREND", 320, top, PAL.greyDark);
-    drawText(ctx, "ENTER SELL  SHIFT BULK", 366, top, PAL.greyDark);
+    // the hint follows the cursor: what Enter will do to the highlighted row
+    const selId = this.marketRows(g)[clamp(this.cursor, 0, Math.max(0, this.marketRows(g).length - 1))];
+    const selHeld = selId ? (p.cargo[selId] ?? 0) : 0;
+    drawText(ctx, selHeld > 0 ? "ENTER SELLS  SHIFT ALL" : "ENTER BUYS  SHIFT X10", 366, top, selHeld > 0 ? PAL.gold : PAL.greyDark);
     const rows = this.marketRows(g);
     const rowH = rows.length > 12 ? 9 : 11;
     rows.forEach((id, i) => {
