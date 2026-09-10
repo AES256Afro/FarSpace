@@ -4,7 +4,7 @@
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp } from "../world";
+import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS } from "../world";
 import { commodity } from "../data/data";
 
 const PASSENGER_LINES: Record<string, { high: string[]; mid: string[]; low: string[] }> = {
@@ -368,7 +368,7 @@ export class InteriorScene implements Scene {
     // crew talk to each other when you're not talking to them
     this.banterTimer -= dt;
     if (this.banterTimer <= 0 && !this.talk && p.crew.length >= 2) {
-      this.banterTimer = 30 + Math.random() * 30;
+      this.banterTimer = ((p.furnishings ?? []).includes("jukebox") ? 18 : 30) + Math.random() * 30;
       const a = p.crew[Math.floor(Math.random() * p.crew.length)];
       let b = p.crew[Math.floor(Math.random() * p.crew.length)];
       if (b === a) b = p.crew.find((c) => c !== a) ?? a;
@@ -439,6 +439,18 @@ export class InteriorScene implements Scene {
       if (c.sick) { ctx.fillStyle = "#9fd8a0"; ctx.fillRect(ox + s.tx * T + T / 2 + 3, oy + s.ty * T, 2, 2); }
       else if (c.morale < 30 && Math.floor(g.world.time * 2) % 2 === 0) { ctx.fillStyle = PAL.warn; ctx.fillRect(ox + s.tx * T + T / 2 + 3, oy + s.ty * T, 2, 2); }
     });
+    for (const id of p.furnishings ?? []) {
+      const f = FURNISHINGS.find((x) => x.id === id); if (!f) continue;
+      const t = nearestTile(this.deck, 0, 0, f.tile, 1e9); if (!t) continue;
+      // one tile to the right of the thing it belongs to, or left if that's a wall
+      const tx = this.tileAt(t.tx + 1, t.ty) === "." ? t.tx + 1 : t.tx - 1;
+      const x = ox + tx * T, y = oy + t.ty * T;
+      if (id === "plant") { ctx.fillStyle = "#6a4a2a"; ctx.fillRect(x + 3, y + 6, 4, 3); ctx.fillStyle = "#3aa55e"; ctx.fillRect(x + 2, y + 2, 2, 3); ctx.fillRect(x + 5, y + 1, 2, 4); ctx.fillRect(x + 4, y + 4, 2, 2); }
+      else if (id === "rug") { ctx.fillStyle = "#7a3a3a"; ctx.fillRect(x + 1, y + 2, 8, 6); ctx.fillStyle = "#c7a54a"; ctx.fillRect(x + 2, y + 3, 6, 4); ctx.fillStyle = "#7a3a3a"; ctx.fillRect(x + 3, y + 4, 4, 2); }
+      else if (id === "jukebox") { ctx.fillStyle = "#5d6680"; ctx.fillRect(x + 2, y + 1, 6, 8); ctx.fillStyle = Math.floor(g.world.time * 3) % 2 ? "#e060ff" : "#63f2c8"; ctx.fillRect(x + 3, y + 2, 4, 2); ctx.fillStyle = "#ffd75a"; ctx.fillRect(x + 4, y + 6, 2, 1); }
+      else if (id === "viewport") { ctx.fillStyle = "#0b1020"; ctx.fillRect(x + 1, y + 1, 8, 8); ctx.fillStyle = "#9aa5bd"; ctx.fillRect(x + 1, y + 1, 8, 1); ctx.fillRect(x + 1, y + 8, 8, 1); for (let i = 0; i < 4; i++) { ctx.fillStyle = i % 2 ? "#ffffff" : "#5ab3ff"; ctx.fillRect(x + 2 + ((i * 3 + Math.floor(g.world.time)) % 6), y + 2 + (i * 2) % 5, 1, 1); } }
+      else if (id === "shelf") { ctx.fillStyle = "#6a4a2a"; ctx.fillRect(x + 1, y + 4, 8, 1); ctx.fillRect(x + 1, y + 7, 8, 1); const n = Math.min(4, Math.floor(((p.codex ? Object.keys(p.codex).length : 0) + (p.cargo.relics ?? 0) + (p.achievements ?? []).length) / 3)); for (let i = 0; i < n; i++) { ctx.fillStyle = ["#e060ff", "#ffd75a", "#63f2c8", "#ff9a3a"][i]; ctx.fillRect(x + 2 + i * 2, y + 2, 1, 2); } }
+    }
     if (p.cat && (this.cat.x || this.cat.y)) {
       const cx = Math.round(ox + this.cat.x), cy = Math.round(oy + this.cat.y);
       ctx.fillStyle = "#e0b070"; ctx.fillRect(cx - 2, cy - 1, 4, 2); ctx.fillRect(cx + 1, cy - 3, 2, 2); // body, head

@@ -32,6 +32,19 @@ export function pickChatter(g: Game, rng: RNG): ChatterLine | null {
   if (war && war.systemId === sys.id) pool.push({ from: `[${war.defender}] CONVOY`, text: rng.pick([`[${war.attacker}] RAIDERS AT THE ${rng.pick(["GATE", "BELT", "OUTER LANE"])}. ANYONE FRIENDLY, WE'D TAKE THE HELP.`, "HOLD FORMATION. THEY WANT THE CARGO, NOT US. PROBABLY."]) });
   for (const sy of w.syndicates ?? []) if (sy.systemId === sys.id) pool.push({ from: `[${sy.tag}] DISPATCH`, text: rng.pick([`CONVOY ${rng.int(2, 19)} DEPARTING FOR ${(findStation(w, sy.partners[0] ?? "")?.st.name ?? "THE PARTNERS").toUpperCase()}, ESCORT ON STATION`, "ALL [${sy.tag}] HULLS: TREASURY SAYS NO OVERTIME THIS CYCLE. GRIN AND BEAR IT.".replace("${sy.tag}", sy.tag), `INDEPENDENTS WELCOME AT THE BASE. WORK ON THE BOARD. DON'T TOUCH THE CONVOYS.`]) });
   if (p.wanted > 0.4 && sys.factionId !== "vex") pool.push({ from: `${fac.name.split(" ")[0].toUpperCase()} PATROL`, text: "BE ADVISED: A FLAGGED HULL IS TRANSITING THIS SYSTEM. PATROLS ARE AWARE." });
+  // fame: the lanes remember what this ship has done
+  const ship = (p.shipName ?? "").toUpperCase();
+  if (ship && st) {
+    const famous: string[] = [];
+    if ((p.rescues ?? 0) >= 3) famous.push(`THAT'S THE ${ship}. ANSWERED ${p.rescues} MAYDAYS THAT I KNOW OF. GIVE THEM THE LANE.`);
+    if ((p.repairs ?? 0) >= 3) famous.push(`${ship} ON THE SCOPE. THEIR ENGINEER PUT MY COUSIN'S FREIGHTER BACK TOGETHER OFF ${sys.name.toUpperCase()}.`);
+    if ((p.fares ?? 0) >= 5) famous.push(`${ship}? THE LINER? MY SISTER RODE WITH THEM. SAID THE CAT SAT ON HER LAP THE WHOLE WAY.`);
+    if ((w.infra ?? []).some((i) => i.owner === (p.captainName ?? "YOU") || i.owner)) famous.push(`${ship} KEEPS THE LIGHT ON OUT PAST THE GATES. IF YOU'VE EVER LIMPED HOME BY THAT BEACON, YOU OWE THEM A DRINK.`);
+    if ((p.lineage ?? []).length) famous.push(`${ship}, STILL FLYING. ${p.lineage!.length + 1} CAPTAINS NOW. SOME HULLS JUST DON'T KNOW HOW TO STOP.`);
+    if ((p.alumni ?? []).length >= 2) famous.push(`HALF THE GOOD HANDS ON THIS STATION SERVED ON THE ${ship} ONCE. THEY ALL TELL THE SAME STORIES.`);
+    if ((p.kills ?? 0) >= 40 && (p.rescues ?? 0) < 1) famous.push(`${ship} INBOUND. KEEP YOUR HEADS DOWN, THAT ONE SHOOTS FIRST.`);
+    if (famous.length) pool.push({ from: rng.pick(["HAULER MARGIT", "FREIGHTER OKONKWO", `${st.name.toUpperCase()} CONTROL`, "TENDER BLUE-4"]), text: rng.pick(famous) });
+  }
   if (!pool.length) return null;
   return rng.pick(pool);
 }

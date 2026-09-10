@@ -101,6 +101,17 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   board: sample runs, outcrop runs, and a plant to fix on the spot. Jobs pay
   out when you walk back in.
 
+## Keepsakes
+
+- F7 takes a postcard anywhere but the title screen: the frame as it is with a
+  caption strip, saved as a PNG.
+- Any shipyard sells things for the deck: a plant, a rug, a jukebox, a
+  viewport, a trophy shelf. They're drawn aboard, crew and passengers are
+  happier for them, and the jukebox keeps the crew talking.
+- The lanes remember: once you've answered enough maydays, carried enough
+  fares or lit a beacon, the comms band talks about your ship by name, and
+  station control greets a rescuer or a chartered captain by title.
+
 ## GalNet serials
 
 - One story runs at a time on GalNet: an inquiry, a water vote, a captain's

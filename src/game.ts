@@ -1,6 +1,8 @@
 // Game shell: canvas, scaling, scene management, sprite cache, save/load, hints.
 
 import { Input } from "./core/input";
+import { drawText as drawTextTo } from "./gfx/font";
+import { findStation } from "./world";
 import { RNG } from "./core/rng";
 import { World, generateWorld, WreckDef } from "./world";
 import { loadSave, writeSave, saveKeyFor, activeSlot } from "./save";
@@ -75,6 +77,42 @@ export class Game {
   }
 
   // Quiet save: local always, cloud when linked. Runs on dock and after jumps.
+  // A postcard: the frame as it is, a caption strip, saved as a PNG.
+  postcard(caption: string): void {
+    try {
+      const c = document.createElement("canvas");
+      c.width = VW * 2; c.height = VH * 2 + 24;
+      const cx = c.getContext("2d")!;
+      cx.imageSmoothingEnabled = false;
+      cx.fillStyle = "#05060a"; cx.fillRect(0, 0, c.width, c.height);
+      cx.drawImage(this.buffer, 0, 0, VW, VH, 0, 0, VW * 2, VH * 2);
+      cx.save(); cx.translate(8, VH * 2 + 6); cx.scale(2, 2);
+      drawTextTo(cx, caption.toUpperCase().slice(0, 90), 0, 0, "#c7a54a");
+      cx.restore();
+      const p = this.world.player;
+      p.postcards = (p.postcards ?? 0) + 1;
+      c.toBlob((blob) => {
+        if (!blob) return;
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `farspace-postcard-${p.postcards}.png`;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+      }, "image/png");
+      this.toast(`POSTCARD ${p.postcards} SAVED`);
+    } catch { this.toast("POSTCARD FAILED"); }
+  }
+
+  // What a postcard from here would say
+  postcardCaption(): string {
+    const p = this.world.player;
+    const sys = this.world.systems[p.systemId];
+    const ship = (p.shipName ?? hull(p.hullId).name).toUpperCase();
+    const h = Math.floor(this.world.time / 3600), m = Math.floor((this.world.time % 3600) / 60);
+    const where = this.sceneName === "orbit" ? `ORBIT OF ${(sys.planets[this.orbitPlanetIdx]?.name ?? sys.name).toUpperCase()}` : this.sceneName === "interior" ? `ABOARD ${ship}` : this.sceneName === "station" || this.sceneName === "stationwalk" ? (findStation(this.world, p.dockedAt ?? "")?.st.name ?? sys.name).toUpperCase() : this.sceneName === "surface" ? `GROUNDSIDE, ${sys.name.toUpperCase()}` : sys.name.toUpperCase();
+    return `${where} - ${ship} - ${h}H ${m}M UNDER WAY`;
+  }
+
   autosave(): void {
     writeSave(this.world);
     syncScores(this.world);

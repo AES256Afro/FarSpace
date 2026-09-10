@@ -75,6 +75,7 @@ function frame(now: number): void {
   convoyUpdate(game);
   checkAchievements(game);
   game.scene.draw(game, game.bctx);
+  if (game.input.wasPressed("F7") && game.sceneName !== "title") game.postcard(game.postcardCaption());
   game.input.flush();
 
   game.ctx.imageSmoothingEnabled = false;

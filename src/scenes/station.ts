@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS, roleLabel } from "../
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter,
+  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter,
 } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
@@ -99,7 +99,8 @@ export class StationScene implements Scene {
     g.showHint("station", "ARROWS/CLICK TO BROWSE - ENTER TO ACT - ESC UNDOCKS - P WALKS THE DECK");
     g.autosave();
     const bay = 1 + (this.station.id.length * 7 + Math.floor(g.world.time)) % 6;
-    g.toast(`${this.station.name.toUpperCase()} CONTROL: ${p.shipName ? p.shipName + ", " : ""}CLEARANCE GRANTED, BAY ${bay}`);
+    const title = rankOf(p, "rescuer").idx >= 3 ? rankOf(p, "rescuer").title : hasCharter(g.world, this.station.factionId) ? "CHARTERED" : (p.lineage ?? []).length ? "OF THE LINE" : "";
+    g.toast(`${this.station.name.toUpperCase()} CONTROL: ${p.shipName ? p.shipName + ", " : ""}${title ? title + ", " : ""}CLEARANCE GRANTED, BAY ${bay}`);
   }
 
   settleCrew(g: Game): void {
@@ -118,7 +119,9 @@ export class StationScene implements Scene {
       if ((p.cargo.food ?? 0) > 0) { removeCargo(p, "food", 1); c.morale = Math.min(100, c.morale + 8); }
       else c.morale = Math.max(0, c.morale - 15);
       if (p.cat) c.morale = Math.min(100, c.morale + 2);
+      c.morale = Math.min(100, c.morale + Math.min(3, (p.furnishings ?? []).length));
     }
+    for (const m of passengersAboard(p)) m.mood = Math.min(100, (m.mood ?? 60) + Math.min(6, (p.furnishings ?? []).length * 2));
     const quitters = p.crew.filter((c) => c.morale <= 5 && (c.loyalty ?? 0) < 3);
     for (const q of quitters) g.toast(`${q.name.toUpperCase()} WALKED OFF THE SHIP`);
     for (const c of p.crew) if (c.morale <= 5 && (c.loyalty ?? 0) >= 3) { c.morale = 20; c.loyalty = (c.loyalty ?? 0) - 1; g.toast(`${c.name.toUpperCase()} STAYS OUT OF LOYALTY. DON'T PUSH IT.`); }
@@ -827,6 +830,15 @@ export class StationScene implements Scene {
         if (m.shield) { p.shieldMax = Math.round(p.shieldMax * (1 + m.shield)); p.shield = p.shieldMax; }
         flag(g, "outfitted");
         g.toast(`${m.name.toUpperCase()} FITTED - ${m.desc.toUpperCase()}`);
+      } });
+    }
+    for (const f of FURNISHINGS) {
+      if ((p.furnishings ?? []).includes(f.id)) continue;
+      opts.push({ label: `FOR THE DECK: ${f.name.toUpperCase()}`, sub: `${f.price}CR - ${f.desc.toUpperCase()}`, action: () => {
+        if (p.credits < f.price) return g.toast("NOT ENOUGH CREDITS");
+        p.credits -= f.price; (p.furnishings ??= []).push(f.id);
+        g.toast(`${f.name.toUpperCase()} CARRIED ABOARD. ${f.desc.toUpperCase()}`); sfx.pickup();
+        if ((p.furnishings ?? []).length >= 4) flag(g, "homely");
       } });
     }
     opts.push({ label: "REST A WHILE (TEN MINUTES OF SHIP TIME)", sub: "MARKETS BREATHE, TILLS FILL, THE SICK MEND, CREW SETTLE", action: () => {

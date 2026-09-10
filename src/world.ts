@@ -282,6 +282,8 @@ export interface PlayerState {
   alumni?: Alumnus[];                // crew who served and went home
   infraEarned?: number;              // lifetime tolls and fuel sales collected
   cat?: { name: string; since: number } | null; // the ship's cat, if one has adopted you
+  furnishings?: string[];            // things bought for the deck (FURNISHINGS)
+  postcards?: number;                // pictures taken
   lineage?: Captain[];               // captains who sat in this chair before
   captainName?: string;              // who sits in it now (a crew member who took over), if not you
   fares?: number;                    // passengers carried to their destination
@@ -417,6 +419,15 @@ export function restAtDock(w: World, seconds = 600): string[] {
   if (w.infraNews?.length) { out.push(...w.infraNews); w.infraNews = []; }
   return out;
 }
+
+// ---------- Furnishings: a deck you'd want to live on ----------
+export const FURNISHINGS: { id: string; name: string; price: number; desc: string; tile: string }[] = [
+  { id: "plant", name: "A Plant", price: 150, desc: "Something green by the bunks. Crew morale up a little every dock.", tile: "B" },
+  { id: "rug", name: "A Rug", price: 200, desc: "In the bunk room. Passengers settle in better.", tile: "p" },
+  { id: "jukebox", name: "A Jukebox", price: 400, desc: "In the galley. The crew argue about the music, happily.", tile: "K" },
+  { id: "viewport", name: "A Viewport", price: 600, desc: "A real window on the bridge. Passengers and crew both look out of it.", tile: "C" },
+  { id: "shelf", name: "A Trophy Shelf", price: 300, desc: "By the wall of record, for the things you've brought back.", tile: "M" },
+];
 
 // ---------- The ship's cat ----------
 export const CAT_NAMES = ["Biscuit", "Ferrule", "Moth", "Sprocket", "Halyard", "Nebula", "Ratchet", "Comet", "Pixel", "Grommet", "Ballast", "Ember"];

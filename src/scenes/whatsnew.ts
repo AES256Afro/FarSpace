@@ -5,6 +5,10 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.24 - KEEPSAKES", [
+    "F7 TAKES A POSTCARD. FURNISH THE DECK AT ANY SHIPYARD: A PLANT, A RUG, A JUKEBOX, A VIEWPORT, A SHELF.",
+    "THE LANES REMEMBER: THE COMMS BAND TALKS ABOUT YOUR SHIP BY NAME ONCE IT HAS EARNED IT.",
+  ]],
   ["0.23 - SERIALS", [
     "GALNET RUNS SERIALS NOW: STORIES IN PARTS, KEPT ON THE NEWS TAB, ENDING IN A CONTRACT, A PREMIUM OR A RECRUIT.",
   ]],

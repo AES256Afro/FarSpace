@@ -440,4 +440,9 @@ Time passes for the people on the ship, and for the ship.
 - [x] Each ends in a hook at its station: a contract, a market premium, or a
       skilled recruit in the lounge
 
+## Milestone 24 — Keepsakes ✅ (Sep 2026)
+- [x] Postcards (F7): the frame with a caption, saved as a PNG
+- [x] Furnishings for the deck, drawn aboard, with morale and mood effects
+- [x] Fame: the comms band and station control know a ship by its deeds
+
 ## Later
