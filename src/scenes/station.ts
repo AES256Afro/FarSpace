@@ -867,7 +867,7 @@ export class StationScene implements Scene {
     drawText(ctx, "STOCK", 235, top, PAL.greyDark);
     drawText(ctx, "HELD", 280, top, PAL.greyDark);
     drawText(ctx, "TREND", 320, top, PAL.greyDark);
-    drawText(ctx, "ENTER: SELL HELD, ELSE BUY - B BUY - S SELL", 350, top, PAL.greyDark);
+    drawText(ctx, "ENTER SELLS HELD - B/S", 366, top, PAL.greyDark);
     const rows = this.marketRows(g);
     const rowH = rows.length > 12 ? 9 : 11;
     rows.forEach((id, i) => {
