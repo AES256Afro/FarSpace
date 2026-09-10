@@ -349,7 +349,7 @@ export class SurfaceScene implements Scene {
         ctx.fillStyle = PAL.hull; ctx.fillRect(lx + 14, ly - 6, 12, 8);
         ctx.fillStyle = PAL.gold; ctx.fillRect(lx + 19, ly - 10, 2, 2);
         ctx.fillStyle = PAL.ui; ctx.fillRect(lx + 16, ly - 3, 2, 2);
-        drawText(ctx, "CLAIM", lx + 11, ly - 15, PAL.gold);
+        drawText(ctx, "CLAIM", lx + 32, ly - 8, PAL.gold);
       }
     }
     // entrances
