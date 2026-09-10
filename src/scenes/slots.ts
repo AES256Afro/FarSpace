@@ -59,11 +59,11 @@ export class SlotsScene implements Scene {
     drawText(ctx, "SAVE SLOTS", 12, 8, PAL.white);
     drawText(ctx, "ENTER ACTIVATE - C COPY ACTIVE HERE - D DELETE - ESC BACK", VW - textWidth("ENTER ACTIVATE - C COPY ACTIVE HERE - D DELETE - ESC BACK") - 12, 8, PAL.greyDark);
     this.rows.forEach((r, i) => {
-      const y = 30 + i * 40;
-      this.boxes.push([y - 4, y + 30]);
+      const y = 30 + i * 50;
+      this.boxes.push([y - 4, y + 40]);
       const active = i === activeSlot();
-      if (i === this.cursor) { ctx.fillStyle = "#13203a"; ctx.fillRect(8, y - 4, VW - 16, 36); }
-      ctx.strokeStyle = active ? PAL.ui : PAL.uiBorder; ctx.strokeRect(8.5, y - 3.5, VW - 17, 35);
+      if (i === this.cursor) { ctx.fillStyle = "#13203a"; ctx.fillRect(8, y - 4, VW - 16, 46); }
+      ctx.strokeStyle = active ? PAL.ui : PAL.uiBorder; ctx.strokeRect(8.5, y - 3.5, VW - 17, 45);
       drawText(ctx, `SLOT ${i + 1}${active ? " - ACTIVE" : ""}`, 14, y, active ? PAL.ui : PAL.white);
       if (r.empty) { drawText(ctx, "EMPTY", 14, y + 10, PAL.greyDark); return; }
       const ago = r.savedAt ? wire.ageLabel(r.savedAt) : "?";
