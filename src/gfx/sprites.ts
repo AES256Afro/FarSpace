@@ -464,16 +464,20 @@ export function genGlobe(rng: RNG, radius: number, paletteIdx: number, surface: 
     const x = Math.cos(la) * Math.sin(lo), z = Math.cos(la) * Math.cos(lo), y = -Math.sin(la);
     if (z < 0.05) continue;
     const light = 0.55 + 0.6 * Math.max(0, (-x * 0.5 - y * 0.35 + z * 0.75));
-    if (light > 0.85) continue;
+    // the lights come up as the terminator sweeps over them and fade out in full day
+    const dusk = Math.max(0, Math.min(1, (1.0 - light) / 0.35));
+    if (dusk <= 0) continue;
     const px = Math.round(cx + x * radius), py = Math.round(cy + y * radius);
     const n = poi.kind === "city" ? 4 : 2;
     const lrng = rng.fork(poi.id.length + Math.round(poi.lat));
+    ctx.globalAlpha = 0.35 + dusk * 0.65;
     for (let i = 0; i < n; i++) {
       const ox = Math.round(lrng.range(-2, 2)), oy = Math.round(lrng.range(-1.5, 1.5));
       ctx.fillStyle = i === 0 ? "#ffe9a0" : "#d9b45a";
       ctx.fillRect(px + ox, py + oy, 1, 1);
     }
   }
+  ctx.globalAlpha = 1;
   return c;
 }
 
