@@ -72,6 +72,10 @@ export class SurfaceScene implements Scene {
         p.expData = (p.expData ?? 0) + 80;
         g.toast("REGION CHARTED +80 EXPLORATION DATA");
         flag(g, "groundside");
+        p.codex ??= {};
+        const bk = `biome:${BIOMES[this.biome % BIOMES.length].name}`;
+        if (!p.codex[bk]) { p.codex[bk] = 0; p.expData = (p.expData ?? 0) + 120; g.toast(`NEW BIOME IN THE CODEX: ${BIOMES[this.biome % BIOMES.length].name} +120 DATA`); }
+        p.codex[bk]++;
         const charted = Object.values(p.ground).filter((s) => s.charted).length;
         if (charted >= 5) flag(g, "surveyor5");
         if (charted === 1) void wire.post("discovery", `set a rover down on ${pl.name}, ${region.name}`, sys.name);
@@ -186,10 +190,14 @@ export class SurfaceScene implements Scene {
         this.scan = 0;
         this.state.taken.push(ni);
         this.state.scanned.push(ni);
-        p.expData = (p.expData ?? 0) + 45;
+        p.codex ??= {};
+        const sk = `flora:${node.label}`;
+        const first = !p.codex[sk];
+        p.codex[sk] = (p.codex[sk] ?? 0) + 1;
+        p.expData = (p.expData ?? 0) + (first ? 120 : 45);
         p.discoveries += 1;
         gainMaterials(g, { carbon: 1 + Math.floor(Math.random() * 2) });
-        g.toast(`${node.label} LOGGED +45 EXPLORATION DATA`);
+        g.toast(first ? `NEW SPECIES: ${node.label} +120 EXPLORATION DATA` : `${node.label} LOGGED +45 EXPLORATION DATA`);
         flag(g, "exobio");
         sfx.pickup();
       }

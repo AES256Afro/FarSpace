@@ -235,6 +235,7 @@ export interface PlayerState {
   goalContrib?: Record<string, number>; // community goal id → units contributed
   fleet?: StoredShip[];              // hulls parked at stations
   ground?: Record<string, GroundState>; // ground map key → what's been taken/charted
+  codex?: Record<string, number>;    // "flora:<species>", "biome:<name>" → count
 }
 
 export interface GroundState { taken: number[]; charted: boolean; scanned: number[] }

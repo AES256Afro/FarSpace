@@ -20,6 +20,8 @@ export class OrbitScene implements Scene {
   scan = 0;
   msg = ""; msgTimer = 0;
   rowBoxes: [number, number][] = [];
+  regionRows: [number, number][] = [];
+  regionSel: number | null = null; // territory picked for the rover; null = the selected site's region
 
   enter(g: Game): void {
     this.sel = 0;
@@ -63,6 +65,8 @@ export class OrbitScene implements Scene {
     if (inp.wasPressed("ArrowDown")) { this.sel = (this.sel + 1) % pois.length; sfx.blip(); }
     if (inp.wasPressed("ArrowUp")) { this.sel = (this.sel + pois.length - 1) % pois.length; sfx.blip(); }
     if (inp.mousePressed) {
+      const rrow = this.regionRows.findIndex(([y0, y1]) => inp.mouseY >= y0 && inp.mouseY <= y1 && inp.mouseX > 240);
+      if (rrow >= 0) { this.regionSel = this.regionSel === rrow ? null : rrow; sfx.blip(); }
       const row = this.rowBoxes.findIndex(([y0, y1]) => inp.mouseY >= y0 && inp.mouseY <= y1 && inp.mouseX > 240);
       if (row >= 0) { this.sel = row; sfx.blip(); }
       // click a marker on the globe
@@ -92,13 +96,20 @@ export class OrbitScene implements Scene {
       }
     } else this.scan = 0;
 
+    if (inp.wasPressed("[") || inp.wasPressed("]")) {
+      const n = surf.regions.length;
+      const cur = this.regionSel ?? pois[this.sel]?.regionIdx ?? 0;
+      this.regionSel = (cur + (inp.wasPressed("]") ? 1 : n - 1)) % n;
+      sfx.blip();
+    }
     const poi = pois[this.sel];
-    if (poi && inp.wasPressed("l")) {
-      const reg = surf.regions[poi.regionIdx];
+    const roverRegion = this.regionSel ?? poi?.regionIdx ?? 0;
+    if (inp.wasPressed("l") && surf.regions[roverRegion]) {
+      const reg = surf.regions[roverRegion];
       const rep = reg.factionId ? (p.rep[reg.factionId] ?? 0) : 0;
       if (reg.factionId && rep < -40) g.toast("LANDING DENIED - REGION HOSTILE TO YOU");
       else {
-        g.landedRegionIdx = poi.regionIdx;
+        g.landedRegionIdx = roverRegion;
         g.surfaceFresh = true;
         g.surfaceReturn = false;
         sfx.dock();
@@ -127,6 +138,7 @@ export class OrbitScene implements Scene {
 
   draw(g: Game, ctx: CanvasRenderingContext2D): void {
     this.rowBoxes = [];
+    this.regionRows = [];
     const p = g.world.player;
     const sys = g.world.systems[p.systemId];
     const pl = sys.planets[g.orbitPlanetIdx];
@@ -183,14 +195,18 @@ export class OrbitScene implements Scene {
     const px = 246;
     let y = 30;
     drawText(ctx, "TERRITORIES", px, y, PAL.greyDark); y += 9;
-    for (const r of surf.regions) {
+    const roverRegion = this.regionSel ?? surf.pois[this.sel]?.regionIdx ?? 0;
+    surf.regions.forEach((r, ri) => {
       const fac = r.factionId ? faction(r.factionId) : null;
+      this.regionRows.push([y - 1, y + 7]);
+      if (ri === roverRegion) { ctx.fillStyle = "#13203a"; ctx.fillRect(px - 4, y - 2, VW - px, 10); }
       ctx.fillStyle = r.color; ctx.fillRect(px, y + 1, 4, 4);
-      drawText(ctx, `${r.name}`.slice(0, 16), px + 7, y, PAL.grey);
+      const charted = p.ground?.[`${sys.id}:${g.orbitPlanetIdx}:${ri}`]?.charted;
+      drawText(ctx, `${r.name}`.slice(0, 16) + (charted ? " *" : ""), px + 7, y, ri === roverRegion ? PAL.white : PAL.grey);
       drawText(ctx, fac ? fac.name.split(" ")[0] : "UNCLAIMED", px + 76, y, fac ? fac.color : PAL.greyDark);
       drawText(ctx, r.resource.toUpperCase(), px + 176, y, PAL.gold);
       y += 8;
-    }
+    });
     y += 6;
     drawText(ctx, "POINTS OF INTEREST", px, y, PAL.greyDark); y += 9;
     surf.pois.forEach((poi, i) => {
@@ -209,8 +225,12 @@ export class OrbitScene implements Scene {
       drawText(ctx, `${reg.name} - ${reg.factionId ? faction(reg.factionId).name : "unclaimed"}`, px, y, PAL.grey); y += 9;
       const canLand = poi.landable || poi.kind === "ruin";
       drawText(ctx, canLand ? (poi.kind === "city" ? "[E] LAND - CITY" : poi.kind === "ruin" ? `[E] LAND - RUINS${poi.looted ? " (LOOTED)" : ""}` : "[E] LAND") : "NO LANDING PAD", px, y, canLand ? PAL.gold : PAL.greyDark); y += 9;
-      const gs = p.ground?.[`${sys.id}:${g.orbitPlanetIdx}:${poi.regionIdx}`];
-      drawText(ctx, `[L] DROP ROVER IN ${reg.name.toUpperCase()}${gs?.charted ? " (CHARTED)" : ""}`, px, y, PAL.ui);
+    }
+    {
+      const rr = surf.regions[roverRegion];
+      const gs = p.ground?.[`${sys.id}:${g.orbitPlanetIdx}:${roverRegion}`];
+      y += 9;
+      if (rr) drawText(ctx, `[L] DROP ROVER IN ${rr.name.toUpperCase()}${gs?.charted ? " (CHARTED)" : ""}  [ ] PICK REGION`, px, y, PAL.ui);
     }
     drawText(ctx, `SATELLITES: ${surf.satellites}   HOLD V: SURVEY SCAN   L: ROVER`, 8, VH - 22, PAL.greyDark);
     if (this.msg) drawText(ctx, this.msg, VW / 2 - textWidth(this.msg) / 2, VH - 12, PAL.ui);

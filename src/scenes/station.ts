@@ -263,7 +263,7 @@ export class StationScene implements Scene {
         break;
       }
       case "RECORD":
-        this.cursor = 0;
+        this.cursor = clamp(this.cursor, 0, Math.max(0, Math.ceil(ACHIEVEMENTS.length / 2) - 12));
         break;
     }
   }
@@ -889,7 +889,14 @@ export class StationScene implements Scene {
     }
     y += 4;
     drawText(ctx, "HOW DATA IS EARNED: ARRIVE (NAV LOG) - HOLD V IN-SYSTEM (DETAILED) - SURVEY WORLDS FROM ORBIT - FIRST DISCOVERIES", 8, y, PAL.greyDark); y += 9;
-    drawText(ctx, "DISCOVERY SCANNER LOGS FULLY ON ARRIVAL. SURFACE SCANNER DOUBLES SURVEY PAY. RESEARCH POSTS PAY 25% MORE.", 8, y, PAL.greyDark); y += 12;
+    drawText(ctx, "DISCOVERY SCANNER LOGS FULLY ON ARRIVAL. SURFACE SCANNER DOUBLES SURVEY PAY. RESEARCH POSTS PAY 25% MORE.", 8, y, PAL.greyDark); y += 9;
+    {
+      const cx = Object.keys(p.codex ?? {});
+      const species = cx.filter((k) => k.startsWith("flora:")).length, biomes = cx.filter((k) => k.startsWith("biome:")).length;
+      const regions = Object.values(p.ground ?? {}).filter((s) => s.charted).length;
+      const firsts = Object.values(p.firsts ?? {}).filter((c) => c === wire.getCallsign()).length;
+      drawText(ctx, `CODEX: ${species} SPECIES, ${biomes} BIOMES, ${regions} REGIONS CHARTED, ${firsts} FIRST DISCOVERIES`, 8, y, PAL.gold); y += 12;
+    }
     const log = Object.entries(p.expLog ?? {});
     drawText(ctx, `LOGGED SYSTEMS (${log.length}/${Object.keys(w.systems).length}):`, 8, y, PAL.greyDark); y += 10;
     const cols = 3;
@@ -916,14 +923,20 @@ export class StationScene implements Scene {
       `EXPLORER ${rankOf(p, "explorer").title}`, `TRADER ${rankOf(p, "trader").title}`, `MINER ${rankOf(p, "miner").title}`, `MODULES ${(p.modules ?? []).length}`,
     ];
     stats.forEach((t, i) => drawText(ctx, t, 8 + (i % 4) * 118, top + 12 + Math.floor(i / 4) * 9, PAL.grey));
+    const rowsTotal = Math.ceil(ACHIEVEMENTS.length / 2);
+    const first = Math.min(this.cursor, Math.max(0, rowsTotal - 12));
     let y = top + 45;
     ACHIEVEMENTS.forEach((a, i) => {
+      const r = Math.floor(i / 2) - first;
+      if (r < 0 || r >= 12) return;
       const x = 8 + (i % 2) * 236;
-      if (i % 2 === 0 && i > 0) y += 10;
+      const yy = y + r * 10;
       const got = have.has(a.id);
-      drawText(ctx, (got ? "* " : "- ") + a.title, x, y, got ? PAL.gold : PAL.greyDark);
-      drawText(ctx, a.desc, x + 86, y, got ? PAL.grey : PAL.greyDark);
+      drawText(ctx, (got ? "* " : "- ") + a.title, x, yy, got ? PAL.gold : PAL.greyDark);
+      drawText(ctx, a.desc, x + 86, yy, got ? PAL.grey : PAL.greyDark);
     });
+    if (rowsTotal > 12) drawText(ctx, `ROWS ${first + 1}-${Math.min(rowsTotal, first + 12)} OF ${rowsTotal} - UP/DOWN TO SCROLL`, 8, y + 12 * 10 + 2, PAL.greyDark);
+    y += 12 * 10;
   }
 
   drawNews(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
