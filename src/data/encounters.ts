@@ -170,7 +170,10 @@ export const ENCOUNTERS: Encounter[] = [
 // Pick one for the place, weighting down anything seen recently
 export function pickEncounter(g: Game, where: "space" | "ground", rng: RNG): Encounter | null {
   const seen = g.world.player.encounters ?? {};
-  const pool = ENCOUNTERS.filter((e) => e.where === where && (!e.when || e.when(g)));
+  let pool = ENCOUNTERS.filter((e) => e.where === where && (!e.when || e.when(g)));
+  // anything seen four times steps aside while there is something fresher
+  const fresh = pool.filter((e) => (seen[e.id] ?? 0) < 4);
+  if (fresh.length) pool = fresh;
   const weights = pool.map((e) => e.weight / (1 + (seen[e.id] ?? 0) * 2));
   const total = weights.reduce((a, b) => a + b, 0);
   if (!total) return null;
