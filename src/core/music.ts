@@ -35,7 +35,7 @@ function noiseBuffer(ctx: AudioContext, seconds: number, brown: boolean): AudioB
 
 class Music {
   private started = false;
-  private muted = false;
+  private muted = true; // off until the pilot turns it on (H, or Settings)
   private mood = "title";
   private intensity = 0;
   private bus: GainNode | null = null;
@@ -49,7 +49,7 @@ class Music {
   private throb: OscillatorNode | null = null;
 
   constructor() {
-    try { this.muted = localStorage.getItem(PREF_KEY) === "off"; } catch { /* ignore */ }
+    try { this.muted = localStorage.getItem(PREF_KEY) !== "on"; } catch { /* ignore */ }
   }
 
   isMuted(): boolean { return this.muted; }
