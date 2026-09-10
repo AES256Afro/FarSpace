@@ -16,7 +16,7 @@ import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
 import { ENCOUNTERS, pickEncounter } from "../src/data/encounters";
 import { STORY, storyObjective } from "../src/core/story";
-import { homesteadYield, settleHomestead, HOMESTEAD_CAP, tickCrisis, crisisAt } from "../src/world";
+import { homesteadYield, settleHomestead, HOMESTEAD_CAP, tickCrisis, crisisAt, tickGalaxyEvents, galaxyEventAt, rescuePoints, logEntry } from "../src/world";
 import { genGround, groundKey, passable, GW, GH } from "../src/ground";
 import { BLUEPRINTS, upgrade, addMaterials, nextCost, MATERIAL_CAP } from "../src/data/engineering";
 import { jumpFuelCost, communityGoal, weekKey, permitDenied, navRoute, blackMarket, genMissionsFor, groundProgress, missionDeliverable } from "../src/world";
@@ -703,5 +703,24 @@ describe("standing orders", () => {
     expect(order!.shipTotal).toBeGreaterThanOrEqual(3);
     expect(order!.kind).toBe("mining");
     expect(order!.commodityId).toBeTruthy();
+  });
+});
+
+describe("living galaxy", () => {
+  it("events start, mark their system, and end with effects reverted", () => {
+    const w = generateWorld(25, { realGalaxy: true });
+    let tries = 0;
+    while (!w.galaxyEvent && tries++ < 60) tickGalaxyEvents(w, new RNG(700 + tries));
+    expect(w.galaxyEvent).toBeTruthy();
+    const e = w.galaxyEvent!;
+    expect(galaxyEventAt(w, e.systemId)).toBe(e);
+    w.time = e.until + 1;
+    tickGalaxyEvents(w, new RNG(1));
+    expect(w.galaxyEvent).toBeNull();
+    w.player.lives = 3; w.player.repairs = 2; w.player.tows = 1; w.player.rescues = 1;
+    expect(rescuePoints(w.player)).toBe(10);
+    expect(rankOf(w.player, "rescuer").title).toBe("FIRST RESPONDER");
+    for (let i = 0; i < 70; i++) logEntry(w, `entry ${i}`);
+    expect(w.player.log!.length).toBe(60);
   });
 });

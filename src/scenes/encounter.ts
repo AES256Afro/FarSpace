@@ -7,6 +7,7 @@ import { PAL } from "../gfx/palette";
 import { sfx } from "../core/sfx";
 import { RNG } from "../core/rng";
 import type { Encounter } from "../data/encounters";
+import { logEntry } from "../world";
 
 export function wrap(text: string, maxChars: number): string[] {
   const out: string[] = [];
@@ -63,6 +64,8 @@ export class EncounterScene implements Scene {
       const rng = new RNG((g.world.seed ^ Math.floor(g.world.time * 7) ^ this.enc.id.length) >>> 0);
       const out = o.result(g, rng);
       sfx.select();
+      if (!this.story) logEntry(g.world, `${this.enc.title}: ${o.label}`);
+      else if (this.enc.title.startsWith("THE SIGNAL")) logEntry(g.world, this.enc.title);
       if (!out) { this.back(g); return; } // a plain CONTINUE
       this.outcome = out;
     }

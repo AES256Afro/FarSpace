@@ -253,6 +253,8 @@ export interface PlayerState {
   homesteads?: Homestead[];                           // claims staked on charted regions
   repairs?: number;                                   // ships brought back to life
   lives?: number;                                     // people your medic pulled through
+  rescues?: number;                                   // distress calls answered, crises broken
+  log?: { t: number; text: string }[];                // captain's log: things worth remembering
   tows?: number;
   evacuees?: { n: number; from: string } | null;      // survivors aboard, paid out at the next dock
   story?: number;                                     // The Signal: stage index; -1 = declined
@@ -339,6 +341,7 @@ export interface World {
   synRelations?: Record<string, number>; // "A|B" (sorted tags) → -100..100; allies ≥ 50, feud ≤ -30
   synWar?: SynWar | null;            // at most one syndicate war at a time
   crisis?: Crisis | null;            // a station in trouble: goods needed, fast
+  galaxyEvent?: GalaxyEvent | null;  // one colourful thing at a time
   seed: number;
   time: number;
   realGalaxy: boolean;
@@ -350,6 +353,7 @@ export interface World {
   missionCounter: number;
   synTick?: number;
   crisisTick?: number;
+  eventTick?: number;
   econTick: number;
   shockTick: number;
   warTick: number;
@@ -442,6 +446,8 @@ export function tickWorld(w: World, dt: number): void {
       }
     }
   }
+  w.eventTick = (w.eventTick ?? 0) + dt;
+  if (w.eventTick >= 180) { w.eventTick = 0; tickGalaxyEvents(w, new RNG((w.seed ^ Math.floor(w.time * 11)) >>> 0)); }
   w.crisisTick = (w.crisisTick ?? 0) + dt;
   if (w.crisisTick >= 120) { w.crisisTick = 0; tickCrisis(w, new RNG((w.seed ^ Math.floor(w.time * 5)) >>> 0)); }
   w.synTick = (w.synTick ?? 0) + dt;
@@ -1375,20 +1381,26 @@ export function assignRares(systems: Record<string, SystemDef>, rng: RNG): Recor
 // ---------- Ranks & exploration ----------
 // Three non-combat careers, nine grades each, Elite at the top.
 
-export type RankKind = "explorer" | "trader" | "miner";
+export type RankKind = "explorer" | "trader" | "miner" | "rescuer";
 export const RANK_TITLES: Record<RankKind, string[]> = {
   explorer: ["AIMLESS", "MOSTLY AIMLESS", "SCOUT", "SURVEYOR", "TRAILBLAZER", "PATHFINDER", "RANGER", "PIONEER", "ELITE"],
   trader: ["PENNILESS", "MOSTLY PENNILESS", "PEDDLER", "DEALER", "MERCHANT", "BROKER", "ENTREPRENEUR", "TYCOON", "ELITE"],
   miner: ["PROSPECT", "DIGGER", "DRILLER", "EXCAVATOR", "CORE CUTTER", "FOREMAN", "MAGNATE", "BARON", "ELITE"],
+  rescuer: ["BYSTANDER", "GOOD SAMARITAN", "FIRST RESPONDER", "LIFELINE", "SALVOR", "SHIPWRIGHT", "GUARDIAN", "SAVIOUR", "ELITE"],
 };
 const RANK_STEPS: Record<RankKind, number[]> = {
   explorer: [0, 300, 1000, 2500, 5000, 10000, 20000, 40000, 80000],
   trader: [0, 1000, 3000, 8000, 20000, 50000, 100000, 250000, 500000],
   miner: [0, 20, 60, 150, 300, 600, 1200, 2500, 5000],
+  rescuer: [0, 3, 8, 16, 30, 50, 80, 120, 200],
 };
 
+// rescue points: lives, repairs, tows, crises, survivors, maydays answered
+export function rescuePoints(p: PlayerState): number {
+  return (p.lives ?? 0) + (p.repairs ?? 0) * 2 + (p.tows ?? 0) * 2 + (p.rescues ?? 0);
+}
 export function rankValue(p: PlayerState, kind: RankKind): number {
-  return kind === "explorer" ? p.expSold ?? 0 : kind === "trader" ? p.tradeRevenue ?? 0 : p.mined ?? 0;
+  return kind === "explorer" ? p.expSold ?? 0 : kind === "trader" ? p.tradeRevenue ?? 0 : kind === "rescuer" ? rescuePoints(p) : p.mined ?? 0;
 }
 
 export function rankOf(p: PlayerState, kind: RankKind): { idx: number; title: string; next: number | null } {
@@ -1572,6 +1584,42 @@ export function tickSyndicates(w: World, rng: RNG): void {
     sy.treasury += gain;
     if (rng.chance(0.35)) pushEvent(w, { t: w.time, kind: "shock", systemId: sy.systemId, text: `[${sy.tag}] ${sy.name} posts a strong week: convoys clear ${gain} CR` });
   }
+}
+
+// ---------- Captain's log ----------
+export function logEntry(w: World, text: string): void {
+  const p = w.player;
+  p.log ??= [];
+  p.log.push({ t: w.time, text: text.slice(0, 120) });
+  if (p.log.length > 60) p.log.shift();
+}
+
+// ---------- Galaxy events (not wars): comets, flares, festivals, strikes ----------
+export type GalaxyEventKind = "comet" | "flare" | "festival" | "strike";
+export interface GalaxyEvent { kind: GalaxyEventKind; systemId: string; stationId?: string; until: number }
+export function galaxyEventAt(w: World, systemId: string): GalaxyEvent | null {
+  const e = w.galaxyEvent;
+  return e && e.systemId === systemId && w.time < e.until ? e : null;
+}
+export function tickGalaxyEvents(w: World, rng: RNG): void {
+  if (w.galaxyEvent && w.time >= w.galaxyEvent.until) {
+    const e = w.galaxyEvent; w.galaxyEvent = null;
+    const sys = w.systems[e.systemId];
+    if (e.kind === "comet") for (const a of sys.asteroids) { a.rich = a.rich && rng.chance(0.4); }
+    if (e.kind === "strike" && e.stationId) { const f = findStation(w, e.stationId); if (f) { f.st.fuelPrice = Math.max(1, Math.round(f.st.fuelPrice / 2)); f.st.repairPrice = Math.max(1, Math.round(f.st.repairPrice / 2)); } }
+    pushEvent(w, { t: w.time, kind: "peace", systemId: sys.id, text: e.kind === "comet" ? `The comet has passed ${sys.name}; the belt settles` : e.kind === "flare" ? `${sys.name}'s star quietens` : e.kind === "festival" ? `The festival at ${findStation(w, e.stationId ?? "")?.st.name ?? sys.name} winds down` : `The strike at ${findStation(w, e.stationId ?? "")?.st.name ?? sys.name} ends` });
+    return;
+  }
+  if (w.galaxyEvent || !rng.chance(0.3)) return;
+  const sys = rng.pick(Object.values(w.systems));
+  const kind = rng.pick(["comet", "flare", "festival", "strike"] as GalaxyEventKind[]);
+  const st = sys.stations.length ? rng.pick(sys.stations) : null;
+  if ((kind === "festival" || kind === "strike") && !st) return;
+  w.galaxyEvent = { kind, systemId: sys.id, stationId: st?.id, until: w.time + 720 };
+  if (kind === "comet") { for (const a of sys.asteroids) { a.rich = a.rich || rng.chance(0.5); a.ore += 4; } pushEvent(w, { t: w.time, kind: "discovery", systemId: sys.id, text: `A comet crosses ${sys.name}: the belt is seeded with rich ore for a while` }); }
+  if (kind === "flare") pushEvent(w, { t: w.time, kind: "shock", systemId: sys.id, text: `Solar flare warning for ${sys.name}: hulls run hot, scanners struggle` });
+  if (kind === "festival" && st) { for (const id of ["lux", "food"]) st.stock[id] = Math.max(0, Math.round((st.stock[id] ?? 0) * 0.3)); refreshPrices(st); pushEvent(w, { t: w.time, kind: "discovery", systemId: sys.id, text: `Festival week at ${st.name}: luxuries and provisions sell dear, tourists pay double` }); }
+  if (kind === "strike" && st) { st.fuelPrice *= 2; st.repairPrice *= 2; pushEvent(w, { t: w.time, kind: "shock", systemId: sys.id, text: `Dock workers strike at ${st.name}: fuel and repairs cost double` }); }
 }
 
 // ---------- Daily contract ----------

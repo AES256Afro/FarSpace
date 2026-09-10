@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember } from "../data/crew";
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM,
+  crewWages, genCrewCandidate, applyHull, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints,
 } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
@@ -64,7 +64,7 @@ export class StationScene implements Scene {
     refreshPrices(this.station);
     void wire.fetchSquadronData();
     if (p.ious?.length) { for (const iou of p.ious) { p.credits += iou.credits; g.toast(iou.text); } p.ious = []; sfx.pickup(); }
-    if (p.evacuees && p.evacuees.n > 0) { const pay = p.evacuees.n * (p.evacuees.from === "wounded" ? 200 : 150); if (p.evacuees.from === "wounded") p.lives = (p.lives ?? 0) + p.evacuees.n; p.credits += pay; adjustRep(g.world, this.station.factionId, 4); g.toast(`${p.evacuees.n} SURVIVORS FROM THE ${p.evacuees.from.toUpperCase()} HANDED OVER +${pay}CR`); p.evacuees = null; flag(g, "lifeboat"); sfx.pickup(); }
+    if (p.evacuees && p.evacuees.n > 0) { const pay = p.evacuees.n * (p.evacuees.from === "wounded" ? 200 : 150); if (p.evacuees.from === "wounded") p.lives = (p.lives ?? 0) + p.evacuees.n; logEntry(g.world, `Handed ${p.evacuees.n} survivors over at ${this.station.name}`); p.credits += pay; adjustRep(g.world, this.station.factionId, 4); g.toast(`${p.evacuees.n} SURVIVORS FROM THE ${p.evacuees.from.toUpperCase()} HANDED OVER +${pay}CR`); p.evacuees = null; flag(g, "lifeboat"); sfx.pickup(); }
     if (g.scenes.flight && (g.scenes.flight as unknown as { towing: unknown }).towing) {
       const fs = g.scenes.flight as unknown as { towing: { x: number; y: number; hull: number } | null };
       const st = this.station; const sx = Math.cos(st.angle) * st.orbit, sy = Math.sin(st.angle) * st.orbit;
@@ -243,7 +243,8 @@ export class StationScene implements Scene {
             if (crisisHit && crisis) {
               crisis.delivered++;
               if (crisis.delivered >= crisis.need) {
-                p.credits += 800; adjustRep(g.world, st.factionId, 12); flag(g, "lifeline");
+                p.credits += 800; adjustRep(g.world, st.factionId, 12); flag(g, "lifeline"); p.rescues = (p.rescues ?? 0) + 2;
+                logEntry(g.world, `Broke the ${crisis.kind} at ${st.name}`);
                 g.toast(`CRISIS OVER - ${st.name.toUpperCase()} THANKS YOU. +800CR, STANDING UP.`);
                 pushEvent(g.world, { t: g.world.time, kind: "rescue", systemId: p.systemId, text: `${st.name}'s ${crisis.kind} is over: an independent pilot brought the last of the ${commodity(id).name}` });
                 void wire.post("rescue", `broke the ${crisis.kind} at ${st.name} with ${crisis.need} ${commodity(id).name}`, g.world.systems[p.systemId].name);
@@ -351,7 +352,8 @@ export class StationScene implements Scene {
         break;
       case "SURVEY":
         this.cursor = 0;
-        if (enter) this.sellExploration(g);
+        if (inp.wasPressed("c")) { this.surveyView = this.surveyView === "codex" ? "data" : "codex"; sfx.blip(); }
+        if (enter && this.surveyView === "data") this.sellExploration(g);
         break;
       case "BASE": {
         const p2 = g.world.player;
@@ -410,13 +412,16 @@ export class StationScene implements Scene {
         break;
       }
       case "RECORD":
-        this.cursor = clamp(this.cursor, 0, Math.max(0, Math.ceil(ACHIEVEMENTS.length / 2) - 12));
+        if (inp.wasPressed("l")) { this.recordView = this.recordView === "log" ? "achievements" : "log"; this.cursor = 0; sfx.blip(); }
+        this.cursor = clamp(this.cursor, 0, this.recordView === "log" ? Math.max(0, (p.log?.length ?? 0) - 16) : Math.max(0, Math.ceil(ACHIEVEMENTS.length / 2) - 12));
         break;
     }
   }
 
   squadrons: wire.Squadron[] = [];
   patrons: Record<string, string> = {};
+  recordView: "achievements" | "log" = "achievements";
+  surveyView: "data" | "codex" = "data";
   base: wire.BaseRec | null = null;   // my squadron's base record
   baseLoaded = false;
   baseOwner: string | null = null;    // tag owning THIS station
@@ -494,7 +499,9 @@ export class StationScene implements Scene {
       m.done = true; sfx.pickup(); return;
     }
     m.done = true;
-    p.credits += m.reward;
+    const fest = m.kind === "passenger" && galaxyEventAt(g.world, p.systemId)?.kind === "festival" && galaxyEventAt(g.world, p.systemId)?.stationId === st.id;
+    p.credits += fest ? m.reward * 2 : m.reward;
+    if (fest) g.toast("FESTIVAL WEEK - YOUR PASSENGERS PAID DOUBLE");
     adjustRep(g.world, st.factionId, m.repReward ?? 3);
     if (m.kind === "passenger" && m.passengerKind === "tourist") flag(g, "tourist");
     if (m.syndicate) {
@@ -700,7 +707,9 @@ export class StationScene implements Scene {
     drawText(ctx, `P WALK DECK - ${escLabel}`, VW - textWidth(`P WALK DECK - ${escLabel}`) - 6, 8, PAL.greyDark);
     if (st.military) drawText(ctx, "SECURITY LEVEL: HIGH", VW - textWidth("SECURITY LEVEL: HIGH") - 6, 17, PAL.danger);
     const war = g.world.wars.find((w) => w.systemId === p.systemId);
-    if (war) drawText(ctx, "SYSTEM AT WAR - PRICES UNSTABLE", VW - textWidth("SYSTEM AT WAR - PRICES UNSTABLE") - 6, 26, PAL.warn);
+    const gev = galaxyEventAt(g.world, p.systemId);
+    if (gev && (gev.kind === "festival" || gev.kind === "strike") && gev.stationId === this.station.id) { const t = gev.kind === "festival" ? "FESTIVAL WEEK - LUXURIES DEAR, TOURISTS PAY DOUBLE" : "DOCK STRIKE - FUEL AND REPAIRS COST DOUBLE"; drawText(ctx, t, VW - textWidth(t) - 6, 26, gev.kind === "festival" ? PAL.gold : PAL.warn); }
+    else if (war) drawText(ctx, "SYSTEM AT WAR - PRICES UNSTABLE", VW - textWidth("SYSTEM AT WAR - PRICES UNSTABLE") - 6, 26, PAL.warn);
     else if (this.baseOwner) { const t = `[${this.baseOwner}] SQUADRON BASE${this.baseOwner === wire.getSquadron() ? " - HOME" : ""}`; drawText(ctx, t, VW - textWidth(t) - 6, 26, this.baseOwner === wire.getSquadron() ? PAL.gold : PAL.info); }
     else if (syndicateAt(g.world, this.station.id)) { const sy = syndicateAt(g.world, this.station.id)!; const t = `[${sy.tag}] ${sy.name.toUpperCase()} BASE (AI) - ${synStandingLabel(effectiveSynStanding(g.world, sy.tag))}`; drawText(ctx, t, VW - textWidth(t) - 6, 26, sy.color); }
     else {
@@ -1229,21 +1238,41 @@ export class StationScene implements Scene {
     drawText(ctx, "GRADES ARE YOURS, NOT THE HULL'S", mx, top + 84, PAL.greyDark);
   }
 
+  drawCodex(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
+    const p = g.world.player;
+    const cx = Object.entries(p.codex ?? {});
+    drawText(ctx, `CODEX (${cx.length} ENTRIES) - C FOR CARTOGRAPHICS`, 8, top, PAL.info);
+    const groups: [string, string, string][] = [["flora:", "FLORA", "SCANNED WITH THE ROVER (HOLD V). EACH NEW SPECIES PAYS 120 DATA."], ["fauna:", "FAUNA", "MET ON THE GROUND. WATCH, DON'T POKE."], ["biome:", "BIOMES", "WORLDS DRIVEN ON. A NEW BIOME PAYS 120 DATA."], ["signal:", "SIGNALS", "HEARD ON NO KNOWN BAND."]];
+    let y = top + 12;
+    for (const [prefix, title, blurb] of groups) {
+      const items = cx.filter(([k]) => k.startsWith(prefix));
+      drawText(ctx, `${title} (${items.length})`, 8, y, PAL.ui);
+      drawText(ctx, blurb, 110, y, PAL.greyDark); y += 9;
+      if (!items.length) { drawText(ctx, "- NONE YET", 14, y, PAL.greyDark); y += 9; }
+      items.slice(0, 6).forEach(([k, n], i) => { drawText(ctx, `${k.slice(prefix.length).toUpperCase()} x${n}`, 14 + (i % 3) * 156, y + Math.floor(i / 3) * 9, PAL.grey); });
+      y += 9 * Math.max(1, Math.ceil(Math.min(6, items.length) / 3)) + 4;
+      if (items.length > 6) { drawText(ctx, `+${items.length - 6} MORE`, 14, y - 4, PAL.greyDark); }
+    }
+    const firsts = Object.values(p.firsts ?? {}).filter((c) => c === wire.getCallsign()).length;
+    drawText(ctx, `FIRST DISCOVERIES ${firsts}   REGIONS CHARTED ${Object.values(p.ground ?? {}).filter((s) => s.charted).length}   ENCOUNTERS ${Object.values(p.encounters ?? {}).reduce((a, b) => a + b, 0)}   LIVES SAVED ${p.lives ?? 0}`, 8, y + 2, PAL.gold);
+  }
+
   drawSurvey(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
+    if (this.surveyView === "codex") { this.drawCodex(g, ctx, top); return; }
     const p = g.world.player;
     const w = g.world;
     const st = this.station;
-    drawText(ctx, "UNIVERSAL CARTOGRAPHICS", 8, top, PAL.info);
+    drawText(ctx, "UNIVERSAL CARTOGRAPHICS - C FOR THE CODEX", 8, top, PAL.info);
     const worth = Math.round(p.expData ?? 0);
     this.row(ctx, top + 12, true);
     drawText(ctx, `SELL EXPLORATION DATA: ${worth}CR${st.type === "research" ? " x1.25 HERE" : ""}`, 8, top + 12, worth > 0 ? PAL.white : PAL.grey);
     drawText(ctx, "ENTER", VW - textWidth("ENTER") - 8, top + 12, PAL.gold);
     let y = top + 28;
     drawText(ctx, "CAREERS:", 8, y, PAL.greyDark); y += 10;
-    for (const kind of ["explorer", "trader", "miner"] as const) {
+    for (const kind of ["explorer", "trader", "miner", "rescuer"] as const) {
       const r = rankOf(p, kind);
       const v = rankValue(p, kind);
-      const unit = kind === "miner" ? " UNITS" : "CR";
+      const unit = kind === "miner" ? " UNITS" : kind === "rescuer" ? " PTS" : "CR";
       drawText(ctx, `${kind.toUpperCase()}`, 8, y, PAL.grey);
       drawText(ctx, r.title, 60, y, r.idx >= 8 ? PAL.gold : PAL.ui);
       drawText(ctx, r.next ? `${Math.round(v)}${unit} / NEXT ${r.next}${unit}` : `${Math.round(v)}${unit} - TOP OF THE LADDER`, 130, y, PAL.greyDark);
@@ -1273,16 +1302,30 @@ export class StationScene implements Scene {
     });
   }
 
+  drawLog(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
+    const p = g.world.player;
+    const log = [...(p.log ?? [])].reverse();
+    drawText(ctx, `CAPTAIN'S LOG (${log.length}) - L FOR ACHIEVEMENTS - UP/DOWN TO SCROLL`, 8, top, PAL.info);
+    if (!log.length) { drawText(ctx, "NOTHING WORTH WRITING DOWN YET. FLY SOMEWHERE. HELP SOMEONE.", 8, top + 12, PAL.greyDark); return; }
+    const first = Math.min(this.cursor, Math.max(0, log.length - 16));
+    log.slice(first, first + 16).forEach((e, i) => {
+      const y = top + 12 + i * 10;
+      drawText(ctx, `T+${Math.floor(e.t / 60)}M`, 8, y, PAL.greyDark);
+      drawText(ctx, e.text.toUpperCase().slice(0, 100), 44, y, i === 0 && first === 0 ? PAL.white : PAL.grey);
+    });
+  }
+
   drawRecord(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
+    if (this.recordView === "log") { this.drawLog(g, ctx, top); return; }
     const p = g.world.player;
     const w = g.world;
     const have = new Set(p.achievements ?? []);
-    drawText(ctx, `SERVICE RECORD${w.hardcore ? " - HARDCORE" : ""}`, 8, top, PAL.info);
+    drawText(ctx, `SERVICE RECORD${w.hardcore ? " - HARDCORE" : ""} - L FOR THE CAPTAIN'S LOG`, 8, top, PAL.info);
     const stats = [
       `KILLS ${p.kills}`, `DISCOVERIES ${p.discoveries}`, `ARCS ${Object.values(p.arcs).reduce((a, b) => a + b, 0)}/15`,
       `CREDITS ${p.credits}`, `CREW ${p.crew.length}`, `HULL ${hull(p.hullId).name.toUpperCase()}`,
       `TIME ${Math.floor(w.time / 60)}M`, `ACHIEVEMENTS ${have.size}/${ACHIEVEMENTS.length}`,
-      `EXPLORER ${rankOf(p, "explorer").title}`, `TRADER ${rankOf(p, "trader").title}`, `MINER ${rankOf(p, "miner").title}`, `MODULES ${(p.modules ?? []).length}`,
+      `EXPLORER ${rankOf(p, "explorer").title}`, `TRADER ${rankOf(p, "trader").title}`, `MINER ${rankOf(p, "miner").title}`, `RESCUER ${rankOf(p, "rescuer").title} (${rescuePoints(p)})`,
     ];
     stats.forEach((t, i) => drawText(ctx, t, 8 + (i % 4) * 118, top + 12 + Math.floor(i / 4) * 9, PAL.grey));
     const rowsTotal = Math.ceil(ACHIEVEMENTS.length / 2);
@@ -1314,6 +1357,16 @@ export class StationScene implements Scene {
 import * as spriteMod from "../gfx/sprites";
 
 const BAR_LINES: ((g: Game, st: StationDef) => string)[] = [
+  (g) => {
+    const c = g.world.crisis;
+    if (c && c.delivered < c.need && g.world.time < c.until) { const f = findStation(g.world, c.stationId); return `${f?.st.name ?? "Some station"} in ${f?.sys.name ?? "the dark"} is begging for ${commodity(c.commodityId).name.toLowerCase()}. Paying stupid money. Someone should go.`; }
+    const e = g.world.galaxyEvent;
+    if (e) { const sys = g.world.systems[e.systemId]; return e.kind === "comet" ? `Comet's crossing ${sys.name}. Every rock in that belt is lit up. Prospectors are already fighting over it.` : e.kind === "flare" ? `Don't take a scoop into ${sys.name} this week. The star's throwing a tantrum.` : e.kind === "festival" ? `Festival at ${findStation(g.world, e.stationId ?? "")?.st.name ?? sys.name}. Take the tourists, take the luxuries, take the money.` : `Dockers are out at ${findStation(g.world, e.stationId ?? "")?.st.name ?? sys.name}. Fill up before you go.`; }
+    const war = g.world.synWar;
+    if (war) return `The [${war.attacker}] and [${war.defender}] are shooting at each other over ${g.world.systems[war.systemId].name}. Both sides pay for help. Both sides remember.`;
+    const sy = g.world.syndicates?.[0];
+    return sy ? `[${sy.tag}] ${sy.name} run their convoys out of ${g.world.systems[sy.systemId].name}. Decent work, if you don't mind who you work for.` : "Quiet cycle.";
+  },
   (g, st) => {
     const sys = Object.values(g.world.systems).find((s) => s.stations.includes(st))!;
     const link = sys.links[0] ? g.world.systems[sys.links[0]].name : "the next system";

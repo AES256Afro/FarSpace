@@ -5,7 +5,7 @@ import { ask, confirmBox } from "../../core/dialog";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry } from "../../world";
 import { COMMODITIES, commodity } from "../../data/data";
 import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
@@ -247,7 +247,7 @@ export class FlightScene implements Scene {
         this.scanCharge = 0;
         let found = 0;
         for (const an of sys.anomalies) {
-          if (!an.discovered && dist(an.x, an.y, p.x, p.y) < 900) { an.discovered = true; found++; }
+          if (!an.discovered && dist(an.x, an.y, p.x, p.y) < (galaxyEventAt(g.world, sys.id)?.kind === "flare" ? 450 : 900)) { an.discovered = true; found++; }
         }
         const logged = logSystem(p, sys, 2);
         g.toast(found ? `SCAN: ${found} ANOMALY SIGNAL${found > 1 ? "S" : ""} LOCATED${logged ? ` - SYSTEM LOGGED +${logged} DATA` : ""}` : logged ? `SCAN: SYSTEM LOGGED +${logged} EXPLORATION DATA` : "SCAN: NOTHING WITHIN RANGE");
@@ -633,6 +633,7 @@ export class FlightScene implements Scene {
     g.toast(`CASUALTIES STABILISED +${reward}CR`);
     void wire.post("rescue", `sent ${by} across to a freighter with casualties and saved three lives`, sys.name);
     if (this.sos && this.sos.trader === n) this.sos = null;
+    logEntry(g.world, `${by} stabilised three casualties aboard a freighter in ${sys.name}`);
   }
 
   // A ship brought back to life, by you or by your engineer
@@ -655,6 +656,7 @@ export class FlightScene implements Scene {
     g.world.events.push({ t: g.world.time, kind: "rescue", systemId: p.systemId, text: `A disabled freighter was repaired and sent on its way by an independent pilot` });
     void wire.post("rescue", by === "you" ? "boarded a disabled freighter and brought its engines back" : `sent ${by} across to fix a disabled freighter`, sys.name);
     if (this.sos && this.sos.trader === n) this.sos = null;
+    logEntry(g.world, `Brought a disabled freighter back to life (${by === "you" ? "by hand" : by}) in ${sys.name}`);
   }
 
   // ---------- Encounters ----------
@@ -824,8 +826,10 @@ export class FlightScene implements Scene {
     const sys = g.world.systems[p.systemId];
     p.heat ??= 0;
     const d = Math.hypot(p.x, p.y) - sys.sunRadius;
+    const flare = galaxyEventAt(g.world, sys.id)?.kind === "flare";
     const scoopZone = d < 200;
-    const hot = d < 320;
+    const hot = d < (flare ? 900 : 320);
+    if (flare) p.heat += dt * 4;
     this.scooping = false;
     if (hot) p.heat += dt * 26 * (1 - Math.max(0, d) / 320);
     if (scoopZone && hasModule(p, "scoop") && p.fuel < p.fuelMax) {

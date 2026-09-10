@@ -356,5 +356,16 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
       pass med supplies, or take the wounded aboard; lives saved are counted
 - [x] Standing orders: multi-shipment supply contracts with climbing pay
 
+## Milestone 17 — A Living Galaxy ✅ (Sep 2026)
+**Goal:** the world keeps happening whether you're there or not.
+
+- [x] Rescuer career: a fourth ladder built from lives saved, repairs, tows,
+      crises broken and distress calls answered
+- [x] Galaxy events: comets seed rich belts, solar flares cook hulls and
+      shorten scans, festival weeks pay tourists double and drain luxuries,
+      dock strikes double yard prices; marked on the galaxy map
+- [x] Bar rumours point at real things: the crisis, the comet, the war
+- [x] Captain's log: encounters, rescues and campaign beats remembered
+
 ## Later
 - [ ] Cross-squadron rivalries and treaties

@@ -685,6 +685,7 @@ export function updateSos(fs: FlightScene, g: Game, dt: number): void {
       g.world.events.push({ t: g.world.time, kind: "rescue", systemId: p.systemId, text: "A freighter was rescued from corsairs by an independent pilot" });
       void wire.post("rescue", "answered a distress call and saved a freighter", sys.name);
       flag(g, "rescue");
+      p.rescues = (p.rescues ?? 0) + 1;
       fs.sos = null;
     } else if (s.ttl <= 0) {
       fs.sos = null;

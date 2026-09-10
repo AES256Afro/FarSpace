@@ -29,6 +29,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "tourist", title: "TOUR GUIDE", desc: "Complete a sightseeing charter", check: (w) => !!w.player.flags?.tourist },
   { id: "squadWarWin", title: "WARLORDS", desc: "Your squadron backs the winning side of a syndicate war", check: (w) => !!w.player.flags?.squadWarWin },
   { id: "warVeteran", title: "WAR VETERAN", desc: "Fight for the winning side of a syndicate war", check: (w) => !!w.player.flags?.warVeteran },
+  { id: "responder", title: "FIRST RESPONDER", desc: "Reach Rescuer rank First Responder", check: (w) => rankOf(w.player, "rescuer").idx >= 2 },
   { id: "fieldMedic", title: "FIELD MEDIC", desc: "Your medic saves a crew", check: (w) => !!w.player.flags?.fieldMedic },
   { id: "surgeon", title: "SHIP'S SURGEON", desc: "Twelve lives saved", check: (w) => !!w.player.flags?.surgeon },
   { id: "standingOrder", title: "PREFERRED SUPPLIER", desc: "Complete a standing order", check: (w) => !!w.player.flags?.standingOrder },
