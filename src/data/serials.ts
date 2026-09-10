@@ -85,6 +85,49 @@ export const SERIALS: SerialDef[] = [
   },
 ];
 
+SERIALS.push(
+  {
+    id: "census", title: "THE CENSUS",
+    parts: [
+      (c) => `${c.sys.name} begins its first census in a generation. ${c.name}, the enumerator, has a clipboard, a shuttle, and no idea how many people live in the belt.`,
+      (c) => `The census finds four thousand people nobody counted at ${c.st.name}: prospectors, drifters' kin, a whole town on the dark side of a moon.`,
+      (c) => `${c.st.name}'s council votes the uncounted a ration. Provisions landed there this week pay double while the warehouses fill.`,
+    ],
+    hook: { kind: "premium", commodityId: "food", mult: 2 },
+    hookLine: (c) => `Provisions sell at ${c.st.name} for double.`,
+  },
+  {
+    id: "stowaway", title: "THE STOWAWAY",
+    parts: [
+      (c) => `A freighter docks at ${c.st.name} with a passenger nobody boarded: a child, asleep in a cargo pod, with a name tag and no papers.`,
+      (c) => `Three families in ${c.other.name} claim the child. ${c.name}, harbourmaster at ${c.st.name}, refuses to release anyone until somebody proves something.`,
+      (c) => `A grandmother in ${c.other.name} has proved it. The harbourmaster posts a passage: one small passenger, one careful ship.`,
+    ],
+    hook: { kind: "mission", mission: (w, c) => ({ id: `serial-stowaway-${Math.floor(w.time)}`, kind: "passenger", title: "A small passenger", desc: `Carry the child from ${c.st.name} to ${c.other.stations[0]?.name ?? c.other.name}, ${c.other.name}. Gently.`, fromStationId: c.st.id, targetSystemId: c.other.id, targetStationId: c.other.stations[0]?.id, passengerName: "the child", passengerKind: "refugee", mood: 60, demand: "food", patience: 3, docksAboard: 0, party: 1, sights: [], reward: 900, repReward: 8, accepted: false, done: false, tier: 0 }) },
+    hookLine: (c) => `A passage for a small passenger is on the board at ${c.st.name}.`,
+  },
+  {
+    id: "relay", title: "THE RELAY",
+    parts: [
+      (c) => `The comms relay at ${c.sys.name} has gone quiet. Ships report a hum on every band and no voices. ${c.name}, the relay tech, is not answering either.`,
+      (c) => `${c.name} is found alive on the relay, eating ration bars, refusing to leave. 'It's not broken. It's listening. I'm not turning it off.'`,
+      (c) => `The relay is back on, on ${c.name}'s terms. Spare parts to keep it that way pay well at ${c.st.name}.`,
+    ],
+    hook: { kind: "premium", commodityId: "parts", mult: 1.7 },
+    hookLine: (c) => `Spare parts sell at ${c.st.name} for seventy percent more.`,
+  },
+  {
+    id: "regatta", title: "THE REGATTA",
+    parts: [
+      (c) => `${c.st.name} announces a regatta: gate to gate, no cruise, no shortcuts. ${c.name} holds the record and intends to keep it.`,
+      (c) => `Practice runs are chaos. Two haulers nearly kissed at the outer gate. ${c.name} calls the field 'brave, mostly'.`,
+      (c) => `${c.name} lost. To a pilot nobody has heard of, in a hull nobody would race. The pilot is in the lounge at ${c.st.name}, looking for a berth.`,
+    ],
+    hook: { kind: "recruit", role: "pilot" },
+    hookLine: (c) => `A skilled pilot is for hire in the lounge at ${c.st.name}.`,
+  },
+);
+
 export function serialDef(id: string): SerialDef | undefined { return SERIALS.find((s) => s.id === id); }
 
 export function serialCtx(w: World, s: SerialState): SerialCtx | null {

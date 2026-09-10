@@ -224,6 +224,39 @@ export const ENCOUNTERS: Encounter[] = [
     ],
   },
   {
+    id: "lostcat", where: "space", weight: 1, title: "A CAT ON THE BAND", when: (g) => !!p(g).cat,
+    text: "A hauler hails, embarrassed. 'Is that a cat I can hear on your open channel? Ours went missing at the last dock. Ginger. Answers to nothing.'",
+    options: [
+      { label: "CHECK THE HOLD", result: (g, rng) => rng.chance(0.5) ? `THERE ARE, IT TURNS OUT, TWO CATS ABOARD. ${p(g).cat!.name.toUpperCase()} IS NOT PLEASED. THE HAULER SENDS 150CR AND TAKES THE GINGER ONE BACK. ${(() => { p(g).credits += 150; return ""; })()}` : `ONE CAT. YOURS. THE HAULER SIGHS AND FLIES ON. ${p(g).cat!.name.toUpperCase()} LOOKS SMUG.` },
+      { label: "'ONLY THE ONE, AND SHE'S MINE'", result: (g) => `${p(g).cat!.name.toUpperCase()} MEOWS INTO THE MIC ON CUE. THE HAULER LAUGHS AND SIGNS OFF.` },
+    ],
+  },
+  {
+    id: "gatekeeper", where: "space", weight: 2, title: "THE GATE OFFICER",
+    text: "A patrol cutter matches your speed at the gate. 'Routine. Manifest and crew list.' The officer reads slowly, then looks up. 'You've got a good crew here. Better than mine. Any of them looking to move?'",
+    options: [
+      { label: "'THEY'RE NOT FOR HIRE'", result: (g) => { for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 3); return "THE OFFICER NODS. YOUR CREW HEARD THAT, AND STAND A LITTLE STRAIGHTER. MORALE UP."; } },
+      { label: "'ASK THEM YOURSELF'", result: (g, rng) => { const c = p(g).crew[0]; if (c && rng.chance(0.3)) { p(g).crew = p(g).crew.filter((x) => x !== c); p(g).credits += 500; return `${c.name.toUpperCase()} TAKES THE PATROL'S OFFER. THEY LEAVE 500CR ON THE CONSOLE FOR THE BERTH. THE SHIP IS QUIETER.`; } return "NOBODY BITES. THE OFFICER SHRUGS AND WAVES YOU THROUGH."; } },
+    ],
+  },
+  {
+    id: "toll", where: "space", weight: 1, title: "SOMEBODY ELSE'S LIGHT", when: (g) => (g.world.infra ?? []).length === 0,
+    text: "A beacon on the edge of the system, somebody's private light, is blinking a request: fuel, parts, anything. A voice: 'Keeper here. Been dark a week. I'll trade what I've got.'",
+    options: [
+      { label: "PASS A SPARE PART", requires: (g) => (p(g).cargo.parts ?? 0) >= 1, result: (g, rng) => { removeCargo(p(g), "parts", 1); p(g).expData = (p(g).expData ?? 0) + 120; (p(g).flags ??= {}).keeperKind = true; return `THE LIGHT COMES UP. THE KEEPER SENDS OVER FORTY YEARS OF CHARTS. +120 DATA. ${rng.chance(0.5) ? "'YOU SHOULD KEEP A LIGHT YOURSELF. SUITS YOU.'" : "'COME BACK SOME TIME. THERE'S COFFEE.'"}`; } },
+      { label: "SELL THEM FUEL", requires: (g) => p(g).fuel >= 20, result: (g) => { p(g).fuel -= 10; p(g).credits += 260; return "TEN UNITS ACROSS A LINE, 260CR BACK. THE KEEPER DOESN'T HAGGLE. NOBODY OUT HERE DOES."; } },
+      { label: "FLY ON", result: () => "THE LIGHT BLINKS BEHIND YOU FOR A LONG TIME. THEN IT DOESN'T." },
+    ],
+  },
+  {
+    id: "fossil", where: "ground", weight: 2, title: "THE BONES",
+    text: "The rover's ground radar pings on something under the crust: a ribcage the length of a freighter, and it isn't rock.",
+    options: [
+      { label: "CORE A SAMPLE", result: (g) => { const key = "fauna:THE BURIED ONE"; const first = !(p(g).codex ?? {})[key]; (p(g).codex ??= {})[key] = ((p(g).codex ?? {})[key] ?? 0) + 1; p(g).expData = (p(g).expData ?? 0) + (first ? 200 : 60); return `THE CORE COMES UP FULL OF SOMETHING THAT WAS ALIVE WHEN THIS WORLD HAD AN OCEAN. ${first ? "NEW ENTRY: THE BURIED ONE. +200 DATA." : "+60 DATA."}`; } },
+      { label: "LEAVE IT WHERE IT LIES", result: () => "YOU MARK THE SPOT AND DRIVE ON. SOME THINGS ARE BETTER LEFT TO PEOPLE WITH BRUSHES AND PATIENCE." },
+    ],
+  },
+  {
     id: "meteorite", where: "ground", weight: 2, title: "METEORITE FALL",
     text: "A streak, a thump you feel through the seat, and a new crater steaming two hundred metres off. Something in it is still glowing.",
     options: [

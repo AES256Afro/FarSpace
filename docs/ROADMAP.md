@@ -560,4 +560,8 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 50 — The Chronicle Room ✅ (Sep 2026)
 - [x] The chronicle as an in-game page: RECORD tab, title screen, pause menu
 
+## Milestone 51 — More of Everything ✅ (Sep 2026)
+- [x] Four more serials (ten), four more encounters (twenty-four), two more
+      wonder kinds, six crew traits, two furnishings, three lines for the ship
+
 ## Later

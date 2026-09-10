@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.51 - MORE OF EVERYTHING", [
+    "TEN SERIALS, TWENTY-FOUR ENCOUNTERS, NINE KINDS OF WONDER, MORE TRAITS, A HAMMOCK AND A MURAL FOR THE DECK.",
+  ]],
   ["0.50 - THE CHRONICLE ROOM", [
     "READ YOUR WHOLE CHRONICLE IN-GAME: C ON THE RECORD TAB, THE TITLE SCREEN, OR THE PAUSE MENU.",
   ]],

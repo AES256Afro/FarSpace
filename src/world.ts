@@ -613,6 +613,8 @@ export const FURNISHINGS: { id: string; name: string; price: number; desc: strin
   { id: "jukebox", name: "A Jukebox", price: 400, desc: "In the galley. The crew argue about the music, happily.", tile: "K" },
   { id: "viewport", name: "A Viewport", price: 600, desc: "A real window on the bridge. Passengers and crew both look out of it.", tile: "C" },
   { id: "shelf", name: "A Trophy Shelf", price: 300, desc: "By the wall of record, for the things you've brought back.", tile: "M" },
+  { id: "hammock", name: "A Hammock", price: 180, desc: "Slung in the hold. Somebody is always in it.", tile: "G" },
+  { id: "mural", name: "A Mural", price: 350, desc: "The crew paint the corridor with everywhere the ship has been.", tile: "E" },
 ];
 
 // ---------- The ship's cat ----------
@@ -969,7 +971,7 @@ export function friendsAt(w: World, stationId: string): NpcCaptain[] {
 }
 
 // ---------- Wonders: the places people cross a galaxy to see ----------
-export type WonderKind = "ring" | "pulsar" | "ark" | "glass" | "twins" | "nursery" | "cathedral";
+export type WonderKind = "ring" | "pulsar" | "ark" | "glass" | "twins" | "nursery" | "cathedral" | "lantern" | "garden";
 export interface Wonder { id: string; kind: WonderKind; name: string; systemId: string; x: number; y: number; seen: boolean; seenBy?: string; desc: string }
 export const WONDER_DEFS: Record<WonderKind, { names: string[]; desc: string }> = {
   ring: { names: ["The Halo", "Saint Iver's Ring", "The Coronet"], desc: "A ring of ice and dust a thousand kilometres across, lit from inside by something that isn't a star." },
@@ -979,6 +981,8 @@ export const WONDER_DEFS: Record<WonderKind, { names: string[]; desc: string }> 
   twins: { names: ["The Twins", "The Dancers", "Two Lamps"], desc: "A pair of stars so close they share an atmosphere, trading fire across a bridge you can see from here." },
   nursery: { names: ["The Nursery", "The Comet Garden", "Snowfield"], desc: "Ten thousand comets in a slow cloud, tails all pointing the same way. Drifters come here to breed." },
   cathedral: { names: ["The Cathedral", "The Pillars", "Stone Choir"], desc: "Rock spires kilometres tall standing in open space. Nobody built them. Everybody argues about it." },
+  lantern: { names: ["The Lantern", "The Ember Cloud", "Saint Elmo's"], desc: "A cloud of gas lit from within, orange and slow, that brightens when a ship passes as if it were pleased." },
+  garden: { names: ["The Hanging Garden", "The Green Shard", "Orchard Rock"], desc: "A fragment of a world, green side up, still growing under a sky that isn't there any more." },
 };
 export function assignWonders(systems: Record<string, SystemDef>, startId: string, rng: RNG): Wonder[] {
   const ids = Object.keys(systems).filter((id) => id !== startId);

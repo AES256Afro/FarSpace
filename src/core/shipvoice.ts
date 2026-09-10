@@ -20,6 +20,9 @@ export function pickShipLine(g: Game, rng: RNG): string | null {
   if ((p.furnishings ?? []).includes("viewport")) pool.push("THE VIEWPORT WAS A GOOD IDEA. THE STARS LOOK DIFFERENT THROUGH GLASS THAN THROUGH A CAMERA.");
   if ((w.infra ?? []).length) pool.push("YOUR LIGHT IS STILL ON OUT THERE. I CHECK EVERY HOUR.");
   if (p.hull < p.hullMax * 0.4) pool.push("HULL'S THIN. I'M NOT WORRIED. I'M A LITTLE WORRIED.");
+  if ((p.furnishings ?? []).includes("mural")) pool.push("THE CREW ADDED ANOTHER SYSTEM TO THE MURAL LAST NIGHT. THEY GOT THE STAR THE WRONG COLOUR. I DIDN'T SAY.");
+  if ((p.haulers ?? []).length) pool.push("YOUR CHARTER HAULERS CHECK IN ON THE LONG BAND. THEY SOUND BORED. GOOD. BORED IS SAFE.");
+  if ((p.alumni ?? []).length >= 3) pool.push("I COUNT THE PEOPLE WHO'VE WALKED MY CORRIDORS. IT'S A GOOD NUMBER. IT'S GETTING BIGGER.");
   if (w.time > 7200 && !pool.length) pool.push("QUIET LANE. GOOD BURN. I LIKE THESE HOURS BEST.", "I WAS BUILT FOR THIS. STILL, IT'S NICE WHEN NOBODY SHOOTS AT US.");
   if (!pool.length) return null;
   return rng.pick(pool);

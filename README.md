@@ -127,7 +127,7 @@ recover, and retire after a full tour. The ship wears with hours and jumps;
 yard service at any shipyard signs the berth log.
 
 **The Signal:** a seven-stage campaign that starts once you've logged a few
-systems and ends beside a star with a warship that has no faction. Twenty
+systems and ends beside a star with a warship that has no faction. Twenty-four
 encounter cards interrupt flight and rover drives with choices that matter.
 
 **Other pilots:** with a call sign set, everyone in the same star system sees
@@ -186,7 +186,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestones 1–50 are live (v0.50.0). See the [roadmap](docs/ROADMAP.md) for what's next.
+Milestones 1–51 are live (v0.51.0). See the [roadmap](docs/ROADMAP.md) for what's next.
 
 ```bash
 npm test         # vitest: world-gen, routing, economy, law, missions, save migrations

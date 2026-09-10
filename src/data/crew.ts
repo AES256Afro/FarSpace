@@ -32,6 +32,8 @@ export const CREW_TRAITS = [
   "names every drone", "collects station stamps", "cooks on the reactor housing", "sketches the crew when they think nobody sees",
   "talks to the ship like it listens", "knows a song for every gate", "keeps a tally of near misses on the bulkhead",
   "never sits with their back to the airlock", "sends money home and never says so", "runs laps of the deck before a jump",
+  "mends everyone's boots", "keeps a bird in a box that is definitely not allowed", "writes down every joke the crew tells",
+  "whistles the docking chime back at the station", "has a photograph in every pocket", "grows sprouts on the reactor housing",
 ];
 
 // Things crew catch. Days here are world seconds; a medic aboard halves them.
