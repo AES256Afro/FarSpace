@@ -41,6 +41,8 @@ export class SurfaceScene implements Scene {
   storm = 0; stormTimer = 0;
   regionName = ""; planetName = ""; biome = 0;
   hurtCd = 0;
+  mini: HTMLCanvasElement | null = null; // cached minimap, redrawn a few times a second
+  miniAt = 0;
 
   enter(g: Game): void {
     const p = g.world.player;
@@ -54,6 +56,7 @@ export class SurfaceScene implements Scene {
     if (!this.map || this.map.key !== key) {
       this.map = genGround(key, pl.palette, surf.pois.filter((x) => x.regionIdx === ridx), region.resource);
       this.seen = new Uint8Array(GW * GH);
+      this.mini = null;
       this.power = 100; this.integrity = 100;
       this.storm = 0; this.stormTimer = 45 + Math.random() * 60;
       this.px = this.map.lander.x * GT + GT / 2 + 12; this.py = this.map.lander.y * GT + GT / 2;
@@ -336,18 +339,28 @@ export class SurfaceScene implements Scene {
       ctx.fillStyle = this.biome === 1 ? "#c08a4a" : this.biome === 5 ? "#e4eaf4" : "#3a4468"; ctx.globalAlpha = 0.45; ctx.fillRect(0, 0, VW, VH); ctx.globalAlpha = 1;
       for (let i = 0; i < 40; i++) { const x = ((i * 97 + g.world.time * 400) % VW), y = (i * 53 + g.world.time * 60) % VH; ctx.fillStyle = "rgba(255,255,255,0.35)"; ctx.fillRect(x, y, 3, 1); }
     }
-    // minimap
+    // minimap (terrain cached; only the rover dot is live)
     {
       const mx = VW - GW - 6, my = 24;
-      ctx.fillStyle = "rgba(8,12,22,0.85)"; ctx.fillRect(mx - 2, my - 2, GW + 4, GH + 4);
-      for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++) {
-        if (!this.seen[y * GW + x]) continue;
-        const t = this.map.tiles[y * GW + x];
-        ctx.fillStyle = t === WATER ? c.water : t === MOUNTAIN ? c.mountain : t === HAZARD ? c.hazard : t === HILLS ? c.hills : c.plain;
-        ctx.fillRect(mx + x, my + y, 1, 1);
+      if (!this.mini || g.world.time - this.miniAt > 0.4) {
+        this.miniAt = g.world.time;
+        if (!this.mini) { this.mini = document.createElement("canvas"); this.mini.width = GW + 4; this.mini.height = GH + 4; }
+        const m = this.mini.getContext("2d")!;
+        m.clearRect(0, 0, GW + 4, GH + 4);
+        m.fillStyle = "rgba(8,12,22,0.85)"; m.fillRect(0, 0, GW + 4, GH + 4);
+        const img = m.createImageData(GW, GH);
+        const hex = (h: string): [number, number, number] => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+        const cols: Record<number, [number, number, number]> = { [WATER]: hex(c.water), [MOUNTAIN]: hex(c.mountain), [HAZARD]: hex(c.hazard), [HILLS]: hex(c.hills), [PLAIN]: hex(c.plain), [SAND]: hex(c.sand) };
+        for (let i = 0; i < GW * GH; i++) {
+          if (!this.seen[i]) continue;
+          const [r, gg, b] = cols[this.map.tiles[i]] ?? cols[PLAIN];
+          img.data[i * 4] = r; img.data[i * 4 + 1] = gg; img.data[i * 4 + 2] = b; img.data[i * 4 + 3] = 255;
+        }
+        m.putImageData(img, 2, 2);
+        for (const e of this.map.entrances) if (this.seen[e.y * GW + e.x]) { m.fillStyle = PAL.info; m.fillRect(2 + e.x - 1, 2 + e.y - 1, 3, 3); }
+        m.fillStyle = PAL.gold; m.fillRect(2 + this.map.lander.x - 1, 2 + this.map.lander.y - 1, 3, 3);
       }
-      for (const e of this.map.entrances) if (this.seen[e.y * GW + e.x]) { ctx.fillStyle = PAL.info; ctx.fillRect(mx + e.x - 1, my + e.y - 1, 3, 3); }
-      ctx.fillStyle = PAL.gold; ctx.fillRect(mx + this.map.lander.x - 1, my + this.map.lander.y - 1, 3, 3);
+      ctx.drawImage(this.mini, mx - 2, my - 2);
       ctx.fillStyle = PAL.white; ctx.fillRect(mx + tx, my + ty, 2, 2);
     }
     // HUD
