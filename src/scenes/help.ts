@@ -1,0 +1,46 @@
+// Help: one screen of every control, grouped by where you are.
+
+import { Game, Scene, VW, VH } from "../game";
+import { drawText, textWidth } from "../gfx/font";
+import { PAL } from "../gfx/palette";
+
+const SECTIONS: [string, string[]][] = [
+  ["FLIGHT", [
+    "W/S THRUST  A/D TURN  X BRAKE  J CRUISE  N AUTOPILOT (FLIES YOUR PLOTTED COURSE)",
+    "MOUSE AIMS THE TURRET: LEFT-CLICK FIRE, RIGHT-CLICK MINE  (SPACE / M IN KEYBOARD MODE)",
+    "R TORPEDO  C SEISMIC CHARGE (CORE ROCKS)  V HOLD: DEEP SCAN + LOG THE SYSTEM",
+    "E DOCK / JUMP / ORBIT / BOARD  T HAIL THE SYSTEM CHANNEL  TAB SYSTEM MAP  G GALAXY MAP  I SHIP",
+  ]],
+  ["GALAXY MAP", ["CLICK A SYSTEM FOR INTEL  CLICK AGAIN OR N TO PLOT A COURSE  B BOOKMARK"]],
+  ["ORBIT", ["ARROWS / CLICK: TARGET A SITE  E LAND THERE  L DROP THE ROVER IN ITS REGION  V HOLD: SURVEY"]],
+  ["GROUNDSIDE", ["WASD DRIVE  E MINE / SALVAGE / ENTER A SITE / LIFT OFF AT THE LANDER",
+    "V HOLD: SCAN FLORA  R PATCH THE ROVER AT THE LANDER (USES SPARE PARTS)"]],
+  ["STATIONS", [
+    "ARROWS / CLICK  ENTER ACT  B/S BUY/SELL  P WALK THE DECK  ESC UNDOCK",
+    "SHIPS: ENTER BUYS WITH TRADE-IN, K BUYS AND PARKS YOUR OLD HULL, N NAMES YOUR SHIP",
+    "SURVEY SELLS EXPLORATION DATA  ENGINEER (RESEARCH / REFINERY POSTS) SPENDS MATERIALS",
+    "RECORD: ACHIEVEMENTS AND CAREER RANKS  MISSIONS: DAILY CONTRACT AND THE WEEKLY COMMUNITY GOAL",
+  ]],
+  ["ON FOOT", ["WASD WALK  E INTERACT  E HOLD: REPAIR, SEAL, EXTINGUISH, DISARM"]],
+  ["EVERYWHERE", ["F5 SAVE  F9 LOAD  H MUSIC  F FULLSCREEN  ESC BACK  EVERY FLIGHT KEY CAN BE REBOUND IN SETTINGS"]],
+];
+
+export class HelpScene implements Scene {
+  touchMode = "menu" as const;
+  update(g: Game, dt: number): void {
+    void dt;
+    if (g.input.wasPressed("Escape") || g.input.wasPressed("Enter") || g.input.mousePressed) g.setScene("title");
+  }
+  draw(g: Game, ctx: CanvasRenderingContext2D): void {
+    void g;
+    ctx.fillStyle = PAL.uiPanel; ctx.fillRect(0, 0, VW, VH);
+    drawText(ctx, "CONTROLS", 12, 8, PAL.white);
+    drawText(ctx, "ESC BACK", VW - textWidth("ESC BACK") - 12, 8, PAL.greyDark);
+    let y = 22;
+    for (const [title, lines] of SECTIONS) {
+      drawText(ctx, title, 12, y, PAL.ui); y += 9;
+      for (const l of lines) { drawText(ctx, l, 12, y, PAL.grey); y += 8; }
+      y += 4;
+    }
+  }
+}
