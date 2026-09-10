@@ -4,7 +4,26 @@
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld } from "../world";
+import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard } from "../world";
+import { commodity } from "../data/data";
+
+const PASSENGER_LINES: Record<string, { high: string[]; mid: string[]; low: string[] }> = {
+  vip: { high: ["This is almost civilised.", "I've told my people about this ship. Good things, for once.", "Keep flying like this and I'll book you again."],
+    mid: ["Is this really the fastest you can fly?", "Do you have anything to drink that isn't recycled?", "I'll be mentioning this ship to my people. Whether that's good depends on you."],
+    low: ["I have been on prison barges with better service.", "My people will hear about this.", "How much longer. Exactly."] },
+  refugee: { high: ["Thank you. I mean it. Nobody else would take me.", "I slept. First time in weeks.", "When we land, I'll find work. I always do."],
+    mid: ["Don't let them scan us at the gate. Please.", "Is there any more of that food?", "I don't mind the noise. It means the engines work."],
+    low: ["We're going to be turned back. I can feel it.", "The others are frightened. I'm frightened.", "Please. Just get us there."] },
+  fugitive: { high: ["You're good at this. Not asking how.", "Quietest ship I've been on. I've been on a few.", "Once I'm off, you never saw me. That's a compliment."],
+    mid: ["No questions. That was the deal.", "If the gate flags us, you never saw me.", "You'll get paid. Just get me there."],
+    low: ["You're going to get me caught.", "This is taking too long. Too long.", "If they board us, I'm not going quietly."] },
+  tourist: { high: ["We've never seen anything like it. Any of it.", "The children want to know if you'll take us again next year.", "Is that another one? Slow down, slow down!"],
+    mid: ["When do we see it?", "Are the viewports always this small?", "Someone in the party is asking about the toilets."],
+    low: ["This isn't what the brochure said.", "We paid for sights, not corridors.", "The children have stopped asking questions. That's worse."] },
+  courier: { high: ["I'll make the meeting with time to spare. Excellent.", "Efficient. I'll say so.", "Best run I've booked this quarter."],
+    mid: ["I have a meeting. You understand.", "What's our ETA. Precisely.", "I'll be working, don't mind me."],
+    low: ["The meeting is gone. You realise that.", "I'll be asking for a refund.", "Speed, Captain. It was the whole point."] },
+};
 import { hull, HullDef } from "../data/hulls";
 import { CREW_LINES, ROLE_INFO } from "../data/crew";
 import { clamp, dist } from "../core/mathx";
@@ -114,6 +133,7 @@ export class InteriorScene implements Scene {
   talk = "";
   talkTimer = 0;
   banterTimer = 20;
+  talkIdx = 0;
 
   enter(g: Game): void {
     const p = g.world.player;
@@ -254,12 +274,14 @@ export class InteriorScene implements Scene {
         this.talkTimer = 5;
         c.morale = Math.min(100, c.morale + 1);
       } else if (passenger && pSpot && dist(pSpot.tx * T + T / 2, pSpot.ty * T + T / 2, this.px, this.py) < 16) {
-        const lines = passenger.passengerKind === "vip"
-          ? ["Is this really the fastest you can fly?", "I'll be mentioning this ship to my people. Whether that's good depends on you.", "Do you have anything to drink that isn't recycled?"]
-          : passenger.passengerKind === "refugee"
-            ? ["Thank you. I mean it. Nobody else would take me.", "I'll find work when we land. I always do.", "Don't let them scan us at the gate. Please."]
-            : ["No questions. That was the deal.", "If the gate flags us, you never saw me.", "You'll get paid. Just get me there."];
-        this.talk = `${passenger.passengerName!.toUpperCase()}: ${lines[Math.floor(Math.random() * lines.length)]}`;
+        // several fares share the bunk room: each press of E is a different one
+        const all = passengersAboard(p);
+        const px = all[this.talkIdx % all.length]; this.talkIdx++;
+        const mood = px.mood ?? 60;
+        const pool = mood >= 75 ? PASSENGER_LINES[px.passengerKind ?? "vip"].high : mood >= 35 ? PASSENGER_LINES[px.passengerKind ?? "vip"].mid : PASSENGER_LINES[px.passengerKind ?? "vip"].low;
+        const want = px.demand ? ` ...${commodity(px.demand).name} would make the trip, if you see any.` : px.passengerKind === "tourist" && !px.sightSeen ? " ...and when do we see it?" : "";
+        this.talk = `${px.passengerName!.toUpperCase()}${(px.party ?? 1) > 1 ? ` (+${(px.party ?? 1) - 1})` : ""} (MOOD ${Math.round(mood)}): ${pool[Math.floor(Math.random() * pool.length)]}${want}`;
+        px.mood = Math.min(100, mood + 2);
         this.talkTimer = 5;
       } else if (near && !fire && !breach) {
         if (near.ch === "C") { g.setScene("flight"); return; }
@@ -370,7 +392,14 @@ export class InteriorScene implements Scene {
     });
     const passenger = p.missions.find((m) => m.kind === "passenger" && m.accepted && !m.done);
     const pSpot = nearestTile(this.deck, 0, 0, "p", 1e9);
-    if (passenger && pSpot) drawPerson(ctx, ox + pSpot.tx * T + T / 2, oy + pSpot.ty * T + T / 2, "#f0d0b0", "#7a5aa5");
+    if (passenger && pSpot) {
+      const all = passengersAboard(p);
+      all.forEach((px, i) => {
+        const ofs = [[0, 0], [-8, 4], [8, 4]][i] ?? [0, 8];
+        drawPerson(ctx, ox + pSpot.tx * T + T / 2 + ofs[0], oy + pSpot.ty * T + T / 2 + ofs[1], "#f0d0b0", px.passengerKind === "vip" ? "#c7a54a" : px.passengerKind === "refugee" ? "#6a7a9c" : px.passengerKind === "tourist" ? "#5ab3ff" : "#7a5aa5");
+        if ((px.mood ?? 60) < 35 && Math.floor(g.world.time * 2) % 2 === 0) { ctx.fillStyle = PAL.warn; ctx.fillRect(ox + pSpot.tx * T + T / 2 + ofs[0] + 3, oy + pSpot.ty * T + ofs[1], 2, 2); }
+      });
+    }
 
     drawPerson(ctx, Math.round(ox + this.px), Math.round(oy + this.py), "#e8b48c", "#3a6ea5");
 
@@ -404,7 +433,7 @@ export class InteriorScene implements Scene {
     else if (fire) tooltip(ctx, ox, oy, fire.tx, fire.ty, "FIRE", "[HOLD E] EXTINGUISH", PAL.danger);
     else if (breach) tooltip(ctx, ox, oy, breach.tx, breach.ty, "HULL BREACH", "[HOLD E] SEAL (1 PART)", PAL.danger);
     else if (crewNear) tooltip(ctx, ox, oy, crewNear.spot.tx, crewNear.spot.ty, `${crewNear.c.name} - ${ROLE_INFO[crewNear.c.role].label}`, "[E] TALK", PAL.ui);
-    else if (passenger && pSpot && dist(pSpot.tx * T + T / 2, pSpot.ty * T + T / 2, this.px, this.py) < 16) tooltip(ctx, ox, oy, pSpot.tx, pSpot.ty, passenger.passengerName!, "[E] TALK", "#b28fe0");
+    else if (passenger && pSpot && dist(pSpot.tx * T + T / 2, pSpot.ty * T + T / 2, this.px, this.py) < 16) tooltip(ctx, ox, oy, pSpot.tx, pSpot.ty, passengersAboard(p).length > 1 ? `${passengersAboard(p).length} PASSENGERS` : passenger.passengerName!, "[E] TALK", "#b28fe0");
     else if (near) {
       const def = PANELS.find((x) => x.ch === near.ch)!;
       const sys = def.sysId ? p.systems.find((s) => s.id === def.sysId)! : null;

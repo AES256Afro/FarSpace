@@ -5,7 +5,7 @@ import { ask, confirmBox } from "../../core/dialog";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight } from "../../world";
 import { COMMODITIES, commodity } from "../../data/data";
 import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
@@ -84,6 +84,11 @@ export class FlightScene implements Scene {
     this.spawnDrifters(g);
     this.launchDrones(g);
     this.startEscortIfNeeded(g);
+    {
+      const p = g.world.player;
+      const ev = galaxyEventAt(g.world, p.systemId);
+      if (ev?.kind === "comet" && logSight(p, "comet", `the comet over ${g.world.systems[p.systemId].name}`, p.systemId)) g.toast("THE COMET FILLS THE VIEWPORT. YOUR PASSENGERS WON'T FORGET THIS ONE.");
+    }
   }
 
   launchDrones(g: Game): void {
@@ -701,6 +706,10 @@ export class FlightScene implements Scene {
     p.codex ??= {};
     const first = !p.codex["fauna:VOID DRIFTER"];
     p.codex["fauna:VOID DRIFTER"] = (p.codex["fauna:VOID DRIFTER"] ?? 0) + 1;
+    {
+      const near = g.world.systems[p.systemId].planets.map((pl, idx) => ({ pl, idx })).filter((x) => x.pl.palette >= 6).sort((a, b) => dist(Math.cos(a.pl.angle) * a.pl.orbit, Math.sin(a.pl.angle) * a.pl.orbit, p.x, p.y) - dist(Math.cos(b.pl.angle) * b.pl.orbit, Math.sin(b.pl.angle) * b.pl.orbit, p.x, p.y))[0];
+      if (logSight(p, "drifter", "the void drifters", p.systemId, near?.idx)) g.toast("YOUR PASSENGERS GO QUIET AT THE VIEWPORT. THAT ONE'S WORTH THE FARE.");
+    }
     p.expData = (p.expData ?? 0) + (first ? 200 : 60);
     p.discoveries += 1;
     g.toast(first ? "NEW SPECIES: VOID DRIFTER. IT DOESN'T SEEM TO MIND YOU. +200 DATA" : "VOID DRIFTER LOGGED +60 DATA");

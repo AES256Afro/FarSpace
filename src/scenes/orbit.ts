@@ -1,6 +1,7 @@
 // Orbit view: a spinning globe with territories, POIs to pin/target, orbital
 // satellites, scanning, and landing at surface outposts.
 
+import { logSight } from "../world";
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
@@ -32,13 +33,13 @@ export class OrbitScene implements Scene {
     music.setMood(sys.factionId, 0);
     this.msg = `ORBIT ESTABLISHED: ${pl.name.toUpperCase()}`;
     this.msgTimer = 3;
-    for (const m of g.world.player.missions) {
-      if (m.kind === "passenger" && m.passengerKind === "tourist" && m.accepted && !m.done && !m.sightSeen
-        && m.targetSystemId === sys.id && m.sightPlanetIdx === g.orbitPlanetIdx) {
-        m.sightSeen = true;
-        g.toast(`${(m.passengerName ?? "THE TOURISTS").toUpperCase()}: "WORTH EVERY CREDIT." - NOW TAKE THEM TO THEIR STATION`);
-        sfx.pickup();
-      }
+    {
+      const p = g.world.player;
+      const before = p.missions.filter((m) => m.kind === "passenger" && m.accepted && !m.done && m.sightSeen).length;
+      const any = logSight(p, "planet", `${pl.name} from orbit`, sys.id, g.orbitPlanetIdx);
+      const after = p.missions.filter((m) => m.kind === "passenger" && m.accepted && !m.done && m.sightSeen).length;
+      if (after > before) { const m = p.missions.find((x) => x.kind === "passenger" && x.accepted && !x.done && x.sightSeen && x.sightPlanetIdx === g.orbitPlanetIdx); g.toast(`${(m?.passengerName ?? "THE TOURISTS").toUpperCase()}: "WORTH EVERY CREDIT." - NOW TAKE THEM TO THEIR STATION`); sfx.pickup(); }
+      else if (any) g.toast("YOUR PASSENGERS CROWD THE VIEWPORT. ANOTHER SIGHT FOR THE BILL.");
     }
     g.showHint("orbit", "ARROWS/CLICK TO TARGET A POI - E LANDS THERE - L DROPS THE ROVER IN ITS REGION - HOLD V TO SCAN");
   }

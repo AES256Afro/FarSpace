@@ -394,5 +394,14 @@ Time passes for the people on the ship, and for the ship.
       lose their edge, past 70 systems fault. Yard service at any shipyard,
       signed into a berth log; an engineer slows the wear
 
+## Milestone 19 — Passengers and the Liner Trade ✅ (Sep 2026)
+- [x] Fares in every station lounge: VIPs, tourists, refugees, couriers,
+      fugitives; two to four hops; a Passenger Cabins module for three at once
+- [x] Moods: demands met from the hold, patience, hull state; pay 60–120% by
+      mood, tips and standing for the happiest, complaints for the worst
+- [x] Sights: booked sights (planet, drifters, comet, festival) complete the
+      fare; every extra sight on the way pays 15% more
+- [x] Passengers live in the bunk room with their own lines by mood
+
 ## Later
 - [ ] Cross-squadron rivalries and treaties

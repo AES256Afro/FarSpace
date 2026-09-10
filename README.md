@@ -51,6 +51,10 @@ charters and enforce embargoes, station profiles and bulletins, gate traffic,
 comms chatter, void drifters near gas giants, crew who talk to each other, a
 wall of record aboard your ship, and a second campaign about a missing convoy.
 
+**The liner trade:** fares in every station lounge, a cabins module for three
+at once, passenger moods and demands, tips for the happiest, and sightseeing
+tours where every sight on the way pays more.
+
 **A life aboard:** crew count their dockings, ask for shore leave and keep
 their berth, want goods for the galley and letters carried home, fall sick and
 recover, and retire after a full tour. The ship wears with hours and jumps;
@@ -116,7 +120,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestones 1–18 are live (v0.18.0). See the [roadmap](docs/ROADMAP.md) for what's next.
+Milestones 1–19 are live (v0.19.0). See the [roadmap](docs/ROADMAP.md) for what's next.
 
 ```bash
 npm test         # vitest: world-gen, routing, economy, law, missions, save migrations

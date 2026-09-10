@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
-  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew } from "../src/world";
+  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight } from "../src/world";
 import { migrateSave, SAVE_VERSION, saveKeyFor, SLOTS } from "../src/save";
 import { RNG } from "../src/core/rng";
 import { STARS, starDistance } from "../src/data/stars";
@@ -840,5 +840,44 @@ describe("a life aboard", () => {
     const al = retireCrew(p, a, "st1", 50);
     expect(p.alumni![0]).toBe(al);
     expect(p.crew.length).toBe(0);
+  });
+});
+
+describe("the liner trade", () => {
+  it("the lounge offers fares, moods move with demands and delays, sights pay, and cabins raise the cap", () => {
+    const w = generateWorld(41, { realGalaxy: true });
+    const p = w.player;
+    const st = w.systems[p.systemId].stations[0];
+    const fares = genFares(w, st, new RNG(5));
+    expect(fares.length).toBeGreaterThanOrEqual(2);
+    expect(fares.every((f) => f.kind === "passenger" && f.mood === 60 && f.targetStationId)).toBe(true);
+    expect(passengerCap(p)).toBe(1);
+    p.modules = ["cabins"];
+    expect(passengerCap(p)).toBe(3);
+    const f = { ...fares[0], accepted: true, demand: "lux", patience: 2, docksAboard: 0, mood: 60, passengerKind: "vip" as const, sights: [] };
+    p.missions.push(f);
+    expect(passengersAboard(p).length).toBe(1);
+    p.cargo = { lux: 1 };
+    let lines = settlePassengers(p);
+    expect(f.mood).toBe(90);
+    expect(f.demand).toBeNull();
+    expect(p.cargo.lux ?? 0).toBe(0);
+    expect(lines.some((l) => l.includes("MOOD UP"))).toBe(true);
+    settlePassengers(p); lines = settlePassengers(p);
+    expect(f.mood).toBe(78); // one dock past patience
+    expect(lines.some((l) => l.includes("HOW MUCH LONGER"))).toBe(true);
+    expect(passengerPay({ ...f, mood: 100 })).toBe(Math.round(f.reward * 1.2));
+    expect(passengerPay({ ...f, mood: 0 })).toBe(Math.round(f.reward * 0.6));
+    // a tourist booked for a planet: incidental sights add up, the booked one completes the fare
+    const t = { ...fares[0], id: "t", accepted: true, passengerKind: "tourist" as const, sightKind: "planet" as const, sightPlanetIdx: 1, targetSystemId: "sysX", sightSeen: false, sights: [], mood: 60 };
+    p.missions.push(t);
+    expect(logSight(p, "comet", "a comet", "elsewhere")).toBe(true);
+    expect(t.sightSeen).toBe(false);
+    expect(logSight(p, "planet", "world one", "sysX", 0)).toBe(true);
+    expect(t.sightSeen).toBe(false);
+    expect(logSight(p, "planet", "world two", "sysX", 1)).toBe(true);
+    expect(t.sightSeen).toBe(true);
+    expect(t.sights.length).toBe(3);
+    expect(passengerPay({ ...t, mood: 60 })).toBe(Math.round(t.reward * (0.6 + 0.36 + 0.3)));
   });
 });

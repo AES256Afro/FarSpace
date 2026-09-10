@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS } from "../data/crew";
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter,
+  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter,
 } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
@@ -37,6 +37,7 @@ export class StationScene implements Scene {
   boardMissions: Mission[] = [];
   barLine = "";
   candidates: CrewMember[] = [];
+  fares: Mission[] = [];
   station!: StationDef;
   returnTo: "flight" | "stationwalk" = "flight";
   rowBoxes: [number, number][] = [];
@@ -60,6 +61,7 @@ export class StationScene implements Scene {
     if (p.dailyDone !== dailyKey() && !p.missions.some((m) => m.id === daily.id)) this.boardMissions.unshift(daily);
     this.candidates = [];
     for (let i = 0; i < rng.int(1, 3); i++) this.candidates.push(genCrewCandidate(rng.fork(i + 1)));
+    this.fares = genFares(g.world, this.station, rng.fork(77));
     this.barLine = "";
     refreshPrices(this.station);
     void wire.fetchSquadronData();
@@ -99,7 +101,12 @@ export class StationScene implements Scene {
 
   settleCrew(g: Game): void {
     const p = g.world.player;
-    if (!p.crew.length) return;
+    if (!p.crew.length) {
+      for (const line of settlePassengers(p)) g.toast(line);
+      const ev0 = galaxyEventAt(g.world, p.systemId);
+      if (ev0?.kind === "festival" && ev0.stationId === this.station.id && logSight(p, "festival", `the festival at ${this.station.name}`, p.systemId)) g.toast("YOUR PASSENGERS ARE OFF INTO THE FESTIVAL CROWD. THEY'LL REMEMBER THIS ONE.");
+      return;
+    }
     if (p.flags?.owedLeave) { delete p.flags.owedLeave; for (const c of p.crew) c.morale = Math.min(100, c.morale + 15); g.toast("SHORE LEAVE, AS PROMISED. CREW MORALE UP."); }
     const wages = crewWages(p);
     if (p.credits >= wages) { p.credits -= wages; g.toast(`CREW WAGES PAID -${wages}CR`); }
@@ -147,6 +154,9 @@ export class StationScene implements Scene {
     // old shipmates
     const alum = (p.alumni ?? []).filter((a) => a.stationId === this.station.id);
     if (alum.length && rng.chance(0.4)) { const a = rng.pick(alum); g.toast(`${a.name.toUpperCase()} WAVES FROM THE LOUNGE. ${ROLE_INFO[a.role].label}, RETIRED. ${a.docks} DOCKINGS WITH YOU.`); }
+    for (const line of settlePassengers(p)) g.toast(line);
+    const evHere = galaxyEventAt(g.world, p.systemId);
+    if (evHere?.kind === "festival" && evHere.stationId === this.station.id && logSight(p, "festival", `the festival at ${this.station.name}`, p.systemId)) g.toast("YOUR PASSENGERS ARE OFF INTO THE FESTIVAL CROWD. THEY'LL REMEMBER THIS ONE.");
     this.crewRequest(g);
     if (g.sceneName !== "encounter") this.retirement(g, rng);
     if (g.sceneName !== "encounter") this.envoy(g);
@@ -244,7 +254,7 @@ export class StationScene implements Scene {
       opts.push({ label: "TAKE YOUR LEAVE", hint: `They wait ${LEAVE_DOCKS} dockings; the berth stays theirs`, result: (g2) => { sendOnLeave(g2.world.player, c, this.station.id); return `${name} IS DOWN THE RAMP BEFORE YOU FINISH THE SENTENCE. ${this.station.name.toUpperCase()} HAS THEM UNTIL YOU'RE BACK.`; } });
       opts.push({ label: "NOT THIS RUN", result: () => { c.morale = Math.max(0, c.morale - 10); return `${name} SAYS FINE. THE WORD HAS EDGES.`; } });
     } else if (kind === "goods") {
-      const wants = rng.pick([["luxuries", 2], ["food", 4], ["med", 1], ["metals", 3]] as const);
+      const wants = rng.pick([["lux", 2], ["food", 4], ["med", 1], ["metals", 3]] as const);
       text = `${name} HAS A LIST. '${wants[1]} ${commodity(wants[0]).name.toUpperCase()}, NEXT TIME WE'RE SOMEWHERE THAT SELLS IT. FOR THE ${rng.pick(["ANNIVERSARY", "GALLEY", "BUNK ROOM", "CREW", "MED BAY"])}. I'LL SQUARE IT WITH YOU.'`;
       opts.push({ label: "I'LL FIND IT", hint: "Dock with it aboard within five dockings", result: () => { c.request = { kind: "goods", commodityId: wants[0], qty: wants[1], docks: 0 }; return `${name} PINS THE LIST BY THE AIRLOCK.`; } });
       opts.push({ label: "BUY YOUR OWN", result: () => { c.morale = Math.max(0, c.morale - 6); return `${name} TAKES THE LIST BACK.`; } });
@@ -433,15 +443,18 @@ export class StationScene implements Scene {
         break;
       }
       case "BAR": {
-        const rows = st.barPatrons.length + this.candidates.length;
+        const rows = st.barPatrons.length + this.candidates.length + this.fares.length;
         this.cursor = clamp(this.cursor, 0, Math.max(0, rows - 1));
         if (enter) {
           if (this.cursor < st.barPatrons.length) {
             const rng = new RNG((g.world.seed ^ (this.cursor * 7727) ^ Math.floor(g.world.time / 20)) >>> 0);
             this.barLine = rng.pick(BAR_LINES)(g, this.station);
-          } else {
+          } else if (this.cursor < st.barPatrons.length + this.candidates.length) {
             const c = this.candidates[this.cursor - st.barPatrons.length];
             if (c) this.hire(g, c);
+          } else {
+            const f = this.fares[this.cursor - st.barPatrons.length - this.candidates.length];
+            if (f) this.acceptMission(g, f);
           }
         }
         break;
@@ -591,14 +604,16 @@ export class StationScene implements Scene {
   acceptMission(g: Game, m: Mission): void {
     const p = g.world.player;
     const st = this.station;
-    if (p.missions.filter((x) => x.accepted && !x.done).length >= 5) { g.toast("MISSION LOG FULL"); return; }
-    if (m.kind === "passenger" && p.missions.some((x) => x.kind === "passenger" && x.accepted && !x.done)) { g.toast("ONE PASSENGER AT A TIME"); return; }
+    if (m.kind !== "passenger" && p.missions.filter((x) => x.accepted && !x.done && x.kind !== "passenger").length >= 5) { g.toast("MISSION LOG FULL"); return; }
+    if (m.kind === "passenger" && passengersAboard(p).length >= passengerCap(p)) { g.toast(passengerCap(p) === 1 ? "ONE PASSENGER WITHOUT CABINS - FIT PASSENGER CABINS AT A SHIPYARD" : `ALL ${passengerCap(p)} CABINS TAKEN`); return; }
     if (m.tier && m.tier > missionTier(p.rep[st.factionId] ?? 0)) { g.toast("YOUR STANDING ISN'T HIGH ENOUGH"); return; }
     if ((m.kind === "delivery" || (m.kind === "arc" && m.commodityId && m.arcStage !== undefined && ARCS[m.arcFaction!].stages[m.arcStage].kind === "delivery")) && m.commodityId && m.qty) {
       if (!addCargo(p, m.commodityId, m.qty)) { g.toast("NOT ENOUGH CARGO SPACE"); return; }
     }
     m.accepted = true;
     p.missions.push(m);
+    this.fares = this.fares.filter((f) => f !== m);
+    if (m.kind === "passenger" && m.demand) g.toast(`${(m.passengerName ?? "").toUpperCase()} MENTIONS THEY'D APPRECIATE ${commodity(m.demand).name.toUpperCase()} ABOARD`);
     if (m.kind === "repair") { g.tenderMission = m; g.toast("SUITING UP - THE PLANT IS THROUGH THE YARD DOOR"); sfx.repair(); g.setScene("repair"); return; }
     g.toast("MISSION ACCEPTED");
     if (m.kind === "escort") g.showHint("escort", "THE FREIGHTER LAUNCHES WHEN YOU UNDOCK - STAY CLOSE");
@@ -623,8 +638,17 @@ export class StationScene implements Scene {
     m.done = true;
     const fest = m.kind === "passenger" && galaxyEventAt(g.world, p.systemId)?.kind === "festival" && galaxyEventAt(g.world, p.systemId)?.stationId === st.id;
     const charter = hasCharter(g.world, st.factionId) && !m.syndicate ? 1.15 : 1;
-    p.credits += Math.round((fest ? m.reward * 2 : m.reward) * charter);
+    const base = m.kind === "passenger" && m.mood !== undefined ? passengerPay(m) : m.reward;
+    p.credits += Math.round((fest ? base * 2 : base) * charter);
     if (fest) g.toast("FESTIVAL WEEK - YOUR PASSENGERS PAID DOUBLE");
+    if (m.kind === "passenger" && m.mood !== undefined) {
+      const mood = m.mood;
+      const name = (m.passengerName ?? "YOUR PASSENGER").toUpperCase();
+      if (mood >= 80) { const tip = m.passengerKind === "vip" ? 200 : m.passengerKind === "refugee" ? 0 : 80; p.credits += tip; adjustRep(g.world, st.factionId, 1); g.toast(`${name} STEPS OFF SMILING. ${tip ? `A ${tip}CR TIP AND ` : ""}A WORD IN THE RIGHT EAR. +${base}CR`); p.fares = (p.fares ?? 0) + 1; if (mood >= 95) flag(g, "fiveStar"); }
+      else if (mood < 25) { adjustRep(g.world, st.factionId, -2); g.toast(`${name} LEAVES WITHOUT A WORD AND FILES A COMPLAINT. +${base}CR, STANDING DOWN`); }
+      else g.toast(`${name} DISEMBARKS. +${base}CR${(m.sights?.length ?? 0) > 1 ? ` (${m.sights!.length} SIGHTS)` : ""}`);
+      p.fares = (p.fares ?? 0) + (mood >= 80 ? 0 : 1);
+    }
     adjustRep(g.world, st.factionId, m.repReward ?? 3);
     if (m.kind === "passenger" && m.passengerKind === "tourist") flag(g, "tourist");
     if (m.syndicate) {
@@ -662,7 +686,7 @@ export class StationScene implements Scene {
       if (finished) { adjustRep(g.world, m.arcFaction, 25); g.toast(`ARC COMPLETE: ${arc.title.toUpperCase()}`); }
       void wire.post("arc", finished ? `completed "${arc.title}" for the ${faction(m.arcFaction).name}` : `advanced "${arc.title}" (stage ${m.arcStage + 1})`, g.world.systems[p.systemId].name);
     }
-    g.toast(`MISSION COMPLETE +${m.reward}CR`);
+    if (!(m.kind === "passenger" && m.mood !== undefined)) g.toast(`MISSION COMPLETE +${m.reward}CR`);
     sfx.pickup();
     if (m.kind === "bounty" && (m.killsNeeded ?? 0) >= 4) void wire.post("bounty", `collected a ${m.killsNeeded}-corsair bounty`, g.world.systems[p.systemId].name);
     p.missions = p.missions.filter((x) => !x.done);
@@ -1123,7 +1147,7 @@ export class StationScene implements Scene {
     const log = p.missions.filter((m) => m.accepted && !m.done);
     if (!log.length) drawText(ctx, "EMPTY", 12, y, PAL.greyDark);
     for (const m of log.slice(0, 4)) {
-      const prog = m.killsNeeded ? ` (${m.kills}/${m.killsNeeded})` : m.kind === "ground" ? ` (${m.groundDone ?? 0}/${m.groundNeed ?? 1})` : m.shipTotal ? ` (SHIPMENT ${(m.shipDone ?? 0) + 1}/${m.shipTotal})` : m.escortDone ? " (DONE - RETURN)" : "";
+      const prog = m.killsNeeded ? ` (${m.kills}/${m.killsNeeded})` : m.kind === "ground" ? ` (${m.groundDone ?? 0}/${m.groundNeed ?? 1})` : m.shipTotal ? ` (SHIPMENT ${(m.shipDone ?? 0) + 1}/${m.shipTotal})` : m.escortDone ? " (DONE - RETURN)" : m.kind === "passenger" && m.mood !== undefined ? ` (MOOD ${Math.round(m.mood)}${m.passengerKind === "tourist" ? `, ${m.sightSeen ? "SIGHT SEEN" : "SIGHT PENDING"}` : ""}${m.demand ? ", WANTS " + commodity(m.demand).name.toUpperCase() : ""})` : "";
       drawText(ctx, `> ${m.title}${prog} - ${g.world.systems[m.targetSystemId].name}`, 12, y, PAL.uiDim);
       y += 9;
     }
@@ -1153,6 +1177,19 @@ export class StationScene implements Scene {
         drawText(ctx, `${ROLE_INFO[c.role].effect}. WAGE ${c.wage}CR/DOCK, BONUS ${c.wage * 3}CR`, 28, y + 8, PAL.greyDark);
         y += 18; idx++;
       }
+    }
+    if (this.fares.length) {
+      drawText(ctx, `FARES (CABINS ${passengersAboard(p).length}/${passengerCap(p)}):`, 8, y, PAL.greyDark); y += 10;
+      for (const f of this.fares) {
+        const sel = idx === this.cursor;
+        this.row(ctx, y, sel);
+        drawText(ctx, `${f.title.toUpperCase()}  -  ${g.world.systems[f.targetSystemId].name.toUpperCase()}${f.demand ? "  (WANTS " + commodity(f.demand).name.toUpperCase() + ")" : ""}`, 12, y, f.passengerKind === "fugitive" ? PAL.danger : PAL.ui);
+        drawText(ctx, `+${f.reward}CR`, VW - textWidth(`+${f.reward}CR`) - 8, y, PAL.gold);
+        y += 9;
+        if (sel) { drawText(ctx, f.desc.toUpperCase().slice(0, 112), 12, y, PAL.greyDark); y += 9; }
+        idx++;
+      }
+      y += 2;
     }
     if (this.barLine) {
       ctx.fillStyle = "#0e1626"; ctx.fillRect(6, y, VW - 12, 28);

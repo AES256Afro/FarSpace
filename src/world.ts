@@ -148,9 +148,16 @@ export interface Mission {
   done: boolean;
   escortDone?: boolean;
   passengerName?: string;
-  passengerKind?: "vip" | "refugee" | "fugitive" | "tourist";
+  passengerKind?: "vip" | "refugee" | "fugitive" | "tourist" | "courier";
   sightPlanetIdx?: number;  // tourists want to orbit this planet in the target system first
   sightSeen?: boolean;
+  sightKind?: SightKind;    // what the tourists booked to see
+  sights?: string[];        // everything they saw on the way (pays extra)
+  mood?: number;            // 0..100: how the journey is going for them
+  demand?: string | null;   // a commodity they'd like brought aboard
+  patience?: number;        // dockings before they start to sour
+  docksAboard?: number;
+  party?: number;           // how many of them there are
   anomalyId?: string;
   syndicate?: string;                  // contract issued by an AI syndicate (tag)
   tenderDone?: boolean;                // repair tenders: the work is done, collect at the station
@@ -272,10 +279,96 @@ export interface PlayerState {
   berthLog?: { stationId: string; t: number; wear: number; cost: number }[]; // signed yard services
   shoreCrew?: ShoreLeave[];          // crew waiting for you at a station
   alumni?: Alumnus[];                // crew who served and went home
+  fares?: number;                    // passengers carried to their destination
 }
 
 export interface ShoreLeave { member: CrewMember; stationId: string; docks: number }
 export interface Alumnus { name: string; role: CrewRole; docks: number; stationId: string; t: number }
+
+// ---------- Passengers: the liner trade ----------
+export type SightKind = "planet" | "drifter" | "comet" | "festival";
+export const PASSENGER_BASE_CAP = 1;
+export function passengerCap(p: PlayerState): number {
+  return PASSENGER_BASE_CAP + ((p.modules ?? []).includes("cabins") ? 2 : 0);
+}
+export function passengersAboard(p: PlayerState): Mission[] {
+  return p.missions.filter((m) => m.kind === "passenger" && m.accepted && !m.done);
+}
+const FARE_DEMANDS: Record<string, string[]> = { vip: ["lux", "lux", "med"], tourist: ["lux", "food"], refugee: ["food", "med"], fugitive: ["med"], courier: ["data", "lux"] };
+// The lounge: two to four people who want to be somewhere else. Tourists book a sight;
+// couriers want speed; VIPs want comfort; refugees want out.
+export function genFares(w: World, station: StationDef, rng: RNG): Mission[] {
+  const sys = Object.values(w.systems).find((s) => s.stations.some((st) => st.id === station.id));
+  if (!sys) return [];
+  const one = sys.links.map((l) => w.systems[l]).filter(Boolean);
+  const two = one.flatMap((s) => s.links.map((l) => w.systems[l])).filter((s) => s && s.id !== sys.id && !one.includes(s));
+  const pool = [...one, ...one, ...two].filter((s) => s.stations.length);
+  if (!pool.length) return [];
+  const fares: Mission[] = [];
+  const n = rng.int(2, 4);
+  for (let i = 0; i < n; i++) {
+    const target = rng.pick(pool);
+    const tStation = rng.pick(target.stations);
+    const pk = rng.pick(["vip", "tourist", "tourist", "refugee", "courier", "fugitive"] as const);
+    const name = genPersonName(rng);
+    const hops = one.includes(target) ? 1 : 2;
+    let sightKind: SightKind | undefined, sightIdx: number | undefined, sightText = "";
+    if (pk === "tourist") {
+      const ev = w.galaxyEvent;
+      const gas = target.planets.map((pl, idx) => ({ pl, idx })).filter((x) => x.pl.palette >= 6);
+      if (ev && ev.kind === "comet" && ev.systemId === target.id && rng.chance(0.7)) { sightKind = "comet"; sightText = `the comet crossing ${target.name}`; }
+      else if (ev && ev.kind === "festival" && ev.stationId === tStation.id && rng.chance(0.7)) { sightKind = "festival"; sightText = `the festival at ${tStation.name}`; }
+      else if (gas.length && rng.chance(0.4)) { sightKind = "drifter"; sightIdx = rng.pick(gas).idx; sightText = `the void drifters off ${target.planets[sightIdx].name} (hold V near one)`; }
+      else if (target.planets.length) { sightKind = "planet"; sightIdx = rng.int(0, target.planets.length - 1); sightText = `${target.planets[sightIdx].name} from orbit`; }
+      else { sightKind = "festival"; sightText = tStation.name; }
+    }
+    const party = pk === "tourist" ? rng.int(2, 4) : pk === "refugee" ? rng.int(1, 3) : 1;
+    const base = pk === "vip" ? 700 + rng.int(0, 400) : pk === "refugee" ? 100 + rng.int(0, 80) * party : pk === "tourist" ? 500 + rng.int(0, 300) + party * 120 : pk === "courier" ? 450 + rng.int(0, 250) : 550 + rng.int(0, 450);
+    fares.push({
+      id: `fare-${station.id}-${w.missionCounter++}`, kind: "passenger", accepted: false, done: false, tier: 0,
+      title: `${pk === "vip" ? "VIP" : pk === "refugee" ? "Refugee" : pk === "tourist" ? "Sightseeing" : pk === "courier" ? "Business" : "Discreet"} fare: ${name}${party > 1 ? ` +${party - 1}` : ""}`,
+      desc: pk === "vip" ? `${name} wants ${tStation.name}, ${target.name}, in comfort. Luxuries aboard would be noticed.`
+        : pk === "refugee" ? `${name}${party > 1 ? ` and ${party - 1} others` : ""} need passage to ${tStation.name}, ${target.name}. Can't pay much.`
+        : pk === "tourist" ? `${name}'s party want to see ${sightText}, then ${tStation.name}, ${target.name}. Every sight on the way pays extra.`
+        : pk === "courier" ? `${name} has a meeting at ${tStation.name}, ${target.name}. Wants it in ${hops + 1} dockings or less.`
+        : `${name} needs ${tStation.name}, ${target.name}, and needs the gate scanners to miss them.`,
+      fromStationId: station.id, targetSystemId: target.id, targetStationId: tStation.id,
+      passengerName: name, passengerKind: pk, sightPlanetIdx: sightIdx, sightKind, sightSeen: false, sights: [],
+      mood: 60, demand: rng.chance(0.6) ? rng.pick(FARE_DEMANDS[pk]) : null, patience: pk === "courier" ? hops + 1 : hops + 3, docksAboard: 0, party,
+      reward: Math.round(base * (hops === 2 ? 1.5 : 1)),
+      repReward: pk === "refugee" ? 6 : pk === "tourist" ? 4 : 3,
+    });
+  }
+  return fares;
+}
+// Each dock, the passengers take stock. Demands met from the hold cheer them up; a long trip or a battered hull sours them.
+export function settlePassengers(p: PlayerState): string[] {
+  const out: string[] = [];
+  for (const m of passengersAboard(p)) {
+    const name = (m.passengerName ?? "YOUR PASSENGER").toUpperCase();
+    m.mood ??= 60; m.docksAboard = (m.docksAboard ?? 0) + 1;
+    if (m.demand && (p.cargo[m.demand] ?? 0) > 0) { removeCargo(p, m.demand, 1); m.mood = Math.min(100, m.mood + 30); out.push(`${name} NOTICES THE ${(COMMODITIES.find((c) => c.id === m.demand)?.name ?? m.demand).toUpperCase()}. MOOD UP.`); m.demand = null; }
+    if (m.docksAboard > (m.patience ?? 4)) { m.mood = Math.max(0, m.mood - 12); out.push(`${name} ASKS, AGAIN, HOW MUCH LONGER.`); }
+    if (p.hull < p.hullMax * 0.4) { m.mood = Math.max(0, m.mood - 10); out.push(`${name} HAS SEEN THE HULL READOUT. NOT HAPPY.`); }
+  }
+  return out;
+}
+// Sights along the way: tourists pay for what they saw. Their booked sight also completes the fare.
+export function logSight(p: PlayerState, kind: SightKind, label: string, systemId: string, planetIdx?: number): boolean {
+  let any = false;
+  for (const m of passengersAboard(p)) {
+    if (m.passengerKind !== "tourist") continue;
+    m.sights ??= [];
+    if (!m.sights.includes(label)) { m.sights.push(label); any = true; m.mood = Math.min(100, (m.mood ?? 60) + 8); }
+    if (!m.sightSeen && m.sightKind === kind && m.targetSystemId === systemId && (kind !== "planet" && kind !== "drifter" || m.sightPlanetIdx === planetIdx)) { m.sightSeen = true; any = true; }
+  }
+  return any;
+}
+export function passengerPay(m: Mission): number {
+  const mood = m.mood ?? 60;
+  const extra = m.passengerKind === "tourist" ? Math.min(3, Math.max(0, (m.sights?.length ?? 0) - 1)) * 0.15 : 0;
+  return Math.round(m.reward * (0.6 + (mood / 100) * 0.6 + extra));
+}
 
 // ---------- Wear: a ship wants a yard now and then ----------
 // Wear climbs with hours under way and with every jump; an engineer slows it.

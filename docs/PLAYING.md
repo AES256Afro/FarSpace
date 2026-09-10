@@ -101,6 +101,19 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   board: sample runs, outcrop runs, and a plant to fix on the spot. Jobs pay
   out when you walk back in.
 
+## The liner trade
+
+- Every station lounge (BAR) has two to four fares waiting: VIPs, tourists,
+  refugees, business travellers, and people who'd rather the gate scanners
+  missed them. Without cabins you carry one; PASSENGER CABINS from a
+  shipyard make it three.
+- Passengers have a mood. Long trips and a battered hull sour it; the thing
+  they asked for (luxuries, food, med supplies) brought aboard lifts it. Pay
+  runs from 60% to 120% of the fare by mood, with tips for the happiest.
+- Tourists book a sight: a world from orbit, the void drifters off a gas
+  giant, a comet, a festival. Every other sight along the way adds 15%.
+- Talk to them in the bunk room (I). Each press of E is a different fare.
+
 ## A life aboard
 
 - Crew count their dockings and remember their home port. Now and then one asks
