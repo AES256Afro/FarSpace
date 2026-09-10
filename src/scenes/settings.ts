@@ -9,7 +9,7 @@ import { sfx, applySfxVolume } from "../core/sfx";
 
 interface Row { label: string; value: string; act: () => void; adj?: (dir: number) => void }
 
-const FIXED = 5; // rows before the key-binding list
+const FIXED = 6; // rows before the key-binding list
 
 export class SettingsScene implements Scene {
   touchMode = "menu" as const;
@@ -31,6 +31,7 @@ export class SettingsScene implements Scene {
       { label: "HUM", value: `${music.isMuted() ? "OFF" : "ON "} ${bar(s.music)} ${Math.round(s.music * 100)}%`, act: () => { music.toggle(); }, adj: (d) => vol("music", d) },
       { label: "EFFECTS", value: `${bar(s.sfx)} ${Math.round(s.sfx * 100)}%`, act: () => vol("sfx", s.sfx >= 1 ? -10 : 1), adj: (d) => vol("sfx", d) },
       { label: "FULLSCREEN", value: document.fullscreenElement ? "ON" : "OFF", act: () => toggleFullscreen(document.getElementById("game")!) },
+      { label: "FLEET PRESENCE", value: s.presence ? "ON - OTHER PILOTS SEE YOUR SHIP" : "OFF - FLY UNSEEN", act: () => saveSettings({ presence: !s.presence }) },
     ];
     for (const a of ACTIONS) {
       const physical = Object.entries(s.keymap).find(([, v]) => v === a.key)?.[0] ?? a.key;

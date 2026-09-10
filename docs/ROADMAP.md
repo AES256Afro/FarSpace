@@ -221,6 +221,28 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
       contributor board and a sales premium; daily contract; achievements for
       all of it
 
+## Milestone 12 — Groundside ✅ (Sep 2026)
+**Goal:** worlds you can drive across.
+
+- [x] Region-scale ground maps (96x72 tiles) generated per region from the
+      planet's biome: seas, sand, plains, hills, mountains, biome hazards
+- [x] Rover with power (recharge at the lander) and integrity (patch with parts)
+- [x] Sites: outcrops (materials), alien flora (scan for exploration data),
+      geysers, crashed probes, rover wrecks, resource caches; the region's
+      outposts, cities and ruins are entrances that return you to the ground
+- [x] Fog of war, minimap, day/night with headlights, storms per biome
+- [x] Charting and fully working a region pays exploration data; ground state
+      is saved
+
+## Milestone 13 — Other Pilots ✅ (Sep 2026)
+**Goal:** the shared universe becomes visible.
+
+- [x] Presence rooms: a Durable Object per star system relays positions over
+      WebSockets; pilots in the same system see each other's ships with call
+      sign and ship name, and edge markers when off-screen
+- [x] System channel: T hails everyone in the system; lines appear on GalNet
+- [x] Opt-out in Settings; nothing is stored server-side
+
 ## Later
-- [ ] Ground exploration beyond outposts and ruins (planet-scale maps)
-- [ ] Multiplayer proper
+- [ ] Shared missions and trading between pilots
+- [ ] Persistent player factions

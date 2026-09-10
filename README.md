@@ -21,9 +21,10 @@ See [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) for the full design and
 
 | Context | Keys |
 |---|---|
-| Flight | **W/S** thrust · **A/D** rotate · **mouse** aims the turret (left-click fire, right-click mine) or **Space** fire / **M** mine in keyboard mode · **R** torpedo · **C** seismic charge · **X** brake assist · **J** cruise · **N** autopilot to your course · **V** (hold) deep scan (logs the system) · **E** dock / jump / orbit / board wreck · **Tab** system map · **G** galaxy map · **I** board ship · **F** fullscreen |
+| Flight | **W/S** thrust · **A/D** rotate · **mouse** aims the turret (left-click fire, right-click mine) or **Space** fire / **M** mine in keyboard mode · **R** torpedo · **C** seismic charge · **X** brake assist · **J** cruise · **N** autopilot to your course · **V** (hold) deep scan (logs the system) · **E** dock / jump / orbit / board wreck · **T** hail the system channel · **Tab** system map · **G** galaxy map · **I** board ship · **F** fullscreen |
 | Ship / station / wreck / outpost | **WASD** walk · **E** interact · **E** (hold) repair, seal, extinguish |
-| Orbit | **↑/↓** or click to target a site · **V** (hold) survey scan · **E** land · **Esc** leave orbit |
+| Orbit | **↑/↓** or click to target a site · **V** (hold) survey scan · **E** land at the site · **L** drop the rover in its region · **Esc** leave orbit |
+| Groundside (rover) | **WASD** drive · **E** mine / salvage / enter a site / lift off at the lander · **V** (hold) scan flora · **R** patch the rover at the lander |
 | Station menus | **↑/↓ / ←/→** or click · **Enter** select · **B/S** buy/sell · **P** walk the deck · **Esc** undock · SURVEY sells exploration data · ENGINEER (research/refinery) spends materials · RECORD shows achievements and ranks · **N** in SHIPS names your ship |
 | Galaxy map | click a system for intel · click again (or **N**) to plot a course · **B** bookmark |
 | Global | **F5** save (local + cloud) · **F9** load · **H** music · every flight key can be rebound in SETTINGS · touch: left stick + on-screen buttons · gamepad: sticks/D-pad, A use, X fire, Y mine, RB brake, LB scan, LT map, Start galaxy, Select ship |
@@ -37,6 +38,12 @@ copy. Works from fsociety.work and from self-hosted copies. **Fleet Wire:** choo
 a call sign and your arc completions, rescues, surveys and relic hauls appear on
 every player's WIRE tab and the title ticker, with leaderboards for discoveries,
 arcs, credits and kills.
+
+**Other pilots:** with a call sign set, everyone in the same star system sees
+each other's ships and shares a text channel (T). No accounts, no persistence,
+switch it off in Settings. **Groundside:** drop a rover on any region of any
+world and drive it: biomes, storms, day and night, outcrops, alien flora,
+geysers, wrecks, and the region's outposts, cities and ruins as doors.
 
 **The non-combat game** (the Elite Dangerous side): twelve ship modules
 (fuel scoop, docking computer, collector and prospector limpets, refinery,
@@ -80,7 +87,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestones 1–11 are live (v0.11). See the [roadmap](docs/ROADMAP.md) for what's next.
+Milestones 1–13 are live (v0.12). See the [roadmap](docs/ROADMAP.md) for what's next.
 
 ```bash
 npm test         # vitest: world-gen, routing, economy, law, missions, save migrations

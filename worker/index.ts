@@ -6,6 +6,9 @@
 //   POST /api/wire            <- { callsign, kind, text, system }  (rate limited per IP)
 //   GET  /api/board/:name     -> top 20 { callsign, score }
 //   POST /api/board/:name     <- { callsign, score }  keeps each call sign's best
+//   GET  /api/discover?system= / POST { system, callsign }  first-discovery tags
+//   GET  /api/goal?id= / POST { id, callsign, amount }      weekly community goal
+//   WS   /api/room/:system    presence + chat, one Durable Object per system
 // Codes are the only secret (like a share link). CORS is open so self-hosted
 // copies of the game (BoxPilot, etc.) can use the same cloud.
 
@@ -14,9 +17,87 @@ interface KVNamespace {
   put(key: string, value: string, opts?: { expirationTtl?: number }): Promise<void>;
   delete(key: string): Promise<void>;
 }
+interface DurableObjectId { toString(): string }
+interface DurableObjectStub { fetch(request: Request): Promise<Response> }
+interface DurableObjectNamespace { idFromName(name: string): DurableObjectId; get(id: DurableObjectId): DurableObjectStub }
+interface DurableObjectState { acceptWebSocket(ws: WebSocket, tags?: string[]): void; getWebSockets(tag?: string): WebSocket[] }
+interface RoomSocket extends WebSocket { serializeAttachment(v: unknown): void; deserializeAttachment(): unknown }
+declare const WebSocketPair: { new (): { 0: WebSocket; 1: WebSocket } };
 interface Env {
   SAVES: KVNamespace;
   ASSETS: { fetch(request: Request): Promise<Response> };
+  ROOMS: DurableObjectNamespace;
+}
+
+// One room per star system: pilots in the same system see each other's ships
+// and share a text channel. Nothing is stored; a room is just the sockets in it.
+// Hibernation API keeps idle rooms free.
+export class SystemRoom {
+  constructor(private state: DurableObjectState) {}
+
+  async fetch(request: Request): Promise<Response> {
+    if (request.headers.get("Upgrade") !== "websocket") return json({ error: "websocket only" }, 426);
+    const pair = new WebSocketPair();
+    const client = pair[0], server = pair[1] as RoomSocket;
+    this.state.acceptWebSocket(server);
+    server.serializeAttachment({ callsign: null, last: 0 });
+    // tell the newcomer who's already here
+    const here: unknown[] = [];
+    for (const o of this.state.getWebSockets()) {
+      const a = (o as RoomSocket).deserializeAttachment() as { callsign: string | null; pos?: unknown } | null;
+      if (a?.callsign && a.pos) here.push(a.pos);
+    }
+    try { server.send(JSON.stringify({ t: "roster", pilots: here })); } catch { /* fine */ }
+    return new Response(null, { status: 101, webSocket: client } as ResponseInit);
+  }
+
+  broadcast(from: WebSocket, msg: string): void {
+    for (const o of this.state.getWebSockets()) {
+      if (o === from) continue;
+      try { o.send(msg); } catch { /* closing */ }
+    }
+  }
+
+  webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): void {
+    if (typeof message !== "string" || message.length > 700) return;
+    let m: Record<string, unknown>;
+    try { m = JSON.parse(message) as Record<string, unknown>; } catch { return; }
+    const sock = ws as RoomSocket;
+    const att = (sock.deserializeAttachment() as { callsign: string | null; last: number; pos?: unknown }) ?? { callsign: null, last: 0 };
+    const callsign = clean(m.callsign, 16).toUpperCase();
+    if (!CALLSIGN.test(callsign)) return;
+    const now = Date.now();
+    if (m.t === "pos") {
+      if (now - att.last < 120) return; // 8 Hz cap per pilot
+      const pos = {
+        t: "pos", callsign, x: num(m.x), y: num(m.y), angle: num(m.angle), vx: num(m.vx), vy: num(m.vy),
+        hull: clean(m.hull, 16), name: clean(m.name, 18), at: now,
+      };
+      sock.serializeAttachment({ callsign, last: now, pos });
+      this.broadcast(ws, JSON.stringify(pos));
+    } else if (m.t === "chat") {
+      if (now - att.last < 0) return;
+      const text = clean(m.text, 120);
+      if (!text) return;
+      sock.serializeAttachment({ ...att, callsign });
+      const out = JSON.stringify({ t: "chat", callsign, text, at: now });
+      this.broadcast(ws, out);
+      try { ws.send(out); } catch { /* fine */ }
+    }
+  }
+
+  webSocketClose(ws: WebSocket): void { this.goodbye(ws); }
+  webSocketError(ws: WebSocket): void { this.goodbye(ws); }
+  goodbye(ws: WebSocket): void {
+    const att = (ws as RoomSocket).deserializeAttachment() as { callsign: string | null } | null;
+    if (att?.callsign) this.broadcast(ws, JSON.stringify({ t: "bye", callsign: att.callsign }));
+    try { ws.close(); } catch { /* already */ }
+  }
+}
+
+function num(v: unknown): number {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.round(n * 100) / 100 : 0;
 }
 
 const CODE = /^[A-Z2-7]{8,12}$/;
@@ -63,6 +144,15 @@ export default {
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
 
     if (url.pathname === "/api/health") return json({ ok: true });
+
+    // Presence rooms: ws(s)://host/api/room/<system name>
+    const rm = url.pathname.match(/^\/api\/room\/(.{1,40})$/);
+    if (rm) {
+      const name = clean(decodeURIComponent(rm[1]), 40).toLowerCase();
+      if (!name) return json({ error: "room?" }, 400);
+      const id = env.ROOMS.idFromName(name);
+      return env.ROOMS.get(id).fetch(request);
+    }
 
     if (url.pathname === "/api/wire") {
       if (request.method === "GET") {

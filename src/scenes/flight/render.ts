@@ -11,6 +11,9 @@ import { faction } from "../../data/data";
 import { hull } from "../../data/hulls";
 import { permitDenied } from "../../world";
 import { hasModule } from "../../data/modules";
+import { presence } from "../../core/presence";
+import { genShip } from "../../gfx/sprites";
+import { RNG } from "../../core/rng";
 import { inSafeZone } from "./ai";
 import { drawTouchControls } from "../../core/touch";
 import { drawTutorial } from "../../core/tutorial";
@@ -219,6 +222,20 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
     }
   }
 
+  // other pilots (ghosts): translucent, tagged with their call sign
+  for (const gh of presence.ghosts.values()) {
+    const h = hull(gh.hull);
+    const spr = g.sprite(`ghost-${h.id}`, () => genShip(new RNG(g.world.seed ^ 0x51e9 ^ h.id.length), h.spriteSize, h.color, h.accent));
+    const pos = presence.at(gh);
+    const [sx, sy] = toScreen(pos.x, pos.y);
+    if (sx < -40 || sx > VW + 40 || sy < -40 || sy > VH + 40) continue;
+    ctx.globalAlpha = 0.8;
+    drawRotated(ctx, spr, sx, sy, gh.angle, z);
+    ctx.globalAlpha = 1;
+    const tag = gh.name ? `${gh.callsign} - ${gh.name}` : gh.callsign;
+    drawText(ctx, tag, sx - textWidth(tag) / 2, sy - (h.spriteSize / 2) * z - 10, PAL.info);
+  }
+
   for (const n of fs.npcs) {
     const spr = n.kind === "pirate" ? g.pirateShip()
       : n.kind === "patrol" || n.kind === "fighter" || n.kind === "drone" ? g.patrolShip()
@@ -334,6 +351,7 @@ export function drawEdgeMarkers(fs: FlightScene, g: Game, ctx: CanvasRenderingCo
     const st = sys.stations.find((s) => s.id === m.targetStationId);
     if (st) mark(Math.cos(st.angle) * st.orbit, Math.sin(st.angle) * st.orbit, PAL.gold, "MISSION");
   }
+  for (const gh of presence.ghosts.values()) { const pos = presence.at(gh); mark(pos.x, pos.y, PAL.info, gh.callsign); }
   const wreckRange = hasModule(p, "fss") ? 1e9 : 1500;
   for (const w of sys.wrecks) if (!w.looted && dist(w.x, w.y, p.x, p.y) < wreckRange) mark(w.x, w.y, PAL.grey, "WRECK");
 }
@@ -401,6 +419,11 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
   if (inSafeZone(fs, g, p.x, p.y) && law === 0) drawText(ctx, "PROTECTED SPACE", VW - 130, VH - 11, PAL.good);
   drawText(ctx, "TAB MAP", VW - 36, VH - 19, PAL.greyDark);
   drawText(ctx, "J CRUISE", VW - 36, VH - 11, PAL.greyDark);
+  if (presence.status === "on") {
+    const n = presence.ghosts.size;
+    const t = n ? `${n} PILOT${n === 1 ? "" : "S"} HERE - T TO HAIL` : "SYSTEM CHANNEL - T";
+    drawText(ctx, t, VW - textWidth(t) - 4, 14, n ? PAL.info : PAL.greyDark);
+  }
   if (g.cloudStatus) drawText(ctx, g.cloudStatus, VW - 36 - textWidth(g.cloudStatus) - 6, VH - 11, g.cloudStatus === "SYNCED" ? PAL.uiDim : PAL.warn);
 
   let wy = 4;
@@ -434,7 +457,9 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
   wy += 10;
   for (const c of fs.comms) {
     ctx.globalAlpha = Math.min(1, c.life);
-    drawText(ctx, `${c.from}: ${c.text}`.slice(0, 70), 4, wy, c.color);
+    const line = `${c.from}: ${c.text}`.slice(0, 70);
+    ctx.fillStyle = "rgba(8,12,22,0.7)"; ctx.fillRect(2, wy - 1, textWidth(line) + 4, 8);
+    drawText(ctx, line, 4, wy, c.color);
     ctx.globalAlpha = 1;
     wy += 8;
   }

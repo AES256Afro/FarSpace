@@ -19,6 +19,7 @@ import { touch } from "../../core/touch";
 import { VW, VH } from "../../game";
 import { music } from "../../core/music";
 import * as wire from "../../core/wire";
+import { presence } from "../../core/presence";
 import type { Bullet, Npc, Particle, Platform, Loot, Sos } from "./types";
 import type { StationDef } from "../../world";
 import { BULLET_SPEED } from "./types";
@@ -248,6 +249,23 @@ export class FlightScene implements Scene {
 
     this.updateHeat(g, dt);
     this.updateDockingComputer(g, dt);
+    // other pilots in this system
+    presence.tick(p, sys.name);
+    while (presence.chat.length) {
+      const c = presence.chat.shift()!;
+      this.comms.push({ from: c.from, text: c.text, life: 10, color: c.from === wire.getCallsign() ? PAL.ui : PAL.info });
+      if (this.comms.length > 5) this.comms.shift();
+      if (c.from !== wire.getCallsign()) sfx.blip();
+    }
+    if (g.input.wasPressed("t")) {
+      if (!wire.getCallsign()) g.toast("CHOOSE A CALL SIGN ON THE TITLE SCREEN TO USE THE SYSTEM CHANNEL");
+      else if (presence.status !== "on") g.toast("SYSTEM CHANNEL OFFLINE" + (settings().presence ? "" : " - FLEET PRESENCE IS OFF IN SETTINGS"));
+      else {
+        const raw = window.prompt(`System channel - ${sys.name} (${presence.ghosts.size} other pilot${presence.ghosts.size === 1 ? "" : "s"} here):`, "");
+        g.input.flush();
+        if (raw && !presence.say(raw)) g.toast("CHANNEL DROPPED THE MESSAGE");
+      }
+    }
     if (!this.cruise && !this.autopilot && !p.hints?.["cruisehint"] && (p.tutorial ?? -1) < 0) {
       const nearest = Math.min(...sys.stations.map((st) => dist(p.x, p.y, Math.cos(st.angle) * st.orbit, Math.sin(st.angle) * st.orbit)), Infinity);
       if (nearest > 1800) g.showHint("cruisehint", "LONG WAY? J ENGAGES CRUISE - N FLIES YOUR PLOTTED COURSE");

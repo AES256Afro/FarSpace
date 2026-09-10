@@ -11,6 +11,10 @@
   "kv_namespaces": [
     { "binding": "SAVES", "id": "e17be95df888439496942d63fdd6e8f2" }
   ],
+  "durable_objects": {
+    "bindings": [{ "name": "ROOMS", "class_name": "SystemRoom" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["SystemRoom"] }],
   "routes": [
     { "pattern": "farspace.fsociety.work", "custom_domain": true }
   ]
