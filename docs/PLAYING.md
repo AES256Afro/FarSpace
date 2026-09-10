@@ -101,6 +101,17 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   board: sample runs, outcrop runs, and a plant to fix on the spot. Jobs pay
   out when you walk back in.
 
+## Charters
+
+- Once you know a good run (dock at two markets), any shipyard on the buying
+  end offers CHARTER A HAULER for 3,000 credits: a hauler with a crew runs
+  that route while you fly. You keep 60% of each trip's margin, paid out when
+  you next dock anywhere. Up to three at once.
+- Prices move with every trip, so a run pays less as the markets level.
+  Corsairs on the lane take cargo and hull; a wrecked hauler ends the charter.
+- The SHIPS tab lists your charters (R releases the last one); the galaxy map
+  draws their routes dotted in gold.
+
 ## Settlements grow
 
 - Every crate sold at an outpost's trade desk, every foreman job paid out and

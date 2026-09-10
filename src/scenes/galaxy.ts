@@ -103,6 +103,13 @@ export class GalaxyScene implements Scene {
         if (!a || !b || a === b) continue;
         ctx.beginPath(); ctx.moveTo(OX + a.gx, OY + a.gy); ctx.lineTo(OX + b.gx, OY + b.gy); ctx.stroke();
       }
+      for (const c of w.player.haulers ?? []) {
+        const a = findStation(w, c.from)?.sys, b = findStation(w, c.to)?.sys;
+        if (!a || !b || a === b) continue;
+        ctx.globalAlpha = 0.9; ctx.strokeStyle = c.health < 40 ? PAL.warn : PAL.gold; ctx.setLineDash([2, 3]);
+        ctx.beginPath(); ctx.moveTo(OX + a.gx, OY + a.gy); ctx.lineTo(OX + b.gx, OY + b.gy); ctx.stroke();
+        ctx.setLineDash([]); ctx.globalAlpha = 0.5;
+      }
       const selSys = this.selected ? w.systems[this.selected] : null;
       const sy = selSys ? (w.syndicates ?? []).find((x) => x.systemId === selSys.id) : null;
       if (sy) {

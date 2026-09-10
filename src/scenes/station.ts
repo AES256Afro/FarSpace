@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS, roleLabel } from "../
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter,
+  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter,
 } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
@@ -69,6 +69,7 @@ export class StationScene implements Scene {
     refreshPrices(this.station);
     void wire.fetchSquadronData();
     if (p.ious?.length) { for (const iou of p.ious) { p.credits += iou.credits; g.toast(iou.text); } p.ious = []; sfx.pickup(); }
+    { const c = collectCharters(p); for (const l of c.lines) g.toast(l); if (c.total !== 0) sfx.pickup(); }
     if (p.evacuees && p.evacuees.n > 0) { const pay = p.evacuees.n * (p.evacuees.from === "wounded" ? 200 : 150); if (p.evacuees.from === "wounded") p.lives = (p.lives ?? 0) + p.evacuees.n; logEntry(g.world, `Handed ${p.evacuees.n} survivors over at ${this.station.name}`); p.credits += pay; adjustRep(g.world, this.station.factionId, 4); g.toast(`${p.evacuees.n} SURVIVORS FROM THE ${p.evacuees.from.toUpperCase()} HANDED OVER +${pay}CR`); p.evacuees = null; flag(g, "lifeboat"); sfx.pickup(); }
     if (g.scenes.flight && (g.scenes.flight as unknown as { towing: unknown }).towing) {
       const fs = g.scenes.flight as unknown as { towing: { x: number; y: number; hull: number } | null };
@@ -435,6 +436,11 @@ export class StationScene implements Scene {
           else this.swapShip(g, stored[this.cursor - HULLS.length]);
         }
         if (inp.wasPressed("k") && this.cursor < HULLS.length) this.buyHull(g, HULLS[this.cursor].id, true);
+        if (inp.wasPressed("r") && (p.haulers ?? []).length) {
+          const c = p.haulers![p.haulers!.length - 1];
+          if (confirmBox(`Release ${c.name} from the charter? The till (${Math.round(c.till)}cr) pays out now; the crew find other work.`)) { p.credits += Math.round(c.till); releaseCharter(p, c); g.toast(`${c.name.toUpperCase()} RELEASED. THE CREW WAVE FROM THE BAY.`); }
+          inp.flush();
+        }
         if (inp.wasPressed("o")) {
           const PAINTS = ["#63f2c8", "#ff5a5a", "#ffd75a", "#5ab3ff", "#e060ff", "#ff9a3a", "#f2f4ff", "#3aa55e"];
           const i = PAINTS.indexOf(p.paint ?? "");
@@ -866,6 +872,21 @@ export class StationScene implements Scene {
         if ((p.furnishings ?? []).length >= 4) flag(g, "homely");
       } });
     }
+    {
+      const best = this.bestRoute(g);
+      const toId = best ? Object.keys(p.marketMemory ?? {}).find((id) => findStation(g.world, id)?.st.name === best.station) : null;
+      if (best && toId && (p.haulers ?? []).length < CHARTER_CAP) {
+        opts.push({ label: `CHARTER A HAULER: ${commodity(best.id).name.toUpperCase()} TO ${best.station.toUpperCase()} (${(p.haulers ?? []).length}/${CHARTER_CAP})`, sub: `${CHARTER_PRICE}CR - RUNS YOUR BEST KNOWN ROUTE WHILE YOU FLY, ${Math.round(CHARTER_CUT * 100)}% OF THE MARGIN IS YOURS, PAID WHEN YOU DOCK`, action: () => {
+          const r = hireCharter(g.world, st.id, toId, best.id, new RNG((g.world.seed ^ Math.floor(g.world.time * 29)) >>> 0));
+          if (typeof r === "string") return g.toast(r);
+          g.toast(`${r.name.toUpperCase()} SIGNED ON THE ${st.name.toUpperCase()} - ${best.station.toUpperCase()} RUN. FIRST TRIP IN ${Math.round(r.tripSecs / 60)} MINUTES.`); sfx.dock();
+          logEntry(g.world, `Chartered ${r.name} on the ${st.name} - ${best.station} run`); flag(g, "shippingLine");
+          void wire.post("trade", `chartered ${r.name} on the ${st.name} - ${best.station} run`, g.world.systems[p.systemId].name);
+        } });
+      } else if (!best && (p.haulers ?? []).length < CHARTER_CAP) {
+        opts.push({ label: "CHARTER A HAULER", sub: "VISIT ANOTHER MARKET FIRST: A CHARTER RUNS YOUR BEST KNOWN ROUTE FROM HERE", action: () => g.toast("NO KNOWN RUN FROM HERE YET - DOCK AT ANOTHER STATION AND COME BACK") });
+      }
+    }
     opts.push({ label: "REST A WHILE (TEN MINUTES OF SHIP TIME)", sub: "MARKETS BREATHE, TILLS FILL, THE SICK MEND, CREW SETTLE", action: () => {
       const lines = restAtDock(g.world);
       g.toast(lines[0] ?? "TEN MINUTES PASS. THE DECK HUMS. NOTHING BROKE."); for (const l of lines.slice(1)) g.toast(l);
@@ -1161,6 +1182,12 @@ export class StationScene implements Scene {
     }
     if (elsewhere.length) {
       drawText(ctx, `FLEET ELSEWHERE: ${elsewhere.map((f) => `${(f.name ?? hull(f.hullId).name).toUpperCase()} AT ${findStation(g.world, f.stationId)?.st.name.toUpperCase() ?? "?"}`).join("; ")}`.slice(0, 110), 8, y, PAL.greyDark);
+      y += 9;
+    }
+    for (const c of p.haulers ?? []) {
+      const a = findStation(g.world, c.from)?.st.name ?? "?", b = findStation(g.world, c.to)?.st.name ?? "?";
+      drawText(ctx, `CHARTER ${c.name.toUpperCase()}: ${commodity(c.commodityId).name.toUpperCase()} ${a.toUpperCase()} > ${b.toUpperCase()} - ${c.trips} TRIPS, ${c.earned}CR EARNED, TILL ${Math.round(c.till)}CR, HULL ${c.health}%${c.raided ? `, RAIDED x${c.raided}` : ""} - R RELEASES`.slice(0, 118), 8, y, c.health < 40 ? PAL.warn : PAL.gold);
+      y += 9;
     }
   }
 

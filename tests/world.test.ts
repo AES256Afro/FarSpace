@@ -2,7 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
-  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel } from "../src/world";
+  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices } from "../src/world";
+import type { Charter } from "../src/world";
 import type { Infra } from "../src/world";
 import { migrateSave, SAVE_VERSION, saveKeyFor, SLOTS } from "../src/save";
 import { RNG } from "../src/core/rng";
@@ -1093,5 +1094,41 @@ describe("settlements grow", () => {
     expect(w.events[w.events.length - 1].text).toContain("TESTER");
     const ruin = pl.surface!.pois.find((p) => p.kind === "ruin");
     if (ruin) expect(growSettlement(w, ruin, 500, "X")).toBeNull();
+  });
+});
+
+describe("charters", () => {
+  it("a hired hauler runs trips on the clock, moves stock, banks a cut, gets raided in pirate space, and pays out at dock", () => {
+    const w = generateWorld(111, { realGalaxy: true });
+    const p = w.player;
+    const sys = Object.values(w.systems).find((s) => s.stations.length && s.links.some((l) => w.systems[l].stations.length))!;
+    const from = sys.stations[0];
+    const to = w.systems[sys.links.find((l) => w.systems[l].stations.length)!].stations[0];
+    const id = Object.keys(from.prices).find((k) => (from.stock[k] ?? 0) > 20 && !k.startsWith("r_")) ?? "food";
+    from.stock[id] = 60; to.stock[id] = 0; refreshPrices(from); refreshPrices(to);
+    p.credits = 1000;
+    expect(hireCharter(w, from.id, to.id, id, new RNG(1))).toContain("UP FRONT");
+    p.credits = 10000;
+    const c = hireCharter(w, from.id, to.id, id, new RNG(1)) as Charter;
+    expect(c.name).toContain("Hauler");
+    expect(p.credits).toBe(7000);
+    for (const s2 of Object.values(w.systems)) s2.pirateActivity = 0; // calm lanes for the earnings check
+    w.time += c.tripSecs * 3;
+    const news = tickCharters(w, new RNG(2));
+    expect(c.trips).toBe(3);
+    expect(c.till).toBeGreaterThan(0);
+    expect(to.stock[id]).toBeGreaterThan(0);
+    expect(news.length).toBe(0);
+    const paid = collectCharters(p);
+    expect(paid.total).toBeGreaterThan(0);
+    expect(c.till).toBe(0);
+    // pirate lanes: enough trips and something gets hit
+    for (const s2 of Object.values(w.systems)) s2.pirateActivity = 1;
+    let hit = false;
+    for (let i = 0; i < 30 && !hit && (p.haulers ?? []).includes(c); i++) { w.time += c.tripSecs; if (tickCharters(w, new RNG(100 + i)).length) hit = true; }
+    expect(hit).toBe(true);
+    expect((p.haulers ?? []).length).toBeLessThanOrEqual(1);
+    if ((p.haulers ?? []).includes(c)) { releaseCharter(p, c); }
+    expect((p.haulers ?? []).length).toBe(0);
   });
 });

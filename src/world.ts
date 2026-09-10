@@ -286,6 +286,7 @@ export interface PlayerState {
   infraEarned?: number;              // lifetime tolls and fuel sales collected
   cat?: { name: string; since: number } | null; // the ship's cat, if one has adopted you
   furnishings?: string[];            // things bought for the deck (FURNISHINGS)
+  haulers?: Charter[];               // haulers you pay to run your routes while you fly
   postcards?: number;                // pictures taken
   lineage?: Captain[];               // captains who sat in this chair before
   captainName?: string;              // who sits in it now (a crew member who took over), if not you
@@ -477,6 +478,77 @@ export function restAtDock(w: World, seconds = 600): string[] {
   if (w.infraNews?.length) { out.push(...w.infraNews); w.infraNews = []; }
   return out;
 }
+
+// ---------- Charters: a hauler runs your route while you fly ----------
+// You know a good run; a hauler with a crew of three runs it for a cut. Prices
+// move with every trip, corsairs take their share, and the till pays out when
+// you next dock anywhere.
+export interface Charter { id: string; name: string; from: string; to: string; commodityId: string; qty: number; tripSecs: number; lastT: number; trips: number; earned: number; till: number; health: number; raided: number }
+export const CHARTER_PRICE = 3000;
+export const CHARTER_CAP = 3;
+export const CHARTER_CUT = 0.6; // your share of each trip's margin
+const HAULER_NAMES = ["Margit", "Okonkwo", "Blue-4", "Steady Hand II", "Long Patience", "Ferrous Dawn", "Quiet Ledger", "Salt and Iron"];
+export function charterName(rng: RNG): string { return `Hauler ${rng.pick(HAULER_NAMES)}`; }
+export function charterRoute(w: World, fromId: string, toId: string): { hops: number; piracy: number } {
+  const from = findStation(w, fromId), to = findStation(w, toId);
+  if (!from || !to) return { hops: 1, piracy: 0.3 };
+  const route = navRoute(w, from.sys.id, to.sys.id);
+  const ids = route ?? [from.sys.id, to.sys.id];
+  const piracy = ids.reduce((a, id) => Math.max(a, w.systems[id]?.pirateActivity ?? 0), 0);
+  return { hops: Math.max(1, ids.length - 1), piracy };
+}
+export function hireCharter(w: World, fromId: string, toId: string, commodityId: string, rng: RNG): Charter | string {
+  const p = w.player;
+  if ((p.haulers ?? []).length >= CHARTER_CAP) return `THREE CHARTERS IS ALL YOUR LEDGER WILL BEAR`;
+  if (p.credits < CHARTER_PRICE) return `A CHARTER COSTS ${CHARTER_PRICE}CR UP FRONT`;
+  if (fromId === toId) return "A ROUTE NEEDS TWO ENDS";
+  p.credits -= CHARTER_PRICE;
+  const { hops } = charterRoute(w, fromId, toId);
+  const c: Charter = { id: `ch-${Math.floor(w.time)}-${rng.int(0, 9999)}`, name: charterName(rng), from: fromId, to: toId, commodityId, qty: 10, tripSecs: 180 + hops * 120, lastT: w.time, trips: 0, earned: 0, till: 0, health: 100, raided: 0 };
+  (p.haulers ??= []).push(c);
+  return c;
+}
+// A trip: buy at one end at today's price, sell at the other, move the stock both ways, take the cut.
+export function runCharterTrip(w: World, c: Charter, rng: RNG): string | null {
+  const from = findStation(w, c.from), to = findStation(w, c.to);
+  if (!from || !to) return null;
+  const { piracy } = charterRoute(w, c.from, c.to);
+  c.trips++;
+  if (rng.chance(0.04 + piracy * 0.25)) {
+    c.raided++; c.health = Math.max(0, c.health - rng.int(15, 35));
+    pushEvent(w, { t: w.time, kind: "raid", systemId: from.sys.id, text: `Corsairs hit the ${c.name} on the ${from.st.name}-${to.st.name} run` });
+    if (c.health <= 0) { w.player.haulers = (w.player.haulers ?? []).filter((x) => x !== c); return `${c.name.toUpperCase()} IS A WRECK ON THE ${from.st.name.toUpperCase()} RUN. THE CREW GOT OFF. THE CHARTER IS OVER.`; }
+    return `${c.name.toUpperCase()} WAS HIT ON THE ${from.st.name.toUpperCase()} RUN: CARGO LOST, HULL AT ${c.health}%`;
+  }
+  const qty = Math.min(c.qty, from.st.stock[c.commodityId] ?? 0);
+  if (qty <= 0) return null; // nothing to carry this trip; the hauler waits
+  const buy = stationPrice(from.st, c.commodityId), sell = stationPrice(to.st, c.commodityId);
+  from.st.stock[c.commodityId] = (from.st.stock[c.commodityId] ?? 0) - qty; refreshPrices(from.st);
+  to.st.stock[c.commodityId] = (to.st.stock[c.commodityId] ?? 0) + qty; refreshPrices(to.st);
+  const margin = Math.round((sell - buy) * qty * CHARTER_CUT);
+  const repair = c.health < 100 ? Math.min(Math.max(0, margin), (100 - c.health) * 4) : 0;
+  c.health = Math.min(100, c.health + Math.floor(repair / 4));
+  const net = margin - repair;
+  c.till += net; c.earned += net;
+  return null;
+}
+export function tickCharters(w: World, rng: RNG): string[] {
+  const out: string[] = [];
+  for (const c of [...(w.player.haulers ?? [])]) {
+    while (w.time - c.lastT >= c.tripSecs) { c.lastT += c.tripSecs; const line = runCharterTrip(w, c, rng); if (line) out.push(line); if (!(w.player.haulers ?? []).includes(c)) break; }
+  }
+  return out;
+}
+export function collectCharters(p: PlayerState): { total: number; lines: string[] } {
+  let total = 0; const lines: string[] = [];
+  for (const c of p.haulers ?? []) {
+    if (c.till === 0) continue;
+    const n = Math.round(c.till); c.till = 0; total += n; p.credits += n;
+    lines.push(`${c.name.toUpperCase()}: ${n >= 0 ? "+" : ""}${n}CR FROM THE ${c.trips} TRIP${c.trips === 1 ? "" : "S"} SO FAR`);
+  }
+  return { total, lines };
+}
+export function releaseCharter(p: PlayerState, c: Charter): void { p.haulers = (p.haulers ?? []).filter((x) => x !== c); }
 
 // ---------- Furnishings: a deck you'd want to live on ----------
 export const FURNISHINGS: { id: string; name: string; price: number; desc: string; tile: string }[] = [
@@ -901,7 +973,13 @@ export function tickWorld(w: World, dt: number): void {
   w.serialTick = (w.serialTick ?? 0) + dt;
   if (w.serialTick >= 60) { w.serialTick = 0; tickSerial(w, new RNG((w.seed ^ Math.floor(w.time * 19)) >>> 0)); }
   w.infraTick = (w.infraTick ?? 0) + dt;
-  if (w.infraTick >= 60 && w.infra?.length) { w.infraTick = 0; w.infraNews = tickInfra(w, new RNG((w.seed ^ Math.floor(w.time * 13)) >>> 0)); }
+  if (w.infraTick >= 60) {
+    w.infraTick = 0;
+    const news: string[] = [];
+    if (w.infra?.length) news.push(...tickInfra(w, new RNG((w.seed ^ Math.floor(w.time * 13)) >>> 0)));
+    if (w.player.haulers?.length) news.push(...tickCharters(w, new RNG((w.seed ^ Math.floor(w.time * 23)) >>> 0)));
+    if (news.length) w.infraNews = [...(w.infraNews ?? []), ...news].slice(-6);
+  }
   w.eventTick = (w.eventTick ?? 0) + dt;
   if (w.eventTick >= 180) { w.eventTick = 0; tickGalaxyEvents(w, new RNG((w.seed ^ Math.floor(w.time * 11)) >>> 0)); }
   w.crisisTick = (w.crisisTick ?? 0) + dt;

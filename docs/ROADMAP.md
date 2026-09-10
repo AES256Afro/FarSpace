@@ -456,4 +456,9 @@ Time passes for the people on the ship, and for the ship.
 - [x] Towns get a luxuries row, more faces and more lights; cities switch to the
       city scene; the patron's name is on the plaque and in the mood lines
 
+## Milestone 27 — Charters ✅ (Sep 2026)
+- [x] Hire haulers to run your best known routes while you fly; a cut of every
+      trip's margin, paid at dock; prices move, corsairs take their share
+- [x] Charters on the SHIPS tab and dotted on the galaxy map
+
 ## Later

@@ -51,6 +51,9 @@ charters and enforce embargoes, station profiles and bulletins, gate traffic,
 comms chatter, void drifters near gas giants, crew who talk to each other, a
 wall of record aboard your ship, and a second campaign about a missing convoy.
 
+**Charters:** hire haulers to run your best known routes while you fly, for
+a cut of every trip, with prices that move and corsairs that take their share.
+
 **Settlements grow:** outposts become towns and cities on your trade and
 work, with more lights from orbit and your name on the plaque.
 
@@ -144,7 +147,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestones 1–26 are live (v0.26.0). See the [roadmap](docs/ROADMAP.md) for what's next.
+Milestones 1–27 are live (v0.27.0). See the [roadmap](docs/ROADMAP.md) for what's next.
 
 ```bash
 npm test         # vitest: world-gen, routing, economy, law, missions, save migrations
