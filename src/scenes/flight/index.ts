@@ -65,7 +65,9 @@ export class FlightScene implements Scene {
   hitFlash = 0;
   pursuitTimer = 0;    // time the law has been chasing us this system
 
+  resumeNext = false; // set by overlays (encounter cards, repairs) so coming back doesn't repopulate the system
   enter(g: Game): void {
+    if (this.resumeNext) { this.resumeNext = false; this.mapOpen = false; return; }
     this.bullets = [];
     this.npcs = [];
     this.particles = [];

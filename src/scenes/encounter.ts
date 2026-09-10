@@ -40,11 +40,16 @@ export class EncounterScene implements Scene {
 
   options(g: Game) { return this.enc.options.filter((o) => !o.requires || o.requires(g)); }
 
+  back(g: Game): void {
+    if (this.returnTo === "flight") (g.scenes.flight as unknown as { resumeNext: boolean }).resumeNext = true;
+    g.setScene(this.returnTo);
+  }
+
   update(g: Game, dt: number): void {
     void dt;
     const inp = g.input;
     if (this.outcome !== null) {
-      if (inp.wasPressed("Enter") || inp.wasPressed("Escape") || inp.wasPressed(" ") || inp.mousePressed) { g.setScene(this.returnTo); }
+      if (inp.wasPressed("Enter") || inp.wasPressed("Escape") || inp.wasPressed(" ") || inp.mousePressed) this.back(g);
       return;
     }
     const opts = this.options(g);
@@ -58,7 +63,7 @@ export class EncounterScene implements Scene {
       const rng = new RNG((g.world.seed ^ Math.floor(g.world.time * 7) ^ this.enc.id.length) >>> 0);
       const out = o.result(g, rng);
       sfx.select();
-      if (!out) { g.setScene(this.returnTo); return; } // a plain CONTINUE
+      if (!out) { this.back(g); return; } // a plain CONTINUE
       this.outcome = out;
     }
   }

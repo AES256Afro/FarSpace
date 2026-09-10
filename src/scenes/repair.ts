@@ -64,6 +64,7 @@ export class RepairScene implements Scene {
     if (success && g.repairTarget) fs.finishRepair(g, g.repairTarget, "you");
     else if (g.repairTarget) g.toast("YOU LEAVE THE FREIGHTER STILL DARK. IT WILL WAIT, IF THE CORSAIRS DON'T FIND IT FIRST.");
     g.repairTarget = null;
+    fs.resumeNext = true;
     g.setScene("flight");
     if (success && Math.random() < 0.35) { fs.spawnRaidersNearPlayer(g, 2); g.toast("CORSAIRS ARRIVED WHILE YOU WERE ABOARD"); }
   }
