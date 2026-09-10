@@ -91,6 +91,17 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   2.5x for med supplies, provisions or fuel cells before the clock runs out,
   with a bonus and standing for whoever brings the last unit.
 
+## Politics and the second campaign
+
+- Faction envoys meet you at the airlock: an amnesty for sale when you're
+  wanted, a charter at 75 standing (+15% contract pay, yards at cost), and an
+  embargo between -40 and -60 where only fuel and repairs are on offer.
+- Once a non-pirate syndicate trusts you (standing 20), a convoy goes missing.
+  Deep-scan the lane, read the black box, and choose who pays for the truth.
+- Your ship keeps a wall of record by the airlock: E beside it reads the story
+  so far. Plaques fill in as you earn them; scorch marks stay until a yard
+  fixes the hull.
+
 ## A living galaxy
 
 - Careers: Explorer, Trader, Miner and Rescuer ladders on the SURVEY tab.
