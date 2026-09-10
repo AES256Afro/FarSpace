@@ -229,6 +229,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## The band
+
+- E at the comms array aboard: sit with the band a while. The latest part of
+  the GalNet serial, two headlines, and the last two things on the fleet wire.
+  The crew drift in to listen; the first time in each system it lifts them.
+  A badly damaged array gives you static and, faintly, someone singing.
+
 ## Station hours and the tannoy
 
 - Every station keeps its own clock, offset from the real one, so somewhere it

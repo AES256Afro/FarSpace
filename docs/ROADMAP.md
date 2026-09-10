@@ -639,4 +639,7 @@ Time passes for the people on the ship, and for the ship.
 - [x] Per-station clocks from real UTC; night shift dims the promenade and
       thins the crowd; the tannoy ticker
 
+## Milestone 69 — The Band ✅ (Sep 2026)
+- [x] The comms array aboard plays the serial, the news and the wire
+
 ## Later

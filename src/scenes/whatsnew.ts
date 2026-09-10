@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.69 - THE BAND", [
+    "E AT THE COMMS ARRAY ABOARD: THE SERIAL, THE NEWS AND THE WIRE, WITH THE CREW LISTENING IN THE HATCHWAY.",
+  ]],
   ["0.68 - STATION HOURS", [
     "EVERY STATION KEEPS ITS OWN CLOCK. NIGHT SHIFT DIMS THE PROMENADE, AND THE TANNOY HAS THINGS TO SAY.",
   ]],

@@ -34,6 +34,7 @@ import { music } from "../core/music";
 import { rankOf, rescuePoints, STORY_LEN, findStation, canRetireCaptain, retireCaptain, RETIRE_AFTER, ledger, logEntry } from "../world";
 import * as wire from "../core/wire";
 import { isOccasion } from "../data/occasions";
+import { serialLines } from "../data/serials";
 import type { Encounter } from "../data/encounters";
 import type { EncounterScene } from "./encounter";
 import { ACHIEVEMENTS } from "../data/achievements";
@@ -117,7 +118,7 @@ const PANELS: PanelDef[] = [
   { ch: "R", sysId: "reactor", label: "REACTOR CORE", desc: "Ship power" },
   { ch: "W", sysId: "weapons", label: "WEAPON MOUNTS", desc: "Cannon feeds" },
   { ch: "G", sysId: "cargo", label: "CARGO BAY", desc: "Stowed goods" },
-  { ch: "M", sysId: "comms", label: "COMMS ARRAY", desc: "Signals & nav" },
+  { ch: "M", sysId: "comms", label: "COMMS ARRAY", desc: "Listen to the band" },
   { ch: "B", sysId: null, label: "BUNK", desc: "Sleep (skips 60s)" },
   { ch: "K", sysId: null, label: "GALLEY", desc: "Eat (needs provisions)" },
   { ch: "S", sysId: null, label: "STUDY TERMINAL", desc: "Train a skill" },
@@ -228,6 +229,28 @@ export class InteriorScene implements Scene {
     for (const m of passengersAboard(p)) { const pp = this.paxPos[m.id]; if (pp && dist(pp.x, pp.y, this.px, this.py) < 16) return m; }
     return null;
   }
+  // the comms array: sit with the band a while. The serial, the news, the wire.
+  wireItems: import("../core/wire").WireEvent[] = [];
+  listenToTheBand(g: Game): void {
+    const p = g.world.player; const w = g.world;
+    const comms = p.systems.find((s) => s.id === "comms");
+    if (comms && comms.health < 40) {
+      const enc: Encounter = { id: "band", where: "space", title: "THE BAND", text: "STATIC. THE ARRAY IS TOO DAMAGED TO HOLD A SIGNAL. SOMEWHERE UNDER IT, VERY FAINTLY, SOMEBODY IS SINGING.", weight: 0, options: [{ label: "SWITCH IT OFF", result: () => "" }] };
+      (g.scenes["encounter"] as EncounterScene).open(g, enc, "interior", true); return;
+    }
+    const lines: string[] = [];
+    const serial = serialLines(w);
+    if (serial) { lines.push(`GALNET SERIAL - ${serial.title}, FROM ${serial.where.toUpperCase()}`); const last = serial.parts[serial.parts.length - 1]; lines.push(last ? `"${last.toUpperCase()}"`.slice(0, 118) : "\"THE FIRST PART IS ON ITS WAY.\""); if (serial.hook) lines.push(`> ${serial.hook.toUpperCase()}`.slice(0, 118)); }
+    for (const n of w.news.slice(0, 2)) lines.push(`NEWS: ${n.headline.toUpperCase()}. ${n.body.toUpperCase()}`.slice(0, 118));
+    for (const e of this.wireItems.slice(0, 2)) lines.push(`WIRE: ${e.callsign} ${e.text.toUpperCase()} - ${e.system.toUpperCase()} (${wire.ageLabel(e.t)})`.slice(0, 118));
+    if (!lines.length) lines.push("A CARRIER WAVE AND NOTHING ON IT. THE STATIONS ARE QUIET TONIGHT.");
+    const key = `band:${p.systemId}`;
+    const enc: Encounter = { id: "band", where: "space", title: "THE BAND", text: lines.join("\n"), weight: 0, options: [
+      { label: "SIT WITH IT A WHILE", result: () => { const first = !(p.flags ?? {})[key]; (p.flags ??= {})[key] = true; if (first) { for (const c of p.crew) c.morale = Math.min(100, c.morale + 2); for (const m of passengersAboard(p)) m.mood = Math.min(100, (m.mood ?? 60) + 2); } return first ? "THE CREW DRIFT IN ONE BY ONE AND STAND IN THE HATCHWAY LISTENING. NOBODY SAYS 'TURN IT UP'. NOBODY HAS TO. MORALE UP." : "YOU'VE HEARD THIS EPISODE. IT'S STILL GOOD."; } },
+      { label: "SWITCH IT OFF", result: () => "THE HUM OF THE SHIP COMES BACK. IT WAS THERE ALL ALONG." },
+    ] };
+    (g.scenes["encounter"] as EncounterScene).open(g, enc, "interior", true);
+  }
   // a hand of cards on an upturned crate: matchsticks, or a round of drinks
   playCards(g: Game, c: import("../data/crew").CrewMember): void {
     const p = g.world.player;
@@ -315,6 +338,7 @@ export class InteriorScene implements Scene {
   enter(g: Game): void {
     const p = g.world.player;
     this.bubbles = []; this.lastMessSlot = Math.floor(g.world.time / 300); this.watch = watchIndex(g.world.time);
+    if (g.world.realGalaxy) void wire.fetchWire().then((e) => { this.wireItems = e; });
     this.deck = DECKS[hull(p.hullId).deck];
     this.rooms = computeRooms(this.deck, (ch) => ch !== "#");
     const nRooms = Math.max(...this.rooms.flat()) + 1;
@@ -523,6 +547,9 @@ export class InteriorScene implements Scene {
             for (const c of p.crew) c.morale = Math.min(100, c.morale + (cook ? 12 : 10));
             this.say(cook ? `${cook.name.toUpperCase()} COOKS. NOBODY KNOWS WHAT IT IS. EVERYBODY HAS SECONDS. MORALE UP, +5 HULL` : p.crew.length ? "A HOT MEAL FOR EVERYONE. MORALE UP, +5 HULL" : "A HOT MEAL. +5 HULL");
           } else this.say("GALLEY'S EMPTY. BUY PROVISIONS AT A STATION");
+        } else if (near.ch === "M") {
+          this.listenToTheBand(g);
+          return;
         } else if (near.ch === "H") {
           const n = hull(p.hullId).drones ?? 0;
           this.say(n ? `HANGAR: ${n} ESCORT DRONES RACKED. THEY LAUNCH WITH YOU AND RE-ARM AT DOCK.` : "HANGAR: EMPTY RACKS");
