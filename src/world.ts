@@ -911,6 +911,15 @@ export function hullHistoryFor(w: World, rng: RNG): { previous: string; quirk: s
 // Home port: one station you call yours
 export function setHomePort(p: PlayerState, stationId: string): void { p.homePort = stationId; }
 
+// Watches: with two or more aboard, half the crew are on watch at any time and the
+// rest are off. The watch changes every four minutes of ship time.
+export const WATCH_LEN = 240;
+export function watchIndex(time: number): number { return Math.floor(time / WATCH_LEN); }
+export function onWatch(p: PlayerState, i: number, time: number): boolean {
+  if (p.crew.length < 2) return true;
+  return (i + watchIndex(time)) % 2 === 0;
+}
+
 // The ring race: six rings laid out around a station, flown in order against the clock.
 // The course is fixed when you launch; the station drifts a little underneath it and nobody minds.
 export const RACE_GATES = 6;

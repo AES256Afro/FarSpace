@@ -15,12 +15,12 @@ import { STARS, starDistance } from "../src/data/stars";
 import { ACHIEVEMENTS } from "../src/data/achievements";
 import { ARCS, dailyContract, dailyKey, rankOf, logSystem, applyHull } from "../src/world";
 import { MODULES } from "../src/data/modules";
-import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES } from "../src/world";
+import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN } from "../src/world";
 import { RARES } from "../src/data/data";
 import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
 import { ENCOUNTERS, pickEncounter } from "../src/data/encounters";
-import { crewChatter, soloChatter } from "../src/data/chatter";
+import { crewChatter, soloChatter, passengerChatter } from "../src/data/chatter";
 import { concourseGossip } from "../src/data/gossip";
 import { STORY, storyObjective, CONVOY, convoyObjective } from "../src/core/story";
 import { homesteadYield, settleHomestead, HOMESTEAD_CAP, tickCrisis, crisisAt, tickGalaxyEvents, galaxyEventAt, rescuePoints, logEntry, embargoed, hasCharter } from "../src/world";
@@ -690,6 +690,19 @@ describe("the ring race", () => {
     expect(recordRace(w.player, st.id, 39)).toBe(true);
     expect(w.player.raceBest![st.id]).toBe(39);
     expect(w.player.races).toBe(3);
+  });
+});
+
+describe("watches and passengers aboard", () => {
+  it("half the crew are on watch and it swaps every watch; passengers get an answer from any role", () => {
+    const w = generateWorld(26, { realGalaxy: true });
+    const rng = new RNG(8);
+    w.player.crew = [genCrewCandidate(rng), genCrewCandidate(rng), genCrewCandidate(rng)];
+    expect(onWatch(w.player, 0, 0)).toBe(true); expect(onWatch(w.player, 1, 0)).toBe(false);
+    expect(onWatch(w.player, 0, WATCH_LEN)).toBe(false); expect(onWatch(w.player, 1, WATCH_LEN)).toBe(true);
+    w.player.crew = [w.player.crew[0]]; expect(onWatch(w.player, 0, WATCH_LEN)).toBe(true);
+    const m = { id: "m", kind: "passenger", passengerKind: "tourist", mood: 90 } as unknown as import("../src/world").Mission;
+    for (const role of ["pilot", "engineer", "gunner", "medic"] as const) { const c = { ...genCrewCandidate(rng), role }; const q = passengerChatter(m, c, new RNG(1)); expect(q.ask.length).toBeGreaterThan(5); expect(q.reply.length).toBeGreaterThan(2); }
   });
 });
 

@@ -229,6 +229,15 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Watches and passengers
+
+- With two or more aboard, half the crew are on watch and half are off; the
+  watch changes every four minutes of ship time. On watch they keep to their
+  posts (engines, the turret, the helm, the study); off watch it's the bunk,
+  the galley, a look out of the cockpit. The roster says who's on.
+- Passengers walk the deck door to door now too, and corner whoever's nearest
+  with a question. The crew answer in character.
+
 ## The ring race
 
 - Every civil station runs one. The last row in the lounge enters you; launch

@@ -602,4 +602,9 @@ Time passes for the people on the ship, and for the ship.
 - [x] Six-ring time trial around any civil station, entered from the lounge;
       par, prize, best time per station, RING RUNNER achievement, wire post
 
+## Milestone 61 — Watches ✅ (Sep 2026)
+- [x] Watch rotation every four minutes; on-watch crew keep to their posts;
+      roster shows ON/OFF WATCH
+- [x] Passengers path-find and question the crew; crew answer by role
+
 ## Later

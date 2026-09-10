@@ -2,7 +2,7 @@
 // conversation. Lines come from who they are, who they're talking to, and
 // the state of the ship. Read over their shoulder aboard.
 
-import type { World } from "../world";
+import type { World, Mission } from "../world";
 import type { CrewMember } from "./crew";
 import { bond, passengersAboard } from "../world";
 import { RNG } from "../core/rng";
@@ -62,3 +62,24 @@ export function soloChatter(a: CrewMember): string | null {
 
 // Around the galley table with the skipper present
 export const MESS_LINES = ["SKIPPER'S EATING WITH US. SIT, SIT.", "PASS THE... WHATEVER THAT IS. THANKS.", "TO THE SHIP. AND TO WHOEVER'S COOKING.", "NOBODY TALK SHOP. NOBODY."];
+
+// Passengers talk to whoever's nearest. Crew answer in character.
+const PAX_TO_ROLE: Record<string, Record<string, string[]>> = {
+  tourist: { pilot: ["IS IT TRUE YOU CAN SEE THE GATE FROM HERE?", "HOW FAST ARE WE GOING? IN REAL NUMBERS."], engineer: ["WHAT DOES THAT NOISE MEAN? THE HUMMING ONE."], medic: ["IS THE WATER SAFE? IT TASTES OF PIPE."], gunner: ["HAVE YOU EVER... YOU KNOW. FIRED IT?"] },
+  vip: { pilot: ["SMOOTHER, IF YOU PLEASE."], engineer: ["IS THAT SUPPOSED TO DRIP?"], medic: ["I HAVE A HEADACHE. DO SOMETHING."], gunner: ["I ASSUME WE ARE ADEQUATELY DEFENDED."] },
+  refugee: { pilot: ["IS THERE WORK WHERE WE'RE GOING?"], engineer: ["MY CHILDREN LIKE THE ENGINE NOISE. IT MEANS WE'RE MOVING."], medic: ["THANK YOU. FOR THE BERTH. FOR ALL OF IT."], gunner: ["WILL THEY STOP US AT THE GATE?"] },
+  fugitive: { pilot: ["HOW LONG TO THE GATE?"], engineer: ["YOU DIDN'T SEE ME."], medic: ["I'M FINE. I'M ALWAYS FINE."], gunner: ["IF IT COMES TO IT, I CAN SHOOT."] },
+  courier: { pilot: ["WHAT'S OUR ETA. ROUGHLY."], engineer: ["CAN THIS THING GO ANY FASTER?"], medic: ["I'LL BE IN MY SEAT. WORKING."], gunner: ["NOBODY'S FOLLOWING US, ARE THEY?"] },
+};
+const ROLE_REPLY: Record<string, string[]> = {
+  pilot: ["ALL PART OF THE SERVICE.", "SIT BACK. I'VE DONE THIS BEFORE."], engineer: ["IT'S SUPPOSED TO DO THAT.", "DON'T TOUCH THAT AND WE'LL BE FINE."],
+  medic: ["DRINK SOME WATER.", "YOU'LL LIVE. THAT'S MY PROFESSIONAL OPINION."], gunner: ["ADEQUATELY.", "NOBODY'S SHOOTING. THAT'S THE PLAN."],
+};
+export function passengerChatter(m: Mission, c: CrewMember, rng: RNG): { ask: string; reply: string } {
+  const kind = m.passengerKind ?? "vip";
+  const pool = [...(PAX_TO_ROLE[kind]?.[c.role] ?? PAX_TO_ROLE.vip[c.role] ?? ["HOW LONG NOW?"])];
+  const mood = m.mood ?? 60;
+  if (mood < 35) pool.push("THIS IS NOT WHAT I PAID FOR.");
+  if (mood > 80) pool.push("BEST CREW I'VE FLOWN WITH. I'LL SAY SO.");
+  return { ask: rng.pick(pool), reply: rng.pick(ROLE_REPLY[c.role] ?? ["MM."]) };
+}
