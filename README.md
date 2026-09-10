@@ -40,7 +40,8 @@ every player's WIRE tab and the title ticker, with leaderboards for discoveries,
 arcs, credits and kills.
 
 **Other pilots:** with a call sign set, everyone in the same star system sees
-each other's ships and shares a text channel (T). No accounts, no persistence,
+each other's ships and shares a text channel (T), with /give and /pay to hand
+over cargo or credits and wing shares on kills. No accounts, no persistence,
 switch it off in Settings. **Groundside:** drop a rover on any region of any
 world and drive it: biomes, storms, day and night, outcrops, alien flora,
 geysers, wrecks, and the region's outposts, cities and ruins as doors.

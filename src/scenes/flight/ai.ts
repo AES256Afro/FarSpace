@@ -15,6 +15,7 @@ import { applyVariant, variantStats, fleeLine, captainDown } from "./combat";
 import { flag } from "../../core/achievements";
 import { hasModule } from "../../data/modules";
 import { gainMaterials } from "../../core/materials";
+import { presence } from "../../core/presence";
 
 // ---------- Population ----------
 
@@ -339,6 +340,7 @@ export function npcKilled(fs: FlightScene, g: Game, n: Npc, byPlayer: boolean): 
     if (byPlayer && n.variant === "captain") captainDown(fs, g, n);
     if (byPlayer) {
       p.kills++;
+      if (presence.ghosts.size) presence.send({ t: "wing", kind: "kill", x: n.x, y: n.y, tag: n.variant ?? "pirate" });
       if (facId !== "vex") adjustRep(g.world, facId, 2);
       else adjustRep(g.world, "vex", -4);
       for (const m of p.missions) {

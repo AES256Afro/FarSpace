@@ -16,6 +16,7 @@ import { SettingsScene } from "./scenes/settings";
 import { SurfaceScene } from "./scenes/surface";
 import { HelpScene } from "./scenes/help";
 import { checkAchievements } from "./core/achievements";
+import { presence } from "./core/presence";
 import { initAudioUnlock } from "./core/sfx";
 import { initTouch } from "./core/touch";
 import { music } from "./core/music";
@@ -44,7 +45,8 @@ initAudioUnlock();
 initTouch(canvas, game);
 
 // dev/debug handle
-(window as unknown as { game: Game }).game = game;
+(window as unknown as { game: Game; presence: typeof presence }).game = game;
+(window as unknown as { presence: typeof presence }).presence = presence; // debug handle, same instance the scenes use
 // a hot update would spawn a second game loop on the same canvas; reload instead
 if (import.meta.hot) import.meta.hot.accept(() => location.reload());
 

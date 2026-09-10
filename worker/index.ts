@@ -75,6 +75,18 @@ export class SystemRoom {
       };
       sock.serializeAttachment({ callsign, last: now, pos });
       this.broadcast(ws, JSON.stringify(pos));
+    } else if (m.t === "xfer" || m.t === "wing") {
+      // pilot-to-pilot transfers and wing events: relayed as-is (shape-checked), clients decide what to do
+      const out: Record<string, unknown> = { t: m.t, callsign, at: now };
+      if (m.t === "xfer") {
+        const to = clean(m.to, 16).toUpperCase();
+        if (!CALLSIGN.test(to)) return;
+        out.to = to; out.kind = clean(m.kind, 8); out.id = clean(m.id, 16); out.qty = Math.max(0, Math.min(999999, Math.floor(num(m.qty))));
+      } else {
+        out.kind = clean(m.kind, 12); out.x = num(m.x); out.y = num(m.y); out.tag = clean(m.tag, 16);
+      }
+      sock.serializeAttachment({ ...att, callsign });
+      this.broadcast(ws, JSON.stringify(out));
     } else if (m.t === "chat") {
       if (now - att.last < 0) return;
       const text = clean(m.text, 120);

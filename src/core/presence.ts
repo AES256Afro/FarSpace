@@ -9,12 +9,14 @@ import type { PlayerState } from "../world";
 
 export interface Ghost { callsign: string; x: number; y: number; angle: number; vx: number; vy: number; hull: string; name: string; t: number }
 export interface ChatLine { from: string; text: string; t: number }
+export interface RoomEvent { t: "xfer" | "wing"; from: string; to?: string; kind: string; id?: string; qty?: number; x?: number; y?: number; tag?: string; at: number }
 
 class Presence {
   ws: WebSocket | null = null;
   system: string | null = null;
   ghosts = new Map<string, Ghost>();
   chat: ChatLine[] = [];      // drained by the flight scene
+  events: RoomEvent[] = [];   // transfers and wing events, drained by the flight scene
   lastSend = 0;
   retryAt = 0;
   status: "off" | "connecting" | "on" | "error" = "off";
@@ -65,6 +67,12 @@ class Presence {
       }
     } else if (m.t === "bye") {
       this.ghosts.delete(String(m.callsign));
+    } else if (m.t === "xfer" || m.t === "wing") {
+      this.events.push({
+        t: m.t, from: String(m.callsign), to: m.to ? String(m.to) : undefined, kind: String(m.kind ?? ""), id: m.id ? String(m.id) : undefined,
+        qty: Number(m.qty) || 0, x: Number(m.x) || 0, y: Number(m.y) || 0, tag: m.tag ? String(m.tag) : undefined, at: Date.now(),
+      });
+      if (this.events.length > 30) this.events.shift();
     } else if (m.t === "chat") {
       this.chat.push({ from: String(m.callsign), text: String(m.text), t: Date.now() });
       if (this.chat.length > 20) this.chat.shift();
@@ -92,6 +100,11 @@ class Presence {
     const t = text.trim().slice(0, 120);
     if (!t) return false;
     try { this.ws.send(JSON.stringify({ t: "chat", callsign: getCallsign(), text: t })); return true; } catch { return false; }
+  }
+
+  send(obj: Record<string, unknown>): boolean {
+    if (!this.ws || this.ws.readyState !== 1) return false;
+    try { this.ws.send(JSON.stringify({ ...obj, callsign: getCallsign() })); return true; } catch { return false; }
   }
 
   // Ghost position now, extrapolated from its last report

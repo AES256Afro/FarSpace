@@ -27,6 +27,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "hardcore", title: "COLD VOID", desc: "Reach 5,000 credits in hardcore", check: (w) => !!w.hardcore && w.player.credits >= 5000 },
   { id: "rareRun", title: "RARE RUN", desc: "Sell a rare good far from home", check: (w) => !!w.player.flags?.rareRun },
   { id: "tourist", title: "TOUR GUIDE", desc: "Complete a sightseeing charter", check: (w) => !!w.player.flags?.tourist },
+  { id: "wingmate", title: "WINGMATE", desc: "Trade with or fight beside another pilot", check: (w) => !!w.player.flags?.wingmate },
   { id: "groundside", title: "GROUNDSIDE", desc: "Drive a rover on a world", check: (w) => !!w.player.flags?.groundside },
   { id: "exobio", title: "EXOBIOLOGIST", desc: "Scan alien flora", check: (w) => !!w.player.flags?.exobio },
   { id: "surveyor5", title: "PATHFINDER", desc: "Chart five regions on foot", check: (w) => !!w.player.flags?.surveyor5 },

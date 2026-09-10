@@ -4,7 +4,8 @@
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo } from "../../world";
+import { COMMODITIES, commodity } from "../../data/data";
 import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
 import { engGrade } from "../../data/engineering";
@@ -251,6 +252,7 @@ export class FlightScene implements Scene {
     this.updateDockingComputer(g, dt);
     // other pilots in this system
     presence.tick(p, sys.name);
+    this.drainRoomEvents(g);
     while (presence.chat.length) {
       const c = presence.chat.shift()!;
       this.comms.push({ from: c.from, text: c.text, life: 10, color: c.from === wire.getCallsign() ? PAL.ui : PAL.info });
@@ -261,9 +263,10 @@ export class FlightScene implements Scene {
       if (!wire.getCallsign()) g.toast("CHOOSE A CALL SIGN ON THE TITLE SCREEN TO USE THE SYSTEM CHANNEL");
       else if (presence.status !== "on") g.toast("SYSTEM CHANNEL OFFLINE" + (settings().presence ? "" : " - FLEET PRESENCE IS OFF IN SETTINGS"));
       else {
-        const raw = window.prompt(`System channel - ${sys.name} (${presence.ghosts.size} other pilot${presence.ghosts.size === 1 ? "" : "s"} here):`, "");
+        const raw = window.prompt(`System channel - ${sys.name} (${presence.ghosts.size} other pilot${presence.ghosts.size === 1 ? "" : "s"} here).\n/give <qty> <goods> <callsign>   /pay <credits> <callsign>   (within 300m)`, "");
         g.input.flush();
-        if (raw && !presence.say(raw)) g.toast("CHANNEL DROPPED THE MESSAGE");
+        if (raw && raw.trim().startsWith("/")) this.roomCommand(g, raw.trim());
+        else if (raw && !presence.say(raw)) g.toast("CHANNEL DROPPED THE MESSAGE");
       }
     }
     if (!this.cruise && !this.autopilot && !p.hints?.["cruisehint"] && (p.tutorial ?? -1) < 0) {
@@ -436,6 +439,64 @@ export class FlightScene implements Scene {
       p.expData = (p.expData ?? 0) + 250;
       flag(g, "first");
       sfx.pickup();
+    }
+  }
+
+  // ---------- Pilots: transfers and wing shares ----------
+
+  roomCommand(g: Game, raw: string): void {
+    const p = g.world.player;
+    const parts = raw.slice(1).split(/\s+/);
+    const cmd = parts[0]?.toLowerCase();
+    const target = parts[parts.length - 1]?.toUpperCase();
+    const ghost = target ? presence.ghosts.get(target) : undefined;
+    if (cmd !== "give" && cmd !== "pay") { g.toast("COMMANDS: /GIVE <QTY> <GOODS> <CALLSIGN>  /PAY <CREDITS> <CALLSIGN>"); return; }
+    if (!ghost) { g.toast(`NO PILOT "${target ?? ""}" IN THIS SYSTEM`); return; }
+    const gp = presence.at(ghost);
+    if (dist(p.x, p.y, gp.x, gp.y) > 300) { g.toast(`${target} IS TOO FAR - CLOSE TO WITHIN 300M`); return; }
+    if (cmd === "pay") {
+      const amt = Math.floor(Number(parts[1]));
+      if (!Number.isFinite(amt) || amt <= 0) { g.toast("/PAY <CREDITS> <CALLSIGN>"); return; }
+      if (p.credits < amt) { g.toast("NOT ENOUGH CREDITS"); return; }
+      if (!presence.send({ t: "xfer", to: target, kind: "credits", id: "cr", qty: amt })) { g.toast("CHANNEL OFFLINE"); return; }
+      p.credits -= amt;
+      g.toast(`PAID ${amt}CR TO ${target}`);
+      sfx.pickup();
+      return;
+    }
+    const qty = Math.floor(Number(parts[1]));
+    const name = parts.slice(2, -1).join(" ").toLowerCase();
+    const com = COMMODITIES.find((c) => c.id === name || c.name.toLowerCase() === name);
+    if (!com || !Number.isFinite(qty) || qty <= 0) { g.toast("/GIVE <QTY> <GOODS> <CALLSIGN>  E.G. /GIVE 5 ORE ALPHA"); return; }
+    if ((p.cargo[com.id] ?? 0) < qty) { g.toast(`YOU DON'T HAVE ${qty} ${com.name.toUpperCase()}`); return; }
+    if (!presence.send({ t: "xfer", to: target, kind: "cargo", id: com.id, qty })) { g.toast("CHANNEL OFFLINE"); return; }
+    removeCargo(p, com.id, qty);
+    g.toast(`JETTISONED ${qty} ${com.name.toUpperCase()} TO ${target}`);
+    sfx.pickup();
+  }
+
+  drainRoomEvents(g: Game): void {
+    const p = g.world.player;
+    const me = wire.getCallsign();
+    while (presence.events.length) {
+      const e = presence.events.shift()!;
+      if (e.t === "xfer") {
+        if (e.to !== me || !e.qty) continue;
+        if (e.kind === "credits") { p.credits += e.qty; g.toast(`${e.from} PAID YOU ${e.qty}CR`); sfx.pickup(); flag(g, "wingmate"); }
+        else if (e.kind === "cargo" && e.id && commodity(e.id)) {
+          if (addCargo(p, e.id, e.qty)) { g.toast(`${e.from} SENT YOU ${e.qty} ${commodity(e.id).name.toUpperCase()}`); sfx.pickup(); flag(g, "wingmate"); }
+          else { this.loot.push({ x: p.x + 30, y: p.y, commodityId: e.id, qty: e.qty, life: 120 }); g.toast(`${e.from} JETTISONED ${e.qty} ${commodity(e.id).name.toUpperCase()} BESIDE YOU - HOLD IS FULL`); }
+        }
+      } else if (e.t === "wing" && e.kind === "kill") {
+        if (dist(p.x, p.y, e.x ?? 0, e.y ?? 0) > 700) continue;
+        const share = e.tag === "captain" ? 200 : 60;
+        p.credits += share;
+        for (const m of p.missions) if (m.kind === "bounty" && m.accepted && !m.done && m.targetSystemId === p.systemId) m.kills = (m.kills ?? 0) + 1;
+        this.comms.push({ from: "WING", text: `${e.from} SCORED A KILL - SHARE +${share}CR, BOUNTIES CREDITED`, life: 8, color: PAL.gold });
+        if (this.comms.length > 5) this.comms.shift();
+        flag(g, "wingmate");
+        sfx.pickup();
+      }
     }
   }
 

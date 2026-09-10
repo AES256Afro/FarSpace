@@ -242,7 +242,9 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
       sign and ship name, and edge markers when off-screen
 - [x] System channel: T hails everyone in the system; lines appear on GalNet
 - [x] Opt-out in Settings; nothing is stored server-side
+- [x] Trading between pilots: /give and /pay on the system channel (within 300m)
+- [x] Wing shares: a pirate kill near another pilot pays them a share and
+      credits their bounty contracts
 
 ## Later
-- [ ] Shared missions and trading between pilots
-- [ ] Persistent player factions
+- [ ] Persistent player factions (squadrons with shared standing)
