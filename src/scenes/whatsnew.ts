@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.57 - ENCOUNTERS", [
+    "TEN NEW CARDS ON THE LANES AND THE GROUND, NONE OF THEM FIGHTS: A BUOY, A LOST DRONE, A BIRTHDAY, A HOT POOL, AND MORE.",
+  ]],
   ["0.56 - THE ROSTER", [
     "R ABOARD OR IN THE LOUNGE: THE WHOLE CREW ON ONE PAGE, WITH MORALE, LOYALTY, SKILL PROGRESS AND A BONUS ON ENTER.",
   ]],

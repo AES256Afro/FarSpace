@@ -2,7 +2,7 @@
 // applies real effects and returns the line the player reads afterwards.
 
 import type { Game } from "../game";
-import { addCargo, removeCargo, adjustRep, hasIllegalCargo, cargoUsed, genCrewCandidate, adjustSynRep, passengersAboard, berthsUsed, adoptCat, CAT_NAMES } from "../world";
+import { addCargo, removeCargo, adjustRep, hasIllegalCargo, cargoUsed, genCrewCandidate, adjustSynRep, passengersAboard, berthsUsed, adoptCat, CAT_NAMES, shiftBond, logSight, crewXp } from "../world";
 import { hull } from "./hulls";
 import { RNG } from "../core/rng";
 import { addMaterials } from "./engineering";
@@ -262,6 +262,92 @@ export const ENCOUNTERS: Encounter[] = [
     options: [
       { label: "GRAB IT WHILE IT'S HOT", result: (g, rng) => rng.chance(0.75) ? `THE FRAGMENT IS HEAVY AND STRANGE. ${mats(g, { vanadium: 2, polonium: rng.chance(0.6) ? 1 : 0 })}.` : "IT SPLITS AS YOU LIFT IT AND VENTS SOMETHING SHARP. ROVER INTEGRITY -25." },
       { label: "LET IT COOL", result: (g) => `${mats(g, { iron: 3, nickel: 2 })} FROM THE COOLED FRAGMENT. SLOW AND SAFE.` },
+    ],
+  },
+  {
+    id: "memorial", where: "space", weight: 2, title: "THE BUOY",
+    text: "A buoy on a slow tumble, reading names on a loop. Forty of them, then a ship's name, then a date, then the names again. Somebody anchored it here on purpose.",
+    options: [
+      { label: "CUT THE ENGINES AND LISTEN", result: (g) => { for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 3); p(g).expData = (p(g).expData ?? 0) + 30; return "YOU LISTEN THROUGH ONE FULL LOOP. NOBODY ON THE BRIDGE SAYS ANYTHING. +30 DATA, AND SOMETHING ELSE."; } },
+      { label: "LEAVE A PART FOR ITS BATTERY", requires: (g) => (p(g).cargo.parts ?? 0) >= 1, result: (g) => { removeCargo(p(g), "parts", 1); adjustRep(g.world, sys(g).factionId, 4); return "YOUR ENGINEER GOES OUT ON A LINE AND SWAPS THE CELL. THE VOICE COMES BACK STRONGER. IT'LL READ FOR ANOTHER TEN YEARS."; } },
+      { label: "FLY ON", result: () => "THE NAMES FOLLOW YOU OUT TO THE EDGE OF THE BAND, THEN STOP." },
+    ],
+  },
+  {
+    id: "lostdrone", where: "space", weight: 2, title: "A LOST DRONE", when: (g) => sys(g).asteroids.length > 0,
+    text: "A mining drone pinging for a mothership that isn't answering. Its hopper is half full. Its little engine keeps trying.",
+    options: [
+      { label: "TAKE IT HOME TO THE NEAREST STATION", result: (g, rng) => { const c = rng.int(120, 260); p(g).credits += c; adjustRep(g.world, sys(g).factionId, 3); return `THE OUTFIT THAT OWNS IT WIRES ${c}CR AND A NOTE THAT JUST SAYS 'THANKS. WE'D GIVEN HER UP.'`; } },
+      { label: "STRIP THE HOPPER", result: (g, rng) => `YOU LEAVE IT PINGING, LIGHTER. ${mats(g, { iron: 2, nickel: 2, vanadium: rng.chance(0.4) ? 1 : 0 })}.` },
+      { label: "POINT IT AT THE BELT AND LET IT WORK", result: (g) => { p(g).expData = (p(g).expData ?? 0) + 20; return "IT BURBLES ONCE, TURNS, AND GOES BACK TO DOING THE ONLY THING IT KNOWS. +20 DATA."; } },
+    ],
+  },
+  {
+    id: "walkus", where: "space", weight: 2, title: "WALK US TO THE GATE",
+    text: "A slow convoy of three, drive plumes ragged, hails on the open band. 'We're not asking for a fight. Just fly alongside as far as the gate. Pirates count hulls before they count guns.'",
+    options: [
+      { label: "FLY ALONGSIDE", result: (g, rng) => { const c = rng.int(60, 140); p(g).credits += c; adjustRep(g.world, sys(g).factionId, 3); const x = crewXp(p(g), "pilot"); return `TWENTY QUIET MINUTES AT CONVOY SPEED. AT THE GATE THEY WIRE ${c}CR AND FLASH THEIR LIGHTS.${x ? " " + x : ""}`; } },
+      { label: "NO TIME", result: () => "'UNDERSTOOD.' THEY CLOSE UP AND PLOD ON. YOU CHECK THE SCOPE FOR THEM TWICE BEFORE YOU JUMP." },
+    ],
+  },
+  {
+    id: "cargopod", where: "space", weight: 2, title: "A POD WITH A NOTE",
+    text: "A cargo pod on a slow drift, transponder dead, a message painted on the side by hand: 'IF FOUND, PLEASE TAKE TO ANY STATION. THE CONTENTS ARE PAID FOR. THE SHIPPER IS NOT COMING BACK.'",
+    options: [
+      { label: "TAKE IT ABOARD", requires: (g) => cargoUsed(p(g)) + 3 <= p(g).cargoMax, result: (g, rng) => { const id = rng.pick(["food", "med", "parts", "water", "lux"]); addCargo(p(g), id, 3); return `THREE CRATES OF ${commodity(id).name.toUpperCase()}, LASHED DOWN WITH CARE BY SOMEONE WHO DIDN'T MAKE IT. YOU'LL SELL THEM, OR DELIVER THEM. EITHER IS HONOURING THE NOTE.`; } },
+      { label: "LOG IT FOR THE HARBOURMASTER", result: (g) => { adjustRep(g.world, sys(g).factionId, 3); p(g).expData = (p(g).expData ?? 0) + 15; return "YOU TAG THE POD AND FILE ITS TRACK. SOMEONE WITH A BIGGER HOLD WILL PICK IT UP. +15 DATA."; } },
+      { label: "LEAVE IT DRIFT", result: () => "THE NOTE GETS SMALLER IN THE AFT CAMERA UNTIL YOU CAN'T READ IT." },
+    ],
+  },
+  {
+    id: "lateshow", where: "space", weight: 2, title: "THE LATE SHOW", when: (g) => p(g).crew.length > 0 || passengersAboard(p(g)).length > 0,
+    text: "A station relay bleeds across the band: a serial, mid-episode, two actors doing a thunderstorm with a sheet of tin. Somebody in the lounge has turned it up.",
+    options: [
+      { label: "LET IT PLAY", result: (g) => { for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 4); for (const m of passengersAboard(p(g))) m.mood = Math.min(100, (m.mood ?? 60) + 5); return "THE WHOLE SHIP LISTENS TO THE END OF THE EPISODE. IT ENDS ON A CLIFFHANGER. THERE IS SOME BOOING. MORALE UP."; } },
+      { label: "CUT THE FEED. WE'RE WORKING.", result: (g) => { for (const c of p(g).crew) c.morale = Math.max(0, c.morale - 2); return "SILENCE, THEN A SIGH FROM THE LOUNGE. SOMEBODY WILL FIND OUT WHAT HAPPENED NEXT AT THE NEXT BAR."; } },
+    ],
+  },
+  {
+    id: "shower", where: "space", weight: 2, title: "METEOR SHOWER",
+    text: "The scope lights up: a river of gravel crossing the lane ahead, every grain burning a thin line against the stars. Beautiful. Also, gravel.",
+    options: [
+      { label: "CUT THE LIGHTS AND WATCH", result: (g) => { for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 3); const s = logSight(p(g), "comet", `the meteor shower over ${sys(g).name}`, p(g).systemId); return `THE BRIDGE GOES DARK AND THE WHOLE SKY MOVES.${s ? " YOUR PASSENGERS PRESS UP AGAINST THE GLASS." : ""} TWENTY MINUTES LATER IT'S GONE.`; } },
+      { label: "PUSH THROUGH ON THE CLOCK", result: (g, rng) => { const d = rng.int(3, 9); p(g).hull = Math.max(1, p(g).hull - d); return `PINGS ON THE HULL LIKE RAIN ON A ROOF. HULL -${d}. YOU'RE THROUGH IN FOUR MINUTES.`; } },
+    ],
+  },
+  {
+    id: "birthday", where: "space", weight: 2, title: "SOMEBODY'S BIRTHDAY", when: (g) => p(g).crew.length >= 2,
+    text: "Your medic leans in from the corridor. 'It's their birthday today. They didn't say. I checked the file.' A nod towards the galley.",
+    options: [
+      { label: "THROW SOMETHING TOGETHER", requires: (g) => (p(g).cargo.food ?? 0) >= 1, result: (g, rng) => { removeCargo(p(g), "food", 1); const crew = p(g).crew; const who = rng.pick(crew); for (const c of crew) c.morale = Math.min(100, c.morale + 8); for (const c of crew) if (c !== who) shiftBond(c, who, 1); return `A CAKE THAT IS MOSTLY RATION BAR, A SONG NOBODY KNOWS ALL THE WORDS TO. ${who.name.toUpperCase()} PRETENDS TO BE EMBARRASSED AND ISN'T. MORALE UP.`; } },
+      { label: "A QUIET WORD", result: (g, rng) => { const who = rng.pick(p(g).crew); who.morale = Math.min(100, who.morale + 10); who.loyalty = (who.loyalty ?? 0) + 0.5; return `YOU FIND ${who.name.toUpperCase()} ON WATCH AND SAY IT. THEY LOOK AT YOU FOR A SECOND LONGER THAN USUAL. 'THANKS, SKIPPER.'`; } },
+      { label: "LET IT PASS", result: (g, rng) => { const who = rng.pick(p(g).crew); who.morale = Math.max(0, who.morale - 4); return `${who.name.toUpperCase()} SPENDS THE EVENING IN THEIR BUNK. THE MEDIC DOESN'T MENTION IT AGAIN.`; } },
+    ],
+  },
+  {
+    id: "spacesick", where: "space", weight: 2, title: "GREEN AROUND THE GILLS", when: (g) => passengersAboard(p(g)).length > 0,
+    text: "One of your passengers has gone the colour of the bulkhead and is holding onto a handrail like it owes them money. First time out, they admit.",
+    options: [
+      { label: "THE MEDIC HAS SOMETHING FOR THAT", requires: (g) => p(g).crew.some((c) => c.role === "medic"), result: (g) => { for (const m of passengersAboard(p(g))) m.mood = Math.min(100, (m.mood ?? 60) + 8); const x = crewXp(p(g), "medic"); return `A PATCH BEHIND THE EAR AND A CUP OF SOMETHING WARM. TEN MINUTES LATER THEY'RE ASKING QUESTIONS ABOUT THE ENGINES.${x ? " " + x : ""}`; } },
+      { label: "FLY SMOOTH FOR A WHILE", result: (g) => { for (const m of passengersAboard(p(g))) m.mood = Math.min(100, (m.mood ?? 60) + 3); p(g).fuel = Math.max(0, p(g).fuel - 2); return "YOU EASE OFF THE THROTTLE AND TAKE THE LONG WAY ROUND THE GRAVITY WELL. -2 FUEL, ONE GRATEFUL PASSENGER."; } },
+      { label: "THEY'LL GET USED TO IT", result: (g) => { for (const m of passengersAboard(p(g))) m.mood = Math.max(0, (m.mood ?? 60) - 6); return "THEY DO NOT GET USED TO IT. THE LOUNGE SMELLS FAINTLY OF DISINFECTANT UNTIL YOU DOCK."; } },
+    ],
+  },
+  {
+    id: "hotspring", where: "ground", weight: 2, title: "THE HOT POOL",
+    text: "Steam off a rock basin in a cold valley, water the colour of tea and warm enough to matter. The rover's readouts say it's harmless. The crew's faces say something else.",
+    options: [
+      { label: "AN HOUR OFF", result: (g) => { for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 7); return "SUITS OFF TO THE WAIST, BOOTS IN THE WATER, NOBODY TALKING SHOP. THE BEST HOUR OF THE MONTH. MORALE UP."; } },
+      { label: "SAMPLE THE MINERALS", result: (g) => `${mats(g, { copper: 2, vanadium: 1 })} FROM THE CRUST AROUND THE RIM.` },
+      { label: "KEEP MOVING", result: () => "THE STEAM CLOSES BEHIND THE ROVER. SOMEBODY IN THE BACK SIGHS." },
+    ],
+  },
+  {
+    id: "oldrover", where: "ground", weight: 2, title: "SOMEONE ELSE'S ROVER",
+    text: "A rover of the previous generation, sunk to the axles in dust, a sun-bleached tarp still tied over the cab. A logbook on the seat, its last page half written.",
+    options: [
+      { label: "STRIP IT FOR PARTS", result: (g, rng) => rng.chance(0.7) ? "THE DRIVE MOTORS ARE STILL GOOD. A CRATE OF PARTS FOR THE HOLD." + (addCargo(p(g), "parts", 1) ? "" : " (NO ROOM. YOU LEAVE THEM BY THE WHEEL.)") : `THE MOTORS ARE DEAD, BUT THE FRAME IS GOOD ALLOY. ${mats(g, { iron: 2, nickel: 1 })}.` },
+      { label: "FINISH THE LOGBOOK PAGE AND LEAVE IT", result: (g) => { p(g).expData = (p(g).expData ?? 0) + 25; for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 2); return "YOU WRITE THE DATE, YOUR CALL SIGN, AND 'FOUND. NOT FORGOTTEN.' THE CREW WAIT BY THE HATCH. +25 DATA."; } },
     ],
   },
 ];

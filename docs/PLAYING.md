@@ -229,6 +229,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## More encounters
+
+- Ten new cards on the lanes and on the ground, none of them fights: a memorial
+  buoy, a lost mining drone, a convoy asking for company to the gate, a cargo
+  pod with a hand-painted note, a radio serial bleeding across the band, a
+  meteor shower, a crew birthday, a spacesick passenger, a hot pool, and
+  somebody else's rover. Choices touch morale, bonds, passengers, cargo and XP.
+
 ## The roster
 
 - R aboard your ship, R in a station lounge, or THE ROSTER from the pause

@@ -582,4 +582,9 @@ Time passes for the people on the ship, and for the ship.
 - [x] A crew roster screen with morale, loyalty, skill progress, bonds, asks
       and stories, and a bonus on Enter
 
+## Milestone 57 — Encounters ✅ (Sep 2026)
+- [x] Ten new non-combat encounter cards: buoy, lost drone, walk-us-to-the-gate,
+      pod with a note, the late show, meteor shower, birthday, spacesick,
+      hot pool, someone else's rover
+
 ## Later
