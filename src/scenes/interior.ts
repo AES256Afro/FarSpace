@@ -10,7 +10,7 @@ import { CREW_LINES, ROLE_INFO } from "../data/crew";
 import { clamp, dist } from "../core/mathx";
 import { sfx } from "../core/sfx";
 import { music } from "../core/music";
-import { rankOf, rescuePoints, STORY_LEN } from "../world";
+import { rankOf, rescuePoints, STORY_LEN, findStation } from "../world";
 import type { Encounter } from "../data/encounters";
 import type { EncounterScene } from "./encounter";
 import { ACHIEVEMENTS } from "../data/achievements";
@@ -150,6 +150,8 @@ export class InteriorScene implements Scene {
       `EXPLORER ${rankOf(p, "explorer").title}   TRADER ${rankOf(p, "trader").title}   MINER ${rankOf(p, "miner").title}`,
       `FIRST DISCOVERIES ${Object.values(p.firsts ?? {}).filter((c) => c).length}   CODEX ${Object.keys(p.codex ?? {}).length}   CLAIMS ${(p.homesteads ?? []).length}   ACHIEVEMENTS ${(p.achievements ?? []).length}/${ACHIEVEMENTS.length}`,
       p.flags?.theSignal ? "THE SIGNAL: ANSWERED." : (p.story ?? 0) > 0 && (p.story ?? 0) < STORY_LEN ? `THE SIGNAL: STAGE ${(p.story ?? 0) + 1} OF ${STORY_LEN}` : "THE SIGNAL: NOT YET HEARD.",
+      `WEAR ${Math.round(p.wear ?? 0)}%   YARD SERVICES ${(p.berthLog ?? []).length}${p.berthLog?.length ? `, LAST AT ${(findStation(g.world, p.berthLog[p.berthLog.length - 1].stationId)?.st.name ?? "A YARD").toUpperCase()}` : ""}`,
+      (p.alumni ?? []).length ? `SERVED AND WENT HOME: ${(p.alumni ?? []).slice(-4).map((a) => `${a.name.toUpperCase()} (${ROLE_INFO[a.role].label}, ${a.docks})`).join(", ")}` : "NOBODY HAS RETIRED FROM THIS SHIP YET.",
       p.log?.length ? `LAST ENTRY: ${p.log[p.log.length - 1].text.toUpperCase()}` : "THE LOG IS EMPTY.",
     ];
     const enc: Encounter = { id: "wall", where: "space", title: "WALL OF RECORD", text: lines.join("\n"), weight: 0, options: [{ label: "CLOSE", result: () => "" }] };
@@ -245,8 +247,10 @@ export class InteriorScene implements Scene {
       if (crewNear) {
         const c = crewNear.c;
         const pool = c.morale >= 65 ? CREW_LINES[c.role].high : c.morale >= 30 ? CREW_LINES[c.role].mid : CREW_LINES[c.role].low;
-        const ask = c.request ? ` ...and about that stop I asked for.` : "";
-        this.talk = `${c.name.toUpperCase()} (${ROLE_INFO[c.role].label}, SKILL ${c.skill}, MORALE ${Math.round(c.morale)}${(c.loyalty ?? 0) >= 2 ? ", LOYAL" : ""}): ${pool[Math.floor(Math.random() * pool.length)]}${ask}`;
+        const ask = c.request ? (c.request.kind === "visit" ? " ...and about that stop I asked for." : c.request.kind === "goods" ? " ...and the list is still by the airlock." : " ...and the letter's still in your locker.") : "";
+        const line = c.sick ? `(${c.sick.kind}, laid up) ${["Don't come too close, Captain.", "I'll be fine. Give me a day.", "The med bay's colder than the hold."][Math.floor(Math.random() * 3)]}`
+          : Math.random() < 0.25 && c.trait ? `(${c.trait}) ${pool[Math.floor(Math.random() * pool.length)]}` : pool[Math.floor(Math.random() * pool.length)];
+        this.talk = `${c.name.toUpperCase()} (${ROLE_INFO[c.role].label}, SKILL ${c.skill}, MORALE ${Math.round(c.morale)}${(c.loyalty ?? 0) >= 2 ? ", LOYAL" : ""}, ${c.docks ?? 0} DOCKINGS): ${line}${ask}`;
         this.talkTimer = 5;
         c.morale = Math.min(100, c.morale + 1);
       } else if (passenger && pSpot && dist(pSpot.tx * T + T / 2, pSpot.ty * T + T / 2, this.px, this.py) < 16) {
@@ -361,7 +365,8 @@ export class InteriorScene implements Scene {
       const s = spots[i];
       if (!s) return;
       drawPerson(ctx, ox + s.tx * T + T / 2, oy + s.ty * T + T / 2, "#c78a5a", c.role === "engineer" ? "#c7a54a" : c.role === "gunner" ? "#a53a3a" : c.role === "pilot" ? "#3a6ea5" : "#3aa55e");
-      if (c.morale < 30 && Math.floor(g.world.time * 2) % 2 === 0) { ctx.fillStyle = PAL.warn; ctx.fillRect(ox + s.tx * T + T / 2 + 3, oy + s.ty * T, 2, 2); }
+      if (c.sick) { ctx.fillStyle = "#9fd8a0"; ctx.fillRect(ox + s.tx * T + T / 2 + 3, oy + s.ty * T, 2, 2); }
+      else if (c.morale < 30 && Math.floor(g.world.time * 2) % 2 === 0) { ctx.fillStyle = PAL.warn; ctx.fillRect(ox + s.tx * T + T / 2 + 3, oy + s.ty * T, 2, 2); }
     });
     const passenger = p.missions.find((m) => m.kind === "passenger" && m.accepted && !m.done);
     const pSpot = nearestTile(this.deck, 0, 0, "p", 1e9);
@@ -374,7 +379,7 @@ export class InteriorScene implements Scene {
       const px0 = ox + 1 * T, py0 = oy + 0 * T;
       const p2 = g.world.player;
       const deeds = (p2.repairs ?? 0) + (p2.tows ?? 0) + (p2.rescues ?? 0) + Math.floor((p2.lives ?? 0) / 3);
-      const plaques = Math.min(6, deeds + (p2.flags?.theSignal ? 1 : 0) + Object.values(p2.firsts ?? {}).filter((c) => c).length);
+      const plaques = Math.min(6, deeds + (p2.flags?.theSignal ? 1 : 0) + Object.values(p2.firsts ?? {}).filter((c) => c).length + (p2.alumni ?? []).length);
       for (let i = 0; i < 6; i++) {
         ctx.fillStyle = i < plaques ? "#c7a54a" : "#2a3146";
         ctx.fillRect(px0 + 2 + i * 4, py0 + 3, 3, 4);

@@ -5,7 +5,7 @@ import { ask, confirmBox } from "../../core/dialog";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault } from "../../world";
 import { COMMODITIES, commodity } from "../../data/data";
 import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
@@ -138,7 +138,7 @@ export class FlightScene implements Scene {
     if (this.cruise && this.massLocked(g)) { this.cruise = false; this.scanMsg = "MASS LOCK - DROPPED FROM CRUISE"; this.scanTimer = 2; sfx.alarm(); }
     if (this.towing && this.cruise) { this.cruise = false; g.toast("CAN'T CRUISE WITH A TOW LINE"); }
     const cruiseMul = this.cruise ? 4.5 : this.towing ? 0.55 : 1;
-    const ACCEL = h.accel * pilot * tuned * (this.cruise ? 3 : 1);
+    const ACCEL = h.accel * pilot * tuned * wearThrust(p) * (this.cruise ? 3 : 1);
     const ROT = h.rotSpeed * pilot * (this.cruise ? 0.6 : 1);
     const MAXS = h.maxSpeed * tuned * cruiseMul;
     this.updateAutopilot(g, dt);
@@ -707,12 +707,20 @@ export class FlightScene implements Scene {
     flag(g, "drifter");
     logEntry(g.world, `Logged a void drifter off a gas giant in ${g.world.systems[p.systemId].name}`);
   }
+  faultTimer = 40;
   chatterTimer = 25;
   trafficTimer = 40;
   updateAmbient(g: Game, dt: number): void {
     const p = g.world.player;
     const sys = g.world.systems[p.systemId];
     // comms chatter when the channel is quiet
+    // a worn ship throws faults now and then; the engineer keeps the interval long
+    this.faultTimer -= dt;
+    if (this.faultTimer <= 0) {
+      this.faultTimer = 45 + Math.random() * 30;
+      const msg = wearFault(p, new RNG((g.world.seed ^ Math.floor(g.world.time * 7)) >>> 0));
+      if (msg) { g.toast(msg); sfx.alarm(); }
+    }
     this.chatterTimer -= dt;
     if (this.chatterTimer <= 0) {
       this.chatterTimer = 35 + Math.random() * 40;
@@ -1039,6 +1047,7 @@ export class FlightScene implements Scene {
       }
     }
     p.fuel -= cost;
+    jumpWear(p);
     sfx.jump();
     if (this.towing) { this.towing = null; g.toast("THE TOW LINE DOESN'T SURVIVE THE JUMP"); }
     const fromId = p.systemId;

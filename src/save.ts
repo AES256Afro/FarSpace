@@ -5,7 +5,7 @@ import type { World, SystemDef } from "./world";
 import { assignRares, assignSyndicates } from "./world";
 import { RNG } from "./core/rng";
 
-export const SAVE_VERSION = 9;
+export const SAVE_VERSION = 10;
 export const SAVE_KEY = "farspace-save";
 export const SLOTS = 3;
 const SLOT_KEY = "farspace-slot";
@@ -125,6 +125,16 @@ const MIGRATIONS: Record<number, Migration> = {
       w.syndicates = assignSyndicates(w.systems as Record<string, SystemDef>, startId, new RNG((seed ^ 0x51d1) >>> 0));
     }
   },
+};
+
+MIGRATIONS[9] = (w) => {
+  // 9 → 10: a life aboard — wear, berth log, crew on leave, alumni, crew service counts
+  const p = w.player as Record<string, unknown>;
+  p.wear ??= 0;
+  p.berthLog ??= [];
+  p.shoreCrew ??= [];
+  p.alumni ??= [];
+  for (const c of (p.crew as Record<string, unknown>[]) ?? []) { c.docks ??= 0; c.sick ??= null; }
 };
 
 export function migrateSave(raw: unknown): World | null {

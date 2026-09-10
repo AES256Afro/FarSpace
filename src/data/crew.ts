@@ -8,9 +8,37 @@ export interface CrewMember {
   skill: number;   // 1..3
   morale: number;  // 0..100
   wage: number;    // credits per docking
-  request?: { kind: "visit"; stationId: string; docks: number } | null; // a personal ask, pending
+  request?: CrewRequest | null; // a personal ask, pending
   loyalty?: number; // grows when you look after them; loyal crew don't quit over one bad week
+  home?: string;    // station id where they signed on; where their people are
+  trait?: string;   // one line of who they are off duty
+  docks?: number;   // dockings served aboard this ship
+  sick?: { kind: string; until: number } | null; // laid up until world time; no bonus while sick
+  retireAsked?: boolean; // the retirement talk has happened
 }
+
+// What crew ask for, and how long they wait. Each is honoured at a docking.
+export type CrewRequest =
+  | { kind: "visit"; stationId: string; docks: number }                 // pass by their people
+  | { kind: "goods"; commodityId: string; qty: number; docks: number }  // bring something aboard
+  | { kind: "letter"; stationId: string; docks: number };              // carry a letter home
+
+export const CREW_TRAITS = [
+  "hums old hymns in the engine room", "reads in the galley after lights-out", "keeps a plant alive in the bunk room",
+  "writes letters home every dock", "plays cards for matchsticks", "sleeps through anything but alarms",
+  "names every drone", "collects station stamps", "cooks on the reactor housing", "sketches the crew when they think nobody sees",
+  "talks to the ship like it listens", "knows a song for every gate", "keeps a tally of near misses on the bulkhead",
+  "never sits with their back to the airlock", "sends money home and never says so", "runs laps of the deck before a jump",
+];
+
+// Things crew catch. Days here are world seconds; a medic aboard halves them.
+export const SICKNESS = [
+  { kind: "dock fever", days: 360 }, { kind: "a coolant rash", days: 240 }, { kind: "gate sickness", days: 180 },
+  { kind: "a cracked rib", days: 480 }, { kind: "the grey flu", days: 420 },
+];
+
+export const RETIRE_DOCKS = 30;   // a tour long enough to think about going home
+export const LEAVE_DOCKS = 8;     // dockings they'll wait for you before finding another ship
 
 export const ROLE_INFO: Record<CrewRole, { label: string; effect: string; baseWage: number }> = {
   engineer: { label: "ENGINEER", effect: "Faster repairs; patches systems mid-flight", baseWage: 40 },

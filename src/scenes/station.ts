@@ -8,11 +8,11 @@ import { RNG } from "../core/rng";
 import { clamp } from "../core/mathx";
 import { commodity, faction } from "../data/data";
 import { HULLS, hull } from "../data/hulls";
-import { ROLE_INFO, CrewMember } from "../data/crew";
+import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS } from "../data/crew";
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter,
+  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter,
 } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
@@ -112,16 +112,73 @@ export class StationScene implements Scene {
     for (const q of quitters) g.toast(`${q.name.toUpperCase()} WALKED OFF THE SHIP`);
     for (const c of p.crew) if (c.morale <= 5 && (c.loyalty ?? 0) >= 3) { c.morale = 20; c.loyalty = (c.loyalty ?? 0) - 1; g.toast(`${c.name.toUpperCase()} STAYS OUT OF LOYALTY. DON'T PUSH IT.`); }
     p.crew = p.crew.filter((c) => c.morale > 5 || (c.loyalty ?? 0) >= 2);
-    // pending visits: honoured here, or wearing thin
+    const now = g.world.time;
+    const rng = new RNG((g.world.seed ^ Math.floor(now) ^ 0x5ea) >>> 0);
+    for (const c of p.crew) c.docks = (c.docks ?? 0) + 1;
+    // pending asks: honoured here, or wearing thin
     for (const c of p.crew) {
       if (!c.request) continue;
-      if (c.request.stationId === this.station.id) {
+      const r = c.request;
+      const name = c.name.toUpperCase();
+      if (r.kind === "visit" && r.stationId === this.station.id) {
         c.request = null; c.morale = Math.min(100, c.morale + 30); c.loyalty = (c.loyalty ?? 0) + 1; c.skill = Math.min(3, c.skill + 1);
-        g.toast(`${c.name.toUpperCase()} COMES BACK ABOARD STEADIER, AND SHARPER. SKILL ${c.skill}.`);
-      } else if (++c.request.docks >= 4) { c.request = null; c.morale = Math.max(0, c.morale - 20); g.toast(`${c.name.toUpperCase()} STOPS ASKING. MORALE DOWN.`); }
+        g.toast(`${name} COMES BACK ABOARD STEADIER, AND SHARPER. SKILL ${c.skill}.`);
+      } else if (r.kind === "goods" && (p.cargo[r.commodityId] ?? 0) >= r.qty) {
+        removeCargo(p, r.commodityId, r.qty); c.request = null; c.morale = Math.min(100, c.morale + 25); c.loyalty = (c.loyalty ?? 0) + 1;
+        g.toast(`${name} TAKES THE ${commodity(r.commodityId).name.toUpperCase()} WITH BOTH HANDS. MORALE UP.`);
+        logEntry(g.world, `${c.name} got the ${commodity(r.commodityId).name} they asked for`);
+      } else if (r.kind === "letter" && r.stationId === this.station.id) {
+        c.request = null; c.morale = Math.min(100, c.morale + 15); c.loyalty = (c.loyalty ?? 0) + 1; p.credits += 120;
+        g.toast(`${name}'S LETTER IS DELIVERED. THE FAMILY SENDS 120CR FOR THE TROUBLE.`);
+      } else if (++r.docks >= 5) { c.request = null; c.morale = Math.max(0, c.morale - 20); g.toast(`${name} STOPS ASKING. MORALE DOWN.`); }
     }
+    // illness runs its course, or med supplies cut it short; new cases show up at the dock
+    for (const c of p.crew) {
+      const name = c.name.toUpperCase();
+      if (crewRecover(c, now)) g.toast(`${name} IS BACK ON DUTY`);
+      else if (c.sick && crewTreat(p, c)) g.toast(`MED SUPPLIES: ${name} IS OVER THE WORST OF IT. BACK ON DUTY.`);
+      else if (!c.sick) { const kind = crewFallsIll(p, c, now, rng); if (kind) g.toast(`${name} HAS COME DOWN WITH ${kind.toUpperCase()}${crewBonus(p, "medic") > 0 ? " - THE MEDIC HAS IT IN HAND" : " - MED SUPPLIES WOULD HELP"}`); }
+    }
+    // shore leave: whoever waited here comes back aboard; whoever waited too long elsewhere is gone
+    const berths = hull(p.hullId).crewSlots;
+    const { back, gone } = collectShoreCrew(p, this.station.id, berths);
+    for (const c of back) g.toast(`${c.name.toUpperCase()} COMES BACK ABOARD FROM LEAVE, RESTED.`);
+    for (const c of gone) { retireCrew(p, c, this.station.id, now); logEntry(g.world, `${c.name} took another berth after waiting ${LEAVE_DOCKS} dockings on leave`); g.toast(`WORD FROM THE WIRE: ${c.name.toUpperCase()} GAVE UP WAITING AND SIGNED ON ELSEWHERE.`); }
+    // old shipmates
+    const alum = (p.alumni ?? []).filter((a) => a.stationId === this.station.id);
+    if (alum.length && rng.chance(0.4)) { const a = rng.pick(alum); g.toast(`${a.name.toUpperCase()} WAVES FROM THE LOUNGE. ${ROLE_INFO[a.role].label}, RETIRED. ${a.docks} DOCKINGS WITH YOU.`); }
     this.crewRequest(g);
+    if (g.sceneName !== "encounter") this.retirement(g, rng);
     if (g.sceneName !== "encounter") this.envoy(g);
+  }
+
+  // After a long tour, someone wants to go home. How you part matters to the rest of the crew.
+  retirement(g: Game, rng: RNG): void {
+    const p = g.world.player;
+    if ((p.tutorial ?? -1) >= 0) return;
+    const c = p.crew.find((x) => (x.docks ?? 0) >= RETIRE_DOCKS && !x.retireAsked && rng.chance(0.2));
+    if (!c) return;
+    c.retireAsked = true;
+    const name = c.name.toUpperCase();
+    const stId = this.station.id;
+    const text = `${name} FINDS YOU AT THE AIRLOCK, KIT BAG PACKED. '${c.docks} DOCKINGS, CAPTAIN. I'VE BEEN COUNTING. THIS IS A GOOD PORT TO STOP AT. I'D LIKE TO GO HOME WHILE I STILL REMEMBER WHAT IT LOOKS LIKE.'`;
+    const opts: Encounter["options"] = [];
+    opts.push({ label: "GO WELL. TAKE 300CR FOR THE ROAD.", requires: (g2) => g2.world.player.credits >= 300, result: (g2) => {
+      const p2 = g2.world.player; p2.credits -= 300; retireCrew(p2, c, stId, g2.world.time);
+      for (const o of p2.crew) { o.morale = Math.min(100, o.morale + 8); o.loyalty = (o.loyalty ?? 0) + 1; }
+      logEntry(g2.world, `${c.name} retired at ${this.station.name} after ${c.docks} dockings, with a bonus`); flag(g2, "goodShip");
+      return `${name} SHAKES YOUR HAND TWICE. THE CREW WATCH FROM THE CORRIDOR. THEY'LL REMEMBER HOW THIS WENT.`; } });
+    opts.push({ label: "ONE MORE TOUR? I NEED YOU.", hint: "Loyal crew might", result: (g2) => {
+      if ((c.loyalty ?? 0) >= 3) { c.docks = Math.max(0, (c.docks ?? 0) - 15); c.loyalty = (c.loyalty ?? 0) - 1; c.morale = Math.min(100, c.morale + 5); return `${name} LOOKS AT THE BAG, THEN AT THE SHIP. 'ONE MORE. AND YOU OWE ME.'`; }
+      retireCrew(g2.world.player, c, stId, g2.world.time); logEntry(g2.world, `${c.name} left at ${this.station.name} after ${c.docks} dockings`);
+      return `${name} SMILES, SHAKES YOUR HAND ONCE, AND GOES. YOU DIDN'T GIVE ENOUGH REASONS OVER THE YEARS.`; } });
+    opts.push({ label: "CLEAR YOUR BERTH, THEN.", result: (g2) => {
+      const p2 = g2.world.player; retireCrew(p2, c, stId, g2.world.time);
+      for (const o of p2.crew) o.morale = Math.max(0, o.morale - 6);
+      logEntry(g2.world, `${c.name} left at ${this.station.name} after ${c.docks} dockings`);
+      return `${name} NODS. THE CORRIDOR IS QUIET AFTER. THE OTHERS NOTICED.`; } });
+    const enc: Encounter = { id: "crew-retire", where: "space", title: `${name} - ${ROLE_INFO[c.role].label}`, text, weight: 0, options: opts };
+    (g.scenes["encounter"] as EncounterScene).open(g, enc, "station", true);
   }
 
   // Faction envoys: the powers notice you. Amnesties, charters, warnings.
@@ -164,7 +221,7 @@ export class StationScene implements Scene {
     const c = rng.pick(p.crew.filter((x) => !x.request));
     if (!c) return;
     const name = c.name.toUpperCase();
-    const kinds = ["leave", "visit", "training", "family"] as const;
+    const kinds = ["leave", "visit", "training", "family", "shore", "goods", "letter"] as const;
     const kind = c.morale < 30 ? "leave" : rng.pick(kinds);
     const opts: Encounter["options"] = [];
     let text = "";
@@ -181,6 +238,22 @@ export class StationScene implements Scene {
       text = `${name} ASKS FOR A WORD. 'MY PEOPLE ARE ON ${st.name.toUpperCase()}, ${target!.name.toUpperCase()}. I HAVEN'T SEEN THEM IN A YEAR. IF WE'RE EVER PASSING...'`;
       opts.push({ label: "WE'LL MAKE THE STOP", hint: "Dock there within a few dockings", result: () => { c.request = { kind: "visit", stationId: st.id, docks: 0 }; return `${name} STANDS A LITTLE STRAIGHTER. ${st.name.toUpperCase()} IS ON THE LOG.`; } });
       opts.push({ label: "NOT THIS RUN", result: () => { c.morale = Math.max(0, c.morale - 8); return `${name} SAYS IT'S FINE. IT ISN'T.`; } });
+    } else if (kind === "shore") {
+      if (p.crew.length < 2) return;
+      text = `${name} ASKS FOR SHORE LEAVE. 'MONTHS WITHOUT A DAY OFF THE DECK. LEAVE ME HERE. PICK ME UP NEXT TIME YOU'RE THROUGH. I'LL KEEP MY BERTH.'`;
+      opts.push({ label: "TAKE YOUR LEAVE", hint: `They wait ${LEAVE_DOCKS} dockings; the berth stays theirs`, result: (g2) => { sendOnLeave(g2.world.player, c, this.station.id); return `${name} IS DOWN THE RAMP BEFORE YOU FINISH THE SENTENCE. ${this.station.name.toUpperCase()} HAS THEM UNTIL YOU'RE BACK.`; } });
+      opts.push({ label: "NOT THIS RUN", result: () => { c.morale = Math.max(0, c.morale - 10); return `${name} SAYS FINE. THE WORD HAS EDGES.`; } });
+    } else if (kind === "goods") {
+      const wants = rng.pick([["luxuries", 2], ["food", 4], ["med", 1], ["metals", 3]] as const);
+      text = `${name} HAS A LIST. '${wants[1]} ${commodity(wants[0]).name.toUpperCase()}, NEXT TIME WE'RE SOMEWHERE THAT SELLS IT. FOR THE ${rng.pick(["ANNIVERSARY", "GALLEY", "BUNK ROOM", "CREW", "MED BAY"])}. I'LL SQUARE IT WITH YOU.'`;
+      opts.push({ label: "I'LL FIND IT", hint: "Dock with it aboard within five dockings", result: () => { c.request = { kind: "goods", commodityId: wants[0], qty: wants[1], docks: 0 }; return `${name} PINS THE LIST BY THE AIRLOCK.`; } });
+      opts.push({ label: "BUY YOUR OWN", result: () => { c.morale = Math.max(0, c.morale - 6); return `${name} TAKES THE LIST BACK.`; } });
+    } else if (kind === "letter") {
+      const home = c.home ? findStation(g.world, c.home) : null;
+      if (!home || home.st.id === this.station.id) return;
+      text = `${name} HANDS YOU A SEALED LETTER. 'FOR MY PEOPLE ON ${home.st.name.toUpperCase()}, ${home.sys.name.toUpperCase()}. THE WIRE'S FINE FOR NEWS. THIS ISN'T NEWS.'`;
+      opts.push({ label: "I'LL CARRY IT", hint: "Dock there within five dockings", result: () => { c.request = { kind: "letter", stationId: home.st.id, docks: 0 }; return `THE LETTER GOES IN THE CAPTAIN'S LOCKER. ${home.st.name.toUpperCase()} IS ON THE LOG.`; } });
+      opts.push({ label: "SEND IT ON THE WIRE", result: () => { c.morale = Math.max(0, c.morale - 5); return `${name} PUTS THE LETTER AWAY AGAIN.`; } });
     } else if (kind === "training") {
       if (c.skill >= 3) return;
       text = `${name} HAS FOUND A COURSE ON THE STATION. '${ROLE_INFO[c.role].label} CERTIFICATION. THREE HUNDRED, AND I COME BACK BETTER AT THIS.'`;
@@ -600,10 +673,10 @@ export class StationScene implements Scene {
     const p = g.world.player;
     const slots = hull(p.hullId).crewSlots;
     const cost = c.wage * 3;
-    if (p.crew.length >= slots) { g.toast(`NO BERTHS LEFT (${slots} ON THIS HULL)`); return; }
+    if (berthsUsed(p) >= slots) { g.toast(`NO BERTHS LEFT (${slots} ON THIS HULL${(p.shoreCrew ?? []).length ? ", ONE KEPT FOR CREW ON LEAVE" : ""})`); return; }
     if (p.credits < cost) { g.toast(`SIGNING BONUS ${cost}CR - NOT ENOUGH`); return; }
     p.credits -= cost;
-    p.crew.push({ ...c });
+    p.crew.push({ ...c, home: this.station.id, docks: 0 });
     this.candidates = this.candidates.filter((x) => x !== c);
     g.toast(`${c.name.toUpperCase()} SIGNED ON AS ${ROLE_INFO[c.role].label}`);
     g.showHint("crew", "CREW LIVE ABOARD - VISIT THEM WITH I - KEEP FOOD IN CARGO");
@@ -678,6 +751,15 @@ export class StationScene implements Scene {
       g.toast(afford < hullNeed ? "PARTIAL REPAIR" : "HULL RESTORED");
     } });
     const sysDamaged = p.systems.filter((s) => s.health < 100);
+    if ((p.wear ?? 0) >= WEAR_SERVICE_FROM) {
+      const price = servicePrice(p, patronHere ? 0.7 : 1);
+      opts.push({ label: `YARD SERVICE (WEAR ${Math.round(p.wear ?? 0)}%)${patronHere ? " - PATRON RATE" : ""}`, sub: `${price}CR`, action: () => {
+        if (p.credits < price) { g.toast("NOT ENOUGH CREDITS"); return; }
+        p.credits -= price; serviceHull(p, st.id, g.world.time, price);
+        logEntry(g.world, `Yard service at ${st.name}, ${price}cr, signed`);
+        g.toast(`SERVICED AND SIGNED IN THE BERTH LOG. SHE'LL FLY LIKE NEW.`); sfx.repair();
+      } });
+    }
     opts.push({ label: `SERVICE ALL SYSTEMS (${sysDamaged.length})`, sub: `${sysDamaged.length * 60}CR`, action: () => {
       if (!sysDamaged.length) return g.toast("ALL SYSTEMS NOMINAL");
       const cost = sysDamaged.length * 60;
@@ -1051,6 +1133,8 @@ export class StationScene implements Scene {
     const st = this.station;
     const p = g.world.player;
     drawText(ctx, "THE LOUNGE - TALK (ENTER) OR HIRE", 8, top, PAL.greyDark);
+    const leaveHere = (p.shoreCrew ?? []).filter((s) => s.stationId === st.id);
+    if (leaveHere.length) drawText(ctx, `ON LEAVE HERE: ${leaveHere.map((s) => s.member.name.toUpperCase()).join(", ")} (BACK ABOARD WHEN BERTHS ALLOW)`, 200, top, PAL.gold);
     let y = top + 12;
     let idx = 0;
     st.barPatrons.forEach((name, i) => {

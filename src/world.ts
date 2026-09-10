@@ -11,7 +11,7 @@ import { STARS, starXYZ, starDistance } from "./data/stars";
 import { hull } from "./data/hulls";
 import { moduleDef } from "./data/modules";
 import type { CrewMember, CrewRole } from "./data/crew";
-import { ROLE_INFO } from "./data/crew";
+import { ROLE_INFO, CREW_TRAITS, SICKNESS, LEAVE_DOCKS } from "./data/crew";
 
 // ---------- Types ----------
 
@@ -268,6 +268,103 @@ export interface PlayerState {
   ious?: { credits: number; text: string }[];       // debts paid to you at the next dock
   routes?: { from: string; to: string; commodityId: string; t: number }[]; // base trade runs (station ids)
   lastDockedAt?: string;             // previous station id, for route bookkeeping
+  wear?: number;                     // 0..100+: hours and jumps since the last yard service
+  berthLog?: { stationId: string; t: number; wear: number; cost: number }[]; // signed yard services
+  shoreCrew?: ShoreLeave[];          // crew waiting for you at a station
+  alumni?: Alumnus[];                // crew who served and went home
+}
+
+export interface ShoreLeave { member: CrewMember; stationId: string; docks: number }
+export interface Alumnus { name: string; role: CrewRole; docks: number; stationId: string; t: number }
+
+// ---------- Wear: a ship wants a yard now and then ----------
+// Wear climbs with hours under way and with every jump; an engineer slows it.
+// Past 50 the engines lose their edge; past 70 things start to fail.
+export const WEAR_SERVICE_FROM = 10;
+export function wearRate(p: PlayerState): number {
+  const eng = crewBonus(p, "engineer");
+  return 0.012 * Math.max(0.4, 1 - 0.15 * eng);
+}
+export function tickWear(p: PlayerState, dt: number): void {
+  p.wear = Math.min(130, (p.wear ?? 0) + wearRate(p) * dt);
+}
+export function jumpWear(p: PlayerState): void {
+  p.wear = Math.min(130, (p.wear ?? 0) + 2);
+}
+export function wearThrust(p: PlayerState): number {
+  return 1 - Math.max(0, (p.wear ?? 0) - 50) / 50 * 0.1;
+}
+export function wearFault(p: PlayerState, rng: RNG): string | null {
+  const wear = p.wear ?? 0;
+  if (wear < 70) return null;
+  if (!rng.chance((wear - 60) / 100)) return null;
+  const sys = rng.pick(p.systems.filter((s) => s.health > 20));
+  if (!sys) return null;
+  sys.health = Math.max(0, sys.health - rng.int(8, 16));
+  return `${sys.name.toUpperCase()} FAULT - WEAR ${Math.round(wear)}%, SHE WANTS A YARD`;
+}
+export function servicePrice(p: PlayerState, discount = 1): number {
+  return Math.round((p.wear ?? 0) * 6 * discount);
+}
+export function serviceHull(p: PlayerState, stationId: string, t: number, cost: number): void {
+  (p.berthLog ??= []).push({ stationId, t, wear: Math.round(p.wear ?? 0), cost });
+  if (p.berthLog.length > 20) p.berthLog.shift();
+  p.wear = 0;
+  for (const s of p.systems) s.health = Math.max(s.health, 70);
+}
+
+// ---------- Crew with lives ----------
+export function crewSick(c: CrewMember, now: number): boolean {
+  return !!c.sick && now < c.sick.until;
+}
+// A dock is where illness shows. Low morale and empty galleys make it likelier; a medic shortens it.
+export function crewFallsIll(p: PlayerState, c: CrewMember, now: number, rng: RNG): string | null {
+  if (crewSick(c, now)) return null;
+  const hungry = (p.cargo.food ?? 0) <= 0;
+  const chance = 0.05 + (c.morale < 30 ? 0.06 : 0) + (hungry ? 0.05 : 0);
+  if (!rng.chance(chance)) return null;
+  const s = rng.pick(SICKNESS);
+  const medic = crewBonus(p, "medic") > 0;
+  c.sick = { kind: s.kind, until: now + s.days * (medic ? 0.5 : 1) };
+  return s.kind;
+}
+export function crewRecover(c: CrewMember, now: number): boolean {
+  if (c.sick && now >= c.sick.until) { c.sick = null; return true; }
+  return false;
+}
+export function crewTreat(p: PlayerState, c: CrewMember): boolean {
+  if (!c.sick) return false;
+  if (!removeCargo(p, "med", 1)) return false;
+  c.sick = null; c.morale = Math.min(100, c.morale + 5);
+  return true;
+}
+export function retireCrew(p: PlayerState, c: CrewMember, stationId: string, t: number): Alumnus {
+  const a: Alumnus = { name: c.name, role: c.role, docks: c.docks ?? 0, stationId, t };
+  (p.alumni ??= []).push(a);
+  if (p.alumni.length > 30) p.alumni.shift();
+  p.crew = p.crew.filter((x) => x !== c);
+  return a;
+}
+export function sendOnLeave(p: PlayerState, c: CrewMember, stationId: string): void {
+  p.crew = p.crew.filter((x) => x !== c);
+  (p.shoreCrew ??= []).push({ member: c, stationId, docks: 0 });
+}
+// Docking: crew on leave here come back aboard; crew waiting elsewhere wait a little less patiently.
+export function collectShoreCrew(p: PlayerState, stationId: string, berths: number): { back: CrewMember[]; gone: CrewMember[] } {
+  const back: CrewMember[] = [], gone: CrewMember[] = [];
+  const keep: ShoreLeave[] = [];
+  for (const s of p.shoreCrew ?? []) {
+    if (s.stationId === stationId && p.crew.length < berths) {
+      s.member.morale = Math.min(100, s.member.morale + 30); s.member.loyalty = (s.member.loyalty ?? 0) + 1;
+      p.crew.push(s.member); back.push(s.member);
+    } else if (++s.docks >= LEAVE_DOCKS) gone.push(s.member);
+    else keep.push(s);
+  }
+  p.shoreCrew = keep;
+  return { back, gone };
+}
+export function berthsUsed(p: PlayerState): number {
+  return p.crew.length + (p.shoreCrew ?? []).length;
 }
 
 export interface GroundState { taken: number[]; charted: boolean; scanned: number[] }
@@ -450,6 +547,7 @@ export function tickWorld(w: World, dt: number): void {
       }
     }
   }
+  tickWear(w.player, dt);
   w.eventTick = (w.eventTick ?? 0) + dt;
   if (w.eventTick >= 180) { w.eventTick = 0; tickGalaxyEvents(w, new RNG((w.seed ^ Math.floor(w.time * 11)) >>> 0)); }
   w.crisisTick = (w.crisisTick ?? 0) + dt;
@@ -576,6 +674,7 @@ export function crewBonus(p: PlayerState, role: CrewRole): number {
   let total = 0;
   for (const c of p.crew ?? []) {
     if (c.role !== role) continue;
+    if (c.sick) continue; // laid up: cleared at the next dock once it has run its course
     const eff = c.morale < 30 ? 0.5 : 1;
     total += c.skill * eff;
   }
@@ -595,6 +694,8 @@ export function genCrewCandidate(rng: RNG): CrewMember {
     role, skill,
     morale: rng.int(55, 85),
     wage: ROLE_INFO[role].baseWage * skill,
+    trait: rng.pick(CREW_TRAITS),
+    docks: 0,
   };
 }
 

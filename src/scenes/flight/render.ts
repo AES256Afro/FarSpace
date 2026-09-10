@@ -476,6 +476,8 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
     }
   }
   if (p.crew && p.crew.some((c) => c.morale < 30)) { drawText(ctx, "! CREW MORALE LOW", 4, wy, PAL.warn); wy += 8; }
+  if (p.crew && p.crew.some((c) => c.sick)) { drawText(ctx, `! ${p.crew.filter((c) => c.sick).length} CREW LAID UP`, 4, wy, PAL.warn); wy += 8; }
+  if ((p.wear ?? 0) >= 70) { drawText(ctx, `! WEAR ${Math.round(p.wear ?? 0)}% - YARD SERVICE DUE`, 4, wy, (p.wear ?? 0) >= 90 ? PAL.danger : PAL.warn); wy += 8; }
   drawText(ctx, `${(p.shipName ?? hull(p.hullId).name).toUpperCase()}  TORP ${p.torpedoes ?? 0}${p.seismic ? `  SEISMIC ${p.seismic}` : ""}`, 4, wy, PAL.greyDark);
   // heat: only shown when it matters
   const heat = p.heat ?? 0;

@@ -380,5 +380,19 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
       a foreman at the survey office with sample runs, outcrop runs and a
       plant to fix, paid on your return
 
+## Milestone 18 — A Life Aboard ✅ (Sep 2026)
+Time passes for the people on the ship, and for the ship.
+
+- [x] Crew count their dockings, have a home port and a trait, and ask for
+      shore leave (they keep their berth and wait for you), goods for the
+      galley or an anniversary, and letters carried home
+- [x] Illness: dock fever, gate sickness, the grey flu. No bonus while laid up;
+      med supplies cure it at the next dock, a medic halves it
+- [x] Retirement after thirty dockings: how you part matters to the rest of the
+      crew; alumni wave from the lounge and earn a plaque on the wall of record
+- [x] Wear: hours under way and every jump wear the ship. Past 50 the thrusters
+      lose their edge, past 70 systems fault. Yard service at any shipyard,
+      signed into a berth log; an engineer slows the wear
+
 ## Later
 - [ ] Cross-squadron rivalries and treaties

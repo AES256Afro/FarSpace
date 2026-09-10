@@ -2,8 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
-  missionDeliverable, genMissionsFor,
-} from "../src/world";
+  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew } from "../src/world";
 import { migrateSave, SAVE_VERSION, saveKeyFor, SLOTS } from "../src/save";
 import { RNG } from "../src/core/rng";
 import { STARS, starDistance } from "../src/data/stars";
@@ -757,5 +756,89 @@ describe("the missing convoy", () => {
     expect(CONVOY[0].card(g)).toContain("HARBOURMASTER");
     w.player.dockedAt = sy.partners[0];
     expect(CONVOY[1].check(g)).toBe(true);
+  });
+});
+
+describe("a life aboard", () => {
+  it("wear climbs under way and with jumps, costs thrust, throws faults, and a yard service clears it", () => {
+    const w = generateWorld(31, { realGalaxy: true });
+    const p = w.player;
+    p.wear = 0;
+    tickWear(p, 100);
+    expect(p.wear).toBeCloseTo(1.2, 3);
+    p.crew = [{ name: "A", role: "engineer", skill: 2, morale: 80, wage: 80 }];
+    p.wear = 0; tickWear(p, 100);
+    expect(p.wear).toBeLessThan(1.2); // an engineer slows it
+    p.crew = [];
+    jumpWear(p); jumpWear(p);
+    expect(p.wear).toBeGreaterThan(4);
+    p.wear = 100;
+    expect(wearThrust(p)).toBeCloseTo(0.9, 5);
+    p.wear = 40;
+    expect(wearThrust(p)).toBe(1);
+    expect(wearFault(p, new RNG(1))).toBeNull(); // below 70 nothing fails
+    p.wear = 120;
+    let faults = 0;
+    for (let i = 0; i < 20; i++) if (wearFault(p, new RNG(i))) faults++;
+    expect(faults).toBeGreaterThan(3);
+    const price = servicePrice(p);
+    expect(price).toBe(720);
+    serviceHull(p, "st", 10, price);
+    expect(p.wear).toBe(0);
+    expect(p.berthLog!.length).toBe(1);
+    expect(p.systems.every((s) => s.health >= 70)).toBe(true);
+  });
+
+  it("sick crew give no bonus, recover in time or with med supplies, and a medic shortens it", () => {
+    const w = generateWorld(32, { realGalaxy: true });
+    const p = w.player;
+    const c = { name: "B", role: "pilot" as const, skill: 3, morale: 20, wage: 50 };
+    p.crew = [c];
+    p.cargo = {};
+    let kind: string | null = null;
+    for (let i = 0; i < 60 && !kind; i++) kind = crewFallsIll(p, c, 1000, new RNG(i));
+    expect(kind).not.toBeNull();
+    expect(crewBonus(p, "pilot")).toBe(0);
+    expect(crewRecover(c, 1001)).toBe(false);
+    expect(crewRecover(c, 1000 + 1000)).toBe(true);
+    expect(crewBonus(p, "pilot")).toBe(1.5); // low morale halves it
+    c.sick = { kind: "the grey flu", until: 5000 };
+    expect(crewTreat(p, c)).toBe(false); // no med aboard
+    p.cargo.med = 1;
+    expect(crewTreat(p, c)).toBe(true);
+    expect(p.cargo.med ?? 0).toBe(0);
+    expect(c.sick).toBeNull();
+    // a medic aboard halves the lay-up
+    p.crew = [c, { name: "M", role: "medic", skill: 1, morale: 80, wage: 35 }];
+    let k2: string | null = null;
+    for (let i = 0; i < 60 && !k2; i++) k2 = crewFallsIll(p, c, 2000, new RNG(i));
+    const dur = c.sick!.until - 2000;
+    expect(dur).toBeLessThanOrEqual(240);
+  });
+
+  it("crew on leave keep their berth, come back when you dock there, and give up after enough dockings", () => {
+    const w = generateWorld(33, { realGalaxy: true });
+    const p = w.player;
+    const a = { name: "A", role: "gunner" as const, skill: 1, morale: 50, wage: 55 };
+    const b = { name: "B", role: "medic" as const, skill: 1, morale: 50, wage: 35 };
+    p.crew = [a, b];
+    sendOnLeave(p, a, "st1");
+    expect(p.crew.length).toBe(1);
+    expect(berthsUsed(p)).toBe(2);
+    let r = collectShoreCrew(p, "st2", 3);
+    expect(r.back.length).toBe(0); expect(r.gone.length).toBe(0);
+    r = collectShoreCrew(p, "st1", 3);
+    expect(r.back[0]).toBe(a);
+    expect(p.crew.length).toBe(2);
+    expect(a.morale).toBe(80);
+    sendOnLeave(p, b, "st1");
+    for (let i = 0; i < 7; i++) r = collectShoreCrew(p, "st9", 3);
+    expect(r.gone.length).toBe(0);
+    r = collectShoreCrew(p, "st9", 3);
+    expect(r.gone[0]).toBe(b);
+    expect(p.shoreCrew!.length).toBe(0);
+    const al = retireCrew(p, a, "st1", 50);
+    expect(p.alumni![0]).toBe(al);
+    expect(p.crew.length).toBe(0);
   });
 });

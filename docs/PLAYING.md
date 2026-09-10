@@ -101,6 +101,20 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   board: sample runs, outcrop runs, and a plant to fix on the spot. Jobs pay
   out when you walk back in.
 
+## A life aboard
+
+- Crew count their dockings and remember their home port. Now and then one asks
+  for shore leave (they keep their berth and wait where you left them, for
+  eight dockings), for goods for the galley, or for a letter carried home.
+- People get sick. A laid-up crew member gives no bonus until it runs its
+  course; med supplies in the hold cure it at the next dock, and a medic
+  halves the lay-up.
+- After thirty dockings someone may want to go home. Send them off with a
+  bonus and the rest of the crew remember it; alumni wave from the lounge.
+- The ship wears: hours under way and every jump. Past 50% the thrusters lose
+  their edge; past 70% systems start to fault. YARD SERVICE at any shipyard
+  clears it and signs the berth log. An engineer aboard slows the wear.
+
 ## Politics and the second campaign
 
 - Faction envoys meet you at the airlock: an amnesty for sale when you're
