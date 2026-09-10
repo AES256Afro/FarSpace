@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.65 - RITES OF PASSAGE", [
+    "A WEDDING ON THE BRIDGE, A BIRTH ON YOUR DECK, A PASSING BY THE VIEWPORT, AND TWO OF YOUR OWN ASKING YOU TO DO THE HONOURS.",
+  ]],
   ["0.64 - THE POST", [
     "EVERY CIVIL STATION HAS A MAIL BAG FOR THE NEXT SHIP OUT. NO HOLD SPACE, SMALL PAY, AND SOMETIMES A LETTER IS FOR YOU.",
   ]],

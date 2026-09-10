@@ -66,7 +66,7 @@ fund; worlds to orbit and drive, wonders to find by rumour and see with your
 own eyes, and the Ark to board.
 
 **Stories.** Three campaigns (The Signal, The Missing Convoy, The Keeper),
-thirty-five encounter cards, ten GalNet serials that develop over dockings and
+thirty-nine encounter cards, ten GalNet serials that develop over dockings and
 end in something you can act on, faction envoys, four AI syndicates with
 convoys, feuds and wars, a weekly calendar of occasions shared by everyone,
 and a line of history for every system and world.
@@ -100,7 +100,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestones 1–64 are live (v0.64.0). See the [roadmap](docs/ROADMAP.md) for what's next.
+Milestones 1–65 are live (v0.65.0). See the [roadmap](docs/ROADMAP.md) for what's next.
 
 ```bash
 npm test         # vitest: world-gen, routing, economy, law, missions, save migrations

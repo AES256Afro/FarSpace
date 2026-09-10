@@ -229,6 +229,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Rites of passage
+
+- Long runs carry lives. A couple among your passengers may ask you to marry
+  them on the bridge; a refugee may give birth on your deck (a medic helps); an
+  elder may die quietly by the viewport; and two crew who've grown close will
+  eventually ask you to do the honours in the galley. Each one goes in the
+  chronicle.
+
 ## The post
 
 - Every civil station's board has a mail bag for a nearby station. It takes no

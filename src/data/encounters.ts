@@ -2,7 +2,7 @@
 // applies real effects and returns the line the player reads afterwards.
 
 import type { Game } from "../game";
-import { addCargo, removeCargo, adjustRep, hasIllegalCargo, cargoUsed, genCrewCandidate, adjustSynRep, passengersAboard, berthsUsed, adoptCat, CAT_NAMES, shiftBond, logSight, crewXp } from "../world";
+import { addCargo, removeCargo, adjustRep, hasIllegalCargo, cargoUsed, genCrewCandidate, adjustSynRep, passengersAboard, berthsUsed, adoptCat, CAT_NAMES, shiftBond, logSight, crewXp, bond, logEntry } from "../world";
 import { hull } from "./hulls";
 import { RNG } from "../core/rng";
 import { addMaterials } from "./engineering";
@@ -348,6 +348,38 @@ export const ENCOUNTERS: Encounter[] = [
     options: [
       { label: "STRIP IT FOR PARTS", result: (g, rng) => rng.chance(0.7) ? "THE DRIVE MOTORS ARE STILL GOOD. A CRATE OF PARTS FOR THE HOLD." + (addCargo(p(g), "parts", 1) ? "" : " (NO ROOM. YOU LEAVE THEM BY THE WHEEL.)") : `THE MOTORS ARE DEAD, BUT THE FRAME IS GOOD ALLOY. ${mats(g, { iron: 2, nickel: 1 })}.` },
       { label: "FINISH THE LOGBOOK PAGE AND LEAVE IT", result: (g) => { p(g).expData = (p(g).expData ?? 0) + 25; for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 2); return "YOU WRITE THE DATE, YOUR CALL SIGN, AND 'FOUND. NOT FORGOTTEN.' THE CREW WAIT BY THE HATCH. +25 DATA."; } },
+    ],
+  },
+  {
+    id: "wedding", where: "space", weight: 2, title: "A WEDDING", when: (g) => passengersAboard(p(g)).some((m) => (m.party ?? 1) >= 2),
+    text: "Two of your passengers come to the bridge holding hands and a piece of paper. They'd meant to do it at the other end. They've decided they'd rather do it here, in the dark, with the engines humming. A captain can, they've heard.",
+    options: [
+      { label: "OFFICIATE", result: (g, rng) => { const m = passengersAboard(p(g)).find((x) => (x.party ?? 1) >= 2); if (!m) return "THE MOMENT PASSES. THE LOUNGE IS EMPTY."; m.mood = Math.min(100, (m.mood ?? 60) + 25); for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 6); logEntry(g.world, `Married two passengers on the bridge, bound for ${g.world.systems[m.targetSystemId]?.name ?? "somewhere"}`); (g.world.mailQueue ??= []).push({ dueT: g.world.time + rng.int(400, 1200), from: `${m.passengerName ?? "The couple"}`, text: "We framed the paper. Your name is on it. Thank you for the dark and the engines.", gift: { credits: rng.int(80, 200) } }); return "THE CREW STAND ALONG THE CORRIDOR. THE ENGINEER PRODUCES A RING MADE OF WIRE. YOU SAY THE WORDS. SOMEBODY CRIES; IT MIGHT BE YOUR GUNNER."; } },
+      { label: "AT THE STATION, PROPERLY", result: (g) => { const m = passengersAboard(p(g)).find((x) => (x.party ?? 1) >= 2); if (!m) return "THE MOMENT PASSES. THE LOUNGE IS EMPTY."; m.mood = Math.max(0, (m.mood ?? 60) - 5); return "THEY NOD, AND GO BACK TO THE LOUNGE, AND HOLD HANDS ALL THE WAY THERE ANYWAY."; } },
+    ],
+  },
+  {
+    id: "birth", where: "space", weight: 2, title: "A BIRTH", when: (g) => passengersAboard(p(g)).some((m) => m.passengerKind === "refugee" && (m.party ?? 1) >= 2),
+    text: "A shout from the lounge, then a different kind of shout. One of the refugees is having her baby, now, two jumps early, on your deck.",
+    options: [
+      { label: "THE MEDIC HAS IT", requires: (g) => p(g).crew.some((c) => c.role === "medic"), result: (g) => { const m = passengersAboard(p(g)).find((x) => x.passengerKind === "refugee"); if (!m) return "THE MOMENT PASSES. THE LOUNGE IS EMPTY."; m.party = (m.party ?? 1) + 1; m.mood = Math.min(100, (m.mood ?? 60) + 20); const x = crewXp(p(g), "medic"); logEntry(g.world, `A child born aboard, bound for ${g.world.systems[m.targetSystemId]?.name ?? "somewhere"}`); return `FORTY MINUTES. A SMALL, FURIOUS PERSON. ${p(g).shipName ? `THEY WANT TO NAME HER AFTER THE SHIP. YOU TALK THEM INTO A MIDDLE NAME.` : "THE MEDIC WASHES UP AND SAYS NOTHING FOR AN HOUR."}${x ? " " + x : ""}`; } },
+      { label: "YOU AND THE MANUAL", result: (g, rng) => { const m = passengersAboard(p(g)).find((x) => x.passengerKind === "refugee"); if (!m) return "THE MOMENT PASSES. THE LOUNGE IS EMPTY."; m.party = (m.party ?? 1) + 1; if (rng.chance(0.7)) { m.mood = Math.min(100, (m.mood ?? 60) + 15); logEntry(g.world, "Delivered a child aboard with the manual open on the deck"); return "THE MANUAL IS OPEN ON THE DECK AND NOBODY READS IT. IT GOES FINE. IT GOES FINE. YOUR HANDS SHAKE FOR AN HOUR AFTERWARDS."; } m.mood = Math.min(100, (m.mood ?? 60) + 5); return "IT'S ROUGH, AND LONG, AND EVERYONE LIVES. YOU'LL HIRE A MEDIC AT THE NEXT PORT. YOU SWEAR IT ON THE DECK PLATES."; } },
+    ],
+  },
+  {
+    id: "passing", where: "space", weight: 1, title: "A PASSING", when: (g) => passengersAboard(p(g)).some((m) => (m.party ?? 1) >= 3),
+    text: "The oldest of the party didn't wake up. Peacefully, in the seat by the viewport, with the stars going by. The others are very quiet. They're looking at you.",
+    options: [
+      { label: "A SERVICE AT THE VIEWPORT", result: (g) => { const m = passengersAboard(p(g)).find((x) => (x.party ?? 1) >= 3); if (!m) return "THE MOMENT PASSES. THE LOUNGE IS EMPTY."; m.mood = Math.max(0, (m.mood ?? 60) - 5); for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 2); logEntry(g.world, "Read a service at the viewport for a passenger who died on the way"); return "YOU CUT THE ENGINES FOR TEN MINUTES. THE CREW COME. YOU READ WHAT THE FAMILY GIVE YOU TO READ. THE STARS DON'T MOVE. THEN THEY DO AGAIN."; } },
+      { label: "KEEP FLYING. SAY NOTHING.", result: (g) => { const m = passengersAboard(p(g)).find((x) => (x.party ?? 1) >= 3); if (!m) return "THE MOMENT PASSES. THE LOUNGE IS EMPTY."; m.mood = Math.max(0, (m.mood ?? 60) - 25); return "THE ENGINES DON'T STOP. NOBODY IN THE LOUNGE SAYS A WORD TO YOU FOR THE REST OF THE TRIP."; } },
+    ],
+  },
+  {
+    id: "crewwedding", where: "space", weight: 2, title: "TWO OF YOUR OWN", when: (g) => { const cr = p(g).crew; return cr.some((a) => cr.some((b) => a !== b && bond(a, b) >= 3)) && !p(g).flags?.crewWed; },
+    text: "Two of your crew are waiting outside the cabin, not quite looking at each other. They've been putting this off since the last three ports. They'd like the captain to do it. Here. Now, if that's all right.",
+    options: [
+      { label: "OF COURSE", result: (g) => { const cr = p(g).crew; const a = cr.find((x) => cr.some((y) => x !== y && bond(x, y) >= 3)); const b = a ? cr.find((y) => y !== a && bond(a, y) >= 3) : undefined; if (!a || !b) return "THE MOMENT PASSES."; for (const c of cr) c.morale = Math.min(100, c.morale + 10); a.loyalty = (a.loyalty ?? 0) + 1; b.loyalty = (b.loyalty ?? 0) + 1; (p(g).flags ??= {}).crewWed = true; logEntry(g.world, `Married ${a.name} and ${b.name} in the galley`); return `THE GALLEY, A TABLECLOTH, THE CAT ON THE TABLE. ${a.name.toUpperCase()} AND ${b.name.toUpperCase()}. THE WHOLE SHIP IS LATE FOR ITS WATCH AND NOBODY MINDS.`; } },
+      { label: "WAIT FOR A PORT AND DO IT RIGHT", result: (g) => { const cr = p(g).crew; for (const c of cr) if (cr.some((y) => y !== c && bond(c, y) >= 3)) c.morale = Math.max(0, c.morale - 4); return "THEY SAY THAT'S FAIR. THEY DON'T LOOK LIKE IT'S FAIR."; } },
     ],
   },
 ];

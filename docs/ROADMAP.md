@@ -622,4 +622,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Mail bag missions at every civil station: no cargo, small pay, standing,
       letters from strangers; THE POSTMAN achievement
 
+## Milestone 65 — Rites of Passage ✅ (Sep 2026)
+- [x] A wedding, a birth, a passing among passengers; a crew wedding; all
+      logged in the chronicle
+
 ## Later
