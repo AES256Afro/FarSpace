@@ -246,6 +246,7 @@ export interface PlayerState {
   synRep?: Record<string, number>;   // syndicate tag → standing
   warPayout?: { tag: string; value: number } | null; // squadron treasury share owed after a won war
   encounters?: Record<string, number>; // encounter id → times seen
+  homesteads?: Homestead[];                           // claims staked on charted regions
   story?: number;                                     // The Signal: stage index; -1 = declined
   storyTarget?: { systemId: string; planetIdx: number; poiId: string } | null;
   storyVeil?: string | null;
@@ -256,6 +257,16 @@ export interface PlayerState {
 }
 
 export interface GroundState { taken: number[]; charted: boolean; scanned: number[] }
+
+// A claim on a charted region: it works the region's resource while you're away
+export interface Homestead { key: string; systemId: string; planetIdx: number; regionIdx: number; resource: string; stock: number; lastT: number; name: string }
+export const HOMESTEAD_PRICE = 2000;
+export const HOMESTEAD_CAP = 30;
+export function homesteadYield(h: Homestead, now: number): number {
+  const rate = 2 / 600; // two units per ten minutes of play
+  return Math.min(HOMESTEAD_CAP, h.stock + Math.max(0, now - h.lastT) * rate);
+}
+export function settleHomestead(h: Homestead, now: number): void { h.stock = homesteadYield(h, now); h.lastT = now; }
 
 export interface StoredShip { hullId: string; stationId: string; name?: string; hull: number; torpedoes: number }
 

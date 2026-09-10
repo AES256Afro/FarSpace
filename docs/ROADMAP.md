@@ -336,5 +336,11 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
       the beacon, the Herald) with a fight or a parley finale; objective on the
       HUD, the MISSIONS tab and the galaxy map
 
+- [x] Crew with lives: requests on docking (a bonus, a visit home, a course,
+      family trouble) as cards; loyalty that survives a bad week; skills that
+      grow when you look after people
+- [x] Homesteads: stake up to three claims on charted regions; they work the
+      region's resource while you're away, recharge and repair the rover fast
+
 ## Later
 - [ ] Cross-squadron rivalries and treaties

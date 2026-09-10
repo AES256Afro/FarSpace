@@ -222,7 +222,8 @@ export class InteriorScene implements Scene {
       if (crewNear) {
         const c = crewNear.c;
         const pool = c.morale >= 65 ? CREW_LINES[c.role].high : c.morale >= 30 ? CREW_LINES[c.role].mid : CREW_LINES[c.role].low;
-        this.talk = `${c.name.toUpperCase()} (${ROLE_INFO[c.role].label}, MORALE ${Math.round(c.morale)}): ${pool[Math.floor(Math.random() * pool.length)]}`;
+        const ask = c.request ? ` ...and about that stop I asked for.` : "";
+        this.talk = `${c.name.toUpperCase()} (${ROLE_INFO[c.role].label}, SKILL ${c.skill}, MORALE ${Math.round(c.morale)}${(c.loyalty ?? 0) >= 2 ? ", LOYAL" : ""}): ${pool[Math.floor(Math.random() * pool.length)]}${ask}`;
         this.talkTimer = 5;
         c.morale = Math.min(100, c.morale + 1);
       } else if (passenger && pSpot && dist(pSpot.tx * T + T / 2, pSpot.ty * T + T / 2, this.px, this.py) < 16) {

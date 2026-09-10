@@ -19,6 +19,9 @@ import { MODULES, hasModule, moduleDef } from "../data/modules";
 import { BLUEPRINTS, MATERIALS, engGrade, nextCost, canAfford, upgrade } from "../data/engineering";
 import { flag } from "../core/achievements";
 import { presence } from "../core/presence";
+import type { Encounter } from "../data/encounters";
+import type { EncounterScene } from "./encounter";
+import { CREW_LINES } from "../data/crew";
 import { storyObjective } from "../core/story";
 import { sfx } from "../core/sfx";
 import * as wire from "../core/wire";
@@ -90,6 +93,7 @@ export class StationScene implements Scene {
   settleCrew(g: Game): void {
     const p = g.world.player;
     if (!p.crew.length) return;
+    if (p.flags?.owedLeave) { delete p.flags.owedLeave; for (const c of p.crew) c.morale = Math.min(100, c.morale + 15); g.toast("SHORE LEAVE, AS PROMISED. CREW MORALE UP."); }
     const wages = crewWages(p);
     if (p.credits >= wages) { p.credits -= wages; g.toast(`CREW WAGES PAID -${wages}CR`); }
     else { for (const c of p.crew) c.morale = Math.max(0, c.morale - 20); g.toast("CAN'T PAY WAGES - CREW MORALE DROPS"); }
@@ -97,9 +101,60 @@ export class StationScene implements Scene {
       if ((p.cargo.food ?? 0) > 0) { removeCargo(p, "food", 1); c.morale = Math.min(100, c.morale + 8); }
       else c.morale = Math.max(0, c.morale - 15);
     }
-    const quitters = p.crew.filter((c) => c.morale <= 5);
+    const quitters = p.crew.filter((c) => c.morale <= 5 && (c.loyalty ?? 0) < 3);
     for (const q of quitters) g.toast(`${q.name.toUpperCase()} WALKED OFF THE SHIP`);
-    p.crew = p.crew.filter((c) => c.morale > 5);
+    for (const c of p.crew) if (c.morale <= 5 && (c.loyalty ?? 0) >= 3) { c.morale = 20; c.loyalty = (c.loyalty ?? 0) - 1; g.toast(`${c.name.toUpperCase()} STAYS OUT OF LOYALTY. DON'T PUSH IT.`); }
+    p.crew = p.crew.filter((c) => c.morale > 5 || (c.loyalty ?? 0) >= 2);
+    // pending visits: honoured here, or wearing thin
+    for (const c of p.crew) {
+      if (!c.request) continue;
+      if (c.request.stationId === this.station.id) {
+        c.request = null; c.morale = Math.min(100, c.morale + 30); c.loyalty = (c.loyalty ?? 0) + 1; c.skill = Math.min(3, c.skill + 1);
+        g.toast(`${c.name.toUpperCase()} COMES BACK ABOARD STEADIER, AND SHARPER. SKILL ${c.skill}.`);
+      } else if (++c.request.docks >= 4) { c.request = null; c.morale = Math.max(0, c.morale - 20); g.toast(`${c.name.toUpperCase()} STOPS ASKING. MORALE DOWN.`); }
+    }
+    this.crewRequest(g);
+  }
+
+  // Now and then somebody wants something. A card, a choice, a consequence.
+  crewRequest(g: Game): void {
+    const p = g.world.player;
+    if (!p.crew.length || (p.tutorial ?? -1) >= 0) return;
+    const rng = new RNG((g.world.seed ^ Math.floor(g.world.time) ^ 0xc4e) >>> 0);
+    if (!rng.chance(0.22)) return;
+    const c = rng.pick(p.crew.filter((x) => !x.request));
+    if (!c) return;
+    const name = c.name.toUpperCase();
+    const kinds = ["leave", "visit", "training", "family"] as const;
+    const kind = c.morale < 30 ? "leave" : rng.pick(kinds);
+    const opts: Encounter["options"] = [];
+    let text = "";
+    if (kind === "leave") {
+      text = `${name} CORNERS YOU IN THE CORRIDOR. '${CREW_LINES[c.role].low[0]} I'VE GOT AN OFFER ON THIS STATION. GIVE ME A REASON TO STAY.'`;
+      opts.push({ label: "A 150CR BONUS", requires: (g2) => g2.world.player.credits >= 150, result: (g2) => { g2.world.player.credits -= 150; c.morale = Math.min(100, c.morale + 35); c.loyalty = (c.loyalty ?? 0) + 1; return `${name} POCKETS IT AND ALMOST SMILES. MORALE UP.`; } });
+      opts.push({ label: "PROMISE SHORE LEAVE NEXT DOCK", result: (g2) => { c.morale = Math.min(100, c.morale + 10); (g2.world.player.flags ??= {}).owedLeave = true; return `${name} NODS. YOU'LL BE HELD TO THAT.`; } });
+      opts.push({ label: "TAKE THE OFFER, THEN", result: (g2) => { g2.world.player.crew = g2.world.player.crew.filter((x) => x !== c); return `${name} PACKS IN TEN MINUTES. THE BERTH IS EMPTY BY THE TIME YOU UNDOCK.`; } });
+    } else if (kind === "visit") {
+      const linked = g.world.systems[p.systemId].links.map((l) => g.world.systems[l]).filter((s) => s.stations.length);
+      const target = linked.length ? rng.pick(linked) : null;
+      const st = target ? rng.pick(target.stations) : null;
+      if (!st) return;
+      text = `${name} ASKS FOR A WORD. 'MY PEOPLE ARE ON ${st.name.toUpperCase()}, ${target!.name.toUpperCase()}. I HAVEN'T SEEN THEM IN A YEAR. IF WE'RE EVER PASSING...'`;
+      opts.push({ label: "WE'LL MAKE THE STOP", hint: "Dock there within a few dockings", result: () => { c.request = { kind: "visit", stationId: st.id, docks: 0 }; return `${name} STANDS A LITTLE STRAIGHTER. ${st.name.toUpperCase()} IS ON THE LOG.`; } });
+      opts.push({ label: "NOT THIS RUN", result: () => { c.morale = Math.max(0, c.morale - 8); return `${name} SAYS IT'S FINE. IT ISN'T.`; } });
+    } else if (kind === "training") {
+      if (c.skill >= 3) return;
+      text = `${name} HAS FOUND A COURSE ON THE STATION. '${ROLE_INFO[c.role].label} CERTIFICATION. THREE HUNDRED, AND I COME BACK BETTER AT THIS.'`;
+      opts.push({ label: "PAY 300CR FOR THE COURSE", requires: (g2) => g2.world.player.credits >= 300, result: (g2) => { g2.world.player.credits -= 300; c.skill = Math.min(3, c.skill + 1); c.loyalty = (c.loyalty ?? 0) + 1; return `${name} RETURNS WITH A CERTIFICATE AND OPINIONS. SKILL ${c.skill}.`; } });
+      opts.push({ label: "MAYBE NEXT TIME", result: () => { c.morale = Math.max(0, c.morale - 5); return `${name} SHRUGS. THE COURSE RUNS AGAIN SOMEWHERE.`; } });
+    } else {
+      text = `${name} WON'T QUITE MEET YOUR EYE. 'FAMILY TROUBLE BACK HOME. TWO HUNDRED WOULD FIX IT. I'D TAKE IT OFF MY WAGES.'`;
+      opts.push({ label: "SEND 200CR, NO STRINGS", requires: (g2) => g2.world.player.credits >= 200, result: (g2) => { g2.world.player.credits -= 200; c.morale = Math.min(100, c.morale + 25); c.loyalty = (c.loyalty ?? 0) + 2; return `${name} DOESN'T SAY THANK YOU. ${name} DOESN'T HAVE TO.`; } });
+      opts.push({ label: "ADVANCE IT AGAINST WAGES", requires: (g2) => g2.world.player.credits >= 200, result: (g2) => { g2.world.player.credits -= 200; c.wage += 10; c.morale = Math.min(100, c.morale + 10); return `${name} AGREES TO THE TERMS. WAGE +10 UNTIL IT'S SQUARE.`; } });
+      opts.push({ label: "CAN'T RIGHT NOW", result: () => { c.morale = Math.max(0, c.morale - 12); return `${name} NODS AND GOES BACK TO WORK. QUIETER THAN BEFORE.`; } });
+    }
+    const enc: Encounter = { id: `crew-${kind}`, where: "space", title: `${name} - ${ROLE_INFO[c.role].label}`, text, weight: 0, options: opts };
+    (g.scenes["encounter"] as EncounterScene).open(g, enc, "station", true);
   }
 
   update(g: Game, dt: number): void {

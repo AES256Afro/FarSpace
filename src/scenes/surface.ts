@@ -15,7 +15,8 @@ import * as wire from "../core/wire";
 import { flag } from "../core/achievements";
 import { gainMaterials } from "../core/materials";
 import { GW, GH, GT, WATER, PLAIN, HILLS, MOUNTAIN, HAZARD, SAND, BIOMES, genGround, groundKey, passable, GroundMap, GroundNode } from "../ground";
-import { adjustRep, addCargo, groundProgress, GroundState } from "../world";
+import { adjustRep, addCargo, groundProgress, GroundState, HOMESTEAD_PRICE, homesteadYield, settleHomestead } from "../world";
+import { commodity } from "../data/data";
 import { engGrade } from "../data/engineering";
 import { faction } from "../data/data";
 
@@ -190,8 +191,31 @@ export class SurfaceScene implements Scene {
     }
     // lander
     const nearLander = Math.hypot(this.px - (this.map.lander.x * GT + GT / 2), this.py - (this.map.lander.y * GT + GT / 2)) < 22;
+    const home = (p.homesteads ?? []).find((h) => h.key === this.map.key);
     if (nearLander) {
-      this.power = Math.min(100, this.power + dt * 12);
+      this.power = Math.min(100, this.power + dt * (home ? 30 : 12));
+      if (home && this.integrity < 100) this.integrity = Math.min(100, this.integrity + dt * 4);
+      if (inp.wasPressed("h")) {
+        if (home) {
+          settleHomestead(home, g.world.time);
+          const n = Math.floor(home.stock);
+          if (n <= 0) this.say("THE CLAIM HAS NOTHING STOCKPILED YET. COME BACK LATER.");
+          else if (addCargo(p, home.resource, n)) { home.stock -= n; this.say(`COLLECTED ${n} ${commodity(home.resource).name.toUpperCase()} FROM THE CLAIM`); sfx.pickup(); p.mined = (p.mined ?? 0) + n; }
+          else this.say("CARGO FULL");
+        } else if (!this.state.charted) this.say("CHART THE REGION FIRST");
+        else if ((p.homesteads ?? []).length >= 3) this.say("THREE CLAIMS IS THE LEGAL LIMIT");
+        else if (p.credits < HOMESTEAD_PRICE) this.say(`A CLAIM COSTS ${HOMESTEAD_PRICE}CR`);
+        else {
+          p.credits -= HOMESTEAD_PRICE;
+          const sys = g.world.systems[p.systemId];
+          const region = sys.planets[g.orbitPlanetIdx].surface!.regions[g.landedRegionIdx];
+          (p.homesteads ??= []).push({ key: this.map.key, systemId: sys.id, planetIdx: g.orbitPlanetIdx, regionIdx: g.landedRegionIdx, resource: region.resource, stock: 0, lastT: g.world.time, name: `${region.name} Claim` });
+          this.say(`CLAIM STAKED: ${region.name.toUpperCase()} WORKS ${commodity(region.resource).name.toUpperCase()} WHILE YOU'RE AWAY`);
+          flag(g, "homesteader");
+          sfx.dock();
+          void wire.post("discovery", `staked a claim on ${sys.planets[g.orbitPlanetIdx].name}, ${region.name}`, sys.name);
+        }
+      }
       if (this.integrity < 100 && (p.cargo["parts"] ?? 0) > 0 && inp.wasPressed("r")) { p.cargo["parts"]--; this.integrity = Math.min(100, this.integrity + 40); this.say("ROVER PATCHED (-1 SPARE PARTS)"); sfx.repair(); }
       if (inp.wasPressed("e")) { this.leave(g); return; }
     }
@@ -320,6 +344,13 @@ export class SurfaceScene implements Scene {
       ctx.fillStyle = PAL.hull; ctx.fillRect(lx - 5, ly - 6, 10, 4);
       ctx.fillStyle = PAL.ui; ctx.fillRect(lx - 1, ly - 7, 2, 1);
       drawText(ctx, "LANDER", lx - 12, ly - 15, PAL.grey);
+      if ((g.world.player.homesteads ?? []).some((h) => h.key === this.map.key)) {
+        ctx.fillStyle = "#3a4468"; ctx.fillRect(lx + 12, ly - 8, 16, 12);
+        ctx.fillStyle = PAL.hull; ctx.fillRect(lx + 14, ly - 6, 12, 8);
+        ctx.fillStyle = PAL.gold; ctx.fillRect(lx + 19, ly - 10, 2, 2);
+        ctx.fillStyle = PAL.ui; ctx.fillRect(lx + 16, ly - 3, 2, 2);
+        drawText(ctx, "CLAIM", lx + 11, ly - 15, PAL.gold);
+      }
     }
     // entrances
     for (const e of this.map.entrances) {
@@ -413,7 +444,11 @@ export class SurfaceScene implements Scene {
     const ent = this.map.entrances.find((e) => Math.abs(e.x - tx) <= 1 && Math.abs(e.y - ty) <= 1);
     const nearLander = Math.hypot(this.px - (this.map.lander.x * GT + GT / 2), this.py - (this.map.lander.y * GT + GT / 2)) < 22;
     let prompt = "";
-    if (nearLander) prompt = `[E] LIFT OFF TO ORBIT${this.integrity < 100 && (g.world.player.cargo["parts"] ?? 0) > 0 ? "   [R] PATCH ROVER (1 PARTS)" : ""}   RECHARGING`;
+    if (nearLander) {
+      const home = (g.world.player.homesteads ?? []).find((h) => h.key === this.map.key);
+      const claim = home ? `   [H] COLLECT ${Math.floor(homesteadYield(home, g.world.time))} ${commodity(home.resource).name.toUpperCase()}` : this.state.charted && (g.world.player.homesteads ?? []).length < 3 ? `   [H] STAKE A CLAIM (${HOMESTEAD_PRICE}CR)` : "";
+      prompt = `[E] LIFT OFF${this.integrity < 100 && (g.world.player.cargo["parts"] ?? 0) > 0 ? "   [R] PATCH (1 PARTS)" : ""}${claim}   ${home ? "HOMESTEAD: FAST RECHARGE + REPAIR" : "RECHARGING"}`;
+    }
     else if (ent) prompt = ent.kind === "defense" ? `${ent.name.toUpperCase()}: MILITARY - NO ENTRY` : `[E] ENTER ${ent.name.toUpperCase()}`;
     else if (node) prompt = node.kind === "flora" ? `${node.label}: HOLD V TO SCAN` : node.kind === "geyser" ? `${node.label}: KEEP CLEAR` : `[E] ${node.kind === "outcrop" ? "MINE" : node.kind === "probe" ? "RECOVER" : "SALVAGE"} ${node.label}`;
     if (prompt) drawText(ctx, prompt, VW / 2 - textWidth(prompt) / 2, VH - 22, PAL.gold);

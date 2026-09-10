@@ -16,6 +16,7 @@ import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
 import { ENCOUNTERS, pickEncounter } from "../src/data/encounters";
 import { STORY, storyObjective } from "../src/core/story";
+import { homesteadYield, settleHomestead, HOMESTEAD_CAP } from "../src/world";
 import { genGround, groundKey, passable, GW, GH } from "../src/ground";
 import { BLUEPRINTS, upgrade, addMaterials, nextCost, MATERIAL_CAP } from "../src/data/engineering";
 import { jumpFuelCost, communityGoal, weekKey, permitDenied, navRoute, blackMarket, genMissionsFor, groundProgress, missionDeliverable } from "../src/world";
@@ -655,5 +656,15 @@ describe("the signal", () => {
     poi.looted = true;
     expect(STORY[2].check(g)).toBe(true);
     for (let i = 3; i < STORY.length; i++) expect(typeof STORY[i].objective(w)).toBe("string");
+  });
+});
+
+describe("homesteads", () => {
+  it("accumulate their resource over play time and cap", () => {
+    const h = { key: "k", systemId: "s", planetIdx: 0, regionIdx: 0, resource: "ore", stock: 0, lastT: 0, name: "Claim" };
+    expect(homesteadYield(h, 600)).toBeCloseTo(2, 5);
+    settleHomestead(h, 3000);
+    expect(h.stock).toBeCloseTo(10, 5);
+    expect(homesteadYield(h, 1e9)).toBe(HOMESTEAD_CAP);
   });
 });

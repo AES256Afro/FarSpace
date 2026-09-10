@@ -167,6 +167,8 @@ export class GalaxyScene implements Scene {
       { const st = w.player.story ?? 0; const t = w.player.storyTarget; if (st === 2 && t?.systemId === sys.id) { drawText(ctx, "THE SIGNAL: THE RUIN IS HERE", px + 6, y, PAL.info); y += 9; } if (st === 4 && w.player.storyVeil === sys.id) { drawText(ctx, "THE SIGNAL: THE VEIL LISTEN HERE", px + 6, y, PAL.info); y += 9; } if (st === 5 && w.player.storyOrigin === sys.id) { drawText(ctx, "THE SIGNAL: THE COUNT ENDS HERE", px + 6, y, PAL.info); y += 9; } }
       const lvl = w.player.expLog?.[sys.id] ?? 0;
       drawText(ctx, lvl === 2 ? "LOGGED: DETAILED" : lvl === 1 ? "LOGGED: BASIC" : "UNLOGGED", px + 6, y, lvl ? PAL.grey : PAL.greyDark); y += 9;
+      const homes = (w.player.homesteads ?? []).filter((h) => h.systemId === sys.id);
+      if (homes.length) { drawText(ctx, `HOMESTEAD: ${homes.map((h) => sys.planets[h.planetIdx].name).join(", ")}`.slice(0, 27), px + 6, y, PAL.gold); y += 9; }
       const first = w.player.firsts?.[sys.id];
       if (first) { drawText(ctx, `FIRST: ${first}`.slice(0, 27), px + 6, y, PAL.gold); y += 9; }
       if (w.player.bookmarks?.includes(sys.id)) { drawText(ctx, "BOOKMARKED (B)", px + 6, y, PAL.gold); y += 9; }

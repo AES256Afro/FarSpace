@@ -8,6 +8,8 @@ export interface CrewMember {
   skill: number;   // 1..3
   morale: number;  // 0..100
   wage: number;    // credits per docking
+  request?: { kind: "visit"; stationId: string; docks: number } | null; // a personal ask, pending
+  loyalty?: number; // grows when you look after them; loyal crew don't quit over one bad week
 }
 
 export const ROLE_INFO: Record<CrewRole, { label: string; effect: string; baseWage: number }> = {

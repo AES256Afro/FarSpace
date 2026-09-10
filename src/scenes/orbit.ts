@@ -204,7 +204,8 @@ export class OrbitScene implements Scene {
       if (ri === roverRegion) { ctx.fillStyle = "#13203a"; ctx.fillRect(px - 4, y - 2, VW - px, 10); }
       ctx.fillStyle = r.color; ctx.fillRect(px, y + 1, 4, 4);
       const charted = p.ground?.[`${sys.id}:${g.orbitPlanetIdx}:${ri}`]?.charted;
-      drawText(ctx, `${r.name}`.slice(0, 16) + (charted ? " *" : ""), px + 7, y, ri === roverRegion ? PAL.white : PAL.grey);
+      const home = (p.homesteads ?? []).some((h) => h.systemId === sys.id && h.planetIdx === g.orbitPlanetIdx && h.regionIdx === ri);
+      drawText(ctx, `${r.name}`.slice(0, 16) + (home ? " H" : charted ? " *" : ""), px + 7, y, home ? PAL.gold : ri === roverRegion ? PAL.white : PAL.grey);
       drawText(ctx, fac ? fac.name.split(" ")[0] : "UNCLAIMED", px + 76, y, fac ? fac.color : PAL.greyDark);
       drawText(ctx, r.resource.toUpperCase(), px + 176, y, PAL.gold);
       y += 8;
