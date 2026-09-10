@@ -138,6 +138,34 @@ export class InteriorScene implements Scene {
   talkIdx = 0;
   cat = { x: 0, y: 0, tx: 0, ty: 0, pause: 1, sat: false };
   crewPos: { x: number; y: number; tx: number; ty: number; pause: number }[] = [];
+  paxPos: Record<string, { x: number; y: number; tx: number; ty: number; pause: number }> = {};
+  // passengers stretch their legs: the seat, the galley, the viewport, back to the seat
+  wanderPassengers(p: import("../world").PlayerState, dt: number): void {
+    const seat = nearestTile(this.deck, 0, 0, "p", 1e9); if (!seat) return;
+    const aboard = passengersAboard(p);
+    for (const id of Object.keys(this.paxPos)) if (!aboard.some((m) => m.id === id)) delete this.paxPos[id];
+    aboard.forEach((m, i) => {
+      let pp = this.paxPos[m.id];
+      const home = { x: seat.tx * T + T / 2 + ([0, -8, 8][i] ?? 0), y: seat.ty * T + T / 2 + (i ? 4 : 0) };
+      if (!pp) { pp = { x: home.x, y: home.y, tx: home.x, ty: home.y, pause: 8 + Math.random() * 10 }; this.paxPos[m.id] = pp; }
+      if (pp.pause > 0) { pp.pause -= dt; return; }
+      const d = Math.hypot(pp.tx - pp.x, pp.ty - pp.y);
+      if (d < 1.5) {
+        pp.pause = 8 + Math.random() * 16;
+        const goHome = Math.random() < 0.6;
+        const dest = goHome ? null : nearestTile(this.deck, pp.x, pp.y, Math.random() < 0.5 ? "K" : "C", 1e9);
+        if (!dest) { pp.tx = home.x; pp.ty = home.y; }
+        else { const dx = this.tileAt(dest.tx + 1, dest.ty) === "." ? 1 : this.tileAt(dest.tx - 1, dest.ty) === "." ? -1 : 0; pp.tx = (dest.tx + dx) * T + T / 2; pp.ty = dest.ty * T + T / 2; }
+      } else {
+        const step = 12 * dt; const nx = pp.x + ((pp.tx - pp.x) / d) * step, ny = pp.y + ((pp.ty - pp.y) / d) * step;
+        if (!this.solid(Math.floor(nx / T), Math.floor(ny / T))) { pp.x = nx; pp.y = ny; } else { pp.tx = pp.x; pp.ty = pp.y; }
+      }
+    });
+  }
+  passengerNear(p: import("../world").PlayerState): import("../world").Mission | null {
+    for (const m of passengersAboard(p)) { const pp = this.paxPos[m.id]; if (pp && dist(pp.x, pp.y, this.px, this.py) < 16) return m; }
+    return null;
+  }
   // where each crew member is right now: their post, or wandering between the galley, the bunks and the bridge
   crewAt(i: number): { x: number; y: number } | null {
     const sp = this.crewSpots()[i]; if (!sp) return null;
@@ -287,6 +315,7 @@ export class InteriorScene implements Scene {
     const fire = p.fires.find((f) => dist(f.tx * T + T / 2, f.ty * T + T / 2, this.px, this.py) < 16);
     const breach = p.breaches.find((b) => dist(b.tx * T + T / 2, b.ty * T + T / 2, this.px, this.py) < 16);
     this.wanderCrew(p, dt);
+    this.wanderPassengers(p, dt);
     const crewNear = p.crew.map((c, i) => ({ c, spot: this.crewSpots()[i], at: this.crewAt(i) })).find((x) => x.at && dist(x.at.x, x.at.y, this.px, this.py) < 16);
     const passenger = p.missions.find((m) => m.kind === "passenger" && m.accepted && !m.done);
     const pSpot = nearestTile(this.deck, this.px, this.py, "p");
@@ -340,10 +369,9 @@ export class InteriorScene implements Scene {
         this.talk = `${c.name.toUpperCase()} (${ROLE_INFO[c.role].label}, SKILL ${c.skill}, MORALE ${Math.round(c.morale)}${(c.loyalty ?? 0) >= 2 ? ", LOYAL" : ""}, ${c.docks ?? 0} DOCKINGS): ${line}${ask}${bondNote}`;
         this.talkTimer = 5;
         c.morale = Math.min(100, c.morale + 1);
-      } else if (passenger && pSpot && dist(pSpot.tx * T + T / 2, pSpot.ty * T + T / 2, this.px, this.py) < 16) {
-        // several fares share the bunk room: each press of E is a different one
-        const all = passengersAboard(p);
-        const px = all[this.talkIdx % all.length]; this.talkIdx++;
+      } else if (passenger && this.passengerNear(p)) {
+        // whoever you're standing beside
+        const px = this.passengerNear(p)!;
         const mood = px.mood ?? 60;
         const pool = mood >= 75 ? PASSENGER_LINES[px.passengerKind ?? "vip"].high : mood >= 35 ? PASSENGER_LINES[px.passengerKind ?? "vip"].mid : PASSENGER_LINES[px.passengerKind ?? "vip"].low;
         const want = px.demand ? ` ...${commodity(px.demand).name} would make the trip, if you see any.` : px.passengerKind === "tourist" && !px.sightSeen ? " ...and when do we see it?" : "";
@@ -524,9 +552,11 @@ export class InteriorScene implements Scene {
     if (passenger && pSpot) {
       const all = passengersAboard(p);
       all.forEach((px, i) => {
+        const pp = this.paxPos[px.id];
         const ofs = [[0, 0], [-8, 4], [8, 4]][i] ?? [0, 8];
-        drawPerson(ctx, ox + pSpot.tx * T + T / 2 + ofs[0], oy + pSpot.ty * T + T / 2 + ofs[1], "#f0d0b0", px.passengerKind === "vip" ? "#c7a54a" : px.passengerKind === "refugee" ? "#6a7a9c" : px.passengerKind === "tourist" ? "#5ab3ff" : "#7a5aa5");
-        if ((px.mood ?? 60) < 35 && Math.floor(g.world.time * 2) % 2 === 0) { ctx.fillStyle = PAL.warn; ctx.fillRect(ox + pSpot.tx * T + T / 2 + ofs[0] + 3, oy + pSpot.ty * T + ofs[1], 2, 2); }
+        const x = pp ? ox + pp.x : ox + pSpot.tx * T + T / 2 + ofs[0], y = pp ? oy + pp.y : oy + pSpot.ty * T + T / 2 + ofs[1];
+        drawPerson(ctx, Math.round(x), Math.round(y), "#f0d0b0", px.passengerKind === "vip" ? "#c7a54a" : px.passengerKind === "refugee" ? "#6a7a9c" : px.passengerKind === "tourist" ? "#5ab3ff" : "#7a5aa5");
+        if ((px.mood ?? 60) < 35 && Math.floor(g.world.time * 2) % 2 === 0) { ctx.fillStyle = PAL.warn; ctx.fillRect(Math.round(x) + 3, Math.round(y) - 5, 2, 2); }
       });
     }
 
@@ -563,7 +593,7 @@ export class InteriorScene implements Scene {
     else if (fire) tooltip(ctx, ox, oy, fire.tx, fire.ty, "FIRE", "[HOLD E] EXTINGUISH", PAL.danger);
     else if (breach) tooltip(ctx, ox, oy, breach.tx, breach.ty, "HULL BREACH", "[HOLD E] SEAL (1 PART)", PAL.danger);
     else if (crewNear) tooltip(ctx, ox, oy, Math.floor(crewNear.at!.x / T), Math.floor(crewNear.at!.y / T), `${crewNear.c.name} - ${ROLE_INFO[crewNear.c.role].label}`, "[E] TALK", PAL.ui);
-    else if (passenger && pSpot && dist(pSpot.tx * T + T / 2, pSpot.ty * T + T / 2, this.px, this.py) < 16) tooltip(ctx, ox, oy, pSpot.tx, pSpot.ty, passengersAboard(p).length > 1 ? `${passengersAboard(p).length} PASSENGERS` : passenger.passengerName!, "[E] TALK", "#b28fe0");
+    else if (passenger && this.passengerNear(p)) { const m = this.passengerNear(p)!; const pp = this.paxPos[m.id]; tooltip(ctx, ox, oy, Math.floor(pp.x / T), Math.floor(pp.y / T), m.passengerName ?? "PASSENGER", "[E] TALK", "#b28fe0"); }
     else if (near) {
       const def = PANELS.find((x) => x.ch === near.ch)!;
       const sys = def.sysId ? p.systems.find((s) => s.id === def.sysId)! : null;

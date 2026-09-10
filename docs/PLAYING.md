@@ -391,7 +391,8 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   runs from 60% to 120% of the fare by mood, with tips for the happiest.
 - Tourists book a sight: a world from orbit, the void drifters off a gas
   giant, a comet, a festival. Every other sight along the way adds 15%.
-- Talk to them in the bunk room (I). Each press of E is a different fare.
+- Aboard (I), passengers stretch their legs: the seat, the galley, the bridge.
+  Talk to whoever you are standing beside.
 
 ## A life aboard
 

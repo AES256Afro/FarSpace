@@ -567,4 +567,7 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 52 — Lore ✅ (Sep 2026)
 - [x] A line of history for every system and world, read out on arrival
 
+## Milestone 53 — Passengers Underfoot ✅ (Sep 2026)
+- [x] Passengers stretch their legs aboard; talk to whoever you're beside
+
 ## Later
