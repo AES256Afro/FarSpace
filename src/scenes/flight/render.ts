@@ -272,6 +272,18 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
     if (dist(p.x, p.y, an.x, an.y) < 60) drawText(ctx, "[E] INVESTIGATE", sx - 30, sy + 6, PAL.gold);
   }
 
+  if (fs.race) {
+    fs.race.gates.forEach((gt, i) => {
+      const [sx, sy] = toScreen(gt.x, gt.y);
+      const next = i === fs.race!.idx, done = i < fs.race!.idx;
+      const pulse = next ? 1 + 0.15 * Math.sin(g.world.time * 6) : 1;
+      ctx.strokeStyle = done ? PAL.greyDark : next ? PAL.gold : PAL.grey;
+      ctx.lineWidth = next ? 2 : 1;
+      ctx.beginPath(); ctx.arc(sx, sy, 22 * z * pulse, 0, Math.PI * 2); ctx.stroke();
+      ctx.lineWidth = 1;
+      drawText(ctx, `${i + 1}`, sx - 2, sy - 3, done ? PAL.greyDark : next ? PAL.gold : PAL.grey);
+    });
+  }
   for (const l of fs.loot) {
     const [sx, sy] = toScreen(l.x, l.y);
     ctx.fillStyle = PAL.gold;
@@ -455,6 +467,7 @@ export function drawEdgeMarkers(fs: FlightScene, g: Game, ctx: CanvasRenderingCo
   if (fs.repairJob) mark(fs.repairJob.npc.x, fs.repairJob.npc.y, PAL.good, "REPAIR");
   { const cr = g.world.crisis; if (cr && cr.systemId === p.systemId && cr.delivered < cr.need && g.world.time < cr.until) { const st = sys.stations.find((s) => s.id === cr.stationId); if (st) mark(Math.cos(st.angle) * st.orbit, Math.sin(st.angle) * st.orbit, PAL.danger, "CRISIS"); } }
   if (fs.escort && fs.escort.trader.hull > 0) mark(fs.escort.trader.x, fs.escort.trader.y, PAL.gold, "ESCORT");
+  if (fs.race) { const gt = fs.race.gates[fs.race.idx]; mark(gt.x, gt.y, PAL.gold, `RING ${fs.race.idx + 1}`); }
   // active mission target station in this system
   for (const m of p.missions) {
     if (!m.accepted || m.done || m.targetSystemId !== p.systemId || !m.targetStationId) continue;
@@ -605,6 +618,7 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
   }
 
   if (fs.scanMsg) drawText(ctx, fs.scanMsg, VW / 2 - textWidth(fs.scanMsg) / 2, 30, PAL.warn);
+  if (fs.race) { const r = fs.race; const line = r.started ? `RING RACE  ${r.idx}/${r.gates.length}  ${r.t.toFixed(1)}S  (PAR ${r.par}S)` : `RING RACE - FLY THROUGH RING 1 TO START THE CLOCK`; drawText(ctx, line, VW / 2 - textWidth(line) / 2, VH - 34, PAL.gold); }
   if (g.toastTimer > 0) drawText(ctx, g.toastMsg, VW / 2 - textWidth(g.toastMsg) / 2, 40, PAL.ui);
 
   const active = p.missions.filter((m) => m.accepted && !m.done);

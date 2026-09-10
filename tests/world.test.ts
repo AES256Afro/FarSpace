@@ -15,7 +15,7 @@ import { STARS, starDistance } from "../src/data/stars";
 import { ACHIEVEMENTS } from "../src/data/achievements";
 import { ARCS, dailyContract, dailyKey, rankOf, logSystem, applyHull } from "../src/world";
 import { MODULES } from "../src/data/modules";
-import { rareSellPrice, findStation, genCrewCandidate } from "../src/world";
+import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES } from "../src/world";
 import { RARES } from "../src/data/data";
 import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
@@ -670,6 +670,26 @@ describe("concourse gossip", () => {
     const rich = concourseGossip(w, st, new RNG(2));
     expect(rich.length).toBeGreaterThan(base.length + 3);
     for (const l of rich) expect(l.length).toBeLessThanOrEqual(96);
+  });
+});
+
+describe("the ring race", () => {
+  it("lays six rings round the station, pays more under par, and keeps your best", () => {
+    const w = generateWorld(25, { realGalaxy: true });
+    const st = Object.values(w.systems).flatMap((s) => s.stations)[0];
+    const gates = raceCourse(st, 1);
+    expect(gates.length).toBe(RACE_GATES);
+    const cx = Math.cos(st.angle) * st.orbit, cy = Math.sin(st.angle) * st.orbit;
+    for (const gt of gates) { const d = Math.hypot(gt.x - cx, gt.y - cy); expect(d).toBeGreaterThan(150); expect(d).toBeLessThan(600); }
+    expect(raceCourse(st, 1)).toEqual(gates);
+    const par = racePar(gates);
+    expect(par).toBeGreaterThan(8);
+    expect(racePrize(par - 5, par)).toBeGreaterThan(racePrize(par + 5, par));
+    expect(recordRace(w.player, st.id, 40.26)).toBe(true);
+    expect(recordRace(w.player, st.id, 45)).toBe(false);
+    expect(recordRace(w.player, st.id, 39)).toBe(true);
+    expect(w.player.raceBest![st.id]).toBe(39);
+    expect(w.player.races).toBe(3);
   });
 });
 

@@ -5,7 +5,7 @@ import { ask, confirmBox } from "../../core/dialog";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra, raceCourse, racePar, racePrize, recordRace } from "../../world";
 import { COMMODITIES, commodity } from "../../data/data";
 import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
@@ -60,6 +60,7 @@ export class FlightScene implements Scene {
   sosTimer = 45;
   sos: Sos | null = null;
   escort: { trader: Npc; missionId: string } | null = null;
+  race: { gates: { x: number; y: number }[]; idx: number; t: number; stationId: string; started: boolean; idle: number; par: number } | null = null;
   scanCharge = 0;      // deep-scan charge 0..1 (hold V)
   aim = 0;             // gun/laser direction; equals heading in keyboard mode
   mouseAim = false;
@@ -79,6 +80,7 @@ export class FlightScene implements Scene {
     this.mapOpen = false;
     this.cruise = false; this.autopilot = false;
     this.escort = null;
+    this.race = null;
     this.scanCharge = 0;
     this.torps = [];
     this.floaters = [];
@@ -90,6 +92,7 @@ export class FlightScene implements Scene {
       // launch sequence: out of the bay along your nose, control on the band
       g.justUndocked = false;
       const p = g.world.player;
+      this.startRace(g);
       const st = g.world.systems[p.systemId].stations.find((s) => dist(p.x, p.y, Math.cos(s.angle) * s.orbit, Math.sin(s.angle) * s.orbit) < 120);
       if (st) {
         const sx = Math.cos(st.angle) * st.orbit, sy = Math.sin(st.angle) * st.orbit;
@@ -412,6 +415,7 @@ export class FlightScene implements Scene {
     updateSmoke(this, g, dt);
     updateComms(this, g, dt);
     this.updateEscort(g, dt);
+    this.updateRace(g, dt);
     this.updateLaw(g, dt);
 
     this.spawnTimer -= dt;
@@ -480,6 +484,40 @@ export class FlightScene implements Scene {
     this.npcs.push(trader);
     this.escort = { trader, missionId: m.id };
     g.toast("ESCORT: KEEP THE FREIGHTER ALIVE UNTIL IT DOCKS");
+  }
+
+  // ---------- The ring race ----------
+  startRace(g: Game): void {
+    const p = g.world.player;
+    if (!p.racePending) return;
+    const st = g.world.systems[p.systemId].stations.find((s) => s.id === p.racePending);
+    p.racePending = null;
+    if (!st) return;
+    const gates = raceCourse(st, g.world.seed ^ Math.floor(g.world.time / 600));
+    this.race = { gates, idx: 0, t: 0, stationId: st.id, started: false, idle: 0, par: racePar(gates) };
+    this.comms.push({ from: "MARSHAL", text: `RINGS ARE LIT. RING ONE STARTS YOUR CLOCK. PAR ${this.race.par}S.`, life: 9, color: PAL.gold });
+  }
+  updateRace(g: Game, dt: number): void {
+    const r = this.race; if (!r) return;
+    const p = g.world.player;
+    if (r.started) { r.t += dt; r.idle += dt; }
+    if (r.idle > 60) { this.race = null; this.comms.push({ from: "MARSHAL", text: "CLOCK STOPPED. COME BACK WHEN YOU MEAN IT.", life: 7, color: PAL.grey }); return; }
+    const gate = r.gates[r.idx];
+    if (dist(p.x, p.y, gate.x, gate.y) > 26) return;
+    r.idx++; r.idle = 0; sfx.blip();
+    if (!r.started) { r.started = true; r.t = 0; }
+    if (r.idx < r.gates.length) return;
+    // the finish
+    const prize = racePrize(r.t, r.par);
+    p.credits += prize; ledger(p, "races", prize);
+    const best = recordRace(p, r.stationId, r.t);
+    const st = g.world.systems[p.systemId].stations.find((s) => s.id === r.stationId);
+    g.toast(`RACE DONE IN ${r.t.toFixed(1)}S (PAR ${r.par}S) - ${prize}CR${best ? " - YOUR BEST HERE" : ""}`);
+    this.comms.push({ from: "MARSHAL", text: r.t <= r.par ? "UNDER PAR. THE BAR WILL HEAR ABOUT THAT." : "OVER PAR, BUT CLEAN. THE PRIZE STANDS.", life: 8, color: PAL.gold });
+    { const up = crewXp(p, "pilot"); if (up) g.toast(up); }
+    flag(g, "raced"); sfx.pickup();
+    void wire.post("race", `ran the ring race at ${st?.name ?? "a station"} in ${r.t.toFixed(1)}s`, g.world.systems[p.systemId].name);
+    this.race = null;
   }
 
   updateEscort(g: Game, dt: number): void {

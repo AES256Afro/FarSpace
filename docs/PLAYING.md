@@ -229,6 +229,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## The ring race
+
+- Every civil station runs one. The last row in the lounge enters you; launch
+  and six rings light up around the station. Fly them in order. The first ring
+  starts your clock, the last stops it. Prize money for a clean run, more under
+  par, and your best time is remembered per station. Stop flying for a minute
+  and the marshal stops the clock.
+
 ## Concourse gossip
 
 - On a station promenade the crowd talk to each other, and you overhear it

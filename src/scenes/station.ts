@@ -12,8 +12,7 @@ import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS, roleLabel } from "../
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, tickAlumniMail, catGift, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, notableOutcome, ledger, ledgerAround, LEDGER_LABELS, dockingsAt, OLD_HAND_AT, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter,
-} from "../world";
+  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, tickAlumniMail, catGift, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, notableOutcome, ledger, ledgerAround, LEDGER_LABELS, dockingsAt, OLD_HAND_AT, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter, RACE_GATES } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
 import { BLUEPRINTS, MATERIALS, engGrade, nextCost, canAfford, upgrade } from "../data/engineering";
@@ -498,10 +497,15 @@ export class StationScene implements Scene {
       }
       case "BAR": {
         if (inp.wasPressed("r")) { g.settingsReturn = "station"; g.setScene("roster"); return; }
-        const rows = st.barPatrons.length + this.candidates.length + this.fares.length;
+        const raceRow = st.military ? 0 : 1;
+        const rows = st.barPatrons.length + this.candidates.length + this.fares.length + raceRow;
         this.cursor = clamp(this.cursor, 0, Math.max(0, rows - 1));
         if (enter) {
-          if (this.cursor < st.barPatrons.length) {
+          if (raceRow && this.cursor === rows - 1) {
+            p.racePending = st.id;
+            this.barLine = `THE MARSHAL: 'YOU'RE IN. LAUNCH WHEN YOU'RE READY. ${RACE_GATES} RINGS ROUND THE STATION, IN ORDER. THE FIRST ONE STARTS YOUR CLOCK, THE LAST ONE STOPS IT. PRIZE MONEY FOR A CLEAN RUN, MORE UNDER PAR.'`;
+            sfx.select();
+          } else if (this.cursor < st.barPatrons.length) {
             const rng = new RNG((g.world.seed ^ (this.cursor * 7727) ^ Math.floor(g.world.time / 20)) >>> 0);
             const fr = friendsAt(g.world, st.id).find((c) => c.name === st.barPatrons[this.cursor]);
             if (fr && !p.companion) {
@@ -1334,6 +1338,15 @@ export class StationScene implements Scene {
         idx++;
       }
       y += 2;
+    }
+    if (!st.military) {
+      const sel = idx === this.cursor;
+      this.row(ctx, y, sel);
+      const best = p.raceBest?.[st.id];
+      drawText(ctx, `THE RING RACE  -  ${RACE_GATES} RINGS ROUND THE STATION, AGAINST THE CLOCK${best !== undefined ? `  -  YOUR BEST HERE ${best.toFixed(1)}S` : ""}${p.racePending === st.id ? "  -  ENTERED" : ""}`, 12, y, p.racePending === st.id ? PAL.gold : PAL.ui);
+      y += 9;
+      if (sel) { drawText(ctx, "ENTER, THEN LAUNCH. RINGS APPEAR AROUND THE STATION. PRIZE FOR A CLEAN RUN, MORE UNDER PAR.", 12, y, PAL.greyDark); y += 9; }
+      idx++; y += 2;
     }
     if (this.barLine) {
       ctx.fillStyle = "#0e1626"; ctx.fillRect(6, y, VW - 12, 28);

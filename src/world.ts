@@ -297,6 +297,9 @@ export interface PlayerState {
   mail?: Letter[];                   // letters received (last 20)
   companion?: { name: string; ship: string; docks: number } | null; // a friend flying alongside for a few dockings
   homePort?: string;                 // station id: cheaper yard, happier crew, a place the chronicle names
+  racePending?: string | null;       // station whose ring race you've entered; rings appear when you launch
+  raceBest?: Record<string, number>; // station id -> best time in seconds
+  races?: number;                    // ring races finished
   donations?: number;                // relics given to museums
   hullHistory?: { previous: string; quirk: string } | null; // who flew this hull before you, and what they left
   jumpStreak?: number;               // gates in a row without a dock (a pilot's arc counts them)
@@ -437,7 +440,7 @@ export interface Captain { name: string; from: number; to: number; stationId: st
 
 // ---------- The ledger: where the money comes from and goes ----------
 export const LEDGER_LABELS: Record<string, string> = {
-  trade: "TRADE SALES", buys: "TRADE PURCHASES", fares: "FARES AND TIPS", contracts: "CONTRACTS", rescues: "RESCUES AND SALVAGE",
+  trade: "TRADE SALES", buys: "TRADE PURCHASES", fares: "FARES AND TIPS", contracts: "CONTRACTS", rescues: "RESCUES AND SALVAGE", races: "THE RING RACE",
   tolls: "TOLLS AND THE TILL", charters: "CHARTER HAULERS", letters: "LETTERS AND GIFTS", crew: "CREW WAGES AND BONUSES", yard: "YARD, FUEL AND OUTFITTING",
   settlements: "SETTLEMENTS", other: "EVERYTHING ELSE",
 };
@@ -907,6 +910,38 @@ export function hullHistoryFor(w: World, rng: RNG): { previous: string; quirk: s
 }
 // Home port: one station you call yours
 export function setHomePort(p: PlayerState, stationId: string): void { p.homePort = stationId; }
+
+// The ring race: six rings laid out around a station, flown in order against the clock.
+// The course is fixed when you launch; the station drifts a little underneath it and nobody minds.
+export const RACE_GATES = 6;
+export function raceCourse(st: StationDef, seed: number): { x: number; y: number }[] {
+  const rng = new RNG(hashStr(`race:${seed}:${st.id}`));
+  const cx = Math.cos(st.angle) * st.orbit, cy = Math.sin(st.angle) * st.orbit;
+  const r = 260 + rng.int(0, 90), a0 = rng.next() * Math.PI * 2, dir = rng.chance(0.5) ? 1 : -1;
+  const out: { x: number; y: number }[] = [];
+  for (let i = 0; i < RACE_GATES; i++) {
+    const a = a0 + dir * (i / RACE_GATES) * Math.PI * 2, rr = r * (0.7 + rng.next() * 0.6);
+    out.push({ x: Math.round(cx + Math.cos(a) * rr), y: Math.round(cy + Math.sin(a) * rr) });
+  }
+  return out;
+}
+// Par is a brisk, clean run: the course length at a modest cruise, plus a second a ring for the turns
+export function racePar(gates: { x: number; y: number }[]): number {
+  let len = 0;
+  for (let i = 1; i < gates.length; i++) len += Math.hypot(gates[i].x - gates[i - 1].x, gates[i].y - gates[i - 1].y);
+  return Math.round(len / 150 + gates.length);
+}
+export function racePrize(t: number, par: number): number {
+  return Math.round(250 + (t <= par ? 200 : 0) + Math.max(0, par - t) * 25);
+}
+// Returns true when this is a new best at that station
+export function recordRace(p: PlayerState, stationId: string, t: number): boolean {
+  p.races = (p.races ?? 0) + 1;
+  const best = (p.raceBest ??= {})[stationId];
+  const tt = Math.round(t * 10) / 10;
+  if (best === undefined || tt < best) { p.raceBest[stationId] = tt; return true; }
+  return false;
+}
 export function isHome(p: PlayerState, stationId: string): boolean { return p.homePort === stationId; }
 // Museums at research stations take relics and remember who brought them
 export function donateRelic(w: World, st: StationDef, by: string): string | null {

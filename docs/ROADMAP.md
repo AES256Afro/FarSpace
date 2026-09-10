@@ -598,4 +598,8 @@ Time passes for the people on the ship, and for the ship.
       wonders, prices, patrols, your reputation); overheard within earshot;
       E beside any walker for a line
 
+## Milestone 60 — The Ring Race ✅ (Sep 2026)
+- [x] Six-ring time trial around any civil station, entered from the lounge;
+      par, prize, best time per station, RING RUNNER achievement, wire post
+
 ## Later

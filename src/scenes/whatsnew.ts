@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.60 - THE RING RACE", [
+    "ENTER FROM ANY LOUNGE, LAUNCH, AND FLY SIX RINGS ROUND THE STATION AGAINST THE CLOCK. PRIZE MONEY, PAR, YOUR BEST TIME.",
+  ]],
   ["0.59 - CONCOURSE GOSSIP", [
     "THE CROWD ON A STATION PROMENADE TALK ABOUT THE WORLD, AND ABOUT YOU. STAND CLOSE AND LISTEN.",
   ]],
