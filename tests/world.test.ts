@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
-  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn, captainByName, helpCaptain, isFriend, friendsAt, tickMail, pickCaptainFor } from "../src/world";
+  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn, captainByName, helpCaptain, isFriend, friendsAt, tickMail, pickCaptainFor, canUpgradeInfra, upgradeInfra } from "../src/world";
 import type { Charter } from "../src/world";
 import type { Infra } from "../src/world";
 import { migrateSave, SAVE_VERSION, saveKeyFor, SLOTS } from "../src/save";
@@ -1185,5 +1185,34 @@ describe("contacts", () => {
     expect(picked).toBeGreaterThan(4);
     const raw = JSON.parse(JSON.stringify({ ...w, version: 12, captains: undefined }));
     expect(migrateSave(raw)!.captains!.length).toBeGreaterThanOrEqual(6);
+  });
+});
+
+describe("the waystation", () => {
+  it("a lit structure with credits and parts becomes a waystation that earns more", () => {
+    const w = generateWorld(141, { realGalaxy: true });
+    const p = w.player;
+    const inf = { id: "b", kind: "beacon" as const, systemId: p.systemId, x: 0, y: 0, owner: "ME", builtAt: 0, health: 100, till: 0, stock: 0, earned: 0, lastT: 0 };
+    w.infra = [inf];
+    p.credits = 100; p.cargo = {};
+    expect(canUpgradeInfra(inf, p)).toContain("5000");
+    p.credits = 6000;
+    expect(canUpgradeInfra(inf, p)).toContain("PARTS");
+    p.cargo = { parts: 12 };
+    expect(canUpgradeInfra(inf, p)).toBeNull();
+    inf.health = 10;
+    expect(canUpgradeInfra(inf, p)).toContain("RELIGHT");
+    inf.health = 100;
+    expect(upgradeInfra(inf, p)).toBe(true);
+    expect(inf.upgraded).toBe(true);
+    expect(p.credits).toBe(1000);
+    expect(p.cargo.parts ?? 0).toBe(0);
+    expect(canUpgradeInfra(inf, p)).toContain("ALREADY");
+    const plain = { ...inf, id: "c", upgraded: false, till: 0, earned: 0, lastT: 0 };
+    w.infra = [inf, plain];
+    for (const s2 of Object.values(w.systems)) s2.pirateActivity = 0;
+    w.time = 600; inf.lastT = 0; plain.lastT = 0;
+    tickInfra(w, new RNG(3));
+    expect(inf.till).toBeGreaterThan(plain.till);
   });
 });

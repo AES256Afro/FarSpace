@@ -101,6 +101,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   board: sample runs, outcrop runs, and a plant to fix on the spot. Jobs pay
   out when you walk back in.
 
+## The waystation
+
+- A lit beacon or depot can become a waystation: press E beside it with 5,000
+  credits and 12 spare parts aboard. It gets a deck of its own: a till, a bar,
+  a bunk, and an airlock back to your ship.
+- Tolls rise and the bar earns; the regular captains stop in, friends first,
+  each with something to say. Sleep in your own bunk out past the gates.
+
 ## Contacts
 
 - A galaxy has a dozen regular captains flying its lanes; their names show

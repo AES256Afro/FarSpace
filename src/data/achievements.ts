@@ -31,6 +31,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "warVeteran", title: "WAR VETERAN", desc: "Fight for the winning side of a syndicate war", check: (w) => !!w.player.flags?.warVeteran },
   { id: "theLane", title: "THE LANE", desc: "Find the missing convoy", check: (w) => !!w.player.flags?.theLane },
   { id: "charter", title: "CHARTERED", desc: "Hold a faction charter", check: (w) => !!w.player.flags?.charter },
+  { id: "waystation", title: "A PLACE OF YOUR OWN", desc: "Build a waystation on a beacon or depot", check: (w) => !!w.player.flags?.waystation },
   { id: "arkWalker", title: "ARK WALKER", desc: "Walk the corridors of the sleeping ark", check: (w) => !!w.player.flags?.arkWalker },
   { id: "wonder", title: "WITH YOUR OWN EYES", desc: "See one of the galaxy's wonders", check: (w) => !!w.player.flags?.wonder },
   { id: "grandTour", title: "THE GRAND TOUR", desc: "See every wonder in the galaxy", check: (w) => !!w.wonders?.length && w.wonders.every((x) => x.seen) },

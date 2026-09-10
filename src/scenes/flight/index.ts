@@ -5,7 +5,7 @@ import { ask, confirmBox } from "../../core/dialog";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, crewXp, stormBlind, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, crewXp, stormBlind, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra } from "../../world";
 import { COMMODITIES, commodity } from "../../data/data";
 import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
@@ -110,6 +110,10 @@ export class FlightScene implements Scene {
   // Collect the till, patch the structure, stock or draw on a depot.
   tendInfra(g: Game, inf: Infra): void {
     const p = g.world.player;
+    if (inf.upgraded) { p.vx = 0; p.vy = 0; g.infraTarget = inf; g.setScene("waystation"); return; }
+    if (!canUpgradeInfra(inf, p) && confirmBox(`Build a waystation here? ${WAYSTATION_CREDITS}cr and ${WAYSTATION_PARTS} spare parts: a deck, a bar, a bunk. Tolls rise, the bar earns, and the regulars stop by.`)) {
+      if (upgradeInfra(inf, p)) { g.toast("THE WAYSTATION GOES UP OVER A LONG SHIFT. THERE'S A BAR. THERE'S A BUNK. IT'S YOURS."); logEntry(g.world, `Built a waystation in ${g.world.systems[p.systemId].name}`); flag(g, "waystation"); sfx.dock(); void wire.post("discover", `opened a waystation in ${g.world.systems[p.systemId].name}`, g.world.systems[p.systemId].name); return; }
+    }
     const name = inf.kind.toUpperCase();
     const c = collectInfra(inf, p);
     const lines: string[] = [];

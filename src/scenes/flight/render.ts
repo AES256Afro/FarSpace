@@ -128,15 +128,16 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
     if (sx < -40 || sx > VW + 40 || sy < -40 || sy > VH + 40) continue;
     const lit = infraLit(inf);
     ctx.fillStyle = "#6a7a9c";
-    if (inf.kind === "beacon") { ctx.fillRect(Math.round(sx) - 1, Math.round(sy) - 8 * z, 2, 16 * z); ctx.fillRect(Math.round(sx) - 4 * z, Math.round(sy) + 6 * z, 8 * z, 2); }
+    if (inf.upgraded) { ctx.fillStyle = "#3a4a6c"; ctx.fillRect(Math.round(sx) - 14 * z, Math.round(sy) - 5 * z, 28 * z, 10 * z); ctx.fillStyle = "#6a7a9c"; ctx.fillRect(Math.round(sx) - 10 * z, Math.round(sy) - 9 * z, 20 * z, 4 * z); for (let i = 0; i < 4; i++) { ctx.fillStyle = Math.floor(g.world.time * 2 + i) % 3 ? "#ffe9a0" : "#0b1020"; ctx.fillRect(Math.round(sx) - 10 * z + i * 6 * z, Math.round(sy) - 2 * z, 2, 2); } }
+    if (inf.kind === "beacon") { ctx.fillStyle = "#6a7a9c"; ctx.fillRect(Math.round(sx) - 1, Math.round(sy) - 8 * z, 2, 16 * z); ctx.fillRect(Math.round(sx) - 4 * z, Math.round(sy) + 6 * z, 8 * z, 2); }
     else { ctx.fillRect(Math.round(sx) - 6 * z, Math.round(sy) - 4 * z, 12 * z, 8 * z); ctx.fillStyle = "#3a4a6c"; ctx.fillRect(Math.round(sx) - 4 * z, Math.round(sy) - 2 * z, 8 * z, 4 * z); }
     if (lit && Math.floor(g.world.time * 2) % 2 === 0) { ctx.fillStyle = inf.kind === "beacon" ? "#ffe9a0" : "#63f2c8"; ctx.fillRect(Math.round(sx) - 1, Math.round(sy) - 9 * z, 3, 3); }
     if (!lit && Math.floor(g.world.time * 4) % 4 === 0) { ctx.fillStyle = PAL.danger; ctx.fillRect(Math.round(sx) - 1, Math.round(sy) - 9 * z, 2, 2); }
     const d = dist(p.x, p.y, inf.x, inf.y);
     if (d < 260) {
-      const label = `${inf.kind.toUpperCase()} (${inf.owner === (wire.getCallsign() ?? "YOU") ? "YOURS" : inf.owner})${lit ? "" : " - DARK"}`;
+      const label = `${inf.upgraded ? "WAYSTATION" : inf.kind.toUpperCase()} (${inf.owner === (wire.getCallsign() ?? "YOU") ? "YOURS" : inf.owner})${lit ? "" : " - DARK"}`;
       drawText(ctx, label, sx - textWidth(label) / 2, sy - 14 * z - 8, lit ? PAL.gold : PAL.danger);
-      if (d < 90) drawText(ctx, `[E] TEND - TILL ${Math.round(inf.till)}CR${inf.kind === "depot" ? ` - STOCK ${inf.stock}` : ""} - ${inf.health}%`, sx - 60, sy + 10 * z + 3, PAL.gold);
+      if (d < 90) drawText(ctx, inf.upgraded ? `[E] WALK IN - TILL ${Math.round(inf.till)}CR` : `[E] TEND - TILL ${Math.round(inf.till)}CR${inf.kind === "depot" ? ` - STOCK ${inf.stock}` : ""} - ${inf.health}%`, sx - 60, sy + 10 * z + 3, PAL.gold);
     }
   }
   // stations

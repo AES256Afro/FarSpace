@@ -308,6 +308,21 @@ export interface Infra {
   stock: number;       // depot fuel units for sale (beacons: 0)
   earned: number;      // lifetime
   lastT: number;
+  upgraded?: boolean;  // a waystation: a deck, a bar, a bunk; the regulars stop by
+}
+export const WAYSTATION_CREDITS = 5000, WAYSTATION_PARTS = 12;
+export function canUpgradeInfra(inf: Infra, p: PlayerState): string | null {
+  if (inf.upgraded) return "ALREADY A WAYSTATION";
+  if (!infraLit(inf)) return "RELIGHT IT FIRST";
+  if (p.credits < WAYSTATION_CREDITS) return `${WAYSTATION_CREDITS}CR TO BUILD A WAYSTATION`;
+  if ((p.cargo.parts ?? 0) < WAYSTATION_PARTS) return `${WAYSTATION_PARTS} SPARE PARTS TO BUILD A WAYSTATION (${p.cargo.parts ?? 0} ABOARD)`;
+  return null;
+}
+export function upgradeInfra(inf: Infra, p: PlayerState): boolean {
+  if (canUpgradeInfra(inf, p)) return false;
+  p.credits -= WAYSTATION_CREDITS; removeCargo(p, "parts", WAYSTATION_PARTS);
+  inf.upgraded = true; inf.health = 100;
+  return true;
 }
 export const INFRA_KITS: Record<InfraKind, { name: string; price: number; desc: string }> = {
   beacon: { name: "Beacon Kit", price: 2500, desc: "A nav beacon for a system with no station. Traffic reroutes through it and pays tolls; jumps in and out cost a fifth less fuel." },
@@ -353,7 +368,8 @@ export function tickInfra(w: World, rng: RNG): string[] {
     if (elapsed <= 0) continue;
     const traffic = infraTraffic(w, inf.systemId);
     if (infraLit(inf)) {
-      if (inf.kind === "beacon") { const c = Math.round(traffic * 1.5 * (elapsed / 60)); inf.till += c; inf.earned += c; }
+      if (inf.kind === "beacon") { const c = Math.round(traffic * (inf.upgraded ? 2.5 : 1.5) * (elapsed / 60)); inf.till += c; inf.earned += c; }
+      if (inf.upgraded) { const bar = Math.round(traffic * 0.8 * (elapsed / 60)); inf.till += bar; inf.earned += bar; } // the bar takes money too
       else if (inf.stock > 0) { const sold = Math.min(inf.stock, Math.max(0, Math.round(traffic * 0.4 * (elapsed / 60)))); inf.stock -= sold; inf.till += sold * DEPOT_PRICE; inf.earned += sold * DEPOT_PRICE; }
     }
     const sys = w.systems[inf.systemId];

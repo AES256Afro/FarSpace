@@ -477,4 +477,10 @@ Time passes for the people on the ship, and for the ship.
 - [x] Friends: hails, a seat in the lounge with tips, letters with gifts
       delivered at a later dock
 
+## Milestone 31 — The Waystation ✅ (Sep 2026)
+- [x] Upgrade a lit beacon or depot into a small walkable waystation: till,
+      bar, bunk, airlock; tolls rise and the bar earns
+- [x] The regular captains drink there, friends first
+- [x] What's New scrolls
+
 ## Later

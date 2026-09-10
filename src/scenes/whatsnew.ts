@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.31 - THE WAYSTATION", [
+    "TURN A LIT BEACON OR DEPOT INTO A WAYSTATION OF YOUR OWN: A TILL, A BAR THE REGULARS DRINK AT, A BUNK.",
+  ]],
   ["0.30 - CONTACTS", [
     "THE LANES HAVE REGULARS. HELP ONE TWICE AND THEY'RE A FRIEND: HAILS, A SEAT IN THE LOUNGE, LETTERS WITH GIFTS.",
   ]],
@@ -125,21 +128,34 @@ const NOTES: [string, string[]][] = [
 
 export class WhatsNewScene implements Scene {
   touchMode = "menu" as const;
+  scroll = 0;
+  enter(): void { this.scroll = 0; }
   update(g: Game, dt: number): void {
     void dt;
-    if (g.input.wasPressed("Escape") || g.input.wasPressed("Enter") || g.input.mousePressed) g.setScene("title");
+    if (g.input.wasPressed("Escape") || g.input.wasPressed("Enter") || g.input.mousePressed) { g.setScene("title"); return; }
+    const total = NOTES.reduce((a, [, lines]) => a + 9 + lines.length * 8 + 6, 0);
+    const max = Math.max(0, total - (VH - 44));
+    if (g.input.wasPressed("ArrowDown")) this.scroll = Math.min(max, this.scroll + 24);
+    if (g.input.wasPressed("ArrowUp")) this.scroll = Math.max(0, this.scroll - 24);
+    if (g.input.wheel) this.scroll = Math.max(0, Math.min(max, this.scroll + g.input.wheel * 24));
   }
   draw(g: Game, ctx: CanvasRenderingContext2D): void {
     void g;
     ctx.fillStyle = PAL.uiPanel; ctx.fillRect(0, 0, VW, VH);
-    drawText(ctx, "WHAT'S NEW", 12, 8, PAL.white);
-    drawText(ctx, "ESC BACK", VW - textWidth("ESC BACK") - 12, 8, PAL.greyDark);
-    let y = 24;
+    ctx.save(); ctx.beginPath(); ctx.rect(0, 18, VW, VH - 34); ctx.clip();
+    let y = 24 - this.scroll;
     for (const [title, lines] of NOTES) {
-      drawText(ctx, title, 12, y, PAL.ui); y += 9;
-      for (const l of lines) { drawText(ctx, l.slice(0, 112), 12, y, PAL.grey); y += 8; }
-      y += 6;
+      if (y > VH) break;
+      if (y + 9 + lines.length * 8 > 18) {
+        drawText(ctx, title, 12, y, PAL.ui);
+        lines.forEach((l, i) => drawText(ctx, l.slice(0, 112), 12, y + 9 + i * 8, PAL.grey));
+      }
+      y += 9 + lines.length * 8 + 6;
     }
-    drawText(ctx, "FULL ROADMAP: GITHUB.COM/AES256AFRO/FARSPACE", 12, VH - 14, PAL.greyDark);
+    ctx.restore();
+    ctx.fillStyle = PAL.uiPanel; ctx.fillRect(0, 0, VW, 18); ctx.fillRect(0, VH - 16, VW, 16);
+    drawText(ctx, "WHAT'S NEW - UP/DOWN OR WHEEL TO SCROLL", 12, 8, PAL.white);
+    drawText(ctx, "ESC BACK", VW - textWidth("ESC BACK") - 12, 8, PAL.greyDark);
+    drawText(ctx, "FULL ROADMAP: GITHUB.COM/AES256AFRO/FARSPACE", 12, VH - 12, PAL.greyDark);
   }
 }

@@ -51,6 +51,9 @@ charters and enforce embargoes, station profiles and bulletins, gate traffic,
 comms chatter, void drifters near gas giants, crew who talk to each other, a
 wall of record aboard your ship, and a second campaign about a missing convoy.
 
+**The waystation:** upgrade a beacon or depot into a small walkable place of
+your own, with a till, a bar the regulars drink at, and a bunk.
+
 **Contacts:** regular captains who remember being helped, become friends,
 sit in the lounge with tips, and write letters with gifts.
 
@@ -156,7 +159,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestones 1–30 are live (v0.30.0). See the [roadmap](docs/ROADMAP.md) for what's next.
+Milestones 1–31 are live (v0.31.0). See the [roadmap](docs/ROADMAP.md) for what's next.
 
 ```bash
 npm test         # vitest: world-gen, routing, economy, law, missions, save migrations
