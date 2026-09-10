@@ -259,7 +259,8 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
 
 - [x] Squadron standing: members' faction reputation is pooled; the
       best-standing squadron becomes a faction's patron, named on its stations
-      and the galaxy map, and its members trade there like allies
+      and the galaxy map, and its members trade there like allies and get
+      half-price fuel and repairs at its yards
 
 ## Later
-- [ ] Squadron-owned stations and territory
+- [ ] Squadron bases: a station a squadron can buy, stock and defend

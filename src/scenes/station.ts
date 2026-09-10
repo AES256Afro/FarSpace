@@ -273,9 +273,11 @@ export class StationScene implements Scene {
   }
 
   squadrons: wire.Squadron[] = [];
+  patrons: Record<string, string> = {};
   async loadWire(): Promise<void> {
     this.wireEvents = await wire.fetchWire(true);
-    this.squadrons = await wire.fetchSquadrons();
+    const sd = await wire.fetchSquadronData(true);
+    this.squadrons = sd.squadrons; this.patrons = sd.patrons;
     for (const b of ["discoveries", "arcs", "credits", "kills", "explorers", "traders"]) this.boards[b] = await wire.fetchBoard(b);
   }
 
@@ -397,18 +399,22 @@ export class StationScene implements Scene {
     const p = g.world.player;
     const st = this.station;
     const opts: { label: string; sub: string; action: () => void }[] = [];
+    // patron squadrons keep their faction's yards half price for members
+    const patronHere = !!wire.getSquadron() && wire.patronOf(st.factionId) === wire.getSquadron();
+    const fuelPrice = patronHere ? Math.max(1, Math.round(st.fuelPrice / 2)) : st.fuelPrice;
+    const repairPrice = patronHere ? Math.max(1, Math.round(st.repairPrice / 2)) : st.repairPrice;
     const fuelNeed = Math.ceil(p.fuelMax - p.fuel);
-    opts.push({ label: `REFUEL (${fuelNeed} UNITS)`, sub: `${fuelNeed * st.fuelPrice}CR`, action: () => {
+    opts.push({ label: `REFUEL (${fuelNeed} UNITS)${patronHere ? " - PATRON RATE" : ""}`, sub: `${fuelNeed * fuelPrice}CR`, action: () => {
       if (fuelNeed <= 0) return g.toast("TANKS FULL");
-      const afford = Math.min(fuelNeed, Math.floor(p.credits / st.fuelPrice));
-      p.fuel += afford; p.credits -= afford * st.fuelPrice;
+      const afford = Math.min(fuelNeed, Math.floor(p.credits / fuelPrice));
+      p.fuel += afford; p.credits -= afford * fuelPrice;
       g.toast(afford < fuelNeed ? "PARTIAL REFUEL" : "REFUELED");
     } });
     const hullNeed = Math.ceil(p.hullMax - p.hull);
-    opts.push({ label: `HULL REPAIR (${hullNeed} PTS)`, sub: `${hullNeed * st.repairPrice}CR`, action: () => {
+    opts.push({ label: `HULL REPAIR (${hullNeed} PTS)${patronHere ? " - PATRON RATE" : ""}`, sub: `${hullNeed * repairPrice}CR`, action: () => {
       if (hullNeed <= 0) return g.toast("HULL INTACT");
-      const afford = Math.min(hullNeed, Math.floor(p.credits / st.repairPrice));
-      p.hull += afford; p.credits -= afford * st.repairPrice;
+      const afford = Math.min(hullNeed, Math.floor(p.credits / repairPrice));
+      p.hull += afford; p.credits -= afford * repairPrice;
       p.breaches = []; p.fires = [];
       g.toast(afford < hullNeed ? "PARTIAL REPAIR" : "HULL RESTORED");
     } });
@@ -835,7 +841,8 @@ export class StationScene implements Scene {
     this.squadrons.slice(0, 6).forEach((sq, i) => {
       const x = 8 + (i % 3) * 158, yy = sy + 9 + Math.floor(i / 3) * 8;
       const top = Object.entries(sq.standing ?? {}).sort((a, b) => b[1] - a[1])[0];
-      drawText(ctx, `${i + 1}. [${sq.tag}] ${sq.members} PILOT${sq.members === 1 ? "" : "S"}  ${sq.score} PTS${top ? `  ${top[0].toUpperCase()} ${top[1] >= 0 ? "+" : ""}${top[1]}` : ""}`, x, yy, sq.tag === mine ? PAL.gold : PAL.grey);
+      const patronOfs = Object.entries(this.patrons).filter(([, t]) => t === sq.tag).map(([f]) => f.toUpperCase());
+      drawText(ctx, `${i + 1}. [${sq.tag}] ${sq.members} PILOT${sq.members === 1 ? "" : "S"}  ${sq.score} PTS${patronOfs.length ? `  PATRON OF ${patronOfs.join("/")}` : top ? `  ${top[0].toUpperCase()} ${top[1] >= 0 ? "+" : ""}${top[1]}` : ""}`, x, yy, sq.tag === mine ? PAL.gold : PAL.grey);
     });
   }
 
