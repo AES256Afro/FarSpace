@@ -13,6 +13,7 @@ import { commodity } from "../../data/data";
 import * as wire from "../../core/wire";
 import { applyVariant, variantStats, fleeLine, captainDown } from "./combat";
 import { flag } from "../../core/achievements";
+import { hasModule } from "../../data/modules";
 
 // ---------- Population ----------
 
@@ -195,7 +196,10 @@ export function mine(fs: FlightScene, g: Game, dt: number, rate: number, aim: nu
     }
     if (a.ore <= 0) {
       const qty = a.rich ? 3 : 1;
-      fs.loot.push({ x: a.x, y: a.y, commodityId: "ore", qty, life: 60 });
+      p.mined = (p.mined ?? 0) + qty;
+      const refined = hasModule(p, "refinery") && Math.random() < 0.6 ? 1 : 0;
+      if (qty - refined > 0) fs.loot.push({ x: a.x, y: a.y, commodityId: "ore", qty: qty - refined, life: 60 });
+      if (refined) fs.loot.push({ x: a.x - 8, y: a.y + 6, commodityId: "metals", qty: 1, life: 60 });
       if (a.rich && Math.random() < 0.25) {
         fs.loot.push({ x: a.x + 8, y: a.y + 4, commodityId: "metals", qty: 1, life: 60 });
       }
@@ -208,8 +212,13 @@ export function mine(fs: FlightScene, g: Game, dt: number, rate: number, aim: nu
 
 export function updateLoot(fs: FlightScene, g: Game, dt: number): void {
   const p = g.world.player;
+  const collector = hasModule(p, "collector");
   for (const l of fs.loot) {
     l.life -= dt;
+    if (collector) {
+      const d = dist(l.x, l.y, p.x, p.y);
+      if (d < 240 && d > 8) { l.x += ((p.x - l.x) / d) * 110 * dt; l.y += ((p.y - l.y) / d) * 110 * dt; }
+    }
     if (dist(l.x, l.y, p.x, p.y) < 16) {
       if (addCargo(p, l.commodityId, l.qty)) {
         g.toast(`+${l.qty} ${commodity(l.commodityId).name.toUpperCase()}`);

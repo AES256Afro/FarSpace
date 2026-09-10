@@ -2,6 +2,7 @@
 // announced on the Fleet Wire.
 
 import type { World } from "../world";
+import { rankOf } from "../world";
 
 export interface Achievement { id: string; title: string; desc: string; check: (w: World) => boolean }
 
@@ -24,4 +25,11 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "outlaw", title: "OUTLAW", desc: "Reach OUTLAW standing with a faction", check: (w) => Object.values(w.player.rep).some((v) => v <= -75) },
   { id: "daily", title: "REGULAR", desc: "Complete a daily contract", check: (w) => !!w.player.flags?.daily },
   { id: "hardcore", title: "COLD VOID", desc: "Reach 5,000 credits in hardcore", check: (w) => !!w.hardcore && w.player.credits >= 5000 },
+  { id: "outfitted", title: "OUTFITTED", desc: "Fit a module", check: (w) => !!w.player.flags?.outfitted },
+  { id: "scooped", title: "SUN DIVER", desc: "Refuel from a star", check: (w) => !!w.player.flags?.scooped },
+  { id: "first", title: "FIRST FOOTFALL", desc: "Be first to log a system", check: (w) => !!w.player.flags?.first },
+  { id: "scout", title: "SCOUT", desc: "Reach Explorer rank Scout", check: (w) => rankOf(w.player, "explorer").idx >= 2 },
+  { id: "dealer", title: "DEALER", desc: "Reach Trader rank Dealer", check: (w) => rankOf(w.player, "trader").idx >= 3 },
+  { id: "driller", title: "DRILLER", desc: "Reach Miner rank Driller", check: (w) => rankOf(w.player, "miner").idx >= 2 },
+  { id: "elite", title: "ELITE", desc: "Top any career ladder", check: (w) => (["explorer", "trader", "miner"] as const).some((k) => rankOf(w.player, k).idx >= 8) },
 ];

@@ -11,16 +11,17 @@ import { ROLE_INFO, CrewMember } from "../data/crew";
 import {
   StationDef, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, pushEvent, ARCS, dailyContract, dailyKey,
+  crewWages, genCrewCandidate, applyHull, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES,
 } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
+import { MODULES, hasModule, moduleDef } from "../data/modules";
 import { flag } from "../core/achievements";
 import { sfx } from "../core/sfx";
 import * as wire from "../core/wire";
 import { drawTutorial } from "../core/tutorial";
 import { music } from "../core/music";
 
-const TABS = ["MARKET", "SHIPYARD", "SHIPS", "MISSIONS", "BAR", "STORAGE", "NEWS", "WIRE", "RECORD"] as const;
+const TABS = ["MARKET", "SHIPYARD", "SHIPS", "MISSIONS", "BAR", "SURVEY", "STORAGE", "NEWS", "WIRE", "RECORD"] as const;
 
 export class StationScene implements Scene {
   touchMode = "menu" as const;
@@ -133,7 +134,7 @@ export class StationScene implements Scene {
         if (inp.wasPressed("s") || inp.wasPressed("Backspace")) {
           const price = sellPrice(st, id, rep);
           if (!removeCargo(p, id, 1)) g.toast("NONE IN CARGO");
-          else { p.credits += price; st.stock[id] = (st.stock[id] ?? 0) + 1; refreshPrices(st); }
+          else { p.credits += price; p.tradeRevenue = (p.tradeRevenue ?? 0) + price; st.stock[id] = (st.stock[id] ?? 0) + 1; refreshPrices(st); }
         }
         break;
       }
@@ -201,6 +202,10 @@ export class StationScene implements Scene {
       case "WIRE":
         if (!this.wireLoaded) { this.wireLoaded = true; void this.loadWire(); }
         if (inp.wasPressed("c")) { void this.chooseCallsign(g); }
+        break;
+      case "SURVEY":
+        this.cursor = 0;
+        if (enter) this.sellExploration(g);
         break;
       case "RECORD":
         this.cursor = 0;
@@ -337,6 +342,19 @@ export class StationScene implements Scene {
       if (p.credits < 240) return g.toast("NOT ENOUGH CREDITS");
       p.credits -= 240; p.torpedoes = (p.torpedoes ?? 0) + 4; g.toast("TORPEDOES RACKED - FIRE WITH R");
     } });
+    for (const m of MODULES) {
+      if (hasModule(p, m.id)) continue;
+      opts.push({ label: `FIT ${m.name.toUpperCase()}`, sub: `${m.price}CR`, action: () => {
+        if (p.credits < m.price) return g.toast("NOT ENOUGH CREDITS");
+        p.credits -= m.price;
+        (p.modules ??= []).push(m.id);
+        if (m.fuel) p.fuelMax += m.fuel;
+        if (m.cargo) p.cargoMax += m.cargo;
+        if (m.shield) { p.shieldMax = Math.round(p.shieldMax * (1 + m.shield)); p.shield = p.shieldMax; }
+        flag(g, "outfitted");
+        g.toast(`${m.name.toUpperCase()} FITTED - ${m.desc.toUpperCase()}`);
+      } });
+    }
     opts.push({ label: `CARGO POD +10 (NOW ${p.cargoMax})`, sub: "500CR", action: () => {
       if (p.credits < 500) return g.toast("NOT ENOUGH CREDITS");
       p.credits -= 500; p.cargoMax += 10; g.toast("CARGO EXPANDED");
@@ -404,6 +422,7 @@ export class StationScene implements Scene {
       case "NEWS": this.drawNews(g, ctx, top); break;
       case "WIRE": this.drawWire(g, ctx, top); break;
       case "RECORD": this.drawRecord(g, ctx, top); break;
+      case "SURVEY": this.drawSurvey(g, ctx, top); break;
     }
     if (g.toastTimer > 0) drawText(ctx, g.toastMsg, VW / 2 - textWidth(g.toastMsg) / 2, VH - 10, PAL.ui);
     if (g.hint) drawText(ctx, g.hint, VW / 2 - textWidth(g.hint) / 2, VH - 20, PAL.gold);
@@ -445,22 +464,31 @@ export class StationScene implements Scene {
   drawShipyard(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
     const opts = this.shipyardOptions(g);
     opts.forEach((o, i) => {
-      const y = top + i * 11;
+      const y = top + i * 9;
       this.row(ctx, y, i === this.cursor);
       drawText(ctx, o.label, 8, y, PAL.white);
-      drawText(ctx, o.sub, VW - textWidth(o.sub) - 8, y, PAL.gold);
+      drawText(ctx, o.sub, 290 - textWidth(o.sub) - 8, y, PAL.gold);
     });
     const p = g.world.player;
-    let y = top + opts.length * 11 + 6;
-    drawText(ctx, `SHIP SYSTEMS (${hull(p.hullId).name.toUpperCase()}):`, 8, y, PAL.greyDark);
+    const cur = opts[this.cursor];
+    const mod = cur && MODULES.find((m) => cur.label === `FIT ${m.name.toUpperCase()}`);
+    if (mod) drawText(ctx, mod.desc.toUpperCase().slice(0, 100), 8, VH - 32, PAL.info);
+    let y = top;
+    const x = 300;
+    drawText(ctx, `SHIP SYSTEMS (${hull(p.hullId).name.toUpperCase()}):`, x, y, PAL.greyDark);
     y += 10;
     for (const s of p.systems) {
       const col = s.health > 70 ? PAL.good : s.health > 35 ? PAL.warn : PAL.danger;
-      drawText(ctx, s.name, 8, y, PAL.grey);
-      ctx.fillStyle = PAL.greyDark; ctx.fillRect(120, y + 1, 50, 3);
-      ctx.fillStyle = col; ctx.fillRect(120, y + 1, Math.round(50 * s.health / 100), 3);
+      drawText(ctx, s.name, x, y, PAL.grey);
+      ctx.fillStyle = PAL.greyDark; ctx.fillRect(x + 100, y + 1, 50, 3);
+      ctx.fillStyle = col; ctx.fillRect(x + 100, y + 1, Math.round(50 * s.health / 100), 3);
       y += 9;
     }
+    y += 4;
+    drawText(ctx, "FITTED MODULES:", x, y, PAL.greyDark); y += 10;
+    const fitted = (p.modules ?? []).map((id) => moduleDef(id)?.name.toUpperCase() ?? id);
+    if (!fitted.length) { drawText(ctx, "NONE - STOCK HULL", x, y, PAL.grey); y += 9; }
+    for (const f of fitted) { drawText(ctx, f, x, y, PAL.ui); y += 9; }
   }
 
   drawShips(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
@@ -604,6 +632,59 @@ export class StationScene implements Scene {
     });
   }
 
+  sellExploration(g: Game): void {
+    const p = g.world.player;
+    const st = this.station;
+    const worth = Math.round(p.expData ?? 0);
+    if (worth <= 0) { g.toast("NO UNSOLD EXPLORATION DATA - LOG SYSTEMS, SCAN, SURVEY WORLDS"); return; }
+    const bonus = st.type === "research" ? 1.25 : 1;
+    const paid = Math.round(worth * bonus);
+    p.credits += paid;
+    p.expSold = (p.expSold ?? 0) + paid;
+    p.expData = 0;
+    adjustRep(g.world, st.factionId, Math.min(8, 1 + Math.floor(paid / 400)));
+    g.toast(`CARTOGRAPHICS PAID ${paid}CR${bonus > 1 ? " (RESEARCH POST BONUS)" : ""}`);
+    sfx.pickup();
+    if (paid >= 1000) void wire.post("discovery", `sold exploration data worth ${paid} CR`, g.world.systems[p.systemId].name);
+  }
+
+  drawSurvey(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
+    const p = g.world.player;
+    const w = g.world;
+    const st = this.station;
+    drawText(ctx, "UNIVERSAL CARTOGRAPHICS", 8, top, PAL.info);
+    const worth = Math.round(p.expData ?? 0);
+    this.row(ctx, top + 12, true);
+    drawText(ctx, `SELL EXPLORATION DATA: ${worth}CR${st.type === "research" ? " x1.25 HERE" : ""}`, 8, top + 12, worth > 0 ? PAL.white : PAL.grey);
+    drawText(ctx, "ENTER", VW - textWidth("ENTER") - 8, top + 12, PAL.gold);
+    let y = top + 28;
+    drawText(ctx, "CAREERS:", 8, y, PAL.greyDark); y += 10;
+    for (const kind of ["explorer", "trader", "miner"] as const) {
+      const r = rankOf(p, kind);
+      const v = rankValue(p, kind);
+      const unit = kind === "miner" ? " UNITS" : "CR";
+      drawText(ctx, `${kind.toUpperCase()}`, 8, y, PAL.grey);
+      drawText(ctx, r.title, 60, y, r.idx >= 8 ? PAL.gold : PAL.ui);
+      drawText(ctx, r.next ? `${Math.round(v)}${unit} / NEXT ${r.next}${unit}` : `${Math.round(v)}${unit} - TOP OF THE LADDER`, 130, y, PAL.greyDark);
+      y += 9;
+    }
+    y += 4;
+    drawText(ctx, "HOW DATA IS EARNED: ARRIVE (NAV LOG) - HOLD V IN-SYSTEM (DETAILED) - SURVEY WORLDS FROM ORBIT - FIRST DISCOVERIES", 8, y, PAL.greyDark); y += 9;
+    drawText(ctx, "DISCOVERY SCANNER LOGS FULLY ON ARRIVAL. SURFACE SCANNER DOUBLES SURVEY PAY. RESEARCH POSTS PAY 25% MORE.", 8, y, PAL.greyDark); y += 12;
+    const log = Object.entries(p.expLog ?? {});
+    drawText(ctx, `LOGGED SYSTEMS (${log.length}/${Object.keys(w.systems).length}):`, 8, y, PAL.greyDark); y += 10;
+    const cols = 3;
+    log.slice(0, 27).forEach(([id, lvl], i) => {
+      const sys = w.systems[id];
+        if (!sys) return;
+      const first = p.firsts?.[id];
+      const x = 8 + (i % cols) * 156;
+      const yy = y + Math.floor(i / cols) * 9;
+      drawText(ctx, `${sys.name.slice(0, 16)} ${lvl === 2 ? "DETAILED" : "BASIC"}`, x, yy, lvl === 2 ? PAL.ui : PAL.grey);
+      if (first) drawText(ctx, `1ST ${first}`.slice(0, 20), x + 96, yy, first === wire.getCallsign() ? PAL.gold : PAL.greyDark);
+    });
+  }
+
   drawRecord(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
     const p = g.world.player;
     const w = g.world;
@@ -613,9 +694,10 @@ export class StationScene implements Scene {
       `KILLS ${p.kills}`, `DISCOVERIES ${p.discoveries}`, `ARCS ${Object.values(p.arcs).reduce((a, b) => a + b, 0)}/15`,
       `CREDITS ${p.credits}`, `CREW ${p.crew.length}`, `HULL ${hull(p.hullId).name.toUpperCase()}`,
       `TIME ${Math.floor(w.time / 60)}M`, `ACHIEVEMENTS ${have.size}/${ACHIEVEMENTS.length}`,
+      `EXPLORER ${rankOf(p, "explorer").title}`, `TRADER ${rankOf(p, "trader").title}`, `MINER ${rankOf(p, "miner").title}`, `MODULES ${(p.modules ?? []).length}`,
     ];
     stats.forEach((t, i) => drawText(ctx, t, 8 + (i % 4) * 118, top + 12 + Math.floor(i / 4) * 9, PAL.grey));
-    let y = top + 36;
+    let y = top + 45;
     ACHIEVEMENTS.forEach((a, i) => {
       const x = 8 + (i % 2) * 236;
       if (i % 2 === 0 && i > 0) y += 10;

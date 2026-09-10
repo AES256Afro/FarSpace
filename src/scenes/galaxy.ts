@@ -126,6 +126,10 @@ export class GalaxyScene implements Scene {
       const pir = sys.pirateActivity;
       drawText(ctx, `PIRACY: ${pir > 0.6 ? "SEVERE" : pir > 0.3 ? "MODERATE" : "LOW"}`, px + 6, y, pir > 0.6 ? PAL.danger : pir > 0.3 ? PAL.warn : PAL.good); y += 9;
       if (w.wars.some((ww) => ww.systemId === sys.id)) { drawText(ctx, "ACTIVE WAR ZONE", px + 6, y, PAL.danger); y += 9; }
+      const lvl = w.player.expLog?.[sys.id] ?? 0;
+      drawText(ctx, lvl === 2 ? "LOGGED: DETAILED" : lvl === 1 ? "LOGGED: BASIC" : "UNLOGGED", px + 6, y, lvl ? PAL.grey : PAL.greyDark); y += 9;
+      const first = w.player.firsts?.[sys.id];
+      if (first) { drawText(ctx, `FIRST: ${first}`.slice(0, 27), px + 6, y, PAL.gold); y += 9; }
       y += 3;
       drawText(ctx, "STATIONS:", px + 6, y, PAL.greyDark); y += 9;
       for (const st of sys.stations) { drawText(ctx, `${st.military ? "*" : "-"} ${st.name}`.slice(0, 27), px + 6, y, st.military ? PAL.danger : PAL.ui); y += 8; }

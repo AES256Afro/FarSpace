@@ -7,6 +7,7 @@ import { PAL } from "../gfx/palette";
 import { faction } from "../data/data";
 import { Poi, adjustRep, pushEvent } from "../world";
 import { sfx } from "../core/sfx";
+import { hasModule } from "../data/modules";
 import { clamp } from "../core/mathx";
 
 const R = 64;
@@ -64,17 +65,19 @@ export class OrbitScene implements Scene {
     }
     // scan: reveals unsurveyed POIs (each pays a small survey bounty once)
     if (inp.isDown("v")) {
-      this.scan = Math.min(1, this.scan + dt * 0.45);
+      this.scan = Math.min(1, this.scan + dt * (hasModule(p, "dss") ? 1.4 : 0.45));
       if (this.scan >= 1) {
         this.scan = 0;
         const fresh = pois.filter((x) => !x.surveyed);
         for (const x of fresh) x.surveyed = true;
         surf.scanned = true;
         if (fresh.length) {
-          const pay = fresh.length * 40;
+          const dss = hasModule(p, "dss");
+          const pay = fresh.length * (dss ? 80 : 40);
           p.credits += pay;
           p.discoveries += fresh.length;
-          g.toast(`SURVEY COMPLETE: ${fresh.length} SITES +${pay}CR`);
+          p.expData = (p.expData ?? 0) + fresh.length * (dss ? 60 : 30);
+          g.toast(`SURVEY COMPLETE: ${fresh.length} SITES +${pay}CR +${fresh.length * (dss ? 60 : 30)} DATA`);
           adjustRep(g.world, sys.factionId, 2);
           sfx.pickup();
         } else g.toast("ALREADY SURVEYED");

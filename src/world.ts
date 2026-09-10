@@ -9,6 +9,7 @@ import {
 } from "./data/data";
 import { STARS, starXYZ, starDistance } from "./data/stars";
 import { hull } from "./data/hulls";
+import { moduleDef } from "./data/modules";
 import type { CrewMember, CrewRole } from "./data/crew";
 import { ROLE_INFO } from "./data/crew";
 
@@ -211,6 +212,14 @@ export interface PlayerState {
   flags?: Record<string, boolean>;   // one-off deeds for achievements
   achievements?: string[];
   dailyDone?: string;                // UTC date key of the last daily completed
+  modules?: string[];                // fitted module ids (data/modules.ts)
+  heat?: number;                     // 0..100+, from stars and scooping
+  expData?: number;                  // unsold exploration data, in credits
+  expLog?: Record<string, number>;   // system id → scan level (1 arrival, 2 detailed)
+  expSold?: number;                  // lifetime exploration data sold (explorer rank)
+  tradeRevenue?: number;             // lifetime market sales (trader rank)
+  mined?: number;                    // lifetime ore units cracked (miner rank)
+  firsts?: Record<string, string>;   // system id → call sign of the first discoverer (learned)
 }
 
 export interface World {
@@ -740,6 +749,13 @@ export function generateWorld(seed: number, opts: GenOptions = {}): World {
     torpedoes: 2,
     flags: {},
     achievements: [],
+    modules: [],
+    heat: 0,
+    expData: 0,
+    expLog: {},
+    expSold: 0,
+    tradeRevenue: 0,
+    mined: 0,
   };
 
   const world: World = {
@@ -945,6 +961,44 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
   return missions;
 }
 
+// ---------- Ranks & exploration ----------
+// Three non-combat careers, nine grades each, Elite at the top.
+
+export type RankKind = "explorer" | "trader" | "miner";
+export const RANK_TITLES: Record<RankKind, string[]> = {
+  explorer: ["AIMLESS", "MOSTLY AIMLESS", "SCOUT", "SURVEYOR", "TRAILBLAZER", "PATHFINDER", "RANGER", "PIONEER", "ELITE"],
+  trader: ["PENNILESS", "MOSTLY PENNILESS", "PEDDLER", "DEALER", "MERCHANT", "BROKER", "ENTREPRENEUR", "TYCOON", "ELITE"],
+  miner: ["PROSPECT", "DIGGER", "DRILLER", "EXCAVATOR", "CORE CUTTER", "FOREMAN", "MAGNATE", "BARON", "ELITE"],
+};
+const RANK_STEPS: Record<RankKind, number[]> = {
+  explorer: [0, 300, 1000, 2500, 5000, 10000, 20000, 40000, 80000],
+  trader: [0, 1000, 3000, 8000, 20000, 50000, 100000, 250000, 500000],
+  miner: [0, 20, 60, 150, 300, 600, 1200, 2500, 5000],
+};
+
+export function rankValue(p: PlayerState, kind: RankKind): number {
+  return kind === "explorer" ? p.expSold ?? 0 : kind === "trader" ? p.tradeRevenue ?? 0 : p.mined ?? 0;
+}
+
+export function rankOf(p: PlayerState, kind: RankKind): { idx: number; title: string; next: number | null } {
+  const v = rankValue(p, kind);
+  const steps = RANK_STEPS[kind];
+  let idx = 0;
+  for (let i = 0; i < steps.length; i++) if (v >= steps[i]) idx = i;
+  return { idx, title: RANK_TITLES[kind][idx], next: idx + 1 < steps.length ? steps[idx + 1] : null };
+}
+
+// Log a system at a scan level; returns the exploration data (credits) earned.
+export function logSystem(p: PlayerState, sys: SystemDef, level: 1 | 2): number {
+  p.expLog ??= {};
+  const have = p.expLog[sys.id] ?? 0;
+  if (level <= have) return 0;
+  const value = (level === 1 ? 60 : 160) + sys.planets.length * 25 + (sys.starClass ? 20 : 0) - (have === 1 ? 60 : 0);
+  p.expLog[sys.id] = level;
+  p.expData = (p.expData ?? 0) + value;
+  return value;
+}
+
 // ---------- Daily contract ----------
 // One contract everyone in the galaxy sees today: same goods, same quantity, same pay.
 
@@ -1067,6 +1121,14 @@ export function applyHull(p: PlayerState, hullId: string): void {
   p.shieldMax = h.shieldMax; p.shield = h.shieldMax;
   p.fuelMax = h.fuelMax; p.fuel = Math.min(p.fuel, h.fuelMax);
   p.cargoMax = h.cargoMax;
+  // fitted modules move across with you
+  for (const id of p.modules ?? []) {
+    const m = moduleDef(id);
+    if (!m) continue;
+    p.fuelMax += m.fuel ?? 0; p.cargoMax += m.cargo ?? 0;
+    p.shieldMax = Math.round(p.shieldMax * (1 + (m.shield ?? 0)));
+  }
+  p.shield = p.shieldMax;
   p.systems = defaultSystems();
   p.breaches = [];
   p.fires = [];

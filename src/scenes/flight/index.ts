@@ -4,7 +4,9 @@
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem } from "../../world";
+import { hasModule } from "../../data/modules";
+import { flag } from "../../core/achievements";
 import { faction } from "../../data/data";
 import { hull } from "../../data/hulls";
 import { sfx } from "../../core/sfx";
@@ -14,6 +16,7 @@ import { VW, VH } from "../../game";
 import { music } from "../../core/music";
 import * as wire from "../../core/wire";
 import type { Bullet, Npc, Particle, Platform, Loot, Sos } from "./types";
+import type { StationDef } from "../../world";
 import { BULLET_SPEED } from "./types";
 import {
   populate, spawnPirateNearBelt, spawnDrones, exhaust, mine, updateBullets, updateNpcs,
@@ -111,9 +114,10 @@ export class FlightScene implements Scene {
     const weaponsSys = p.systems.find((s) => s.id === "weapons")!;
     const engineFactor = 0.3 + 0.7 * (engineSys.health / 100);
     const pilot = 1 + crewBonus(p, "pilot") * 0.15 + (p.skills?.piloting ?? 0) * 0.02;
-    const ACCEL = h.accel * pilot;
+    const tuned = hasModule(p, "thrusters") ? 1.15 : 1;
+    const ACCEL = h.accel * pilot * tuned;
     const ROT = h.rotSpeed * pilot;
-    const MAXS = h.maxSpeed;
+    const MAXS = h.maxSpeed * tuned;
 
     if (lifeSys.health < 50) {
       p.oxygen = Math.max(0, p.oxygen - dt * (50 - lifeSys.health) * 0.02);
@@ -211,13 +215,18 @@ export class FlightScene implements Scene {
         for (const an of sys.anomalies) {
           if (!an.discovered && dist(an.x, an.y, p.x, p.y) < 900) { an.discovered = true; found++; }
         }
-        g.toast(found ? `SCAN: ${found} ANOMALY SIGNAL${found > 1 ? "S" : ""} LOCATED` : "SCAN: NOTHING WITHIN RANGE");
+        const logged = logSystem(p, sys, 2);
+        g.toast(found ? `SCAN: ${found} ANOMALY SIGNAL${found > 1 ? "S" : ""} LOCATED${logged ? ` - SYSTEM LOGGED +${logged} DATA` : ""}` : logged ? `SCAN: SYSTEM LOGGED +${logged} EXPLORATION DATA` : "SCAN: NOTHING WITHIN RANGE");
         sfx.select();
         if (found) g.showHint("anomaly", "ANOMALY FOUND - FLY TO THE MARKER AND PRESS E");
       }
     } else {
       this.scanCharge = 0;
     }
+
+    this.updateHeat(g, dt);
+    this.updateDockingComputer(g, dt);
+    if (this.arrivalLog) { this.arrivalTimer -= dt; if (this.arrivalTimer <= 0) this.arrivalLog = ""; }
 
     // soundtrack: faction pad, pulse rising with hostiles in weapons range
     {
@@ -340,22 +349,87 @@ export class FlightScene implements Scene {
 
   // ---------- Interactions ----------
 
+  dockAt(g: Game, st: StationDef): boolean {
+    const p = g.world.player;
+    const rep = p.rep?.[st.factionId] ?? 0;
+    if (st.military && rep < -20) { g.toast("DOCKING DENIED - YOUR RECORD PRECEDES YOU"); return false; }
+    if (rep < -60) { g.toast("DOCKING DENIED - PERSONA NON GRATA"); return false; }
+    p.dockedAt = st.id;
+    p.vx = 0; p.vy = 0;
+    sfx.dock();
+    g.setScene("station");
+    return true;
+  }
+
+  // Docking computer: sit still near a bay and it takes you in.
+  dockTimer = 0;
+  updateDockingComputer(g: Game, dt: number): void {
+    const p = g.world.player;
+    if (!hasModule(p, "dock") || Math.hypot(p.vx, p.vy) > 45) { this.dockTimer = 0; return; }
+    const sys = g.world.systems[p.systemId];
+    const st = sys.stations.find((s) => dist(p.x, p.y, Math.cos(s.angle) * s.orbit, Math.sin(s.angle) * s.orbit) < 150);
+    if (!st) { this.dockTimer = 0; return; }
+    this.dockTimer += dt;
+    if (this.dockTimer > 2.5) {
+      this.dockTimer = 0;
+      if (this.dockAt(g, st)) g.toast(`DOCKING COMPUTER: AUTO-DOCKED AT ${st.name.toUpperCase()}`);
+      else this.dockTimer = -30; // denied: don't nag for a while
+    }
+  }
+
+  arrivalLog = "";
+  arrivalTimer = 0;
+  // First discovery: the wire remembers who logged a system first.
+  async claimFirst(g: Game, sys: { id: string; name: string }): Promise<void> {
+    const p = g.world.player;
+    p.firsts ??= {};
+    if (p.firsts[sys.id] || !wire.getCallsign()) return;
+    const r = await wire.discover(sys.name);
+    if (!r) return;
+    p.firsts[sys.id] = r.by;
+    if (r.first) {
+      g.toast(`FIRST DISCOVERY: ${sys.name.toUpperCase()} - TAGGED ${r.by}`);
+      p.expData = (p.expData ?? 0) + 250;
+      flag(g, "first");
+      sfx.pickup();
+    }
+  }
+
+  // Heat: stars cook you; a fuel scoop turns the corona into fuel.
+  scooping = false;
+  updateHeat(g: Game, dt: number): void {
+    const p = g.world.player;
+    const sys = g.world.systems[p.systemId];
+    p.heat ??= 0;
+    const d = Math.hypot(p.x, p.y) - sys.sunRadius;
+    const scoopZone = d < 200;
+    const hot = d < 320;
+    this.scooping = false;
+    if (hot) p.heat += dt * 26 * (1 - Math.max(0, d) / 320);
+    if (scoopZone && hasModule(p, "scoop") && p.fuel < p.fuelMax) {
+      this.scooping = true;
+      p.fuel = Math.min(p.fuelMax, p.fuel + dt * 7);
+      p.heat += dt * 10;
+      if (!p.flags?.scooped) { flag(g, "scooped"); g.showHint("scoop", "SCOOPING - THE HEAT BAR IS YOUR CLOCK"); }
+    } else if (scoopZone && !hasModule(p, "scoop") && !p.hints?.["noscoop"]) {
+      g.showHint("noscoop", "TOO CLOSE TO THE STAR - A FUEL SCOOP WOULD TURN THIS INTO FUEL");
+    }
+    p.heat = Math.max(0, p.heat - dt * (hasModule(p, "radiators") ? 24 : 12));
+    if (p.heat > 100) {
+      p.heat = Math.min(140, p.heat);
+      p.hull -= dt * 5;
+      if (Math.random() < dt * 2) { this.scanMsg = "OVERHEATING - HULL TAKING DAMAGE"; this.scanTimer = 1; sfx.hit(); }
+      if (p.hull <= 0) { p.hull = 0; this.destroyed(g); }
+    }
+  }
+
   tryInteract(g: Game): void {
     const p = g.world.player;
     const sys = g.world.systems[p.systemId];
     for (const st of sys.stations) {
       const sx = Math.cos(st.angle) * st.orbit;
       const sy = Math.sin(st.angle) * st.orbit;
-      if (dist(p.x, p.y, sx, sy) < 60) {
-        const rep = p.rep?.[st.factionId] ?? 0;
-        if (st.military && rep < -20) { g.toast("DOCKING DENIED - YOUR RECORD PRECEDES YOU"); return; }
-        if (rep < -60) { g.toast("DOCKING DENIED - PERSONA NON GRATA"); return; }
-        p.dockedAt = st.id;
-        p.vx = 0; p.vy = 0;
-        sfx.dock();
-        g.setScene("station");
-        return;
-      }
+      if (dist(p.x, p.y, sx, sy) < 60) { this.dockAt(g, st); return; }
     }
     for (const jp of sys.jumpPoints) {
       if (dist(p.x, p.y, jp.x, jp.y) < 70) { this.doJump(g, jp.targetSystemId, jp.guarded); return; }
@@ -441,6 +515,14 @@ export class FlightScene implements Scene {
     const fromId = p.systemId;
     p.systemId = targetId;
     const tsys = g.world.systems[targetId];
+    this.dockTimer = 0;
+    {
+      const fss = hasModule(p, "fss");
+      const gained = logSystem(p, tsys, fss ? 2 : 1);
+      if (fss) for (const an of tsys.anomalies) an.discovered = true;
+      if (gained) { this.arrivalLog = `${fss ? "DISCOVERY SCANNER" : "NAV LOG"}: ${tsys.name.toUpperCase()} LOGGED +${gained} EXPLORATION DATA`; this.arrivalTimer = 6; }
+      void this.claimFirst(g, tsys);
+    }
     const use = tsys.jumpPoints.find((j) => j.targetSystemId === fromId) ?? tsys.jumpPoints[0];
     if (use) { p.x = use.x + 60; p.y = use.y + 60; } else { p.x = 0; p.y = -800; }
     p.vx = 0; p.vy = 0;

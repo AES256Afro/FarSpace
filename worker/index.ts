@@ -89,6 +89,31 @@ export default {
       return json({ error: "method" }, 405);
     }
 
+    // First discovery tags: one call sign per system name, first come first served.
+    if (url.pathname === "/api/discover") {
+      if (request.method === "GET") {
+        const system = clean(url.searchParams.get("system"), 40);
+        if (!system) return json({ error: "system?" }, 400);
+        const by = await env.SAVES.get(`disc:${system.toLowerCase()}`, "text");
+        return json({ system, by });
+      }
+      if (request.method === "POST") {
+        if (await rateLimited(env, request, "discover", 30)) return json({ error: "slow down" }, 429);
+        let body: Record<string, unknown>;
+        try { body = (await request.json()) as Record<string, unknown>; } catch { return json({ error: "not json" }, 400); }
+        const callsign = clean(body.callsign, 16).toUpperCase();
+        const system = clean(body.system, 40);
+        if (!CALLSIGN.test(callsign)) return json({ error: "bad callsign" }, 400);
+        if (!system) return json({ error: "bad system" }, 400);
+        const key = `disc:${system.toLowerCase()}`;
+        const by = await env.SAVES.get(key, "text");
+        if (by) return json({ first: false, by });
+        await env.SAVES.put(key, callsign);
+        return json({ first: true, by: callsign });
+      }
+      return json({ error: "method" }, 405);
+    }
+
     const bm = url.pathname.match(/^\/api\/board\/([a-z]+)$/);
     if (bm) {
       const name = bm[1];

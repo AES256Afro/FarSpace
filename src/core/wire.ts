@@ -85,3 +85,19 @@ export function ageLabel(t: number): string {
   if (s < 86400) return `${Math.floor(s / 3600)}H`;
   return `${Math.floor(s / 86400)}D`;
 }
+
+// First discovery: the edge remembers who logged a system first. Null when
+// there is no call sign or the wire is unreachable (nothing is lost; retried on
+// the next arrival).
+export async function discover(system: string): Promise<{ first: boolean; by: string } | null> {
+  const callsign = getCallsign();
+  if (!callsign) return null;
+  try {
+    const r = await fetch(`${cloudBase()}/api/discover`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ system, callsign }),
+    });
+    if (!r.ok) return null;
+    return (await r.json()) as { first: boolean; by: string };
+  } catch { return null; }
+}

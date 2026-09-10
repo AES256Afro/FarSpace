@@ -9,6 +9,7 @@ import { clamp, TAU, angDiff, dist } from "../../core/mathx";
 import { SYSTEM_SIZE, navRoute, repLabel } from "../../world";
 import { faction } from "../../data/data";
 import { hull } from "../../data/hulls";
+import { hasModule } from "../../data/modules";
 import { inSafeZone } from "./ai";
 import { drawTouchControls } from "../../core/touch";
 import { drawTutorial } from "../../core/tutorial";
@@ -128,6 +129,23 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
     const spr = g.asteroidSprite(a.spriteSeed, a.radius, a.rich);
     const s = spr.width * z;
     ctx.drawImage(spr, sx - s / 2, sy - s / 2, s, s);
+  }
+
+  // prospector limpets: read the rock you're pointing at
+  if (hasModule(p, "prospector")) {
+    let best: (typeof sys.asteroids)[number] | null = null; let bestD = 220;
+    for (const a of sys.asteroids) {
+      if (a.ore <= 0) continue;
+      const d = dist(p.x, p.y, a.x, a.y);
+      if (d < bestD && Math.abs(angDiff(fs.aim, Math.atan2(a.y - p.y, a.x - p.x))) < 0.35) { bestD = d; best = a; }
+    }
+    if (best) {
+      const [sx, sy] = toScreen(best.x, best.y);
+      const label = `${best.rich ? "MOTHERLODE" : "ORE"} ${Math.ceil(best.ore)}${best.rich ? " - RICH" : ""}`;
+      ctx.strokeStyle = best.rich ? PAL.gold : PAL.mining;
+      ctx.strokeRect(Math.round(sx - best.radius * z) - 2.5, Math.round(sy - best.radius * z) - 2.5, Math.round(best.radius * z * 2) + 5, Math.round(best.radius * z * 2) + 5);
+      drawText(ctx, label, sx - textWidth(label) / 2, sy - best.radius * z - 10, best.rich ? PAL.gold : PAL.mining);
+    }
   }
 
   // mining beam
@@ -299,7 +317,8 @@ export function drawEdgeMarkers(fs: FlightScene, g: Game, ctx: CanvasRenderingCo
     const st = sys.stations.find((s) => s.id === m.targetStationId);
     if (st) mark(Math.cos(st.angle) * st.orbit, Math.sin(st.angle) * st.orbit, PAL.gold, "MISSION");
   }
-  for (const w of sys.wrecks) if (!w.looted && dist(w.x, w.y, p.x, p.y) < 1500) mark(w.x, w.y, PAL.grey, "WRECK");
+  const wreckRange = hasModule(p, "fss") ? 1e9 : 1500;
+  for (const w of sys.wrecks) if (!w.looted && dist(w.x, w.y, p.x, p.y) < wreckRange) mark(w.x, w.y, PAL.grey, "WRECK");
 }
 
 export function drawRotated(ctx: CanvasRenderingContext2D, spr: HTMLCanvasElement, x: number, y: number, ang: number, z: number): void {
@@ -376,6 +395,21 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
   }
   if (p.crew && p.crew.some((c) => c.morale < 30)) { drawText(ctx, "! CREW MORALE LOW", 4, wy, PAL.warn); wy += 8; }
   drawText(ctx, `${hull(p.hullId).name.toUpperCase()}  TORP ${p.torpedoes ?? 0}`, 4, wy, PAL.greyDark);
+  // heat: only shown when it matters
+  const heat = p.heat ?? 0;
+  if (heat > 4 || fs.scooping) {
+    const hx = VW - 60, hy = wy;
+    drawText(ctx, fs.scooping ? "SCOOP" : "HEAT", hx - 24, hy, fs.scooping ? PAL.thrust : heat > 80 ? PAL.danger : PAL.grey);
+    ctx.fillStyle = PAL.greyDark; ctx.fillRect(hx, hy + 1, 50, 4);
+    ctx.fillStyle = heat > 100 ? PAL.danger : heat > 70 ? PAL.warn : PAL.thrust;
+    ctx.fillRect(hx, hy + 1, Math.round(50 * clamp(heat / 100, 0, 1)), 4);
+    if (heat > 100 && Math.floor(g.world.time * 6) % 2 === 0) drawText(ctx, "OVERHEAT", hx + 8, hy - 9, PAL.danger);
+  }
+  if (fs.dockTimer > 0.2) {
+    const t = `DOCKING COMPUTER ${".".repeat(1 + Math.floor(fs.dockTimer * 2) % 3)}`;
+    drawText(ctx, t, VW / 2 - textWidth(t) / 2, VH - 44, PAL.info);
+  }
+  if (fs.arrivalLog) drawText(ctx, fs.arrivalLog, VW / 2 - textWidth(fs.arrivalLog) / 2, 30, PAL.info);
   wy += 10;
   for (const c of fs.comms) {
     ctx.globalAlpha = Math.min(1, c.life);

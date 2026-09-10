@@ -3,7 +3,7 @@
 
 import type { World } from "./world";
 
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 export const SAVE_KEY = "farspace-save";
 
 type Migration = (w: Record<string, unknown>) => void;
@@ -51,6 +51,17 @@ const MIGRATIONS: Record<number, Migration> = {
   4: (w) => {
     const p = w.player as Record<string, unknown>;
     p.tutorial ??= -1;
+  },
+  // 5 → 6: modules, heat, exploration data, career ranks
+  5: (w) => {
+    const p = w.player as Record<string, unknown>;
+    p.modules ??= [];
+    p.heat ??= 0;
+    p.expData ??= 0;
+    p.expLog ??= {};
+    p.expSold ??= 0;
+    p.tradeRevenue ??= 0;
+    p.mined ??= 0;
   },
 };
 

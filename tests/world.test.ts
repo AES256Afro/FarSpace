@@ -8,7 +8,8 @@ import { migrateSave, SAVE_VERSION } from "../src/save";
 import { RNG } from "../src/core/rng";
 import { STARS, starDistance } from "../src/data/stars";
 import { ACHIEVEMENTS } from "../src/data/achievements";
-import { ARCS, dailyContract, dailyKey } from "../src/world";
+import { ARCS, dailyContract, dailyKey, rankOf, logSystem, applyHull } from "../src/world";
+import { MODULES } from "../src/data/modules";
 
 describe("world generation", () => {
   it("is deterministic per seed", () => {
@@ -277,5 +278,38 @@ describe("milestone 10 content", () => {
   it("hardcore flag is carried by generation options", () => {
     expect(generateWorld(5, { hardcore: true }).hardcore).toBe(true);
     expect(generateWorld(5).hardcore).toBe(false);
+  });
+});
+
+describe("careers, modules, exploration", () => {
+  it("ranks climb their ladders and top out at ELITE", () => {
+    const w = generateWorld(6);
+    expect(rankOf(w.player, "explorer").title).toBe("AIMLESS");
+    w.player.expSold = 1200;
+    expect(rankOf(w.player, "explorer").title).toBe("SCOUT");
+    w.player.tradeRevenue = 1e6;
+    expect(rankOf(w.player, "trader").title).toBe("ELITE");
+    expect(rankOf(w.player, "trader").next).toBeNull();
+  });
+  it("logging a system pays once per level and upgrades basic to detailed", () => {
+    const w = generateWorld(6);
+    const sys = w.systems[w.player.systemId];
+    const a = logSystem(w.player, sys, 1);
+    expect(a).toBeGreaterThan(0);
+    expect(logSystem(w.player, sys, 1)).toBe(0);
+    const b = logSystem(w.player, sys, 2);
+    expect(b).toBeGreaterThan(0);
+    expect(w.player.expData).toBe(a + b);
+    expect(logSystem(w.player, sys, 2)).toBe(0);
+  });
+  it("modules survive a hull change", () => {
+    const w = generateWorld(6);
+    const p = w.player;
+    p.modules = ["tank", "rack", "booster"];
+    applyHull(p, "freighter");
+    expect(p.fuelMax).toBe(160 + 40);
+    expect(p.cargoMax).toBe(140 + 25);
+    expect(p.shieldMax).toBe(Math.round(70 * 1.3));
+    expect(MODULES.every((m) => m.price > 0 && m.desc.length > 10)).toBe(true);
   });
 });
