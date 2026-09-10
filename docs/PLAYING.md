@@ -229,6 +229,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Regulars
+
+- Stations count your dockings. At five you're a regular and the bulletin
+  says so; at ten the harbourmaster keeps a bay warm, control greets you, and
+  yard work is 5% cheaper. Land a fare there and the bulletin carries the
+  review.
+
 ## Lore
 
 - Every system has a line of history; the chart reads it on the band when

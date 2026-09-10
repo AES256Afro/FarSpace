@@ -570,4 +570,8 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 53 — Passengers Underfoot ✅ (Sep 2026)
 - [x] Passengers stretch their legs aboard; talk to whoever you're beside
 
+## Milestone 54 — Regulars ✅ (Sep 2026)
+- [x] Stations count your dockings: bulletin lines about you, passenger
+      reviews, a regular's rate at the yard, a greeting from control
+
 ## Later

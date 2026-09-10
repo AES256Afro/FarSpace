@@ -301,6 +301,8 @@ export interface PlayerState {
   hullHistory?: { previous: string; quirk: string } | null; // who flew this hull before you, and what they left
   jumpStreak?: number;               // gates in a row without a dock (a pilot's arc counts them)
   ledger?: Record<string, number>;   // credits in and out by source, lifetime
+  dockings?: Record<string, number>; // station id → times docked; regulars get remembered
+  lastFareMood?: Record<string, number>; // station id → mood of the last fare you landed there
   story3?: number;                   // The Keeper: stage index; -1 = not started
   keeper?: { systemId: string; wreckSystemId: string; wreckId: string; contactId: string } | null;
   crossingT?: number;                // when the Crossing was last logged at the kept light
@@ -2513,9 +2515,19 @@ export function stationProfile(w: World, st: StationDef): { population: number; 
   return { population, founded, knownFor: rng.pick(known[st.type] ?? known.trade), quirk: rng.pick(quirks) };
 }
 
+export const REGULAR_AT = 5, OLD_HAND_AT = 10;
+export function dockingsAt(p: PlayerState, stationId: string): number { return (p.dockings ?? {})[stationId] ?? 0; }
 export function stationBulletin(w: World, st: StationDef, now = Date.now()): string[] {
   const rng = new RNG(hashStr(`bulletin:${w.seed}:${st.id}:${dailyKey(now)}`));
   const lines: string[] = [];
+  // the station's own notices about you, once it knows you
+  {
+    const p = w.player; const n = dockingsAt(p, st.id); const ship = (p.shipName ?? "an independent ship").toUpperCase();
+    const mood = (p.lastFareMood ?? {})[st.id];
+    if (mood !== undefined) lines.push(mood >= 80 ? `REVIEW: "${ship}. Five stars. ${p.cat ? "The cat." : "The crew."}" - a passenger, last week.` : mood < 30 ? `REVIEW: "${ship}. Never again." - a passenger, last week. The lounge has opinions.` : `REVIEW: "${ship}. Got me there." - a passenger, last week.`);
+    if (n >= OLD_HAND_AT) lines.push(`The harbourmaster keeps a bay warm for the ${ship}: ${n} dockings. Yard work at a regular's rate.`);
+    else if (n >= REGULAR_AT) lines.push(`Regulars this month include the ${ship} (${n} dockings). The bar knows the order.`);
+  }
   const pool = [
     () => `LOST: ${rng.pick(["a grey tabby", "a set of docking keys", "one pilot's dignity", "a crate marked FRAGILE, sadly"])} near bay ${rng.int(1, 9)}. Reward.`,
     () => `HIRING: ${rng.pick(["deck hands", "a night-shift medic", "someone who can read a reactor gauge", "tug pilots, no questions"])}. Ask at the bar.`,

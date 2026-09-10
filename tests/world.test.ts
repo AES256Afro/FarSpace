@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
-  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn, captainByName, helpCaptain, isFriend, friendsAt, tickMail, pickCaptainFor, canUpgradeInfra, upgradeInfra, rivalOf, isRival, rivalTakesFare, rivalBeatsYouTo, askRideAlong, tickRideAlong, setHomePort, isHome, donateRelic, hullHistoryFor, notableById, notableOutcome, canFundProject, fundProject, PROJECTS, settlementNeeds, ledger, ledgerAround, LEDGER_LABELS, catGift } from "../src/world";
+  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn, captainByName, helpCaptain, isFriend, friendsAt, tickMail, pickCaptainFor, canUpgradeInfra, upgradeInfra, rivalOf, isRival, rivalTakesFare, rivalBeatsYouTo, askRideAlong, tickRideAlong, setHomePort, isHome, donateRelic, hullHistoryFor, notableById, notableOutcome, canFundProject, fundProject, PROJECTS, settlementNeeds, ledger, ledgerAround, LEDGER_LABELS, catGift, stationBulletin, dockingsAt } from "../src/world";
 import { occasionFor, OCCASIONS } from "../src/data/occasions";
 import { STEPS } from "../src/core/tutorial";
 import { CREW_ARCS, arcObjective } from "../src/core/crewarcs";
@@ -1439,5 +1439,22 @@ describe("small kindnesses", () => {
     const lines = new Set<string>();
     for (let i = 0; i < 200; i++) { const l = catGift(p, new RNG(i)); if (l) lines.add(l.slice(0, 20)); }
     expect(lines.size).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("regulars", () => {
+  it("the bulletin notices regulars and carries the last fare's review", () => {
+    const w = generateWorld(251, { realGalaxy: true });
+    const p = w.player;
+    const st = w.systems[p.systemId].stations[0];
+    p.shipName = "Kestrel";
+    expect(stationBulletin(w, st).some((l) => l.includes("KESTREL"))).toBe(false);
+    p.dockings = { [st.id]: 6 };
+    expect(stationBulletin(w, st).some((l) => l.includes("Regulars") && l.includes("KESTREL"))).toBe(true);
+    p.dockings = { [st.id]: 12 }; p.lastFareMood = { [st.id]: 90 }; p.cat = { name: "Biscuit", since: 0 };
+    const lines = stationBulletin(w, st);
+    expect(lines.some((l) => l.includes("bay warm"))).toBe(true);
+    expect(lines.some((l) => l.includes("Five stars") && l.includes("The cat"))).toBe(true);
+    expect(dockingsAt(p, st.id)).toBe(12);
   });
 });
