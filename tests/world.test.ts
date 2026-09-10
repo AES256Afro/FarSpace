@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
-  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn } from "../src/world";
+  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn, captainByName, helpCaptain, isFriend, friendsAt, tickMail, pickCaptainFor } from "../src/world";
 import type { Charter } from "../src/world";
 import type { Infra } from "../src/world";
 import { migrateSave, SAVE_VERSION, saveKeyFor, SLOTS } from "../src/save";
@@ -1154,5 +1154,36 @@ describe("wonders", () => {
     const m = migrateSave(raw)!;
     expect(m.wonders!.length).toBeGreaterThanOrEqual(3);
     expect(m.version).toBe(SAVE_VERSION);
+  });
+});
+
+describe("contacts", () => {
+  it("a galaxy has regular captains, helping one twice makes a friend, and letters arrive at a later dock with gifts", () => {
+    const w = generateWorld(131, { realGalaxy: true });
+    expect(w.captains!.length).toBeGreaterThanOrEqual(6);
+    const c = w.captains![0];
+    expect(captainByName(w, c.name)).toBe(c);
+    expect(helpCaptain(w, "Nobody", "repair", new RNG(1))).toBeNull();
+    expect(helpCaptain(w, c.name, "repair", new RNG(1))).toBeNull();
+    expect(c.disposition).toBe(1); expect(isFriend(c)).toBe(false);
+    const line = helpCaptain(w, c.name, "tow", new RNG(2));
+    expect(line).toContain("FRIEND");
+    expect(isFriend(c)).toBe(true);
+    expect(friendsAt(w, c.homeStationId)).toContain(c);
+    expect(w.mailQueue!.length).toBe(2);
+    expect(tickMail(w).length).toBe(0); // not due yet
+    const credits = w.player.credits;
+    w.time += 1000;
+    const delivered = tickMail(w);
+    expect(delivered.length).toBe(2);
+    expect(w.player.mail!.length).toBe(2);
+    expect(w.mailQueue!.length).toBe(0);
+    const gifted = w.player.mail!.some((m) => m.gift?.credits) ? w.player.credits > credits : true;
+    expect(gifted).toBe(true);
+    let picked = 0;
+    for (let i = 0; i < 40; i++) if (pickCaptainFor(w, w.player.systemId, new RNG(i))) picked++;
+    expect(picked).toBeGreaterThan(4);
+    const raw = JSON.parse(JSON.stringify({ ...w, version: 12, captains: undefined }));
+    expect(migrateSave(raw)!.captains!.length).toBeGreaterThanOrEqual(6);
   });
 });

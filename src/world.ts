@@ -287,6 +287,7 @@ export interface PlayerState {
   cat?: { name: string; since: number } | null; // the ship's cat, if one has adopted you
   furnishings?: string[];            // things bought for the deck (FURNISHINGS)
   haulers?: Charter[];               // haulers you pay to run your routes while you fly
+  mail?: Letter[];                   // letters received (last 20)
   postcards?: number;                // pictures taken
   lineage?: Captain[];               // captains who sat in this chair before
   captainName?: string;              // who sits in it now (a crew member who took over), if not you
@@ -695,6 +696,74 @@ export function passengerPay(m: Mission): number {
   return Math.round(m.reward * (0.6 + (mood / 100) * 0.6 + extra));
 }
 
+// ---------- Contacts: the pilots you keep meeting ----------
+// A galaxy has a dozen captains who fly its lanes. Help one and they remember;
+// help them twice and they're a friend: warm hails, a seat in the lounge at
+// their home station, a letter now and then with something in it.
+export interface NpcCaptain { id: string; name: string; ship: string; homeStationId: string; disposition: number; met: number; helped: number; lastSeen: number }
+export interface Letter { dueT: number; from: string; text: string; gift?: { credits?: number; parts?: number; data?: number }; read?: boolean }
+const SHIP_NAMES = ["Long Patience", "Salt and Iron", "Quiet Ledger", "Ferrous Dawn", "Blue Hour", "Second Chance", "Margit's Folly", "Stubborn Mule", "Halfway House", "Late Supper", "Old Argument", "Tin Sparrow"];
+export function assignCaptains(systems: Record<string, SystemDef>, rng: RNG): NpcCaptain[] {
+  const stations = Object.values(systems).flatMap((s) => s.stations.filter((st) => !st.military));
+  const out: NpcCaptain[] = [];
+  if (!stations.length) return out;
+  const n = Math.min(12, Math.max(6, Math.round(stations.length / 2)));
+  for (let i = 0; i < n; i++) {
+    const st = rng.pick(stations);
+    out.push({ id: `cap${i}`, name: genPersonName(rng), ship: SHIP_NAMES[i % SHIP_NAMES.length], homeStationId: st.id, disposition: 0, met: 0, helped: 0, lastSeen: -1e9 });
+  }
+  return out;
+}
+export function captainByName(w: World, name: string | undefined): NpcCaptain | null {
+  if (!name) return null;
+  return (w.captains ?? []).find((c) => c.name === name) ?? null;
+}
+export function isFriend(c: NpcCaptain): boolean { return c.disposition >= 2; }
+// A trader spawning: sometimes it's one of the regulars, likelier near their home
+export function pickCaptainFor(w: World, systemId: string, rng: RNG): NpcCaptain | null {
+  const caps = w.captains ?? [];
+  if (!caps.length || !rng.chance(0.35)) return null;
+  const local = caps.filter((c) => findStation(w, c.homeStationId)?.sys.id === systemId);
+  const c = local.length && rng.chance(0.6) ? rng.pick(local) : rng.pick(caps);
+  c.met++; c.lastSeen = w.time;
+  return c;
+}
+const HELP_LINES: Record<string, string[]> = {
+  repair: ["Engines lit, thanks to you. I owe you one, and I keep count.", "You didn't have to stop. Most don't. I'll remember the hull."],
+  medic: ["Two of mine are alive because you had a medic and the decency to send them. That doesn't get forgotten.", "The kid's sitting up and complaining about the food. That's you. Thank you."],
+  tow: ["Towed home like a barge. I'll never live it down, and I'll never forget it.", "The yard says another hour and the reactor would have gone. You didn't wait an hour."],
+  escort: ["Never seen a corsair turn away so fast. Fly with me again any time.", "Made it in with all the cargo. First time this month. That's your doing."],
+  part: ["A spare part off your own shelf. I know what those cost out here.", "One part, passed across a line, and I'm home. Small things."],
+};
+export function helpCaptain(w: World, name: string | undefined, kind: keyof typeof HELP_LINES, rng: RNG): string | null {
+  const c = captainByName(w, name);
+  if (!c) return null;
+  c.disposition = Math.min(3, c.disposition + 1); c.helped++; c.lastSeen = w.time;
+  const home = findStation(w, c.homeStationId)?.st.name ?? "somewhere";
+  const gift = rng.chance(0.5) ? { credits: rng.int(150, 400) } : rng.chance(0.5) ? { parts: 2 } : { data: 120 };
+  (w.mailQueue ??= []).push({ dueT: w.time + rng.int(300, 900), from: `${c.name}, ${c.ship}`, text: `${rng.pick(HELP_LINES[kind])} Look me up at ${home}.`, gift });
+  if (c.disposition >= 2 && c.helped === 2) return `${c.name.toUpperCase()} OF THE ${c.ship.toUpperCase()} CALLS YOU A FRIEND NOW. THEIR HOME IS ${home.toUpperCase()}.`;
+  return null;
+}
+export function tickMail(w: World): string[] {
+  const p = w.player; const out: string[] = [];
+  const due = (w.mailQueue ?? []).filter((m) => w.time >= m.dueT);
+  w.mailQueue = (w.mailQueue ?? []).filter((m) => w.time < m.dueT);
+  for (const m of due) {
+    (p.mail ??= []).push(m); if (p.mail.length > 20) p.mail.shift();
+    const g = m.gift ?? {};
+    if (g.credits) p.credits += g.credits;
+    if (g.parts) addCargo(p, "parts", g.parts);
+    if (g.data) p.expData = (p.expData ?? 0) + g.data;
+    const giftText = g.credits ? ` (${g.credits}CR ENCLOSED)` : g.parts ? ` (${g.parts} SPARE PARTS IN THE CRATE)` : g.data ? ` (${g.data} DATA ON A CHIP)` : "";
+    out.push(`LETTER FROM ${m.from.toUpperCase()}${giftText} - READ IT ON THE NEWS TAB`);
+  }
+  return out;
+}
+export function friendsAt(w: World, stationId: string): NpcCaptain[] {
+  return (w.captains ?? []).filter((c) => c.homeStationId === stationId && isFriend(c));
+}
+
 // ---------- Wonders: the places people cross a galaxy to see ----------
 export type WonderKind = "ring" | "pulsar" | "ark" | "glass" | "twins" | "nursery" | "cathedral";
 export interface Wonder { id: string; kind: WonderKind; name: string; systemId: string; x: number; y: number; seen: boolean; seenBy?: string; desc: string }
@@ -910,6 +979,8 @@ export interface World {
   infraNews?: string[];              // lines from the last infra tick, for the HUD to toast
   serial?: SerialState | null;       // the GalNet serial running now
   wonders?: Wonder[];                // the galaxy's landmarks: a handful, unique, worth the trip
+  captains?: NpcCaptain[];           // the recurring pilots of this galaxy, who remember you
+  mailQueue?: Letter[];              // letters on their way, delivered at a dock after dueT
   serialsSeen?: string[];
   serialTick?: number;
   seed: number;
@@ -1534,6 +1605,7 @@ export function generateWorld(seed: number, opts: GenOptions = {}): World {
     rareOrigin: assignRares(systems, new RNG((seed ^ 0x5a5e) >>> 0)),
     syndicates: assignSyndicates(systems, startId, new RNG((seed ^ 0x51d1) >>> 0)),
     wonders: assignWonders(systems, startId, new RNG((seed ^ 0x77d3) >>> 0)),
+    captains: assignCaptains(systems, new RNG((seed ^ 0xc4b7) >>> 0)),
     ...(assignPermits(systems, startId, new RNG((seed ^ 0x9e3d) >>> 0)), {}),
     systems, player, news: [], events: [], wars: [],
     missionCounter: 0, econTick: 0, shockTick: 0, warTick: 0,

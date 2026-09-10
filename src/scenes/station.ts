@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS, roleLabel } from "../
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter,
+  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, friendsAt, helpCaptain, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter,
 } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
@@ -65,6 +65,7 @@ export class StationScene implements Scene {
     for (let i = 0; i < rng.int(1, 3); i++) this.candidates.push(genCrewCandidate(rng.fork(i + 1)));
     { const role = serialRecruitFor(g.world, this.station.id); if (role && !p.flags?.[`serialHire:${this.station.id}`]) { const c = genCrewCandidate(rng.fork(99)); c.role = role; c.skill = 3; c.loyalty = 2; c.wage = ROLE_INFO[role].baseWage * 3; c.trait = "tells stories about the Steady Hand"; this.candidates.unshift(c); } }
     this.fares = genFares(g.world, this.station, rng.fork(77));
+    for (const fr of friendsAt(g.world, this.station.id)) if (!this.station.barPatrons.includes(fr.name)) this.station.barPatrons = [fr.name, ...this.station.barPatrons].slice(0, 4);
     this.barLine = "";
     refreshPrices(this.station);
     void wire.fetchSquadronData();
@@ -74,7 +75,7 @@ export class StationScene implements Scene {
     if (g.scenes.flight && (g.scenes.flight as unknown as { towing: unknown }).towing) {
       const fs = g.scenes.flight as unknown as { towing: { x: number; y: number; hull: number } | null };
       const st = this.station; const sx = Math.cos(st.angle) * st.orbit, sy = Math.sin(st.angle) * st.orbit;
-      if (fs.towing && fs.towing.hull > 0 && Math.hypot(fs.towing.x - sx, fs.towing.y - sy) < 260) { p.credits += 550; adjustRep(g.world, st.factionId, 6); p.tows = (p.tows ?? 0) + 1; g.toast("TOW COMPLETE - THE YARD TAKES THE FREIGHTER +550CR"); flag(g, "tug"); void wire.post("rescue", "towed a disabled freighter into dock", g.world.systems[p.systemId].name); }
+      if (fs.towing && fs.towing.hull > 0 && Math.hypot(fs.towing.x - sx, fs.towing.y - sy) < 260) { p.credits += 550; adjustRep(g.world, st.factionId, 6); p.tows = (p.tows ?? 0) + 1; { const l = helpCaptain(g.world, (fs.towing as { name?: string }).name, "tow", new RNG((g.world.seed ^ Math.floor(g.world.time * 59)) >>> 0)); if (l) g.toast(l); } g.toast("TOW COMPLETE - THE YARD TAKES THE FREIGHTER +550CR"); flag(g, "tug"); void wire.post("rescue", "towed a disabled freighter into dock", g.world.systems[p.systemId].name); }
       fs.towing = null;
     }
     this.base = null; this.baseLoaded = false;
@@ -103,6 +104,8 @@ export class StationScene implements Scene {
     const title = rankOf(p, "rescuer").idx >= 3 ? rankOf(p, "rescuer").title : hasCharter(g.world, this.station.factionId) ? "CHARTERED" : (p.lineage ?? []).length ? "OF THE LINE" : "";
     g.toast(`${this.station.name.toUpperCase()} CONTROL: ${p.shipName ? p.shipName + ", " : ""}${title ? title + ", " : ""}CLEARANCE GRANTED, BAY ${bay}`);
     { const c = collectCharters(p); for (const l of c.lines) g.toast(l); if (c.total !== 0) sfx.pickup(); }
+    { const m = tickMail(g.world); for (const l of m) g.toast(l); if (m.length) sfx.pickup(); }
+    { const fr = friendsAt(g.world, this.station.id); if (fr.length && Math.random() < 0.5) g.toast(`${fr[0].name.toUpperCase()} IS IN THE LOUNGE AND WAVING YOU OVER`); }
   }
 
   settleCrew(g: Game): void {
@@ -1263,8 +1266,9 @@ export class StationScene implements Scene {
     st.barPatrons.forEach((name, i) => {
       this.row(ctx, y + 2, idx === this.cursor);
       ctx.drawImage(g.portrait(name), 10, y - 2, 12, 12);
-      drawText(ctx, name, 28, y, PAL.white);
-      drawText(ctx, ["HAULER", "ENGINEER", "OFF-DUTY SECURITY", "PROSPECTOR", "DRIFTER"][i % 5], 28, y + 8, PAL.greyDark);
+      const fr = friendsAt(g.world, st.id).find((c) => c.name === name);
+      drawText(ctx, name + (fr ? " - FRIEND" : ""), 28, y, fr ? PAL.gold : PAL.white);
+      drawText(ctx, fr ? `CAPTAIN OF THE ${fr.ship.toUpperCase()}, HELPED ${fr.helped} TIMES` : ["HAULER", "ENGINEER", "OFF-DUTY SECURITY", "PROSPECTOR", "DRIFTER"][i % 5], 28, y + 8, PAL.greyDark);
       y += 18; idx++;
     });
     if (this.candidates.length) {
@@ -1644,6 +1648,13 @@ export class StationScene implements Scene {
       bl.slice(0, 4).forEach((l, i) => drawText(ctx, l.toUpperCase().slice(0, 112), 8, top + 29 + i * 8, l.startsWith("URGENT") || l.startsWith("STRIKE") ? PAL.danger : l.startsWith("FESTIVAL") ? PAL.gold : PAL.grey));
       top += 29 + Math.min(4, bl.length) * 8 + 6;
     }
+    const mail = g.world.player.mail ?? [];
+    if (mail.length) {
+      drawText(ctx, `LETTERS (${mail.length})`, 8, top, PAL.gold);
+      let ly = top + 9;
+      for (const m of mail.slice(-2).reverse()) { drawText(ctx, `FROM ${m.from.toUpperCase()}: ${m.text.toUpperCase()}`.slice(0, 112), 8, ly, PAL.grey); ly += 8; }
+      top = ly + 4;
+    }
     const serial = serialLines(g.world);
     if (serial) {
       drawText(ctx, `GALNET SERIAL: ${serial.title} - ${serial.where.toUpperCase()}`, 8, top, PAL.gold);
@@ -1665,7 +1676,13 @@ export class StationScene implements Scene {
 import * as spriteMod from "../gfx/sprites";
 
 const BAR_LINES: ((g: Game, st: StationDef) => string)[] = [
-  (g) => {
+  (g, st) => {
+    const fr = friendsAt(g.world, st.id)[0];
+    if (fr) {
+      const unseen = (g.world.wonders ?? []).filter((x) => !x.seen)[0];
+      if (unseen && Math.random() < 0.5) { (g.world.player.flags ??= {})[`rumour:${unseen.id}`] = true; return `${fr.name}: 'Between us? ${unseen.name}, out in ${g.world.systems[unseen.systemId]?.name ?? "the dark"}. Go before the tour ships find it.'`; }
+      return `${fr.name}: 'The ${fr.ship} flies again because of you. Sit. This one's on me. And if you ever need a berth for a night, mine's open.'`;
+    }
     const c = g.world.crisis;
     if (c && c.delivered < c.need && g.world.time < c.until) { const f = findStation(g.world, c.stationId); return `${f?.st.name ?? "Some station"} in ${f?.sys.name ?? "the dark"} is begging for ${commodity(c.commodityId).name.toLowerCase()}. Paying stupid money. Someone should go.`; }
     const e = g.world.galaxyEvent;

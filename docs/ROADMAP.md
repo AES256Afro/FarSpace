@@ -472,4 +472,9 @@ Time passes for the people on the ship, and for the ship.
 - [x] Undocking is a launch: the bay releases you, control calls you clear
 - [x] The Ark can be boarded and walked; its crates and a codex entry inside
 
+## Milestone 30 — Contacts ✅ (Sep 2026)
+- [x] A dozen regular captains per galaxy who remember being helped
+- [x] Friends: hails, a seat in the lounge with tips, letters with gifts
+      delivered at a later dock
+
 ## Later

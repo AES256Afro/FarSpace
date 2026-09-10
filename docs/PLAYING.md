@@ -101,6 +101,15 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   board: sample runs, outcrop runs, and a plant to fix on the spot. Jobs pay
   out when you walk back in.
 
+## Contacts
+
+- A galaxy has a dozen regular captains flying its lanes; their names show
+  near their ships. Help one (a repair, a medic, a tow, an escort) and they
+  remember. Help them twice and they're a friend: warm hails, a seat in the
+  lounge at their home station with a tip, and letters.
+- Letters arrive when you dock, sometimes with credits, parts or data in the
+  envelope. The NEWS tab keeps the last of them.
+
 ## Docking and launching
 
 - Press E near a station and control clears you for a bay: the ship glides in

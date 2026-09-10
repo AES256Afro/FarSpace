@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.30 - CONTACTS", [
+    "THE LANES HAVE REGULARS. HELP ONE TWICE AND THEY'RE A FRIEND: HAILS, A SEAT IN THE LOUNGE, LETTERS WITH GIFTS.",
+  ]],
   ["0.29 - APPROACH AND LAUNCH", [
     "DOCKING IS AN APPROACH NOW: CONTROL CLEARS A BAY AND THE SHIP GLIDES IN. LAUNCHES TOO. THE ARK CAN BE BOARDED.",
   ]],

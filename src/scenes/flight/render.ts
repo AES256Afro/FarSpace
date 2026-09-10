@@ -4,7 +4,7 @@ import type { Game } from "../../game";
 import { VW, VH } from "../../game";
 import type { FlightScene } from "./index";
 import { drawText, textWidth } from "../../gfx/font";
-import { infraAt, infraLit, stormBlind, wondersIn } from "../../world";
+import { infraAt, infraLit, stormBlind, wondersIn, captainByName, isFriend } from "../../world";
 import * as wire from "../../core/wire";
 import { PAL } from "../../gfx/palette";
 import { clamp, TAU, angDiff, dist } from "../../core/mathx";
@@ -312,6 +312,7 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
     ctx.fillStyle = col;
     ctx.fillRect(sx - 6, sy - 12, Math.round(12 * (n.hull / n.hullMax)), 1);
     if (n.variant === "captain") drawText(ctx, n.name ?? "CAPTAIN", sx - textWidth(n.name ?? "CAPTAIN") / 2, sy - 20, PAL.danger);
+    else if (n.kind === "trader" && n.name && dist(p.x, p.y, n.x, n.y) < 360) { const cap = captainByName(g.world, n.name); const label = cap ? `${cap.name.toUpperCase()}${isFriend(cap) ? " - FRIEND" : cap.helped ? " - OWES YOU" : ""}` : n.name.toUpperCase(); drawText(ctx, label, sx - textWidth(label) / 2, sy - 20, cap && isFriend(cap) ? PAL.gold : PAL.grey); }
     else if (n.tag) { const lbl = `[${n.tag}] ${n.kind === "pirate" ? "RAIDER" : "CONVOY"}`; drawText(ctx, lbl, sx - textWidth(lbl) / 2, sy - 20, n.kind === "pirate" ? PAL.danger : PAL.info); }
     if (n.kind === "trader" && (n.disabled || n.casualties || n.hull < n.hullMax * 0.5) && dist(p.x, p.y, n.x, n.y) < 220) {
       const near = dist(p.x, p.y, n.x, n.y) < 80;

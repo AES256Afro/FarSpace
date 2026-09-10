@@ -5,7 +5,7 @@ import { ask, confirmBox } from "../../core/dialog";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, crewXp, stormBlind, wondersIn, seeWonder, WONDER_RANGE, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, crewXp, stormBlind, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra } from "../../world";
 import { COMMODITIES, commodity } from "../../data/data";
 import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
@@ -453,6 +453,7 @@ export class FlightScene implements Scene {
     const dest = sys.stations.find((s) => s.id === m.targetStationId);
     if (dest && dist(t.x, t.y, Math.cos(dest.angle) * dest.orbit, Math.sin(dest.angle) * dest.orbit) < 80) {
       m.escortDone = true;
+      { const l = helpCaptain(g.world, t.name, "escort", new RNG((g.world.seed ^ Math.floor(g.world.time * 47)) >>> 0)); if (l) g.toast(l); }
       escortLine(this);
       g.toast("FREIGHTER DOCKED - COLLECT PAYMENT AT THE STATION");
       this.npcs = this.npcs.filter((n) => n !== t);
@@ -645,7 +646,7 @@ export class FlightScene implements Scene {
       opts.push({ label: "TOW THEM TO A STATION", hint: "They follow you; top speed drops; dock anywhere", result: () => { this.towing = n; n.disabled = true; return "TOW LINE ATTACHED. TAKE IT SLOW - THE LINE WON'T SURVIVE A JUMP OR A FIREFIGHT AT SPEED."; } });
       if (!p.evacuees) opts.push({ label: "TAKE THEIR CREW ABOARD", hint: "Three survivors, paid out at your next dock", result: (g2) => { g2.world.player.evacuees = { n: 3, from: who.toLowerCase() }; this.npcs = this.npcs.filter((x) => x !== n); if (this.sos?.trader === n) this.sos = null; return "THREE OF THEM CROSS IN SUITS AND CRAM INTO THE GALLEY. THE FREIGHTER STAYS DARK BEHIND YOU."; } });
     } else {
-      opts.push({ label: "PASS THEM A SPARE PART", hint: "Patches their hull; they remember", requires: (g2) => (g2.world.player.cargo.parts ?? 0) >= 1, result: (g2) => { g2.world.player.cargo.parts!--; if (!g2.world.player.cargo.parts) delete g2.world.player.cargo.parts; n.hull = n.hullMax; this.thankYou(g2, n, 120); return `THEY TAKE THE PART AND PATCH THE BREACH. '${who}, WE OWE YOU ONE.'`; } });
+      opts.push({ label: "PASS THEM A SPARE PART", hint: "Patches their hull; they remember", requires: (g2) => (g2.world.player.cargo.parts ?? 0) >= 1, result: (g2) => { g2.world.player.cargo.parts!--; if (!g2.world.player.cargo.parts) delete g2.world.player.cargo.parts; n.hull = n.hullMax; this.thankYou(g2, n, 120); const l = helpCaptain(g2.world, n.name, "part", new RNG((g2.world.seed ^ Math.floor(g2.world.time * 53)) >>> 0)); if (l) g2.toast(l); return `THEY TAKE THE PART AND PATCH THE BREACH. '${who}, WE OWE YOU ONE.'`; } });
     }
     opts.push({ label: "LEAVE THEM", result: () => "YOU BREAK OFF. THE CHANNEL STAYS OPEN A WHILE, THEN CLOSES." });
     const enc: Encounter = { id: "help-ship", where: "space", title: n.disabled ? `MAYDAY - ${who} DISABLED` : `${who} - HULL ${Math.round(n.hull / n.hullMax * 100)}%`, weight: 0,
@@ -698,6 +699,7 @@ export class FlightScene implements Scene {
     n.casualties = false;
     const reward = (this.sos && this.sos.trader === n ? this.sos.reward : 250) + Math.floor(Math.random() * 150);
     this.thankYou(g, n, reward);
+    { const l = helpCaptain(g.world, n.kind === "trader" ? n.name : undefined, "medic", new RNG((g.world.seed ^ Math.floor(g.world.time * 43)) >>> 0)); if (l) g.toast(l); }
     p.lives = (p.lives ?? 0) + 3;
     { const up = crewXp(p, "medic", 4); if (up) g.toast(up); }
     flag(g, "fieldMedic");
@@ -717,6 +719,7 @@ export class FlightScene implements Scene {
     n.disabled = false; n.hull = n.hullMax;
     const reward = (this.sos && this.sos.trader === n ? this.sos.reward : 300) + Math.floor(Math.random() * 200);
     this.thankYou(g, n, reward);
+    { const l = helpCaptain(g.world, n.kind === "trader" ? n.name : undefined, "repair", new RNG((g.world.seed ^ Math.floor(g.world.time * 41)) >>> 0)); if (l) g.toast(l); }
     p.repairs = (p.repairs ?? 0) + 1;
     if (by !== "you") { const up = crewXp(p, "engineer", 4); if (up) g.toast(up); }
     flag(g, "shipwright1");
@@ -791,6 +794,16 @@ export class FlightScene implements Scene {
     const sys = g.world.systems[p.systemId];
     // comms chatter when the channel is quiet
     if (g.world.infraNews?.length) { for (const line of g.world.infraNews) g.toast(line); g.world.infraNews = []; }
+    // the regulars hail you when they pass close; friends have more to say
+    for (const n of this.npcs) {
+      if (n.kind !== "trader" || !n.name || n.hailed || n.hull <= 0 || dist(p.x, p.y, n.x, n.y) > 320) continue;
+      const cap = captainByName(g.world, n.name);
+      if (!cap) continue;
+      n.hailed = true;
+      const line = isFriend(cap) ? (["GOOD TO SEE THAT HULL. STILL OWE YOU.", "IF YOU'RE HEADING MY WAY, THERE'S A DRINK WITH YOUR NAME ON IT.", "KEEP FLYING LIKE THAT AND I'LL HAVE TO START PAYING YOU."][cap.met % 3])
+        : cap.helped > 0 ? "THAT YOU? I HAVEN'T FORGOTTEN." : cap.met > 3 ? "WE KEEP CROSSING PATHS. SMALL GALAXY." : "CLEAR SKIES, STRANGER.";
+      this.comms.push({ from: `${cap.name.toUpperCase()}, ${cap.ship.toUpperCase()}`, text: line, life: 7, color: isFriend(cap) ? PAL.gold : PAL.info });
+    }
     // a wonder within sight: the codex, the data, the tourists
     for (const wd of wondersIn(g.world, sys.id)) {
       if (dist(p.x, p.y, wd.x, wd.y) > WONDER_RANGE) continue;

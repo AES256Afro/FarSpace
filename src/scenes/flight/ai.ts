@@ -17,7 +17,7 @@ import { hasModule } from "../../data/modules";
 import { gainMaterials } from "../../core/materials";
 import { presence } from "../../core/presence";
 import { baseAt, fetchBases } from "../../core/wire";
-import { syndicateAt, synAllies, syndicateByTag, warContribute, adjustSynRep, infraAt, infraLit, infraTraffic, Infra, crewXp } from "../../world";
+import { syndicateAt, synAllies, syndicateByTag, warContribute, adjustSynRep, infraAt, infraLit, infraTraffic, Infra, crewXp, pickCaptainFor } from "../../world";
 
 // ---------- Population ----------
 
@@ -162,14 +162,16 @@ export function spawnTrader(fs: FlightScene, g: Game, rng: RNG): void {
   const id = exports.length ? rng.pick(exports) : "food";
   const sx = Math.cos(from.angle) * from.orbit, sy = Math.sin(from.angle) * from.orbit;
   const a = rng.range(0, TAU);
+  const cap = pickCaptainFor(g.world, sys.id, rng);
   fs.npcs.push({
     kind: "trader",
     x: sx + Math.cos(a) * 200, y: sy + Math.sin(a) * 200,
     vx: 0, vy: 0, angle: a,
-    hull: 50, hullMax: 50, fireCd: 0,
+    hull: cap ? 70 : 50, hullMax: cap ? 70 : 50, fireCd: 0,
     targetIdx: (sys.stations.indexOf(from) + 1) % Math.max(1, sys.stations.length),
     cargo: { id, qty: rng.int(2, 6) },
     originStationId: from.id,
+    name: cap?.name,
   });
 }
 

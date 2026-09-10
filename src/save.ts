@@ -2,10 +2,10 @@
 // migration step so no player loses a game to an update.
 
 import type { World, SystemDef } from "./world";
-import { assignRares, assignSyndicates, assignWonders } from "./world";
+import { assignRares, assignSyndicates, assignWonders, assignCaptains } from "./world";
 import { RNG } from "./core/rng";
 
-export const SAVE_VERSION = 12;
+export const SAVE_VERSION = 13;
 export const SAVE_KEY = "farspace-save";
 export const SLOTS = 3;
 const SLOT_KEY = "farspace-slot";
@@ -152,6 +152,16 @@ MIGRATIONS[11] = (w) => {
     const startId = String((w.player as { systemId?: string }).systemId ?? Object.keys(w.systems as object)[0]);
     w.wonders = assignWonders(w.systems as Record<string, SystemDef>, startId, new RNG((seed ^ 0x77d3) >>> 0));
   }
+};
+
+MIGRATIONS[12] = (w) => {
+  // 12 → 13: the regular captains, and the post
+  if (!w.captains) {
+    const seed = typeof w.seed === "number" ? w.seed : 1;
+    w.captains = assignCaptains(w.systems as Record<string, SystemDef>, new RNG((seed ^ 0xc4b7) >>> 0));
+  }
+  w.mailQueue ??= [];
+  (w.player as Record<string, unknown>).mail ??= [];
 };
 
 export function migrateSave(raw: unknown): World | null {
