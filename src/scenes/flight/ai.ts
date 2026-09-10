@@ -518,6 +518,8 @@ export function updateNpcs(fs: FlightScene, g: Game, dt: number): void {
         tx = hx + Math.cos(a) * 120; ty = hy + Math.sin(a) * 120;
         speed = 70;
       }
+    } else if (n.kind === "trader" && n.disabled) {
+      speed = 0; n.vx *= 0.9; n.vy *= 0.9; tx = n.x; ty = n.y;
     } else if (n.kind === "trader") {
       const st = sys.stations[n.targetIdx % Math.max(1, sys.stations.length)];
       if (st) {
@@ -667,6 +669,9 @@ export function updateSos(fs: FlightScene, g: Game, dt: number): void {
     if (!traderAlive) {
       g.toast("DISTRESS CALL LOST - TRADER DESTROYED");
       fs.sos = null;
+    } else if (s.kind === "disabled") {
+      if (!s.trader.disabled) fs.sos = null; // repaired
+      else if (s.ttl <= 0) { fs.sos = null; g.toast("THE MAYDAY GOES QUIET. SOMEONE ELSE GOT THERE, OR NOBODY DID."); }
     } else if (piratesAlive.length === 0) {
       p.credits += s.reward;
       adjustRep(g.world, sys.factionId, 4);
@@ -689,12 +694,22 @@ export function updateSos(fs: FlightScene, g: Game, dt: number): void {
   const r = 700 + Math.random() * 500;
   const tx = p.x + Math.cos(a) * r, ty = p.y + Math.sin(a) * r;
   const trader: Npc = { kind: "trader", x: tx, y: ty, vx: 0, vy: 0, angle: 0, hull: 50, hullMax: 50, fireCd: 0, targetIdx: 0, cargo: { id: "lux", qty: 3 } };
+  if (Math.random() < 0.45) {
+    // engines dead, nobody shooting yet: a job for a wrench, not a gun
+    trader.disabled = true; trader.hull = 30; trader.angle = a;
+    fs.npcs.push(trader);
+    fs.sos = { trader, pirates: [], reward: 250 + Math.floor(Math.random() * 300), ttl: 240, kind: "disabled" };
+    g.toast("MAYDAY - FREIGHTER DISABLED, ENGINES DEAD. FLY CLOSE AND PRESS E");
+    g.showHint("mayday", "DISABLED SHIPS CAN BE BOARDED AND FIXED, OR YOUR ENGINEER CAN GO OVER WHILE YOU STAND GUARD");
+    sfx.alarm();
+    return;
+  }
   const pirates: Npc[] = [];
   for (let i = 0; i < 2; i++) {
     pirates.push({ kind: "pirate", x: tx + 120 * Math.cos(i * 3), y: ty + 120 * Math.sin(i * 3), vx: 0, vy: 0, angle: 0, hull: 40, hullMax: 40, fireCd: 1, targetIdx: 0 });
   }
   fs.npcs.push(trader, ...pirates);
-  fs.sos = { trader, pirates, reward: 150 + Math.floor(Math.random() * 200), ttl: 90 };
+  fs.sos = { trader, pirates, reward: 150 + Math.floor(Math.random() * 200), ttl: 90, kind: "attack" };
   g.toast("DISTRESS CALL - TRADER UNDER ATTACK");
   sfx.alarm();
 }

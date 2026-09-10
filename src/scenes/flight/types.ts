@@ -21,6 +21,7 @@ export interface Npc {
   fleeing?: boolean;  // low hull: run for the belt
   hailed?: boolean;   // has said its line
   tag?: string;       // syndicate convoy or raider
+  disabled?: boolean; // engines dead: drifting, waiting for help
 }
 
 export interface Torpedo {
@@ -56,7 +57,9 @@ export interface Loot {
 }
 
 export interface Sos {
-  trader: Npc; pirates: Npc[]; reward: number; ttl: number;
+  trader: Npc; pirates: Npc[]; reward: number; ttl: number; kind: "attack" | "disabled";
 }
+
+export interface RepairJob { npc: Npc; crewName: string; progress: number; need: number; wave: number }
 
 export const BULLET_SPEED = 420;

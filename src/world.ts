@@ -247,6 +247,7 @@ export interface PlayerState {
   warPayout?: { tag: string; value: number } | null; // squadron treasury share owed after a won war
   encounters?: Record<string, number>; // encounter id → times seen
   homesteads?: Homestead[];                           // claims staked on charted regions
+  repairs?: number;                                   // ships brought back to life
   story?: number;                                     // The Signal: stage index; -1 = declined
   storyTarget?: { systemId: string; planetIdx: number; poiId: string } | null;
   storyVeil?: string | null;

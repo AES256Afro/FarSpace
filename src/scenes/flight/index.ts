@@ -9,6 +9,7 @@ import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickW
 import { COMMODITIES, commodity } from "../../data/data";
 import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
+import { genCrewCandidate } from "../../world";
 import { engGrade } from "../../data/engineering";
 import { gainMaterials } from "../../core/materials";
 import { damagePlayer } from "./ai";
@@ -25,7 +26,9 @@ import { presence } from "../../core/presence";
 import { pickEncounter } from "../../data/encounters";
 import type { EncounterScene } from "../encounter";
 import { RNG } from "../../core/rng";
-import type { Bullet, Npc, Particle, Platform, Loot, Sos } from "./types";
+import type { Bullet, Npc, Particle, Platform, Loot, Sos, RepairJob } from "./types";
+import type { Encounter } from "../../data/encounters";
+import { addCargo as addCargoW } from "../../world";
 import type { StationDef } from "../../world";
 import { BULLET_SPEED } from "./types";
 import {
@@ -255,6 +258,7 @@ export class FlightScene implements Scene {
     this.updateHeat(g, dt);
     this.updateDockingComputer(g, dt);
     this.updateEncounters(g, dt);
+    this.updateRepairJob(g, dt);
     // other pilots in this system
     presence.tick(p, sys.name);
     this.drainRoomEvents(g);
@@ -522,6 +526,87 @@ export class FlightScene implements Scene {
     }
   }
 
+  // ---------- Helping ships ----------
+  repairJob: RepairJob | null = null;
+
+  offerHelp(g: Game, n: Npc): void {
+    const p = g.world.player;
+    const eng = p.crew.find((c) => c.role === "engineer");
+    const who = n.tag ? `[${n.tag}] CONVOY` : "FREIGHTER";
+    const opts: Encounter["options"] = [];
+    if (n.disabled) {
+      opts.push({ label: "BOARD AND REPAIR IT YOURSELF", hint: "Three dead systems, a suit clock, maybe a fire", result: (g2) => { g2.repairTarget = n; setTimeout(() => g2.setScene("repair"), 0); return ""; } });
+      if (eng) opts.push({ label: `SEND ${eng.name.toUpperCase()} ACROSS (ENGINEER ${eng.skill})`, hint: "You stand guard; corsairs like a stationary target", result: () => { this.repairJob = { npc: n, crewName: eng.name, progress: 0, need: 45 / (0.6 + 0.4 * eng.skill), wave: 0 }; return `${eng.name.toUpperCase()} SUITS UP AND CROSSES. KEEP THEM SAFE.`; } });
+      else opts.push({ label: "NO ENGINEER ABOARD TO SEND", hint: "Hire one at a station bar", requires: () => false, result: () => "" });
+    } else {
+      opts.push({ label: "PASS THEM A SPARE PART", hint: "Patches their hull; they remember", requires: (g2) => (g2.world.player.cargo.parts ?? 0) >= 1, result: (g2) => { g2.world.player.cargo.parts!--; if (!g2.world.player.cargo.parts) delete g2.world.player.cargo.parts; n.hull = n.hullMax; this.thankYou(g2, n, 120); return `THEY TAKE THE PART AND PATCH THE BREACH. '${who}, WE OWE YOU ONE.'`; } });
+    }
+    opts.push({ label: "LEAVE THEM", result: () => "YOU BREAK OFF. THE CHANNEL STAYS OPEN A WHILE, THEN CLOSES." });
+    const enc: Encounter = { id: "help-ship", where: "space", title: n.disabled ? `MAYDAY - ${who} DISABLED` : `${who} - HULL ${Math.round(n.hull / n.hullMax * 100)}%`, weight: 0,
+      text: n.disabled ? "'ENGINES ARE DEAD, LIFE SUPPORT IS ON BATTERIES, AND THE REACTOR IS MAKING A NOISE I DON'T LIKE. WE CAN'T FIX IT FROM IN HERE. CAN YOU?'" : "'WE TOOK A HIT COMING THROUGH THE BELT. HULL'S HOLDING, JUST. IF YOU'VE GOT A SPARE PART, WE'D PAY FOR IT.'",
+      options: opts };
+    (g.scenes["encounter"] as import("../encounter").EncounterScene).open(g, enc, "flight", true);
+  }
+
+  updateRepairJob(g: Game, dt: number): void {
+    const job = this.repairJob;
+    if (!job) return;
+    const p = g.world.player;
+    if (job.npc.hull <= 0 || !this.npcs.includes(job.npc)) {
+      this.repairJob = null;
+      const c = p.crew.find((x) => x.name === job.crewName);
+      if (c) c.morale = Math.max(0, c.morale - 15);
+      g.toast(`THE FREIGHTER IS GONE. ${job.crewName.toUpperCase()} GETS BACK IN A LIFEPOD, SHAKEN.`);
+      return;
+    }
+    job.progress += dt / job.need;
+    if (job.wave === 0 && job.progress > 0.3) { job.wave = 1; this.spawnRaidersNearPlayer(g, 2); g.toast("CORSAIRS ON THE SCOPE - THEY WANT THE FREIGHTER"); }
+    if (job.wave === 1 && job.progress > 0.7) { job.wave = 2; this.spawnRaidersNearPlayer(g, 2); }
+    if (job.progress >= 1) {
+      this.repairJob = null;
+      const c = p.crew.find((x) => x.name === job.crewName);
+      if (c) { c.morale = Math.min(100, c.morale + 10); c.loyalty = (c.loyalty ?? 0) + 1; }
+      this.finishRepair(g, job.npc, job.crewName);
+    }
+  }
+
+  spawnRaidersNearPlayer(g: Game, n: number): void {
+    const rng = new RNG((g.world.seed ^ Math.floor(g.world.time * 31)) >>> 0);
+    const p = g.world.player;
+    for (let i = 0; i < n; i++) { const e = spawnNpc(this, g, "pirate", rng); const a = rng.range(0, Math.PI * 2); e.x = p.x + Math.cos(a) * 520; e.y = p.y + Math.sin(a) * 520; }
+  }
+
+  thankYou(g: Game, n: Npc, credits: number): void {
+    const p = g.world.player;
+    p.credits += credits;
+    const sys = g.world.systems[p.systemId];
+    adjustRep(g.world, sys.factionId, 3);
+    if (n.tag) { const sy = g.world.syndicates?.find((x) => x.tag === n.tag); if (sy) { p.synRep ??= {}; p.synRep[sy.tag] = Math.min(100, (p.synRep[sy.tag] ?? 0) + 5); } }
+    sfx.pickup();
+  }
+
+  // A ship brought back to life, by you or by your engineer
+  finishRepair(g: Game, n: Npc, by: string): void {
+    const p = g.world.player;
+    n.disabled = false; n.hull = n.hullMax;
+    const reward = (this.sos && this.sos.trader === n ? this.sos.reward : 300) + Math.floor(Math.random() * 200);
+    this.thankYou(g, n, reward);
+    p.repairs = (p.repairs ?? 0) + 1;
+    flag(g, "shipwright1");
+    if ((p.repairs ?? 0) >= 5) flag(g, "shipwright5");
+    const sys = g.world.systems[p.systemId];
+    const rng = new RNG((g.world.seed ^ Math.floor(g.world.time * 17)) >>> 0);
+    let extra = "";
+    if (rng.chance(0.3)) { addCargoW(p, "parts", 2); extra = " THEY THROW IN TWO SPARE PARTS."; }
+    else if (rng.chance(0.3)) { const c = genCrewCandidate(rng); if (p.crew.length < hull(p.hullId).crewSlots) { p.crew.push(c); extra = ` THEIR ${c.role.toUpperCase()} ${c.name.toUpperCase()} ASKS FOR A BERTH WITH YOU INSTEAD, AND GETS ONE.`; } }
+    this.comms.push({ from: n.tag ? `[${n.tag}] CONVOY` : "FREIGHTER", text: `ENGINES LIT. ${by === "you" ? "WE WON'T FORGET THIS" : `TELL ${by.toUpperCase()} THEY'RE A WIZARD`}. +${reward}CR${extra}`, life: 12, color: PAL.gold });
+    if (this.comms.length > 5) this.comms.shift();
+    g.toast(`FREIGHTER REPAIRED +${reward}CR${extra ? " - " + extra.trim() : ""}`);
+    g.world.events.push({ t: g.world.time, kind: "rescue", systemId: p.systemId, text: `A disabled freighter was repaired and sent on its way by an independent pilot` });
+    void wire.post("rescue", by === "you" ? "boarded a disabled freighter and brought its engines back" : `sent ${by} across to fix a disabled freighter`, sys.name);
+    if (this.sos && this.sos.trader === n) this.sos = null;
+  }
+
   // ---------- Encounters ----------
   encounterTimer = 90;
   updateEncounters(g: Game, dt: number): void {
@@ -713,6 +798,9 @@ export class FlightScene implements Scene {
   tryInteract(g: Game): void {
     const p = g.world.player;
     const sys = g.world.systems[p.systemId];
+    // a ship that needs a hand
+    const needy = this.npcs.find((n) => n.kind === "trader" && n.hull > 0 && dist(p.x, p.y, n.x, n.y) < 80 && (n.disabled || n.hull < n.hullMax * 0.5));
+    if (needy && !this.repairJob) { this.offerHelp(g, needy); return; }
     for (const st of sys.stations) {
       const sx = Math.cos(st.angle) * st.orbit;
       const sy = Math.sin(st.angle) * st.orbit;

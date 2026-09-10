@@ -29,6 +29,8 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "tourist", title: "TOUR GUIDE", desc: "Complete a sightseeing charter", check: (w) => !!w.player.flags?.tourist },
   { id: "squadWarWin", title: "WARLORDS", desc: "Your squadron backs the winning side of a syndicate war", check: (w) => !!w.player.flags?.squadWarWin },
   { id: "warVeteran", title: "WAR VETERAN", desc: "Fight for the winning side of a syndicate war", check: (w) => !!w.player.flags?.warVeteran },
+  { id: "shipwright1", title: "WRENCH", desc: "Repair a disabled ship", check: (w) => !!w.player.flags?.shipwright1 },
+  { id: "shipwright5", title: "SHIPWRIGHT", desc: "Repair five disabled ships", check: (w) => !!w.player.flags?.shipwright5 },
   { id: "homesteader", title: "HOMESTEADER", desc: "Stake a claim on a world", check: (w) => !!w.player.flags?.homesteader },
   { id: "loyalCrew", title: "SHIP'S FAMILY", desc: "Have a loyal crew member", check: (w) => w.player.crew.some((c) => (c.loyalty ?? 0) >= 3) },
   { id: "theSignal", title: "THE SIGNAL", desc: "Finish the campaign", check: (w) => !!w.player.flags?.theSignal },

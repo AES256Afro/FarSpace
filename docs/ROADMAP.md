@@ -342,5 +342,10 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
 - [x] Homesteads: stake up to three claims on charted regions; they work the
       region's resource while you're away, recharge and repair the rover fast
 
+- [x] Helping ships: disabled freighters call for help; board them and bring
+      three dead systems back on a suit clock, or send your engineer across
+      and hold off the corsairs while they work; pass damaged ships a spare
+      part; rewards, standing, sometimes a new crew member
+
 ## Later
 - [ ] Cross-squadron rivalries and treaties

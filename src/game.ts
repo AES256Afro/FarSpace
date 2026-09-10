@@ -43,6 +43,7 @@ export class Game {
   orbitPlanetIdx = 0;
   landedPoiId: string | null = null;
   landedRegionIdx = 0;
+  repairTarget: import("./scenes/flight/types").Npc | null = null;
   surfaceFresh = false;   // set by orbit when the rover is dropped
   surfaceReturn = false;  // sites entered from the ground return to the ground
 

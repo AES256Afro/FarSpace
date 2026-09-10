@@ -250,6 +250,16 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
     ctx.fillRect(sx - 6, sy - 12, Math.round(12 * (n.hull / n.hullMax)), 1);
     if (n.variant === "captain") drawText(ctx, n.name ?? "CAPTAIN", sx - textWidth(n.name ?? "CAPTAIN") / 2, sy - 20, PAL.danger);
     else if (n.tag) { const lbl = `[${n.tag}] ${n.kind === "pirate" ? "RAIDER" : "CONVOY"}`; drawText(ctx, lbl, sx - textWidth(lbl) / 2, sy - 20, n.kind === "pirate" ? PAL.danger : PAL.info); }
+    if (n.kind === "trader" && (n.disabled || n.hull < n.hullMax * 0.5) && dist(p.x, p.y, n.x, n.y) < 220) {
+      const near = dist(p.x, p.y, n.x, n.y) < 80;
+      const lbl = n.disabled ? (near ? "DISABLED - [E] OFFER HELP" : "DISABLED") : (near ? "DAMAGED - [E] OFFER HELP" : "DAMAGED");
+      drawText(ctx, lbl, sx - textWidth(lbl) / 2, sy + 14, n.disabled ? PAL.warn : PAL.grey);
+      if (n.disabled && Math.floor(g.world.time * 3) % 2 === 0) { ctx.fillStyle = PAL.warn; ctx.fillRect(Math.round(sx) - 1, Math.round(sy) - 14, 2, 2); }
+    }
+    if (fs.repairJob && fs.repairJob.npc === n) {
+      ctx.fillStyle = PAL.greyDark; ctx.fillRect(sx - 15, sy - 26, 30, 3);
+      ctx.fillStyle = PAL.good; ctx.fillRect(sx - 15, sy - 26, Math.round(30 * Math.min(1, fs.repairJob.progress)), 3);
+    }
     else if (n.variant === "cutter") { ctx.fillStyle = PAL.danger; ctx.fillRect(sx - 8, sy - 12, 1, 1); ctx.fillRect(sx + 7, sy - 12, 1, 1); }
     if (n.fleeing) drawText(ctx, "FLEEING", sx - 14, sy - 18, PAL.warn);
     if (fs.escort && fs.escort.trader === n) drawText(ctx, "ESCORT", sx - 12, sy - 20, PAL.gold);
@@ -346,7 +356,8 @@ export function drawEdgeMarkers(fs: FlightScene, g: Game, ctx: CanvasRenderingCo
   for (const n of fs.npcs) {
     if (n.kind === "pirate" && dist(n.x, n.y, p.x, p.y) < 900) mark(n.x, n.y, PAL.danger);
   }
-  if (fs.sos && fs.sos.trader.hull > 0) mark(fs.sos.trader.x, fs.sos.trader.y, PAL.gold, "SOS");
+  if (fs.sos && fs.sos.trader.hull > 0) mark(fs.sos.trader.x, fs.sos.trader.y, PAL.gold, fs.sos.kind === "disabled" ? "MAYDAY" : "SOS");
+  if (fs.repairJob) mark(fs.repairJob.npc.x, fs.repairJob.npc.y, PAL.good, "REPAIR");
   if (fs.escort && fs.escort.trader.hull > 0) mark(fs.escort.trader.x, fs.escort.trader.y, PAL.gold, "ESCORT");
   // active mission target station in this system
   for (const m of p.missions) {
@@ -448,6 +459,10 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
     ctx.fillStyle = heat > 100 ? PAL.danger : heat > 70 ? PAL.warn : PAL.thrust;
     ctx.fillRect(hx, hy + 1, Math.round(50 * clamp(heat / 100, 0, 1)), 4);
     if (heat > 100 && Math.floor(g.world.time * 6) % 2 === 0) drawText(ctx, "OVERHEAT", hx + 8, hy - 9, PAL.danger);
+  }
+  if (fs.repairJob) {
+    const t = `${fs.repairJob.crewName.toUpperCase()} ABOARD THE FREIGHTER: ${Math.round(Math.min(1, fs.repairJob.progress) * 100)}% - HOLD THE CORSAIRS OFF`;
+    drawText(ctx, t, VW / 2 - textWidth(t) / 2, 50, PAL.good);
   }
   if (fs.cruise || fs.autopilot) {
     const t = `${fs.cruise ? "CRUISE" : ""}${fs.cruise && fs.autopilot ? " - " : ""}${fs.autopilot ? `AUTOPILOT: ${fs.apLabel}` : ""}`;
