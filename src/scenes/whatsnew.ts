@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.28 - WONDERS", [
+    "EVERY GALAXY HAS LANDMARKS NOW: A RING, A PULSAR, AN ARK, A GLASS BELT, TWIN STARS. RUMOURS IN THE BARS POINT THE WAY.",
+  ]],
   ["0.27 - CHARTERS", [
     "CHARTER A HAULER AT ANY SHIPYARD TO RUN YOUR BEST KNOWN ROUTE WHILE YOU FLY. 60% OF THE MARGIN IS YOURS.",
   ]],

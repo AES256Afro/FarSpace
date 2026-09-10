@@ -5,7 +5,7 @@ import { ask, confirmBox } from "../../core/dialog";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, crewXp, stormBlind, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, crewXp, stormBlind, wondersIn, seeWonder, WONDER_RANGE, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra } from "../../world";
 import { COMMODITIES, commodity } from "../../data/data";
 import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
@@ -80,6 +80,7 @@ export class FlightScene implements Scene {
     this.torps = [];
     this.floaters = [];
     this.comms = [];
+    this.wonderSeen.clear();
     populate(this, g);
     this.spawnDrifters(g);
     this.launchDrones(g);
@@ -735,6 +736,7 @@ export class FlightScene implements Scene {
     logEntry(g.world, `Logged a void drifter off a gas giant in ${g.world.systems[p.systemId].name}`);
   }
   faultTimer = 40;
+  wonderSeen = new Set<string>();
   chatterTimer = 25;
   trafficTimer = 40;
   updateAmbient(g: Game, dt: number): void {
@@ -742,6 +744,16 @@ export class FlightScene implements Scene {
     const sys = g.world.systems[p.systemId];
     // comms chatter when the channel is quiet
     if (g.world.infraNews?.length) { for (const line of g.world.infraNews) g.toast(line); g.world.infraNews = []; }
+    // a wonder within sight: the codex, the data, the tourists
+    for (const wd of wondersIn(g.world, sys.id)) {
+      if (dist(p.x, p.y, wd.x, wd.y) > WONDER_RANGE) continue;
+      if (this.wonderSeen.has(wd.id)) continue;
+      this.wonderSeen.add(wd.id);
+      const r = seeWonder(g.world, wd, wire.getCallsign() ?? p.captainName ?? "an independent pilot");
+      g.toast(r.first ? `${wd.name.toUpperCase()}. ${wd.desc.toUpperCase()} +${r.data} DATA` : `${wd.name.toUpperCase()} AGAIN. IT DOESN'T GET SMALLER. +${r.data} DATA`);
+      if (r.first) { flag(g, "wonder"); void wire.post("discover", `saw ${wd.name} in ${sys.name}`, sys.name); sfx.pickup(); }
+      if (logSight(p, "wonder", wd.name, sys.id)) g.toast("YOUR PASSENGERS ARE SILENT AT THE VIEWPORT. THAT'S THE ONE THEY CAME FOR.");
+    }
     // a worn ship throws faults now and then; the engineer keeps the interval long
     this.faultTimer -= dt;
     if (this.faultTimer <= 0) {

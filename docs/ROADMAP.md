@@ -461,4 +461,10 @@ Time passes for the people on the ship, and for the ship.
       trip's margin, paid at dock; prices move, corsairs take their share
 - [x] Charters on the SHIPS tab and dotted on the galaxy map
 
+## Milestone 28 — Wonders ✅ (Sep 2026)
+- [x] A handful of unique landmarks per galaxy, drawn large in flight, with
+      rumours in the bars and markers on the galaxy map
+- [x] Sightings pay data, fill the codex, complete tourist fares and name
+      postcards; old saves get their wonders on load
+
 ## Later

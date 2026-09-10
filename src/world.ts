@@ -609,7 +609,7 @@ export function retireCaptain(w: World, name: string, successor: CrewMember | nu
 }
 
 // ---------- Passengers: the liner trade ----------
-export type SightKind = "planet" | "drifter" | "comet" | "festival";
+export type SightKind = "planet" | "drifter" | "comet" | "festival" | "wonder";
 export const PASSENGER_BASE_CAP = 1;
 export function passengerCap(p: PlayerState): number {
   return PASSENGER_BASE_CAP + ((p.modules ?? []).includes("cabins") ? 2 : 0);
@@ -639,14 +639,16 @@ export function genFares(w: World, station: StationDef, rng: RNG): Mission[] {
     if (pk === "tourist") {
       const ev = w.galaxyEvent;
       const gas = target.planets.map((pl, idx) => ({ pl, idx })).filter((x) => x.pl.palette >= 6);
-      if (ev && ev.kind === "comet" && ev.systemId === target.id && rng.chance(0.7)) { sightKind = "comet"; sightText = `the comet crossing ${target.name}`; }
+      const wonder = wondersIn(w, target.id)[0];
+      if (wonder && rng.chance(0.6)) { sightKind = "wonder"; sightText = `${wonder.name} (fly within sight of it)`; }
+      else if (ev && ev.kind === "comet" && ev.systemId === target.id && rng.chance(0.7)) { sightKind = "comet"; sightText = `the comet crossing ${target.name}`; }
       else if (ev && ev.kind === "festival" && ev.stationId === tStation.id && rng.chance(0.7)) { sightKind = "festival"; sightText = `the festival at ${tStation.name}`; }
       else if (gas.length && rng.chance(0.4)) { sightKind = "drifter"; sightIdx = rng.pick(gas).idx; sightText = `the void drifters off ${target.planets[sightIdx].name} (hold V near one)`; }
       else if (target.planets.length) { sightKind = "planet"; sightIdx = rng.int(0, target.planets.length - 1); sightText = `${target.planets[sightIdx].name} from orbit`; }
       else { sightKind = "festival"; sightText = tStation.name; }
     }
     const party = pk === "tourist" ? rng.int(2, 4) : pk === "refugee" ? rng.int(1, 3) : 1;
-    const base = pk === "vip" ? 700 + rng.int(0, 400) : pk === "refugee" ? 100 + rng.int(0, 80) * party : pk === "tourist" ? 500 + rng.int(0, 300) + party * 120 : pk === "courier" ? 450 + rng.int(0, 250) : 550 + rng.int(0, 450);
+    const base = pk === "vip" ? 700 + rng.int(0, 400) : pk === "refugee" ? 100 + rng.int(0, 80) * party : pk === "tourist" ? (sightKind === "wonder" ? 900 : 500) + rng.int(0, 300) + party * 120 : pk === "courier" ? 450 + rng.int(0, 250) : 550 + rng.int(0, 450);
     fares.push({
       id: `fare-${station.id}-${w.missionCounter++}`, kind: "passenger", accepted: false, done: false, tier: 0,
       title: `${pk === "vip" ? "VIP" : pk === "refugee" ? "Refugee" : pk === "tourist" ? "Sightseeing" : pk === "courier" ? "Business" : "Discreet"} fare: ${name}${party > 1 ? ` +${party - 1}` : ""}`,
@@ -691,6 +693,50 @@ export function passengerPay(m: Mission): number {
   const mood = m.mood ?? 60;
   const extra = m.passengerKind === "tourist" ? Math.min(3, Math.max(0, (m.sights?.length ?? 0) - 1)) * 0.15 : 0;
   return Math.round(m.reward * (0.6 + (mood / 100) * 0.6 + extra));
+}
+
+// ---------- Wonders: the places people cross a galaxy to see ----------
+export type WonderKind = "ring" | "pulsar" | "ark" | "glass" | "twins" | "nursery" | "cathedral";
+export interface Wonder { id: string; kind: WonderKind; name: string; systemId: string; x: number; y: number; seen: boolean; seenBy?: string; desc: string }
+export const WONDER_DEFS: Record<WonderKind, { names: string[]; desc: string }> = {
+  ring: { names: ["The Halo", "Saint Iver's Ring", "The Coronet"], desc: "A ring of ice and dust a thousand kilometres across, lit from inside by something that isn't a star." },
+  pulsar: { names: ["The Metronome", "Old Faithful", "The Drummer"], desc: "A dead star that ticks. Every ship within a light-year keeps its clocks by it." },
+  ark: { names: ["The Ark Meridian", "The Sleeper", "Long Voyage"], desc: "A generation ship ten kilometres long, dark for centuries, still very slowly turning." },
+  glass: { names: ["The Glass Belt", "The Shatter", "Mirrorfield"], desc: "An asteroid belt of pure glass. At the right angle the whole arc lights up like a second sun." },
+  twins: { names: ["The Twins", "The Dancers", "Two Lamps"], desc: "A pair of stars so close they share an atmosphere, trading fire across a bridge you can see from here." },
+  nursery: { names: ["The Nursery", "The Comet Garden", "Snowfield"], desc: "Ten thousand comets in a slow cloud, tails all pointing the same way. Drifters come here to breed." },
+  cathedral: { names: ["The Cathedral", "The Pillars", "Stone Choir"], desc: "Rock spires kilometres tall standing in open space. Nobody built them. Everybody argues about it." },
+};
+export function assignWonders(systems: Record<string, SystemDef>, startId: string, rng: RNG): Wonder[] {
+  const ids = Object.keys(systems).filter((id) => id !== startId);
+  const kinds = [...Object.keys(WONDER_DEFS)] as WonderKind[];
+  for (let i = kinds.length - 1; i > 0; i--) { const j = rng.int(0, i); [kinds[i], kinds[j]] = [kinds[j], kinds[i]]; }
+  const n = Math.min(kinds.length, Math.max(3, Math.round(ids.length / 6)));
+  const out: Wonder[] = [];
+  const used = new Set<string>();
+  for (let i = 0; i < n && ids.length; i++) {
+    let sysId = rng.pick(ids); let tries = 0;
+    while (used.has(sysId) && tries++ < 20) sysId = rng.pick(ids);
+    used.add(sysId);
+    const kind = kinds[i];
+    const a = rng.range(0, Math.PI * 2), r = rng.range(2200, SYSTEM_SIZE * 0.85);
+    out.push({ id: `w-${kind}-${sysId}`, kind, name: rng.pick(WONDER_DEFS[kind].names), systemId: sysId, x: Math.cos(a) * r, y: Math.sin(a) * r, seen: false, desc: WONDER_DEFS[kind].desc });
+  }
+  return out;
+}
+export function wondersIn(w: World, systemId: string): Wonder[] { return (w.wonders ?? []).filter((x) => x.systemId === systemId); }
+export const WONDER_RANGE = 420;
+// Close enough to see it properly: the codex, the data, the tourists, the wire.
+export function seeWonder(w: World, wd: Wonder, by: string): { first: boolean; data: number } {
+  const p = w.player;
+  const first = !wd.seen;
+  wd.seen = true; wd.seenBy ??= by;
+  const key = `wonder:${wd.name}`;
+  (p.codex ??= {})[key] = ((p.codex ?? {})[key] ?? 0) + 1;
+  const data = first ? 400 : 40;
+  p.expData = (p.expData ?? 0) + data;
+  if (first) { pushEvent(w, { t: w.time, kind: "discovery", systemId: wd.systemId, text: `${by} logged ${wd.name} in ${w.systems[wd.systemId]?.name ?? "?"}: ${wd.desc}` }); logEntry(w, `Saw ${wd.name}`); }
+  return { first, data };
 }
 
 // ---------- Wear: a ship wants a yard now and then ----------
@@ -863,6 +909,7 @@ export interface World {
   infraTick?: number;
   infraNews?: string[];              // lines from the last infra tick, for the HUD to toast
   serial?: SerialState | null;       // the GalNet serial running now
+  wonders?: Wonder[];                // the galaxy's landmarks: a handful, unique, worth the trip
   serialsSeen?: string[];
   serialTick?: number;
   seed: number;
@@ -1486,6 +1533,7 @@ export function generateWorld(seed: number, opts: GenOptions = {}): World {
     version: 0, seed, time: 0, realGalaxy: !!opts.realGalaxy, galaxyLy: opts.realGalaxy ? (opts.maxLy ?? 20) : undefined, hardcore: !!opts.hardcore,
     rareOrigin: assignRares(systems, new RNG((seed ^ 0x5a5e) >>> 0)),
     syndicates: assignSyndicates(systems, startId, new RNG((seed ^ 0x51d1) >>> 0)),
+    wonders: assignWonders(systems, startId, new RNG((seed ^ 0x77d3) >>> 0)),
     ...(assignPermits(systems, startId, new RNG((seed ^ 0x9e3d) >>> 0)), {}),
     systems, player, news: [], events: [], wars: [],
     missionCounter: 0, econTick: 0, shockTick: 0, warTick: 0,

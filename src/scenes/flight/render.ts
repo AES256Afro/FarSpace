@@ -4,7 +4,7 @@ import type { Game } from "../../game";
 import { VW, VH } from "../../game";
 import type { FlightScene } from "./index";
 import { drawText, textWidth } from "../../gfx/font";
-import { infraAt, infraLit, stormBlind } from "../../world";
+import { infraAt, infraLit, stormBlind, wondersIn } from "../../world";
 import * as wire from "../../core/wire";
 import { PAL } from "../../gfx/palette";
 import { clamp, TAU, angDiff, dist } from "../../core/mathx";
@@ -104,6 +104,23 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
     if (dist(p.x, p.y, d.x, d.y) < 260) drawText(ctx, d.logged ? "VOID DRIFTER" : "UNKNOWN LIFEFORM - HOLD V", dx - 40, dy - 16 * z - 8, PAL.info);
   }
 
+  // wonders: big, slow, unmistakable
+  for (const wd of wondersIn(g.world, sys.id)) {
+    const [sx, sy] = toScreen(wd.x, wd.y);
+    if (sx < -400 || sx > VW + 400 || sy < -400 || sy > VH + 400) continue;
+    const t = g.world.time;
+    ctx.save();
+    if (wd.kind === "ring") { for (let i = 0; i < 3; i++) { ctx.strokeStyle = i === 1 ? "#ffe9a0" : "#9aa5bd"; ctx.globalAlpha = 0.5 + 0.3 * Math.sin(t + i); ctx.beginPath(); ctx.ellipse(sx, sy, (120 + i * 18) * z, (34 + i * 6) * z, 0.3, 0, Math.PI * 2); ctx.stroke(); } }
+    else if (wd.kind === "pulsar") { const k = (t * 3) % 1; ctx.fillStyle = "#f2f4ff"; ctx.fillRect(sx - 2, sy - 2, 4, 4); ctx.strokeStyle = "#8ec9f0"; ctx.globalAlpha = 1 - k; ctx.beginPath(); ctx.arc(sx, sy, (10 + k * 160) * z, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 0.6; ctx.fillStyle = "#8ec9f0"; ctx.fillRect(sx - 1, sy - 200 * z, 2, 400 * z); }
+    else if (wd.kind === "ark") { ctx.translate(sx, sy); ctx.rotate(t * 0.02); ctx.fillStyle = "#2a3146"; ctx.fillRect(-160 * z, -14 * z, 320 * z, 28 * z); ctx.fillStyle = "#3a4a6c"; for (let i = -7; i <= 7; i++) ctx.fillRect(i * 20 * z - 2, -20 * z, 4, 40 * z); ctx.fillStyle = Math.floor(t * 0.7) % 5 === 0 ? "#ffd75a" : "#1a2036"; ctx.fillRect(-4, -4, 8, 8); }
+    else if (wd.kind === "glass") { for (let i = 0; i < 40; i++) { const a = (i / 40) * Math.PI * 2, r = (220 + (i % 5) * 12) * z; const gl = Math.sin(t * 2 + i) > 0.6; ctx.fillStyle = gl ? "#f2f4ff" : "#8ec9f0"; ctx.fillRect(Math.round(sx + Math.cos(a) * r), Math.round(sy + Math.sin(a) * r * 0.5), gl ? 3 : 2, gl ? 3 : 2); } }
+    else if (wd.kind === "twins") { for (const d of [-1, 1]) { ctx.fillStyle = d < 0 ? "#ffb347" : "#8ec9f0"; ctx.beginPath(); ctx.arc(sx + d * 60 * z, sy, 28 * z, 0, Math.PI * 2); ctx.fill(); } ctx.strokeStyle = "#ffe9a0"; ctx.globalAlpha = 0.5 + 0.4 * Math.sin(t * 4); ctx.beginPath(); ctx.moveTo(sx - 34 * z, sy); ctx.quadraticCurveTo(sx, sy - 20 * z * Math.sin(t), sx + 34 * z, sy); ctx.stroke(); }
+    else if (wd.kind === "nursery") { for (let i = 0; i < 60; i++) { const px2 = sx + ((i * 37) % 300 - 150) * z, py2 = sy + ((i * 53) % 200 - 100) * z; ctx.fillStyle = "#f2f4ff"; ctx.fillRect(px2, py2, 2, 2); ctx.fillStyle = "#8ec9f0"; ctx.globalAlpha = 0.5; ctx.fillRect(px2 + 2, py2 + 1, 12 * z, 1); ctx.globalAlpha = 1; } }
+    else if (wd.kind === "cathedral") { for (let i = 0; i < 6; i++) { const h = (80 + (i * 43) % 90) * z; ctx.fillStyle = i % 2 ? "#3a4a6c" : "#2a3146"; ctx.fillRect(sx + (i - 3) * 30 * z, sy - h, 10 * z, h * 2); ctx.fillStyle = "#6a7a9c"; ctx.fillRect(sx + (i - 3) * 30 * z + 2, sy - h, 2, h * 2); } }
+    ctx.restore(); ctx.globalAlpha = 1;
+    const d = dist(p.x, p.y, wd.x, wd.y);
+    if (d < 1400) { const label = wd.seen ? wd.name.toUpperCase() : "SOMETHING VAST"; drawText(ctx, label, sx - textWidth(label) / 2, sy - 40 * z - 10, PAL.gold); }
+  }
   // lighthouses: a beacon mast with a slow strobe, or a depot with tank lights
   for (const inf of infraAt(g.world, sys.id)) {
     const [sx, sy] = toScreen(inf.x, inf.y);
@@ -639,6 +656,11 @@ export function drawSystemMap(g: Game, ctx: CanvasRenderingContext2D): void {
     ctx.fillStyle = PAL.info;
     ctx.fillRect(Math.round(cx + an.x * sc) - 1, Math.round(cy + an.y * sc) - 1, 3, 3);
     drawText(ctx, an.name, cx + an.x * sc + 4, cy + an.y * sc - 2, PAL.info);
+  }
+  for (const wd of wondersIn(g.world, sys.id)) {
+    ctx.fillStyle = PAL.gold;
+    ctx.fillRect(Math.round(cx + wd.x * sc) - 2, Math.round(cy + wd.y * sc) - 2, 5, 5);
+    drawText(ctx, wd.seen ? wd.name.toUpperCase() : "WONDER?", cx + wd.x * sc + 5, cy + wd.y * sc - 2, PAL.gold);
   }
   const px = cx + p.x * sc, py = cy + p.y * sc;
   ctx.fillStyle = PAL.white;

@@ -2,10 +2,10 @@
 // migration step so no player loses a game to an update.
 
 import type { World, SystemDef } from "./world";
-import { assignRares, assignSyndicates } from "./world";
+import { assignRares, assignSyndicates, assignWonders } from "./world";
 import { RNG } from "./core/rng";
 
-export const SAVE_VERSION = 11;
+export const SAVE_VERSION = 12;
 export const SAVE_KEY = "farspace-save";
 export const SLOTS = 3;
 const SLOT_KEY = "farspace-slot";
@@ -143,6 +143,15 @@ MIGRATIONS[10] = (w) => {
   p.kits ??= {};
   p.fares ??= 0;
   w.infra ??= [];
+};
+
+MIGRATIONS[11] = (w) => {
+  // 11 → 12: wonders for galaxies that were generated without them
+  if (!w.wonders) {
+    const seed = typeof w.seed === "number" ? w.seed : 1;
+    const startId = String((w.player as { systemId?: string }).systemId ?? Object.keys(w.systems as object)[0]);
+    w.wonders = assignWonders(w.systems as Record<string, SystemDef>, startId, new RNG((seed ^ 0x77d3) >>> 0));
+  }
 };
 
 export function migrateSave(raw: unknown): World | null {

@@ -31,6 +31,8 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "warVeteran", title: "WAR VETERAN", desc: "Fight for the winning side of a syndicate war", check: (w) => !!w.player.flags?.warVeteran },
   { id: "theLane", title: "THE LANE", desc: "Find the missing convoy", check: (w) => !!w.player.flags?.theLane },
   { id: "charter", title: "CHARTERED", desc: "Hold a faction charter", check: (w) => !!w.player.flags?.charter },
+  { id: "wonder", title: "WITH YOUR OWN EYES", desc: "See one of the galaxy's wonders", check: (w) => !!w.player.flags?.wonder },
+  { id: "grandTour", title: "THE GRAND TOUR", desc: "See every wonder in the galaxy", check: (w) => !!w.wonders?.length && w.wonders.every((x) => x.seen) },
   { id: "shippingLine", title: "SHIPPING LINE", desc: "Charter a hauler to run a route for you", check: (w) => !!w.player.flags?.shippingLine },
   { id: "founder", title: "FOUNDER", desc: "Grow an outpost into a town", check: (w) => !!w.player.flags?.founder },
   { id: "chronicle", title: "CHRONICLER", desc: "Export the chronicle", check: (w) => !!w.player.flags?.chronicle },

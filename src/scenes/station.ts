@@ -1532,7 +1532,7 @@ export class StationScene implements Scene {
     const p = g.world.player;
     const cx = Object.entries(p.codex ?? {});
     drawText(ctx, `CODEX (${cx.length} ENTRIES) - C FOR CARTOGRAPHICS`, 8, top, PAL.info);
-    const groups: [string, string, string][] = [["flora:", "FLORA", "SCANNED WITH THE ROVER (HOLD V). EACH NEW SPECIES PAYS 120 DATA."], ["fauna:", "FAUNA", "MET ON THE GROUND. WATCH, DON'T POKE."], ["biome:", "BIOMES", "WORLDS DRIVEN ON. A NEW BIOME PAYS 120 DATA."], ["signal:", "SIGNALS", "HEARD ON NO KNOWN BAND."]];
+    const groups: [string, string, string][] = [["flora:", "FLORA", "SCANNED WITH THE ROVER (HOLD V). EACH NEW SPECIES PAYS 120 DATA."], ["fauna:", "FAUNA", "MET ON THE GROUND. WATCH, DON'T POKE."], ["biome:", "BIOMES", "WORLDS DRIVEN ON. A NEW BIOME PAYS 120 DATA."], ["signal:", "SIGNALS", "HEARD ON NO KNOWN BAND."], ["wonder:", "WONDERS", "SEEN WITH YOUR OWN EYES. A FIRST SIGHT PAYS 400 DATA."]];
     let y = top + 12;
     for (const [prefix, title, blurb] of groups) {
       const items = cx.filter(([k]) => k.startsWith(prefix));
@@ -1681,6 +1681,9 @@ const BAR_LINES: ((g: Game, st: StationDef) => string)[] = [
     return `Word is the corsairs are thick around ${link} lately. Fly armed or fly fast.`;
   },
   (g) => {
+    const unseen = (g.world.wonders ?? []).filter((x) => !x.seen);
+    const wd = unseen.length ? unseen[Math.floor(g.world.time / 20) % unseen.length] : null;
+    if (wd) { (g.world.player.flags ??= {})[`rumour:${wd.id}`] = true; return `A prospector swears there's something out in ${g.world.systems[wd.systemId]?.name ?? "the dark"} you have to see with your own eyes. Calls it ${wd.name}. Won't say more. Won't stop grinning.`; }
     const rich = Object.values(g.world.systems).find((s) => s.factionId === "fdm");
     return `A prospector swears the belts in ${rich?.name ?? "the Guild systems"} still glitter. Bring a mining laser and patience.`;
   },

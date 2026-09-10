@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
-  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices } from "../src/world";
+  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn } from "../src/world";
 import type { Charter } from "../src/world";
 import type { Infra } from "../src/world";
 import { migrateSave, SAVE_VERSION, saveKeyFor, SLOTS } from "../src/save";
@@ -1130,5 +1130,29 @@ describe("charters", () => {
     expect((p.haulers ?? []).length).toBeLessThanOrEqual(1);
     if ((p.haulers ?? []).includes(c)) { releaseCharter(p, c); }
     expect((p.haulers ?? []).length).toBe(0);
+  });
+});
+
+describe("wonders", () => {
+  it("every galaxy gets a handful of unique wonders, seeing one logs it once for full data, and old saves get theirs", () => {
+    const w = generateWorld(121, { realGalaxy: true });
+    expect(w.wonders!.length).toBeGreaterThanOrEqual(3);
+    const kinds = new Set(w.wonders!.map((x) => x.kind));
+    expect(kinds.size).toBe(w.wonders!.length);
+    const wd = w.wonders![0];
+    expect(wd.systemId).not.toBe(w.player.systemId);
+    expect(Math.hypot(wd.x, wd.y)).toBeGreaterThan(2000);
+    const before = w.player.expData ?? 0;
+    const r1 = seeWonder(w, wd, "TESTER");
+    expect(r1.first).toBe(true); expect(r1.data).toBe(400);
+    expect((w.player.expData ?? 0) - before).toBe(400);
+    expect(w.player.codex![`wonder:${wd.name}`]).toBe(1);
+    const r2 = seeWonder(w, wd, "OTHER");
+    expect(r2.first).toBe(false); expect(wd.seenBy).toBe("TESTER");
+    expect(wondersIn(w, wd.systemId).length).toBeGreaterThanOrEqual(1);
+    const raw = JSON.parse(JSON.stringify({ ...w, version: 11, wonders: undefined }));
+    const m = migrateSave(raw)!;
+    expect(m.wonders!.length).toBeGreaterThanOrEqual(3);
+    expect(m.version).toBe(SAVE_VERSION);
   });
 });

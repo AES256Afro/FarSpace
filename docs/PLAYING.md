@@ -101,6 +101,16 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   board: sample runs, outcrop runs, and a plant to fix on the spot. Jobs pay
   out when you walk back in.
 
+## Wonders
+
+- Every galaxy has a handful of landmarks: a ring lit from inside, a pulsar,
+  a generation ship, a belt of glass, twin stars sharing fire, a comet
+  nursery, stone spires in open space. Bar rumours point at them; the galaxy
+  map marks a rumoured or seen wonder in gold.
+- Fly within sight of one: 400 data the first time, a codex entry, a line on
+  the wire. Tourists book them, and pay more for the trip. Postcards taken
+  nearby carry the name.
+
 ## Charters
 
 - Once you know a good run (dock at two markets), any shipyard on the buying
