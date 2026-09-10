@@ -20,7 +20,7 @@ import { EncounterScene } from "./scenes/encounter";
 import { RepairScene } from "./scenes/repair";
 import { SlotsScene } from "./scenes/slots";
 import { checkAchievements } from "./core/achievements";
-import { storyUpdate } from "./core/story";
+import { storyUpdate, convoyUpdate } from "./core/story";
 import { presence } from "./core/presence";
 import { initAudioUnlock } from "./core/sfx";
 import { initTouch } from "./core/touch";
@@ -72,6 +72,7 @@ function frame(now: number): void {
   game.scene.update(game, dt);
   tutorialUpdate(game);
   storyUpdate(game);
+  convoyUpdate(game);
   checkAchievements(game);
   game.scene.draw(game, game.bctx);
   game.input.flush();

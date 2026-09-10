@@ -260,6 +260,8 @@ export interface PlayerState {
   tows?: number;
   evacuees?: { n: number; from: string } | null;      // survivors aboard, paid out at the next dock
   story?: number;                                     // The Signal: stage index; -1 = declined
+  story2?: number;                                    // The Missing Convoy: stage index
+  convoyTrack?: { tag: string; rivalTag: string; partnerStationId: string; laneSystemId: string } | null;
   storyTarget?: { systemId: string; planetIdx: number; poiId: string } | null;
   storyVeil?: string | null;
   storyOrigin?: string | null;

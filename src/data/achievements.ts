@@ -29,6 +29,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "tourist", title: "TOUR GUIDE", desc: "Complete a sightseeing charter", check: (w) => !!w.player.flags?.tourist },
   { id: "squadWarWin", title: "WARLORDS", desc: "Your squadron backs the winning side of a syndicate war", check: (w) => !!w.player.flags?.squadWarWin },
   { id: "warVeteran", title: "WAR VETERAN", desc: "Fight for the winning side of a syndicate war", check: (w) => !!w.player.flags?.warVeteran },
+  { id: "theLane", title: "THE LANE", desc: "Find the missing convoy", check: (w) => !!w.player.flags?.theLane },
   { id: "charter", title: "CHARTERED", desc: "Hold a faction charter", check: (w) => !!w.player.flags?.charter },
   { id: "drifter", title: "GENTLE GIANTS", desc: "Log a void drifter", check: (w) => !!w.player.flags?.drifter },
   { id: "responder", title: "FIRST RESPONDER", desc: "Reach Rescuer rank First Responder", check: (w) => rankOf(w.player, "rescuer").idx >= 2 },

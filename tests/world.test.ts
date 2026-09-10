@@ -15,7 +15,7 @@ import { RARES } from "../src/data/data";
 import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
 import { ENCOUNTERS, pickEncounter } from "../src/data/encounters";
-import { STORY, storyObjective } from "../src/core/story";
+import { STORY, storyObjective, CONVOY, convoyObjective } from "../src/core/story";
 import { homesteadYield, settleHomestead, HOMESTEAD_CAP, tickCrisis, crisisAt, tickGalaxyEvents, galaxyEventAt, rescuePoints, logEntry, embargoed, hasCharter } from "../src/world";
 import { genGround, groundKey, passable, GW, GH } from "../src/ground";
 import { BLUEPRINTS, upgrade, addMaterials, nextCost, MATERIAL_CAP } from "../src/data/engineering";
@@ -737,5 +737,25 @@ describe("faction politics", () => {
     expect(hasCharter(w, "tsc")).toBe(false);
     w.player.charters = ["tsc"];
     expect(hasCharter(w, "tsc")).toBe(true);
+  });
+});
+
+describe("the missing convoy", () => {
+  it("has three stages with objectives and checks that pass on the right state", () => {
+    const w = generateWorld(27, { realGalaxy: true });
+    const g = { world: w, scenes: {}, sceneName: "flight" } as unknown as import("../src/game").Game;
+    expect(CONVOY.length).toBe(3);
+    expect(convoyObjective(w)).toBeNull();
+    const sy = w.syndicates!.find((s) => s.style !== "pirase" && s.partners.length)!;
+    const partner = w.systems[Object.values(w.systems).find((s) => s.stations.some((st) => st.id === sy.partners[0]))!.id];
+    w.player.convoyTrack = { tag: sy.tag, rivalTag: sy.rivals[0] ?? "VULT", partnerStationId: sy.partners[0], laneSystemId: partner.id };
+    w.player.story2 = 0;
+    expect(convoyObjective(w)).toContain("DEEP-SCAN");
+    expect(CONVOY[0].check(g)).toBe(false);
+    partner.anomalies.push({ id: `convoy-${sy.tag}`, name: "Convoy Nine", kind: "derelict", x: 0, y: 0, discovered: true, claimed: true, reward: 0 });
+    expect(CONVOY[0].check(g)).toBe(true);
+    expect(CONVOY[0].card(g)).toContain("HARBOURMASTER");
+    w.player.dockedAt = sy.partners[0];
+    expect(CONVOY[1].check(g)).toBe(true);
   });
 });

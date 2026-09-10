@@ -5,7 +5,7 @@
 
 import type { Game } from "../game";
 import type { World, SystemDef } from "../world";
-import { adjustRep, findStation } from "../world";
+import { adjustRep, findStation, adjustSynRep, shiftRelation, logEntry } from "../world";
 import { RNG, hashStr } from "./rng";
 import type { EncounterScene } from "../scenes/encounter";
 import type { Encounter } from "../data/encounters";
@@ -61,11 +61,85 @@ export const STORY: StoryStage[] = [
     card: (g) => { p(g).credits += 5000; p(g).expData = (p(g).expData ?? 0) + 1000; flag(g, "theSignal"); void wire.post("arc", p(g).flags?.storyParley ? "answered the Signal and sent the Herald home" : "answered the Signal and broke the Herald", g.world.systems[p(g).systemId].name); return p(g).flags?.storyParley ? "THE HERALD TAKES THE RELIC AND THE COUNT STOPS. IN EVERY SYSTEM AT ONCE, THE PULSE UNDER THE STARLIGHT GOES SILENT. YOU ARE THE ONLY PILOT WHO WILL EVER KNOW WHY.\n\n+5000CR, +1000 EXPLORATION DATA. THE SIGNAL IS OVER." : "THE HERALD COMES APART SLOWLY, LIKE IT HAS ALL THE TIME IN THE WORLD. THE COUNT STOPS. SOMEWHERE, SOMETHING NOTES THAT THE ANSWER WAS NO.\n\n+5000CR, +1000 EXPLORATION DATA. THE SIGNAL IS OVER."; } },
 ];
 
+// ---------- Track two: The Missing Convoy (syndicate arc) ----------
+export const CONVOY: StoryStage[] = [
+  { title: "A CONVOY IS LATE", objective: (w) => { const t = w.player.convoyTrack; return t ? `DEEP-SCAN (HOLD V) THE LANE IN ${w.systems[t.laneSystemId].name.toUpperCase()}` : "EARN STANDING WITH A SYNDICATE"; },
+    check: (g) => { const t = p(g).convoyTrack; if (!t) return false; return g.world.systems[t.laneSystemId].anomalies.some((a) => a.id === `convoy-${t.tag}` && a.claimed); },
+    card: (g) => { const t = p(g).convoyTrack!; const rival = g.world.syndicates?.find((s) => s.tag === t.rivalTag); const f = findStation(g.world, t.partnerStationId); return `THE WRECK IS CONVOY NINE, ALL RIGHT. HULLED FROM CLOSE RANGE BY SHIPS WEARING [${t.rivalTag}] ${rival?.name.toUpperCase() ?? ""} COLOURS. EXCEPT THE BLACK BOX KEPT THE TRANSPONDER HANDSHAKES, AND THE RAIDERS WERE CLEARED THROUGH THE LANE BY ${(f?.st.name ?? "THE PARTNER STATION").toUpperCase()}'S OWN HARBOURMASTER.
+
+SOMEBODY ON THE INSIDE SOLD THAT CONVOY. DOCK AT ${(f?.st.name ?? "THE PARTNER STATION").toUpperCase()}.`; } },
+  { title: "THE HARBOURMASTER", objective: (w) => { const t = w.player.convoyTrack; const f = t ? findStation(w, t.partnerStationId) : null; return f ? `DOCK AT ${f.st.name.toUpperCase()}, ${f.sys.name.toUpperCase()}` : "FIND THE HARBOURMASTER"; },
+    check: (g) => { const t = p(g).convoyTrack; return !!t && p(g).dockedAt === t.partnerStationId; },
+    card: () => null }, // the confrontation is its own card
+  { title: "THE LANE", objective: () => "DECIDE WHAT THE BLACK BOX IS WORTH",
+    check: (g) => !!p(g).flags?.convoyDone, card: () => null },
+];
+export const CONVOY_LEN = CONVOY.length;
+
+function startConvoyTrack(g: Game): boolean {
+  const w = g.world; const pl = p(g);
+  const tag = Object.entries(pl.synRep ?? {}).filter(([, v]) => v >= 20).map(([t]) => t).find((t) => w.syndicates?.some((s) => s.tag === t && s.style !== "pirate"));
+  if (!tag) return false;
+  const sy = w.syndicates!.find((s) => s.tag === tag)!;
+  const partner = sy.partners.map((id) => findStation(w, id)).find((f) => !!f);
+  const rival = w.syndicates!.find((s) => s.rivals.includes(tag) || sy.rivals.includes(s.tag)) ?? w.syndicates!.find((s) => s.tag !== tag);
+  if (!partner || !rival) return false;
+  pl.convoyTrack = { tag, rivalTag: rival.tag, partnerStationId: partner.st.id, laneSystemId: partner.sys.id };
+  pl.story2 = 0;
+  showCard(g, "THE MISSING CONVOY - A CONVOY IS LATE", `[${tag}] DISPATCH, ON A PRIVATE CHANNEL. 'CONVOY NINE IS THREE DAYS LATE ON THE LANE TO ${partner.st.name.toUpperCase()}. NO BEACON, NO WRECK, NO RANSOM. YOU'VE DONE RIGHT BY US. FIND IT. WE'LL PAY FOR THE TRUTH, WHATEVER IT IS.'
+
+DEEP-SCAN THE LANE IN ${partner.sys.name.toUpperCase()}.`, g.sceneName === "station" ? "station" : "flight");
+  return true;
+}
+
+function convoyFinale(g: Game): void {
+  const pl = p(g); const t = pl.convoyTrack!; const w = g.world;
+  const sy = w.syndicates!.find((s) => s.tag === t.tag)!;
+  const rival = w.syndicates!.find((s) => s.tag === t.rivalTag);
+  const done = (g2: Game, text: string) => { g2.world.player.flags = { ...(g2.world.player.flags ?? {}), convoyDone: true, theLane: true }; g2.world.player.story2 = CONVOY_LEN; logEntry(g2.world, `The missing convoy: ${text}`); return text; };
+  const options: Encounter["options"] = [
+    { label: `HAND THE BOX TO [${t.tag}]`, hint: "The truth, and a purge", result: (g2) => { g2.world.player.credits += 1500; adjustSynRep(g2.world, t.tag, 20); if (rival) shiftRelation(g2.world, t.tag, rival.tag, 15); void wire.post("arc", `found [${t.tag}]'s missing convoy and the traitor who sold it`, g2.world.systems[g2.world.player.systemId].name); return done(g2, `THE HARBOURMASTER IS GONE BY MORNING. [${t.tag}] PAYS 1500CR AND STOPS BLAMING [${t.rivalTag}]. YOU ARE A PARTNER NOW, IN EVERYTHING BUT NAME.`); } },
+    { label: "TAKE THE HARBOURMASTER'S MONEY", hint: "2500 credits and a quiet lane", result: (g2) => { g2.world.player.credits += 2500; adjustSynRep(g2.world, t.tag, -12); if (rival) shiftRelation(g2.world, t.tag, rival.tag, -10); return done(g2, `2500CR, NO QUESTIONS. [${t.tag}] KEEPS BLAMING [${t.rivalTag}], AND THE HARBOURMASTER KEEPS HIS JOB. YOU KNOW WHAT YOU DID.`); } },
+    { label: `SELL THE BOX TO [${t.rivalTag}]`, hint: "They were framed; they'll pay to prove it", result: (g2) => { g2.world.player.credits += 1200; adjustSynRep(g2.world, t.rivalTag, 25); adjustSynRep(g2.world, t.tag, -25); if (rival) shiftRelation(g2.world, t.tag, rival.tag, -20); return done(g2, `[${t.rivalTag}] BROADCASTS THE HANDSHAKES ON EVERY BAND. [${t.tag}] IS HUMILIATED, AND KNOWS WHO DID IT. 1200CR, AND A NEW FRIEND WHO WAS AN ENEMY.`); } },
+  ];
+  showCard(g, "THE MISSING CONVOY - THE HARBOURMASTER", `THE HARBOURMASTER MEETS YOU IN A BAY THAT ISN'T ON THE MANIFEST. HE KNOWS WHAT YOU FOUND. 'CONVOYS GET HIT. THAT'S THE LANE. THE QUESTION IS WHAT THE BLACK BOX IS WORTH, AND TO WHOM.'
+
+${sy.name.toUpperCase()} WOULD PAY FOR THE TRUTH. HE'LL PAY MORE FOR SILENCE. AND ${rival?.name.toUpperCase() ?? "THEIR RIVALS"} WOULD PAY TO CLEAR THEIR NAME.`, "station", options);
+}
+
+export function convoyObjective(w: World): string | null {
+  const s = w.player.story2 ?? -1;
+  return s >= 0 && s < CONVOY.length ? `${CONVOY[s].title}: ${CONVOY[s].objective(w)}` : null;
+}
+
+export function convoyUpdate(g: Game): void {
+  const pl = p(g);
+  if ((pl.tutorial ?? -1) >= 0 || g.sceneName === "encounter") return;
+  const s = pl.story2 ?? -1;
+  if (s < 0) { if (g.sceneName === "station" && !pl.flags?.convoyDone) startConvoyTrack(g); return; }
+  if (s >= CONVOY.length) return;
+  const t = pl.convoyTrack;
+  if (!t) return;
+  if (s === 0) {
+    const sys = g.world.systems[t.laneSystemId];
+    if (!sys.anomalies.some((a) => a.id === `convoy-${t.tag}`)) {
+      const rng = new RNG(hashStr(`convoy:${g.world.seed}:${t.tag}`));
+      sys.anomalies.push({ id: `convoy-${t.tag}`, name: "Convoy Nine", kind: "derelict", x: rng.range(-2000, 2000), y: rng.range(-2000, 2000), discovered: false, claimed: false, reward: 0 });
+    }
+  }
+  if (s === 1 && CONVOY[1].check(g) && !pl.flags?.convoyConfront) { pl.flags = { ...(pl.flags ?? {}), convoyConfront: true }; pl.story2 = 2; convoyFinale(g); return; }
+  if (!CONVOY[s].check(g)) return;
+  pl.story2 = s + 1;
+  const text = CONVOY[s].card(g);
+  if (text) showCard(g, `THE MISSING CONVOY - ${CONVOY[s].title}`, text, g.sceneName === "station" ? "station" : "flight");
+}
+
 export function storyStage(g: Game): number { return p(g).story ?? 0; }
 export function storyActive(g: Game): boolean { const s = storyStage(g); return s >= 0 && s < STORY.length; }
 export function storyObjective(w: World): string | null {
   const s = w.player.story ?? 0;
-  return s >= 0 && s < STORY.length ? `${STORY[s].title}: ${STORY[s].objective(w)}` : null;
+  if (s >= 0 && s < STORY.length) return `${STORY[s].title}: ${STORY[s].objective(w)}`;
+  return convoyObjective(w);
 }
 
 function showCard(g: Game, title: string, text: string, returnTo: string, options?: Encounter["options"]): void {

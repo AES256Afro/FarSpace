@@ -372,5 +372,9 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
       -60 (fuel and repairs only)
 - [x] Sound pass: station PA chimes, gate arrival cracks, drifter song
 
+- [x] The Missing Convoy: a second campaign thread for pilots a syndicate
+      trusts: find the wreck on the lane, read the black box, and decide what
+      the truth is worth to the syndicate, the traitor, or their rivals
+
 ## Later
 - [ ] Cross-squadron rivalries and treaties
