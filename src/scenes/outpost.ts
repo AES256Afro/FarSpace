@@ -4,7 +4,7 @@
 import { Game, Scene, VW } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { settlementLine, settlementNeeds, SETTLEMENT_PREMIUM, missionDeliverable, growSettlement, settlementTierLabel, GROWTH_TOWN, GROWTH_CITY, logEntry, PROJECTS, canFundProject, fundProject } from "../world";
+import { settlementLine, settlementNeeds, SETTLEMENT_PREMIUM, missionDeliverable, growSettlement, settlementTierLabel, GROWTH_TOWN, GROWTH_CITY, logEntry, PROJECTS, canFundProject, fundProject, ledger } from "../world";
 import * as wire from "../core/wire";
 import { flag } from "../core/achievements";
 import type { Encounter } from "../data/encounters";
@@ -148,11 +148,11 @@ export class OutpostScene implements Scene {
         if (r.buy <= 0) g.toast("THEY'RE BUYING, NOT SELLING");
         else if (p.credits < r.buy) g.toast("NOT ENOUGH CREDITS");
         else if (!addCargo(p, r.id, 1)) g.toast("CARGO FULL");
-        else { p.credits -= r.buy; sfx.select(); }
+        else { p.credits -= r.buy; ledger(p, "settlements", -r.buy); sfx.select(); }
       }
       if (inp.wasPressed("s")) {
         if (!removeCargo(p, r.id, 1)) g.toast("NONE IN CARGO");
-        else { p.credits += r.sell; sfx.select(); const line = growSettlement(g.world, this.poi, this.needs.includes(r.id) ? 6 : 2, this.who(g)); if (line) { g.toast(line); logEntry(g.world, line.toLowerCase()); flag(g, "founder"); } }
+        else { p.credits += r.sell; ledger(p, "settlements", r.sell); sfx.select(); const line = growSettlement(g.world, this.poi, this.needs.includes(r.id) ? 6 : 2, this.who(g)); if (line) { g.toast(line); logEntry(g.world, line.toLowerCase()); flag(g, "founder"); } }
       }
       return;
     }

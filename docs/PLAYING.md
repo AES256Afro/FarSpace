@@ -229,6 +229,12 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## The ledger
+
+- B on the RECORD tab: lifetime credits in and out by source: trade sales and
+  purchases, fares and tips, contracts, rescues, tolls, charters, letters,
+  crew wages and bonuses, the yard and outfitting, settlement trade.
+
 ## Company
 
 - Crew walk the deck now: their post, the galley, the bunks, the bridge. Talk

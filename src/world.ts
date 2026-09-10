@@ -300,6 +300,7 @@ export interface PlayerState {
   donations?: number;                // relics given to museums
   hullHistory?: { previous: string; quirk: string } | null; // who flew this hull before you, and what they left
   jumpStreak?: number;               // gates in a row without a dock (a pilot's arc counts them)
+  ledger?: Record<string, number>;   // credits in and out by source, lifetime
   story3?: number;                   // The Keeper: stage index; -1 = not started
   keeper?: { systemId: string; wreckSystemId: string; wreckId: string; contactId: string } | null;
   lastOrbit?: { systemId: string; planetIdx: number } | null;
@@ -402,7 +403,7 @@ export function tickInfra(w: World, rng: RNG): string[] {
   return out;
 }
 export function collectInfra(inf: Infra, p: PlayerState): number {
-  const c = Math.round(inf.till); inf.till = 0; p.credits += c; p.infraEarned = (p.infraEarned ?? 0) + c; return c;
+  const c = Math.round(inf.till); inf.till = 0; p.credits += c; p.infraEarned = (p.infraEarned ?? 0) + c; ledger(p, "tolls", c); return c;
 }
 export function repairInfra(inf: Infra, p: PlayerState): boolean {
   if (inf.health >= 100) return false;
@@ -430,6 +431,24 @@ export function beaconDiscount(w: World, fromId: string, toId: string): number {
 export interface ShoreLeave { member: CrewMember; stationId: string; docks: number }
 export interface Alumnus { name: string; role: CrewRole | "captain"; docks: number; stationId: string; t: number }
 export interface Captain { name: string; from: number; to: number; stationId: string; credits: number; deeds: number }
+
+// ---------- The ledger: where the money comes from and goes ----------
+export const LEDGER_LABELS: Record<string, string> = {
+  trade: "TRADE SALES", buys: "TRADE PURCHASES", fares: "FARES AND TIPS", contracts: "CONTRACTS", rescues: "RESCUES AND SALVAGE",
+  tolls: "TOLLS AND THE TILL", charters: "CHARTER HAULERS", letters: "LETTERS AND GIFTS", crew: "CREW WAGES AND BONUSES", yard: "YARD, FUEL AND OUTFITTING",
+  settlements: "SETTLEMENTS", other: "EVERYTHING ELSE",
+};
+export function ledger(p: PlayerState, source: string, delta: number): void {
+  if (!delta) return;
+  (p.ledger ??= {})[source] = Math.round(((p.ledger ?? {})[source] ?? 0) + delta);
+}
+// Attribute whatever a block of code did to the credits
+export function ledgerAround<T>(p: PlayerState, source: string, fn: () => T): T {
+  const before = p.credits;
+  const r = fn();
+  ledger(p, source, p.credits - before);
+  return r;
+}
 
 // ---------- Crew learn by doing ----------
 // A repair, a kill, a jump, a patient: each is a mark toward the next skill.
@@ -579,7 +598,7 @@ export function collectCharters(p: PlayerState): { total: number; lines: string[
   let total = 0; const lines: string[] = [];
   for (const c of p.haulers ?? []) {
     if (c.till === 0) continue;
-    const n = Math.round(c.till); c.till = 0; total += n; p.credits += n;
+    const n = Math.round(c.till); c.till = 0; total += n; p.credits += n; ledger(p, "charters", n);
     lines.push(`${c.name.toUpperCase()}: ${n >= 0 ? "+" : ""}${n}CR FROM THE ${c.trips} TRIP${c.trips === 1 ? "" : "S"} SO FAR`);
   }
   return { total, lines };
@@ -841,7 +860,7 @@ export function tickMail(w: World): string[] {
   for (const m of due) {
     (p.mail ??= []).push(m); if (p.mail.length > 20) p.mail.shift();
     const g = m.gift ?? {};
-    if (g.credits) p.credits += g.credits;
+    if (g.credits) { p.credits += g.credits; ledger(p, "letters", g.credits); }
     if (g.parts) addCargo(p, "parts", g.parts);
     if (g.data) p.expData = (p.expData ?? 0) + g.data;
     const giftText = g.credits ? ` (${g.credits}CR ENCLOSED)` : g.parts ? ` (${g.parts} SPARE PARTS IN THE CRATE)` : g.data ? ` (${g.data} DATA ON A CHIP)` : "";

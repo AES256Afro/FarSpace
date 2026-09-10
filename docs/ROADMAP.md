@@ -538,4 +538,7 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 44 — Company ✅ (Sep 2026)
 - [x] Crew wander the deck; passengers ask for detours to wonders; alumni write
 
+## Milestone 45 — The Ledger ✅ (Sep 2026)
+- [x] Lifetime credits in and out by source, on the RECORD tab (B)
+
 ## Later

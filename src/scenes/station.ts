@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS, roleLabel } from "../
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, tickAlumniMail, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, notableOutcome, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter,
+  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, tickAlumniMail, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, notableOutcome, ledger, ledgerAround, LEDGER_LABELS, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter,
 } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
@@ -123,7 +123,7 @@ export class StationScene implements Scene {
     }
     if (p.flags?.owedLeave) { delete p.flags.owedLeave; for (const c of p.crew) c.morale = Math.min(100, c.morale + 15); g.toast("SHORE LEAVE, AS PROMISED. CREW MORALE UP."); }
     const wages = crewWages(p);
-    if (p.credits >= wages) { p.credits -= wages; g.toast(`CREW WAGES PAID -${wages}CR`); }
+    if (p.credits >= wages) { p.credits -= wages; ledger(p, "crew", -wages); g.toast(`CREW WAGES PAID -${wages}CR`); }
     else { for (const c of p.crew) c.morale = Math.max(0, c.morale - 20); g.toast("CAN'T PAY WAGES - CREW MORALE DROPS"); }
     for (const c of p.crew) {
       if ((p.cargo.food ?? 0) > 0) { removeCargo(p, "food", 1); c.morale = Math.min(100, c.morale + 8); }
@@ -377,6 +377,7 @@ export class StationScene implements Scene {
         const buyQty = wantBuy ? (bulk ? 10 : 1) : 0;
         const sellQty = wantSell ? (bulk ? (p.cargo[id] ?? 0) : 1) : 0;
         let bought = 0, spent = 0;
+        const creditsBefore = p.credits;
         for (let k = 0; k < buyQty; k++) {
           const price = buyPrice(st, id, rep);
           if ((st.stock[id] ?? 0) <= 0) { g.toast("OUT OF STOCK"); break; }
@@ -386,6 +387,8 @@ export class StationScene implements Scene {
           g.showHint("trade", "PRICES MOVE: BUY WHERE STOCK IS HIGH, SELL WHERE IT'S LOW");
         }
         if (bought > 1) g.toast(`BOUGHT ${bought} ${commodity(id).name.toUpperCase()} FOR ${spent}CR`);
+        ledger(p, "buys", p.credits - creditsBefore);
+        const sellBefore = p.credits;
         let sold = 0, earned = 0;
         for (let k = 0; k < sellQty; k++) {
           const rare = commodity(id).rare;
@@ -434,12 +437,13 @@ export class StationScene implements Scene {
           }
         }
         if (sold > 1) g.toast(`SOLD ${sold} ${commodity(id).name.toUpperCase()} FOR ${earned}CR`);
+        ledger(p, "trade", p.credits - sellBefore);
         break;
       }
       case "SHIPYARD": {
         const options = this.shipyardOptions(g);
         this.cursor = clamp(this.cursor, 0, options.length - 1);
-        if (enter) options[this.cursor].action();
+        if (enter) ledgerAround(p, "yard", () => options[this.cursor].action());
         break;
       }
       case "SHIPS": {
@@ -602,6 +606,7 @@ export class StationScene implements Scene {
       }
       case "RECORD":
         if (inp.wasPressed("l")) { this.recordView = this.recordView === "log" ? "achievements" : "log"; this.cursor = 0; sfx.blip(); }
+        if (inp.wasPressed("b")) { this.recordView = this.recordView === "ledger" ? "achievements" : "ledger"; this.cursor = 0; sfx.blip(); }
         if (inp.wasPressed("x")) {
           try {
             const text = chronicleText(g.world, wire.getCallsign());
@@ -619,7 +624,7 @@ export class StationScene implements Scene {
 
   squadrons: wire.Squadron[] = [];
   patrons: Record<string, string> = {};
-  recordView: "achievements" | "log" = "achievements";
+  recordView: "achievements" | "log" | "ledger" = "achievements";
   surveyView: "data" | "codex" = "data";
   base: wire.BaseRec | null = null;   // my squadron's base record
   baseLoaded = false;
@@ -686,6 +691,10 @@ export class StationScene implements Scene {
   }
 
   completeMission(g: Game, m: Mission): void {
+    const p = g.world.player;
+    ledgerAround(p, m.kind === "passenger" ? "fares" : "contracts", () => this.completeMissionInner(g, m));
+  }
+  completeMissionInner(g: Game, m: Mission): void {
     const p = g.world.player;
     const st = this.station;
     if (m.commodityId && m.qty && m.kind !== "research") removeCargo(p, m.commodityId, m.qty);
@@ -764,7 +773,7 @@ export class StationScene implements Scene {
     const cost = c.wage * 3;
     if (berthsUsed(p) >= slots) { g.toast(`NO BERTHS LEFT (${slots} ON THIS HULL${(p.shoreCrew ?? []).length ? ", ONE KEPT FOR CREW ON LEAVE" : ""})`); return; }
     if (p.credits < cost) { g.toast(`SIGNING BONUS ${cost}CR - NOT ENOUGH`); return; }
-    p.credits -= cost;
+    p.credits -= cost; ledger(p, "crew", -cost);
     p.crew.push({ ...c, home: this.station.id, docks: 0 });
     if (c.trait === "tells stories about the Steady Hand") flag(g, `serialHire:${this.station.id}`);
     this.candidates = this.candidates.filter((x) => x !== c);
@@ -1633,12 +1642,32 @@ export class StationScene implements Scene {
     });
   }
 
+  drawLedger(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
+    const p = g.world.player;
+    const rows = Object.entries(p.ledger ?? {}).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+    drawText(ctx, "THE LEDGER - LIFETIME, BY SOURCE - B FOR THE SERVICE RECORD", 8, top, PAL.info);
+    const income = rows.filter(([, v]) => v > 0).reduce((a, [, v]) => a + v, 0);
+    const outgo = rows.filter(([, v]) => v < 0).reduce((a, [, v]) => a + v, 0);
+    drawText(ctx, `IN ${income}CR   OUT ${outgo}CR   NET ${income + outgo}CR   ABOARD NOW ${p.credits}CR`, 8, top + 10, PAL.gold);
+    let y = top + 24;
+    if (!rows.length) drawText(ctx, "NOTHING ON THE BOOKS YET. FLY, TRADE, HELP SOMEBODY.", 12, y, PAL.greyDark);
+    const maxAbs = Math.max(1, ...rows.map(([, v]) => Math.abs(v)));
+    for (const [k, v] of rows.slice(0, 14)) {
+      drawText(ctx, LEDGER_LABELS[k] ?? k.toUpperCase(), 12, y, PAL.grey);
+      const w2 = Math.round(180 * Math.abs(v) / maxAbs);
+      ctx.fillStyle = v >= 0 ? PAL.good : PAL.danger; ctx.fillRect(200, y + 1, w2, 4);
+      drawText(ctx, `${v >= 0 ? "+" : ""}${v}CR`, 390, y, v >= 0 ? PAL.good : PAL.danger);
+      y += 10;
+    }
+    drawText(ctx, "WAGES, FUEL, YARD WORK, TRADE, FARES, TOLLS, CHARTERS, LETTERS: THE WHOLE STORY OF THE MONEY.", 8, VH - 32, PAL.greyDark);
+  }
   drawRecord(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
     if (this.recordView === "log") { this.drawLog(g, ctx, top); return; }
+    if (this.recordView === "ledger") { this.drawLedger(g, ctx, top); return; }
     const p = g.world.player;
     const w = g.world;
     const have = new Set(p.achievements ?? []);
-    drawText(ctx, `SERVICE RECORD${w.hardcore ? " - HARDCORE" : ""} - L FOR THE CAPTAIN'S LOG - X EXPORTS THE CHRONICLE`, 8, top, PAL.info);
+    drawText(ctx, `SERVICE RECORD${w.hardcore ? " - HARDCORE" : ""} - L LOG - B LEDGER - X EXPORTS THE CHRONICLE`, 8, top, PAL.info);
     const stats = [
       `KILLS ${p.kills}`, `DISCOVERIES ${p.discoveries}`, `ARCS ${Object.values(p.arcs).reduce((a, b) => a + b, 0)}/15`,
       `CREDITS ${p.credits}`, `CREW ${p.crew.length}`, `HULL ${hull(p.hullId).name.toUpperCase()}`,
