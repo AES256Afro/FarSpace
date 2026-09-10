@@ -69,7 +69,7 @@ export class StationScene implements Scene {
     refreshPrices(this.station);
     void wire.fetchSquadronData();
     if (p.ious?.length) { for (const iou of p.ious) { p.credits += iou.credits; g.toast(iou.text); } p.ious = []; sfx.pickup(); }
-    { const c = collectCharters(p); for (const l of c.lines) g.toast(l); if (c.total !== 0) sfx.pickup(); }
+
     if (p.evacuees && p.evacuees.n > 0) { const pay = p.evacuees.n * (p.evacuees.from === "wounded" ? 200 : 150); if (p.evacuees.from === "wounded") p.lives = (p.lives ?? 0) + p.evacuees.n; logEntry(g.world, `Handed ${p.evacuees.n} survivors over at ${this.station.name}`); p.credits += pay; adjustRep(g.world, this.station.factionId, 4); g.toast(`${p.evacuees.n} SURVIVORS FROM THE ${p.evacuees.from.toUpperCase()} HANDED OVER +${pay}CR`); p.evacuees = null; flag(g, "lifeboat"); sfx.pickup(); }
     if (g.scenes.flight && (g.scenes.flight as unknown as { towing: unknown }).towing) {
       const fs = g.scenes.flight as unknown as { towing: { x: number; y: number; hull: number } | null };
@@ -102,6 +102,7 @@ export class StationScene implements Scene {
     const bay = 1 + (this.station.id.length * 7 + Math.floor(g.world.time)) % 6;
     const title = rankOf(p, "rescuer").idx >= 3 ? rankOf(p, "rescuer").title : hasCharter(g.world, this.station.factionId) ? "CHARTERED" : (p.lineage ?? []).length ? "OF THE LINE" : "";
     g.toast(`${this.station.name.toUpperCase()} CONTROL: ${p.shipName ? p.shipName + ", " : ""}${title ? title + ", " : ""}CLEARANCE GRANTED, BAY ${bay}`);
+    { const c = collectCharters(p); for (const l of c.lines) g.toast(l); if (c.total !== 0) sfx.pickup(); }
   }
 
   settleCrew(g: Game): void {
