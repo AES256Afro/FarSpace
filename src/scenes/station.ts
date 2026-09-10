@@ -879,7 +879,8 @@ export class StationScene implements Scene {
       drawText(ctx, listed ? `${buyPrice(st, id, rep)}` : "-", 150, y, listed ? PAL.gold : PAL.greyDark);
       drawText(ctx, `${c.rare ? rareSellPrice(g.world, st, id, rep) : sellPrice(st, id, rep)}`, 190, y, c.rare && st.rare !== id ? PAL.gold : PAL.grey);
       drawText(ctx, listed ? `${st.stock[id] ?? 0}` : "-", 235, y, PAL.grey);
-      drawText(ctx, `${p.cargo[id] ?? 0}`, 280, y, PAL.ui);
+      const heldN = p.cargo[id] ?? 0;
+      drawText(ctx, `${heldN}`, 280, y, heldN > 0 ? PAL.gold : PAL.ui); // gold: Enter sells this
       const demHere = this.demandHere(g);
       const cr = crisisAt(g.world, st.id);
       if (cr && cr.commodityId === id) drawText(ctx, `CRISIS x${CRISIS_PREMIUM}`, 320, y, PAL.danger);
