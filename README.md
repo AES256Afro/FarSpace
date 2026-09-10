@@ -40,6 +40,10 @@ a call sign and your arc completions, rescues, surveys and relic hauls appear on
 every player's WIRE tab and the title ticker, with leaderboards for discoveries,
 arcs, credits and kills.
 
+**The Signal:** a seven-stage campaign that starts once you've logged a few
+systems and ends beside a star with a warship that has no faction. Fourteen
+encounter cards interrupt flight and rover drives with choices that matter.
+
 **Other pilots:** with a call sign set, everyone in the same star system sees
 each other's ships and shares a text channel (T), with /give and /pay to hand
 over cargo or credits and wing shares on kills. Squadrons are a shared tag that
@@ -96,7 +100,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestones 1–15 are live (v0.15). See the [roadmap](docs/ROADMAP.md) for what's next.
+Milestones 1–16 are live (v0.16). See the [roadmap](docs/ROADMAP.md) for what's next.
 
 ```bash
 npm test         # vitest: world-gen, routing, economy, law, missions, save migrations

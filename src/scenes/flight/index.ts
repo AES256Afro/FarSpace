@@ -538,6 +538,17 @@ export class FlightScene implements Scene {
     sfx.thrust(false);
     (g.scenes["encounter"] as EncounterScene).open(g, enc, "flight");
   }
+  // the campaign's finale: a warship with no faction and one purpose
+  spawnHerald(g: Game): void {
+    const rng = new RNG((g.world.seed ^ 0x4e4a1d) >>> 0);
+    const n = spawnNpc(this, g, "pirate", rng);
+    const p = g.world.player;
+    const a = rng.range(0, Math.PI * 2);
+    n.x = p.x + Math.cos(a) * 380; n.y = p.y + Math.sin(a) * 380;
+    n.variant = "captain"; n.name = "THE HERALD"; n.tag = "HERALD";
+    n.hullMax = n.hull = 520;
+    g.toast("THE HERALD IS HERE");
+  }
   // a bounty hunter who took the hard answer
   spawnHunter(g: Game): void {
     const rng = new RNG((g.world.seed ^ Math.floor(g.world.time * 13)) >>> 0);

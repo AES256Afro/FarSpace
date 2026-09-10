@@ -326,5 +326,15 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
       the squadron marked; base raids are led by the pirate syndicate that
       likes you least, and repelling them costs their standing
 
+## Milestone 16 — The Signal ✅ (Sep 2026)
+**Goal:** a reason to cross the galaxy that isn't a price table.
+
+- [x] Encounters: fourteen choice cards in flight and on the ground with real
+      consequences (crew, cargo, standing, materials, damage, IOUs paid later)
+- [x] The Signal: a seven-stage campaign told in cards and advanced by play
+      (log systems, claim an anomaly, clear a ruin, a research post, the Veil,
+      the beacon, the Herald) with a fight or a parley finale; objective on the
+      HUD, the MISSIONS tab and the galaxy map
+
 ## Later
 - [ ] Cross-squadron rivalries and treaties

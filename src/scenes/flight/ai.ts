@@ -395,7 +395,8 @@ export function npcKilled(fs: FlightScene, g: Game, n: Npc, byPlayer: boolean): 
         if (w2) g.toast(`WAR: RAIDER DOWN FOR [${war.defender}] - FRONT ${w2.score > 0 ? "+" : ""}${w2.score}`);
       } else if (n.tag) adjustSynRep(g.world, n.tag, -2);
     }
-    if (byPlayer && n.variant === "captain") captainDown(fs, g, n);
+    if (byPlayer && n.name === "THE HERALD") { p.flags = { ...(p.flags ?? {}), storyHerald: true }; boom(fs, n.x, n.y, 60, PAL.gold); g.toast("THE HERALD BREAKS APART"); }
+    else if (byPlayer && n.variant === "captain") captainDown(fs, g, n);
     if (byPlayer) {
       p.kills++;
       if (presence.ghosts.size) presence.send({ t: "wing", kind: "kill", x: n.x, y: n.y, tag: n.variant ?? "pirate" });

@@ -13,6 +13,7 @@ import { permitDenied } from "../../world";
 import { hasModule } from "../../data/modules";
 import { presence } from "../../core/presence";
 import { baseAt } from "../../core/wire";
+import { storyObjective } from "../../core/story";
 import { genShip } from "../../gfx/sprites";
 import { RNG } from "../../core/rng";
 import { inSafeZone } from "./ai";
@@ -481,6 +482,10 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
 
   const active = p.missions.filter((m) => m.accepted && !m.done);
   let my = 4;
+  {
+    const so = storyObjective(g.world);
+    if (so && (p.tutorial ?? -1) < 0) { const line = `* ${so}`.slice(0, 80); drawText(ctx, line, VW - textWidth(line) - 4, my, PAL.info); my += 8; }
+  }
   for (const m of active.slice(0, 3)) {
     const prog = m.kind === "bounty" ? ` ${m.kills}/${m.killsNeeded}` : m.kind === "ground" ? ` ${m.groundDone ?? 0}/${m.groundNeed ?? 1}` : "";
     drawText(ctx, `> ${m.title}${prog}`, VW - textWidth(`> ${m.title}${prog}`) - 4, my, PAL.uiDim);

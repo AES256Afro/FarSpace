@@ -19,6 +19,7 @@ import { MODULES, hasModule, moduleDef } from "../data/modules";
 import { BLUEPRINTS, MATERIALS, engGrade, nextCost, canAfford, upgrade } from "../data/engineering";
 import { flag } from "../core/achievements";
 import { presence } from "../core/presence";
+import { storyObjective } from "../core/story";
 import { sfx } from "../core/sfx";
 import * as wire from "../core/wire";
 import { drawTutorial } from "../core/tutorial";
@@ -843,6 +844,10 @@ export class StationScene implements Scene {
     const tier = missionTier(p.rep[st.factionId] ?? 0);
     let y = top;
     let idx = 0;
+    {
+      const so = storyObjective(g.world);
+      if (so && (p.tutorial ?? -1) < 0) { drawText(ctx, `THE SIGNAL - ${so}`.slice(0, 100), 8, y, PAL.info); y += 10; }
+    }
     {
       const gl = this.goal;
       const prog = this.goalState?.progress ?? 0;

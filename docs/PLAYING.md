@@ -62,6 +62,17 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   Depot) services, a defense grid, a market stake. A weekly base contract and
   a weekly squadron bounty pay the treasury. Undefended bases draw raiders.
 
+## The Signal and encounters
+
+- After Flight School, log three systems and the campaign begins. Its current
+  objective sits at the top of the HUD mission list, the MISSIONS tab and the
+  galaxy map (a blinking SIGNAL marker). It moves through an anomaly, a ruin,
+  a research post, the Veil, and a beacon, and ends with the Herald: fight it,
+  or hand over a relic and watch it leave.
+- Encounters interrupt quiet flight and long drives. Read the card, pick a
+  line. Some options only show when you can afford them or have the goods.
+  Debts owed to you are paid at your next dock.
+
 ## Syndicates and trade routes
 
 - Four AI syndicates live in every galaxy, always marked (AI). Their bases show

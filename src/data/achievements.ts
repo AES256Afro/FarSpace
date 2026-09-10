@@ -29,6 +29,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "tourist", title: "TOUR GUIDE", desc: "Complete a sightseeing charter", check: (w) => !!w.player.flags?.tourist },
   { id: "squadWarWin", title: "WARLORDS", desc: "Your squadron backs the winning side of a syndicate war", check: (w) => !!w.player.flags?.squadWarWin },
   { id: "warVeteran", title: "WAR VETERAN", desc: "Fight for the winning side of a syndicate war", check: (w) => !!w.player.flags?.warVeteran },
+  { id: "theSignal", title: "THE SIGNAL", desc: "Finish the campaign", check: (w) => !!w.player.flags?.theSignal },
   { id: "storyteller2", title: "STRANGE DAYS", desc: "Live through ten encounters", check: (w) => Object.values(w.player.encounters ?? {}).reduce((a, b) => a + b, 0) >= 10 },
   { id: "affiliate", title: "AFFILIATE", desc: "Reach affiliate standing with an AI syndicate", check: (w) => !!w.player.flags?.affiliate },
   { id: "routeRunner", title: "ROUTE RUNNER", desc: "Run ten base trade routes", check: (w) => !!w.player.flags?.routeRunner },

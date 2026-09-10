@@ -246,6 +246,10 @@ export interface PlayerState {
   synRep?: Record<string, number>;   // syndicate tag → standing
   warPayout?: { tag: string; value: number } | null; // squadron treasury share owed after a won war
   encounters?: Record<string, number>; // encounter id → times seen
+  story?: number;                                     // The Signal: stage index; -1 = declined
+  storyTarget?: { systemId: string; planetIdx: number; poiId: string } | null;
+  storyVeil?: string | null;
+  storyOrigin?: string | null;
   ious?: { credits: number; text: string }[];       // debts paid to you at the next dock
   routes?: { from: string; to: string; commodityId: string; t: number }[]; // base trade runs (station ids)
   lastDockedAt?: string;             // previous station id, for route bookkeeping

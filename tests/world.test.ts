@@ -15,6 +15,7 @@ import { RARES } from "../src/data/data";
 import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
 import { ENCOUNTERS, pickEncounter } from "../src/data/encounters";
+import { STORY, storyObjective } from "../src/core/story";
 import { genGround, groundKey, passable, GW, GH } from "../src/ground";
 import { BLUEPRINTS, upgrade, addMaterials, nextCost, MATERIAL_CAP } from "../src/data/engineering";
 import { jumpFuelCost, communityGoal, weekKey, permitDenied, navRoute, blackMarket, genMissionsFor, groundProgress, missionDeliverable } from "../src/world";
@@ -630,5 +631,29 @@ describe("encounters", () => {
     for (let i = 0; i < 40; i++) if (pickEncounter(g, "space", new RNG(100 + i))!.id === first.id) same++;
     expect(same).toBeLessThan(6);
     expect(pickEncounter(g, "ground", new RNG(2))!.where).toBe("ground");
+  });
+});
+
+describe("the signal", () => {
+  it("every stage has an objective and its checks pass when the world reaches them", () => {
+    const w = generateWorld(22, { realGalaxy: true });
+    const g = { world: w, scenes: {}, sceneName: "flight" } as unknown as import("../src/game").Game;
+    expect(STORY.length).toBe(7);
+    expect(storyObjective(w)).toContain("STATIC");
+    expect(STORY[0].check(g)).toBe(false);
+    w.player.expLog = { a: 1, b: 1, c: 2 };
+    expect(STORY[0].check(g)).toBe(true);
+    const sys = Object.values(w.systems).find((s) => s.anomalies.length)!;
+    sys.anomalies[0].claimed = true;
+    expect(STORY[1].check(g)).toBe(true);
+    const card = STORY[1].card(g)!;
+    expect(w.player.storyTarget).toBeTruthy();
+    expect(card).toContain("PLOT A COURSE");
+    const t = w.player.storyTarget!;
+    const poi = w.systems[t.systemId].planets[t.planetIdx].surface!.pois.find((x) => x.id === t.poiId)!;
+    expect(poi.kind).toBe("ruin");
+    poi.looted = true;
+    expect(STORY[2].check(g)).toBe(true);
+    for (let i = 3; i < STORY.length; i++) expect(typeof STORY[i].objective(w)).toBe("string");
   });
 });

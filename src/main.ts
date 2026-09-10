@@ -19,6 +19,7 @@ import { WhatsNewScene } from "./scenes/whatsnew";
 import { EncounterScene } from "./scenes/encounter";
 import { SlotsScene } from "./scenes/slots";
 import { checkAchievements } from "./core/achievements";
+import { storyUpdate } from "./core/story";
 import { presence } from "./core/presence";
 import { initAudioUnlock } from "./core/sfx";
 import { initTouch } from "./core/touch";
@@ -68,6 +69,7 @@ function frame(now: number): void {
   music.start();
   game.scene.update(game, dt);
   tutorialUpdate(game);
+  storyUpdate(game);
   checkAchievements(game);
   game.scene.draw(game, game.bctx);
   game.input.flush();

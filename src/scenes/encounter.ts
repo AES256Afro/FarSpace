@@ -29,11 +29,11 @@ export class EncounterScene implements Scene {
   outcome: string | null = null;
   rowBoxes: [number, number][] = [];
 
-  open(g: Game, enc: Encounter, returnTo: string): void {
-    this.enc = enc; this.returnTo = returnTo; this.cursor = 0; this.outcome = null;
+  story = false;
+  open(g: Game, enc: Encounter, returnTo: string, story = false): void {
+    this.enc = enc; this.returnTo = returnTo; this.cursor = 0; this.outcome = null; this.story = story;
     const p = g.world.player;
-    p.encounters ??= {};
-    p.encounters[enc.id] = (p.encounters[enc.id] ?? 0) + 1;
+    if (!story) { p.encounters ??= {}; p.encounters[enc.id] = (p.encounters[enc.id] ?? 0) + 1; }
     g.setScene("encounter");
     sfx.alarm();
   }
@@ -56,8 +56,10 @@ export class EncounterScene implements Scene {
       const o = opts[this.cursor];
       if (!o) return;
       const rng = new RNG((g.world.seed ^ Math.floor(g.world.time * 7) ^ this.enc.id.length) >>> 0);
-      this.outcome = o.result(g, rng);
+      const out = o.result(g, rng);
       sfx.select();
+      if (!out) { g.setScene(this.returnTo); return; } // a plain CONTINUE
+      this.outcome = out;
     }
   }
 
@@ -73,7 +75,7 @@ export class EncounterScene implements Scene {
     const y = Math.max(20, VH / 2 - h / 2);
     ctx.fillStyle = "#0c1220"; ctx.fillRect(x, y, w, h);
     ctx.strokeStyle = PAL.uiBorder; ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
-    drawText(ctx, this.enc.title, x + 10, y + 8, PAL.gold);
+    drawText(ctx, this.enc.title, x + 10, y + 8, this.story ? PAL.info : PAL.gold);
     let yy = y + 22;
     for (const l of body) { drawText(ctx, l, x + 10, yy, PAL.grey); yy += 9; }
     yy += 6;
