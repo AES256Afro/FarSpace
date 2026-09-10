@@ -691,3 +691,17 @@ describe("crises and tenders", () => {
     expect(missionDeliverable(w, tender!, st)).toBe(true);
   });
 });
+
+describe("standing orders", () => {
+  it("appear at trusted stations and keep their shipment counters", () => {
+    const w = generateWorld(24, { realGalaxy: true });
+    const st = w.systems[w.player.systemId].stations[0];
+    w.player.rep[st.factionId] = 40;
+    let order = null as ReturnType<typeof genMissionsFor>[number] | null;
+    for (let i = 0; i < 40 && !order; i++) order = genMissionsFor(w, st, new RNG(3000 + i)).find((m) => m.shipTotal) ?? null;
+    expect(order).toBeTruthy();
+    expect(order!.shipTotal).toBeGreaterThanOrEqual(3);
+    expect(order!.kind).toBe("mining");
+    expect(order!.commodityId).toBeTruthy();
+  });
+});

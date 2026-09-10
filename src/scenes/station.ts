@@ -64,7 +64,7 @@ export class StationScene implements Scene {
     refreshPrices(this.station);
     void wire.fetchSquadronData();
     if (p.ious?.length) { for (const iou of p.ious) { p.credits += iou.credits; g.toast(iou.text); } p.ious = []; sfx.pickup(); }
-    if (p.evacuees && p.evacuees.n > 0) { const pay = p.evacuees.n * 150; p.credits += pay; adjustRep(g.world, this.station.factionId, 4); g.toast(`${p.evacuees.n} SURVIVORS FROM THE ${p.evacuees.from.toUpperCase()} HANDED OVER +${pay}CR`); p.evacuees = null; flag(g, "lifeboat"); sfx.pickup(); }
+    if (p.evacuees && p.evacuees.n > 0) { const pay = p.evacuees.n * (p.evacuees.from === "wounded" ? 200 : 150); if (p.evacuees.from === "wounded") p.lives = (p.lives ?? 0) + p.evacuees.n; p.credits += pay; adjustRep(g.world, this.station.factionId, 4); g.toast(`${p.evacuees.n} SURVIVORS FROM THE ${p.evacuees.from.toUpperCase()} HANDED OVER +${pay}CR`); p.evacuees = null; flag(g, "lifeboat"); sfx.pickup(); }
     if (g.scenes.flight && (g.scenes.flight as unknown as { towing: unknown }).towing) {
       const fs = g.scenes.flight as unknown as { towing: { x: number; y: number; hull: number } | null };
       const st = this.station; const sx = Math.cos(st.angle) * st.orbit, sy = Math.sin(st.angle) * st.orbit;
@@ -483,6 +483,16 @@ export class StationScene implements Scene {
     const p = g.world.player;
     const st = this.station;
     if (m.commodityId && m.qty && m.kind !== "research") removeCargo(p, m.commodityId, m.qty);
+    if (m.shipTotal) {
+      // one shipment of a standing order: pay the instalment, keep the contract open until the last
+      m.shipDone = (m.shipDone ?? 0) + 1;
+      const pay = Math.round(m.reward * (1 + 0.2 * (m.shipDone - 1)));
+      p.credits += pay; p.tradeRevenue = (p.tradeRevenue ?? 0) + pay;
+      adjustRep(g.world, st.factionId, m.repReward ?? 2);
+      if (m.shipDone < m.shipTotal) { g.toast(`SHIPMENT ${m.shipDone}/${m.shipTotal} +${pay}CR - NEXT PAYS MORE`); sfx.pickup(); return; }
+      g.toast(`STANDING ORDER COMPLETE +${pay}CR`); flag(g, "standingOrder");
+      m.done = true; sfx.pickup(); return;
+    }
     m.done = true;
     p.credits += m.reward;
     adjustRep(g.world, st.factionId, m.repReward ?? 3);
@@ -966,7 +976,7 @@ export class StationScene implements Scene {
     const log = p.missions.filter((m) => m.accepted && !m.done);
     if (!log.length) drawText(ctx, "EMPTY", 12, y, PAL.greyDark);
     for (const m of log.slice(0, 4)) {
-      const prog = m.killsNeeded ? ` (${m.kills}/${m.killsNeeded})` : m.kind === "ground" ? ` (${m.groundDone ?? 0}/${m.groundNeed ?? 1})` : m.escortDone ? " (DONE - RETURN)" : "";
+      const prog = m.killsNeeded ? ` (${m.kills}/${m.killsNeeded})` : m.kind === "ground" ? ` (${m.groundDone ?? 0}/${m.groundNeed ?? 1})` : m.shipTotal ? ` (SHIPMENT ${(m.shipDone ?? 0) + 1}/${m.shipTotal})` : m.escortDone ? " (DONE - RETURN)" : "";
       drawText(ctx, `> ${m.title}${prog} - ${g.world.systems[m.targetSystemId].name}`, 12, y, PAL.uiDim);
       y += 9;
     }

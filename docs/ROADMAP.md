@@ -352,5 +352,9 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
       and station crises (outbreak, famine, blackout) that pay 2.5x for the
       goods they need before the clock runs out
 
+- [x] Medics matter: freighters call in casualties; send your medic across,
+      pass med supplies, or take the wounded aboard; lives saved are counted
+- [x] Standing orders: multi-shipment supply contracts with climbing pay
+
 ## Later
 - [ ] Cross-squadron rivalries and treaties

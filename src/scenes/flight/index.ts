@@ -555,9 +555,20 @@ export class FlightScene implements Scene {
     const eng = p.crew.find((c) => c.role === "engineer");
     const who = n.tag ? `[${n.tag}] CONVOY` : "FREIGHTER";
     const opts: Encounter["options"] = [];
+    const medic = p.crew.find((c) => c.role === "medic");
+    if (n.casualties) {
+      if (medic) opts.push({ label: `SEND ${medic.name.toUpperCase()} ACROSS (MEDIC ${medic.skill})`, hint: "Triage takes a while; stay close", result: () => { this.repairJob = { npc: n, crewName: medic.name, progress: 0, need: 30 / (0.6 + 0.4 * medic.skill), wave: 9, kind: "medic" }; return `${medic.name.toUpperCase()} GRABS THE KIT AND CROSSES.`; } });
+      else opts.push({ label: "NO MEDIC ABOARD TO SEND", hint: "Hire one at a station bar", requires: () => false, result: () => "" });
+      opts.push({ label: "TRANSFER 2 MED SUPPLIES", hint: "They treat their own", requires: (g2) => (g2.world.player.cargo.med ?? 0) >= 2, result: (g2) => { removeCargo(g2.world.player, "med", 2); n.casualties = false; this.thankYou(g2, n, 160); g2.world.player.lives = (g2.world.player.lives ?? 0) + 2; return "THE CRATES GO ACROSS ON A LINE. 'THAT'LL DO IT. THANK YOU. TRULY.'"; } });
+      if (!p.evacuees) opts.push({ label: "TAKE THE WOUNDED ABOARD", hint: medic ? "Your medic keeps them alive to dock" : "Without a medic, not all of them will make it", result: (g2, rng) => { const n2 = 2; g2.world.player.evacuees = { n: medic ? n2 : (rng.chance(0.3) ? 1 : 2), from: "wounded" }; n.casualties = false; return medic ? "TWO STRETCHERS COME ACROSS. YOUR MEDIC TAKES OVER. DOCK SOON." : "TWO STRETCHERS COME ACROSS. NOBODY ABOARD KNOWS WHAT THEY'RE DOING. DOCK FAST."; } });
+      opts.push({ label: "LEAVE THEM", result: () => "YOU BREAK OFF. THE CHANNEL STAYS OPEN A WHILE, THEN CLOSES." });
+      const enc: Encounter = { id: "help-med", where: "space", title: `MEDICAL - ${who}`, weight: 0, text: "'WE HIT SOMETHING ON THE JUMP. THREE DOWN, ONE BAD. OUR MEDKIT IS A BOX OF PLASTERS. IS THERE A DOCTOR ON THAT SHIP?'", options: opts };
+      (g.scenes["encounter"] as import("../encounter").EncounterScene).open(g, enc, "flight", true);
+      return;
+    }
     if (n.disabled) {
       opts.push({ label: "BOARD AND REPAIR IT YOURSELF", hint: "Three dead systems, a suit clock, maybe a fire", result: (g2) => { g2.repairTarget = n; setTimeout(() => g2.setScene("repair"), 0); return ""; } });
-      if (eng) opts.push({ label: `SEND ${eng.name.toUpperCase()} ACROSS (ENGINEER ${eng.skill})`, hint: "You stand guard; corsairs like a stationary target", result: () => { this.repairJob = { npc: n, crewName: eng.name, progress: 0, need: 45 / (0.6 + 0.4 * eng.skill), wave: 0 }; return `${eng.name.toUpperCase()} SUITS UP AND CROSSES. KEEP THEM SAFE.`; } });
+      if (eng) opts.push({ label: `SEND ${eng.name.toUpperCase()} ACROSS (ENGINEER ${eng.skill})`, hint: "You stand guard; corsairs like a stationary target", result: () => { this.repairJob = { npc: n, crewName: eng.name, progress: 0, need: 45 / (0.6 + 0.4 * eng.skill), wave: 0, kind: "repair" }; return `${eng.name.toUpperCase()} SUITS UP AND CROSSES. KEEP THEM SAFE.`; } });
       else opts.push({ label: "NO ENGINEER ABOARD TO SEND", hint: "Hire one at a station bar", requires: () => false, result: () => "" });
       opts.push({ label: "TOW THEM TO A STATION", hint: "They follow you; top speed drops; dock anywhere", result: () => { this.towing = n; n.disabled = true; return "TOW LINE ATTACHED. TAKE IT SLOW - THE LINE WON'T SURVIVE A JUMP OR A FIREFIGHT AT SPEED."; } });
       if (!p.evacuees) opts.push({ label: "TAKE THEIR CREW ABOARD", hint: "Three survivors, paid out at your next dock", result: (g2) => { g2.world.player.evacuees = { n: 3, from: who.toLowerCase() }; this.npcs = this.npcs.filter((x) => x !== n); if (this.sos?.trader === n) this.sos = null; return "THREE OF THEM CROSS IN SUITS AND CRAM INTO THE GALLEY. THE FREIGHTER STAYS DARK BEHIND YOU."; } });
@@ -589,7 +600,7 @@ export class FlightScene implements Scene {
       this.repairJob = null;
       const c = p.crew.find((x) => x.name === job.crewName);
       if (c) { c.morale = Math.min(100, c.morale + 10); c.loyalty = (c.loyalty ?? 0) + 1; }
-      this.finishRepair(g, job.npc, job.crewName);
+      if (job.kind === "medic") this.finishMedic(g, job.npc, job.crewName); else this.finishRepair(g, job.npc, job.crewName);
     }
   }
 
@@ -606,6 +617,22 @@ export class FlightScene implements Scene {
     adjustRep(g.world, sys.factionId, 3);
     if (n.tag) { const sy = g.world.syndicates?.find((x) => x.tag === n.tag); if (sy) { p.synRep ??= {}; p.synRep[sy.tag] = Math.min(100, (p.synRep[sy.tag] ?? 0) + 5); } }
     sfx.pickup();
+  }
+
+  finishMedic(g: Game, n: Npc, by: string): void {
+    const p = g.world.player;
+    n.casualties = false;
+    const reward = (this.sos && this.sos.trader === n ? this.sos.reward : 250) + Math.floor(Math.random() * 150);
+    this.thankYou(g, n, reward);
+    p.lives = (p.lives ?? 0) + 3;
+    flag(g, "fieldMedic");
+    if ((p.lives ?? 0) >= 12) flag(g, "surgeon");
+    const sys = g.world.systems[p.systemId];
+    this.comms.push({ from: n.tag ? `[${n.tag}] CONVOY` : "FREIGHTER", text: `ALL THREE STABLE. ${by.toUpperCase()} IS WELCOME ABOARD ANY TIME. +${reward}CR`, life: 12, color: PAL.gold });
+    if (this.comms.length > 5) this.comms.shift();
+    g.toast(`CASUALTIES STABILISED +${reward}CR`);
+    void wire.post("rescue", `sent ${by} across to a freighter with casualties and saved three lives`, sys.name);
+    if (this.sos && this.sos.trader === n) this.sos = null;
   }
 
   // A ship brought back to life, by you or by your engineer
@@ -822,7 +849,7 @@ export class FlightScene implements Scene {
     const p = g.world.player;
     const sys = g.world.systems[p.systemId];
     // a ship that needs a hand
-    const needy = this.npcs.find((n) => n.kind === "trader" && n.hull > 0 && dist(p.x, p.y, n.x, n.y) < 80 && (n.disabled || n.hull < n.hullMax * 0.5));
+    const needy = this.npcs.find((n) => n.kind === "trader" && n.hull > 0 && dist(p.x, p.y, n.x, n.y) < 80 && (n.disabled || n.casualties || n.hull < n.hullMax * 0.5));
     if (needy && !this.repairJob) { this.offerHelp(g, needy); return; }
     for (const st of sys.stations) {
       const sx = Math.cos(st.angle) * st.orbit;

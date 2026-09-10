@@ -154,6 +154,9 @@ export interface Mission {
   anomalyId?: string;
   syndicate?: string;                  // contract issued by an AI syndicate (tag)
   tenderDone?: boolean;                // repair tenders: the work is done, collect at the station
+  shipTotal?: number;                  // standing orders: shipments in the contract
+  shipDone?: number;
+  lives?: number;
   syndicateTarget?: string;            // bounty against this syndicate: they will remember
   groundPlanetIdx?: number;            // ground contracts: which world
   groundGoal?: "flora" | "probe" | "outcrop";
@@ -249,6 +252,7 @@ export interface PlayerState {
   encounters?: Record<string, number>; // encounter id → times seen
   homesteads?: Homestead[];                           // claims staked on charted regions
   repairs?: number;                                   // ships brought back to life
+  lives?: number;                                     // people your medic pulled through
   tows?: number;
   evacuees?: { n: number; from: string } | null;      // survivors aboard, paid out at the next dock
   story?: number;                                     // The Signal: stage index; -1 = declined
@@ -1120,6 +1124,24 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
       });
     }
   }
+  // standing orders: a supply contract in several shipments, pay climbing each time
+  if (tier >= 1 && rng.chance(0.4) && linked.length) {
+    const target = rng.pick(linked);
+    const tStation = target.stations.length ? rng.pick(target.stations) : null;
+    if (tStation) {
+      const com = rng.pick(COMMODITIES.filter((c) => !c.illegal && !c.rare && c.id !== "relics"));
+      const qty = rng.int(4, 8), total = rng.int(3, 5);
+      missions.push({
+        id: `order-${world.missionCounter++}`, kind: "mining", accepted: false, done: false, tier,
+        title: `Standing order: ${qty} ${com.name} x${total}`,
+        desc: `${tStation.name} in ${target.name} wants ${qty}x ${com.name} delivered ${total} times. Source it yourself. Each shipment pays more than the last.`,
+        fromStationId: station.id, targetSystemId: target.id, targetStationId: tStation.id, commodityId: com.id, qty,
+        shipTotal: total, shipDone: 0,
+        reward: Math.round(com.base * qty * 1.4 + 120), repReward: 2,
+      });
+    }
+  }
+
   // engineering tenders: the station's own systems need hands
   if (!station.military && rng.chance(0.3)) {
     const what = rng.pick(["reactor coolant loop", "life support scrubbers", "docking bay actuators", "main engines"]);

@@ -520,6 +520,8 @@ export function updateNpcs(fs: FlightScene, g: Game, dt: number): void {
       }
     } else if (n.kind === "trader" && n.disabled) {
       speed = 0; n.vx *= 0.9; n.vy *= 0.9; tx = n.x; ty = n.y;
+    } else if (n.kind === "trader" && n.casualties) {
+      speed = 0; n.vx *= 0.95; n.vy *= 0.95; tx = n.x; ty = n.y;
     } else if (n.kind === "trader") {
       const st = sys.stations[n.targetIdx % Math.max(1, sys.stations.length)];
       if (st) {
@@ -669,6 +671,9 @@ export function updateSos(fs: FlightScene, g: Game, dt: number): void {
     if (!traderAlive) {
       g.toast("DISTRESS CALL LOST - TRADER DESTROYED");
       fs.sos = null;
+    } else if (s.kind === "casualties") {
+      if (!s.trader.casualties) fs.sos = null; // treated
+      else if (s.ttl <= 0) { fs.sos = null; g.toast("THE MEDICAL CALL GOES QUIET."); }
     } else if (s.kind === "disabled") {
       if (!s.trader.disabled) fs.sos = null; // repaired
       else if (s.ttl <= 0) { fs.sos = null; g.toast("THE MAYDAY GOES QUIET. SOMEONE ELSE GOT THERE, OR NOBODY DID."); }
@@ -694,6 +699,15 @@ export function updateSos(fs: FlightScene, g: Game, dt: number): void {
   const r = 700 + Math.random() * 500;
   const tx = p.x + Math.cos(a) * r, ty = p.y + Math.sin(a) * r;
   const trader: Npc = { kind: "trader", x: tx, y: ty, vx: 0, vy: 0, angle: 0, hull: 50, hullMax: 50, fireCd: 0, targetIdx: 0, cargo: { id: "lux", qty: 3 } };
+  if (Math.random() < 0.25) {
+    // wounded aboard after a bad jump: a job for a medic
+    trader.casualties = true; trader.hull = 45;
+    fs.npcs.push(trader);
+    fs.sos = { trader, pirates: [], reward: 220 + Math.floor(Math.random() * 250), ttl: 200, kind: "casualties" };
+    g.toast("MEDICAL - FREIGHTER REPORTS CASUALTIES AFTER A BAD JUMP. FLY CLOSE AND PRESS E");
+    sfx.alarm();
+    return;
+  }
   if (Math.random() < 0.45) {
     // engines dead, nobody shooting yet: a job for a wrench, not a gun
     trader.disabled = true; trader.hull = 30; trader.angle = a;

@@ -250,9 +250,9 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
     ctx.fillRect(sx - 6, sy - 12, Math.round(12 * (n.hull / n.hullMax)), 1);
     if (n.variant === "captain") drawText(ctx, n.name ?? "CAPTAIN", sx - textWidth(n.name ?? "CAPTAIN") / 2, sy - 20, PAL.danger);
     else if (n.tag) { const lbl = `[${n.tag}] ${n.kind === "pirate" ? "RAIDER" : "CONVOY"}`; drawText(ctx, lbl, sx - textWidth(lbl) / 2, sy - 20, n.kind === "pirate" ? PAL.danger : PAL.info); }
-    if (n.kind === "trader" && (n.disabled || n.hull < n.hullMax * 0.5) && dist(p.x, p.y, n.x, n.y) < 220) {
+    if (n.kind === "trader" && (n.disabled || n.casualties || n.hull < n.hullMax * 0.5) && dist(p.x, p.y, n.x, n.y) < 220) {
       const near = dist(p.x, p.y, n.x, n.y) < 80;
-      const lbl = n.disabled ? (near ? "DISABLED - [E] OFFER HELP" : "DISABLED") : (near ? "DAMAGED - [E] OFFER HELP" : "DAMAGED");
+      const lbl = n.casualties ? (near ? "CASUALTIES - [E] OFFER HELP" : "CASUALTIES") : n.disabled ? (near ? "DISABLED - [E] OFFER HELP" : "DISABLED") : (near ? "DAMAGED - [E] OFFER HELP" : "DAMAGED");
       drawText(ctx, lbl, sx - textWidth(lbl) / 2, sy + 14, n.disabled ? PAL.warn : PAL.grey);
       if (n.disabled && Math.floor(g.world.time * 3) % 2 === 0) { ctx.fillStyle = PAL.warn; ctx.fillRect(Math.round(sx) - 1, Math.round(sy) - 14, 2, 2); }
     }
@@ -356,7 +356,7 @@ export function drawEdgeMarkers(fs: FlightScene, g: Game, ctx: CanvasRenderingCo
   for (const n of fs.npcs) {
     if (n.kind === "pirate" && dist(n.x, n.y, p.x, p.y) < 900) mark(n.x, n.y, PAL.danger);
   }
-  if (fs.sos && fs.sos.trader.hull > 0) mark(fs.sos.trader.x, fs.sos.trader.y, PAL.gold, fs.sos.kind === "disabled" ? "MAYDAY" : "SOS");
+  if (fs.sos && fs.sos.trader.hull > 0) mark(fs.sos.trader.x, fs.sos.trader.y, PAL.gold, fs.sos.kind === "disabled" ? "MAYDAY" : fs.sos.kind === "casualties" ? "MEDICAL" : "SOS");
   if (fs.repairJob) mark(fs.repairJob.npc.x, fs.repairJob.npc.y, PAL.good, "REPAIR");
   { const cr = g.world.crisis; if (cr && cr.systemId === p.systemId && cr.delivered < cr.need && g.world.time < cr.until) { const st = sys.stations.find((s) => s.id === cr.stationId); if (st) mark(Math.cos(st.angle) * st.orbit, Math.sin(st.angle) * st.orbit, PAL.danger, "CRISIS"); } }
   if (fs.escort && fs.escort.trader.hull > 0) mark(fs.escort.trader.x, fs.escort.trader.y, PAL.gold, "ESCORT");
@@ -462,7 +462,7 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
     if (heat > 100 && Math.floor(g.world.time * 6) % 2 === 0) drawText(ctx, "OVERHEAT", hx + 8, hy - 9, PAL.danger);
   }
   if (fs.repairJob) {
-    const t = `${fs.repairJob.crewName.toUpperCase()} ABOARD THE FREIGHTER: ${Math.round(Math.min(1, fs.repairJob.progress) * 100)}% - HOLD THE CORSAIRS OFF`;
+    const t = fs.repairJob.kind === "medic" ? `${fs.repairJob.crewName.toUpperCase()} TREATING CASUALTIES: ${Math.round(Math.min(1, fs.repairJob.progress) * 100)}% - STAY CLOSE` : `${fs.repairJob.crewName.toUpperCase()} ABOARD THE FREIGHTER: ${Math.round(Math.min(1, fs.repairJob.progress) * 100)}% - HOLD THE CORSAIRS OFF`;
     drawText(ctx, t, VW / 2 - textWidth(t) / 2, 50, PAL.good);
   }
   if (fs.towing) {
@@ -510,7 +510,7 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
     if (so && (p.tutorial ?? -1) < 0) { const line = `* ${so}`.slice(0, 80); drawText(ctx, line, VW - textWidth(line) - 4, my, PAL.info); my += 8; }
   }
   for (const m of active.slice(0, 3)) {
-    const prog = m.kind === "bounty" ? ` ${m.kills}/${m.killsNeeded}` : m.kind === "ground" ? ` ${m.groundDone ?? 0}/${m.groundNeed ?? 1}` : "";
+    const prog = m.kind === "bounty" ? ` ${m.kills}/${m.killsNeeded}` : m.kind === "ground" ? ` ${m.groundDone ?? 0}/${m.groundNeed ?? 1}` : m.shipTotal ? ` ${(m.shipDone ?? 0) + 1}/${m.shipTotal}` : "";
     drawText(ctx, `> ${m.title}${prog}`, VW - textWidth(`> ${m.title}${prog}`) - 4, my, PAL.uiDim);
     my += 8;
   }
