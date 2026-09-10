@@ -160,10 +160,20 @@ export class TitleScene implements Scene {
     });
     const sub = opts[this.cursor]?.sub ?? "";
     drawText(ctx, sub, VW / 2 - textWidth(sub) / 2, 104 + opts.length * (opts.length > 12 ? 8 : opts.length > 11 ? 9 : 10) + 3, PAL.uiDim);
-    if (this.ticker.length) {
-      const e = this.ticker[Math.floor(this.t / 6) % this.ticker.length];
-      const line = `FLEET WIRE: ${e.tag ? `[${e.tag}] ` : ""}${e.callsign} ${e.text} - ${e.system} (${wire.ageLabel(e.t)})`.slice(0, 110);
-      drawText(ctx, line, VW / 2 - textWidth(line) / 2, VH - 38, PAL.info);
+    {
+      // alternate the shared wire with your own galaxy's news (syndicate wars, annexations)
+      const local = g.world.events.slice(-6).reverse();
+      const slot = Math.floor(this.t / 6);
+      const useLocal = local.length && (!this.ticker.length || slot % 2 === 1);
+      if (useLocal) {
+        const e = local[Math.floor(slot / 2) % local.length];
+        const line = `GALNET: ${e.text}`.slice(0, 110);
+        drawText(ctx, line, VW / 2 - textWidth(line) / 2, VH - 38, PAL.grey);
+      } else if (this.ticker.length) {
+        const e = this.ticker[Math.floor(slot / 2) % this.ticker.length];
+        const line = `FLEET WIRE: ${e.tag ? `[${e.tag}] ` : ""}${e.callsign} ${e.text} - ${e.system} (${wire.ageLabel(e.t)})`.slice(0, 110);
+        drawText(ctx, line, VW / 2 - textWidth(line) / 2, VH - 38, PAL.info);
+      }
     }
     const ver = `V0.15${g.input.padConnected ? " - GAMEPAD CONNECTED" : ""}${this.pilots ? ` - ${this.pilots} PILOT${this.pilots === 1 ? "" : "S"} FLYING NOW` : ""}`;
     drawText(ctx, ver, VW / 2 - textWidth(ver) / 2, VH - 26, PAL.greyDark);
