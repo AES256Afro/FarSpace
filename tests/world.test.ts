@@ -5,6 +5,7 @@ import {
   missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn, captainByName, helpCaptain, isFriend, friendsAt, tickMail, pickCaptainFor, canUpgradeInfra, upgradeInfra, rivalOf, isRival, rivalTakesFare, rivalBeatsYouTo, askRideAlong, tickRideAlong, setHomePort, isHome, donateRelic, hullHistoryFor } from "../src/world";
 import { occasionFor, OCCASIONS } from "../src/data/occasions";
 import { STEPS } from "../src/core/tutorial";
+import { CREW_ARCS, arcObjective } from "../src/core/crewarcs";
 import type { Charter } from "../src/world";
 import type { Infra } from "../src/world";
 import { migrateSave, SAVE_VERSION, saveKeyFor, SLOTS } from "../src/save";
@@ -1312,5 +1313,23 @@ describe("flight school", () => {
   it("has ten lessons, each with a reward", () => {
     expect(STEPS.length).toBe(10);
     expect(STEPS.every((s) => s.reward > 0 && s.text.length < 92)).toBe(true);
+  });
+});
+
+describe("crew arcs", () => {
+  it("every role has a three-beat story whose objectives and cards render, and the engineer's wreck is planted", () => {
+    const w = generateWorld(191, { realGalaxy: true });
+    const g = { world: w, scenes: {}, sceneName: "station" } as unknown as import("../src/game").Game;
+    expect(CREW_ARCS.length).toBe(4);
+    for (const def of CREW_ARCS) {
+      const c = { name: "Test " + def.role, role: def.role, skill: 1, morale: 70, wage: 40, loyalty: 2, home: w.systems[w.player.systemId].stations[0].id };
+      expect(def.ask(w, c).length).toBeGreaterThan(20);
+      c.arc = def.setup(w, c, new RNG(7));
+      expect(def.stages.length).toBe(2);
+      expect(arcObjective(w, c)).toContain(def.title);
+      for (const st of def.stages) expect(st.objective(w, c).length).toBeGreaterThan(5);
+      if (def.role === "engineer") expect(w.systems[c.arc.targetSystemId!].wrecks.some((x) => x.id === c.arc!.wreckId)).toBe(true);
+      expect(def.finale(g, c).length).toBeGreaterThan(20);
+    }
   });
 });

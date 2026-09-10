@@ -1199,6 +1199,7 @@ export class FlightScene implements Scene {
       }
     }
     p.fuel -= cost;
+    p.jumpStreak = (p.jumpStreak ?? 0) + 1;
     jumpWear(p);
     { const up = crewXp(p, "pilot"); if (up) g.toast(up); }
     sfx.jump();

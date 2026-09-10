@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.38 - CREW ARCS", [
+    "CREW WHO TRUST YOU ASK FOR SOMETHING BIGGER: THEIR OWN STORY, THREE BEATS LONG, ADVANCED BY REAL PLAY.",
+  ]],
   ["0.37 - SHARED SKY", [
     "IN THE REAL GALAXY, THE FIRST PILOT TO LOG A WONDER PUTS THEIR NAME ON EVERYONE'S CHART. L OPENS THE COMMS LOG.",
   ]],

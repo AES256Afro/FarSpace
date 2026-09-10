@@ -31,6 +31,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "warVeteran", title: "WAR VETERAN", desc: "Fight for the winning side of a syndicate war", check: (w) => !!w.player.flags?.warVeteran },
   { id: "theLane", title: "THE LANE", desc: "Find the missing convoy", check: (w) => !!w.player.flags?.theLane },
   { id: "charter", title: "CHARTERED", desc: "Hold a faction charter", check: (w) => !!w.player.flags?.charter },
+  { id: "crewArc", title: "AN OLD CHAPTER", desc: "See a crew member's own story through", check: (w) => !!w.player.flags?.crewArc },
   { id: "rideAlong", title: "COMPANY ON THE LANES", desc: "A friend flies alongside you", check: (w) => !!w.player.flags?.rideAlong },
   { id: "homePort", title: "HOME PORT", desc: "Call a station home", check: (w) => !!w.player.flags?.homePort },
   { id: "donor", title: "UNDER THE GLASS", desc: "Donate a relic to a museum", check: (w) => !!w.player.flags?.donor },

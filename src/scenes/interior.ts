@@ -305,7 +305,8 @@ export class InteriorScene implements Scene {
         const pool = c.morale >= 65 ? CREW_LINES[c.role].high : c.morale >= 30 ? CREW_LINES[c.role].mid : CREW_LINES[c.role].low;
         const ask = c.request ? (c.request.kind === "visit" ? " ...and about that stop I asked for." : c.request.kind === "goods" ? " ...and the list is still by the airlock." : " ...and the letter's still in your locker.") : "";
         const friend = p.crew.find((o) => o !== c && bond(c, o) >= 2), foe = p.crew.find((o) => o !== c && bond(c, o) <= -2);
-        const bondNote = foe ? ` ...and keep ${foe.name} out of my engine room.` : friend ? ` ...${friend.name} and I have a bet on the next gate.` : "";
+        const arcNote = c.arc && !c.arc.done ? " ...and thank you. For the other thing." : "";
+        const bondNote = (foe ? ` ...and keep ${foe.name} out of my engine room.` : friend ? ` ...${friend.name} and I have a bet on the next gate.` : "") + arcNote;
         const line = c.sick ? `(${c.sick.kind}, laid up) ${["Don't come too close, Captain.", "I'll be fine. Give me a day.", "The med bay's colder than the hold."][Math.floor(Math.random() * 3)]}`
           : Math.random() < 0.25 && c.trait ? `(${c.trait}) ${pool[Math.floor(Math.random() * pool.length)]}` : pool[Math.floor(Math.random() * pool.length)];
         this.talk = `${c.name.toUpperCase()} (${ROLE_INFO[c.role].label}, SKILL ${c.skill}, MORALE ${Math.round(c.morale)}${(c.loyalty ?? 0) >= 2 ? ", LOYAL" : ""}, ${c.docks ?? 0} DOCKINGS): ${line}${ask}${bondNote}`;

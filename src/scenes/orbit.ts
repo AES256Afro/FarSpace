@@ -31,6 +31,7 @@ export class OrbitScene implements Scene {
     const sys = g.world.systems[g.world.player.systemId];
     const pl = sys.planets[g.orbitPlanetIdx];
     music.setMood(sys.factionId, 0);
+    g.world.player.lastOrbit = { systemId: sys.id, planetIdx: g.orbitPlanetIdx };
     this.msg = `ORBIT ESTABLISHED: ${pl.name.toUpperCase()}`;
     this.msgTimer = 3;
     {

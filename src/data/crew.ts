@@ -17,6 +17,7 @@ export interface CrewMember {
   retireAsked?: boolean; // the retirement talk has happened
   xp?: number;      // marks toward the next skill, earned by doing the job
   bonds?: Record<string, number>; // other crew by name: -3 feud .. 3 fast friends
+  arc?: { id: string; stage: number; targetStationId?: string; targetSystemId?: string; wreckId?: string; planetIdx?: number; baseline?: number; done?: boolean } | null; // their own story
 }
 
 // What crew ask for, and how long they wait. Each is honoured at a docking.

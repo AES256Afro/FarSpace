@@ -23,6 +23,7 @@ import type { Encounter } from "../data/encounters";
 import type { EncounterScene } from "./encounter";
 import { CREW_LINES } from "../data/crew";
 import { storyObjective } from "../core/story";
+import { arcFor, offerArc, arcObjective } from "../core/crewarcs";
 import { serialMissionFor, serialRecruitFor, serialPremium, serialLines } from "../data/serials";
 import { isOccasion, occasionFor } from "../data/occasions";
 import { sfx } from "../core/sfx";
@@ -137,6 +138,7 @@ export class StationScene implements Scene {
     const now = g.world.time;
     const rng = new RNG((g.world.seed ^ Math.floor(now) ^ 0x5ea) >>> 0);
     for (const c of p.crew) c.docks = (c.docks ?? 0) + 1;
+    p.jumpStreak = 0;
     // pending asks: honoured here, or wearing thin
     for (const c of p.crew) {
       if (!c.request) continue;
@@ -177,6 +179,7 @@ export class StationScene implements Scene {
     const evHere = galaxyEventAt(g.world, p.systemId);
     if (evHere?.kind === "festival" && evHere.stationId === this.station.id && logSight(p, "festival", `the festival at ${this.station.name}`, p.systemId)) g.toast("YOUR PASSENGERS ARE OFF INTO THE FESTIVAL CROWD. THEY'LL REMEMBER THIS ONE.");
     this.crewRequest(g);
+    if (g.sceneName !== "encounter" && (p.tutorial ?? -1) < 0) { const cand = p.crew.find((c) => (c.loyalty ?? 0) >= 2 && !c.arc && arcFor(c.role)); if (cand && rng.chance(0.35)) offerArc(g, cand, "station"); }
     if (g.sceneName !== "encounter") this.retirement(g, rng);
     if (g.sceneName !== "encounter") this.envoy(g);
   }
@@ -1264,8 +1267,9 @@ export class StationScene implements Scene {
     }
     y += 2;
     drawText(ctx, "YOUR LOG:", 8, y, PAL.greyDark); y += 10;
+    for (const c of p.crew) { const ao = arcObjective(g.world, c); if (ao) { drawText(ctx, `> ${ao}`.slice(0, 112), 12, y, PAL.gold); y += 9; } }
     const log = p.missions.filter((m) => m.accepted && !m.done);
-    if (!log.length) drawText(ctx, "EMPTY", 12, y, PAL.greyDark);
+    if (!log.length && !p.crew.some((c) => arcObjective(g.world, c))) drawText(ctx, "EMPTY", 12, y, PAL.greyDark);
     for (const m of log.slice(0, 4)) {
       const prog = m.killsNeeded ? ` (${m.kills}/${m.killsNeeded})` : m.kind === "ground" ? ` (${m.groundDone ?? 0}/${m.groundNeed ?? 1})` : m.shipTotal ? ` (SHIPMENT ${(m.shipDone ?? 0) + 1}/${m.shipTotal})` : m.escortDone ? " (DONE - RETURN)" : m.kind === "passenger" && m.mood !== undefined ? ` (MOOD ${Math.round(m.mood)}${m.passengerKind === "tourist" ? `, ${m.sightSeen ? "SIGHT SEEN" : "SIGHT PENDING"}` : ""}${m.demand ? ", WANTS " + commodity(m.demand).name.toUpperCase() : ""})` : "";
       drawText(ctx, `> ${m.title}${prog} - ${g.world.systems[m.targetSystemId].name}`, 12, y, PAL.uiDim);

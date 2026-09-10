@@ -105,6 +105,15 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   board: sample runs, outcrop runs, and a plant to fix on the spot. Jobs pay
   out when you walk back in.
 
+## Crew arcs
+
+- Crew who trust you (loyalty 2) sometimes ask for something bigger at a
+  dock: their own story, three beats long, advanced by real play. An
+  engineer's burned ship to walk, a medic's letter to a clinic, a pilot's
+  unfinished run, a gunner's old crew to buy a round for.
+- The objective sits on the MISSIONS tab. The last beat makes them the best
+  they will ever be.
+
 ## The shared sky and the log
 
 - In the real-stars galaxy a wonder can be first-logged by any pilot with a

@@ -511,4 +511,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Wonder first-sightings shared through the wire in the real galaxy
 - [x] A comms log overlay in flight (L)
 
+## Milestone 38 — Crew Arcs ✅ (Sep 2026)
+- [x] One personal story per crew role, offered to loyal crew, advanced by
+      real play, ending in a plaque and a crew member at their best
+
 ## Later
