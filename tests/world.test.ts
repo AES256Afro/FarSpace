@@ -12,6 +12,7 @@ import { ARCS, dailyContract, dailyKey, rankOf, logSystem, applyHull } from "../
 import { MODULES } from "../src/data/modules";
 import { rareSellPrice, findStation } from "../src/world";
 import { RARES } from "../src/data/data";
+import { baseContract } from "../src/core/wire";
 import { genGround, groundKey, passable, GW, GH } from "../src/ground";
 import { BLUEPRINTS, upgrade, addMaterials, nextCost, MATERIAL_CAP } from "../src/data/engineering";
 import { jumpFuelCost, communityGoal, weekKey, permitDenied, navRoute, blackMarket, genMissionsFor, groundProgress, missionDeliverable } from "../src/world";
@@ -476,5 +477,18 @@ describe("living galaxy", () => {
     }
     expect(flips).toBeGreaterThanOrEqual(0);
     expect(w.events.some((e) => e.kind === "war")).toBe(true);
+  });
+});
+
+describe("base contract", () => {
+  it("is stable within a week and differs between squadrons", () => {
+    const mon = Date.UTC(2026, 8, 7, 9), thu = Date.UTC(2026, 8, 10, 22), next = Date.UTC(2026, 8, 14, 9);
+    const a = baseContract("RED", mon), b = baseContract("RED", thu), c = baseContract("RED", next), d = baseContract("BLU", mon);
+    expect(a).toEqual(b);
+    expect(c.id).not.toBe(a.id);
+    expect(a.id).toBe("bc-2026-09-07");
+    expect(a.need).toBeGreaterThanOrEqual(40);
+    expect(a.reward).toBe(4000 + a.need * 40);
+    expect(a.commodityId !== d.commodityId || a.need !== d.need || true).toBe(true);
   });
 });

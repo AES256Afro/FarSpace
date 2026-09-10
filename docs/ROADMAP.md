@@ -280,5 +280,8 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
 - [x] Base raids: without a defense grid, corsairs probe a base whenever piracy
       is up; clearing them posts to the wire and earns DEFENDER
 
+- [x] Weekly base contract: the base needs a commodity; members filling the
+      vault to the target pay the treasury once a week
+
 ## Later
-- [ ] Squadron missions and shared contracts
+- [ ] Squadron missions beyond the base contract

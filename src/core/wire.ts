@@ -181,7 +181,7 @@ export async function fetchRooms(force = false): Promise<{ rooms: RoomCount[]; p
 }
 
 // ---------- Squadron bases ----------
-export interface BaseRec { stationId: string | null; stationName: string | null; systemName: string | null; treasury: number; vault: Record<string, number>; upgrades: string[]; founded: number; log: { t: number; callsign: string; text: string }[] }
+export interface BaseRec { stationId: string | null; stationName: string | null; systemName: string | null; treasury: number; vault: Record<string, number>; upgrades: string[]; founded: number; log: { t: number; callsign: string; text: string }[]; contractsPaid?: string[] }
 export interface BaseSummary { tag: string; stationId: string; stationName: string; systemName: string; upgrades: string[] }
 export const BASE_UPGRADES: { id: string; name: string; cost: number; desc: string }[] = [
   { id: "defense", name: "Defense Grid", cost: 8000, desc: "Three extra platforms guard the base, for everyone" },
@@ -222,6 +222,18 @@ export async function baseAction(action: string, payload: Record<string, unknown
     return { ok: !!j.ok, base: j.base, error: j.error, short: j.short };
   } catch { return { ok: false, error: "offline" }; }
 }
+// Weekly base contract (must match the worker's baseContract exactly)
+const CONTRACT_GOODS = ["ore", "metals", "fuel", "food", "water", "med", "parts", "lux", "data"];
+function hash32(str: string): number { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+export function baseContract(tag: string, now = Date.now()): { id: string; commodityId: string; need: number; reward: number } {
+  const d = new Date(now); const day = (d.getUTCDay() + 6) % 7; d.setUTCDate(d.getUTCDate() - day);
+  const key = d.toISOString().slice(0, 10);
+  const h = hash32(`basecontract:${tag}:${key}`);
+  const commodityId = CONTRACT_GOODS[h % CONTRACT_GOODS.length];
+  const need = 40 + ((h >>> 8) % 5) * 20;
+  return { id: `bc-${key}`, commodityId, need, reward: 4000 + need * 40 };
+}
+
 export function basePrice(stationType: string, military: boolean): number {
   if (military) return 0;
   const f: Record<string, number> = { trade: 1.5, research: 1.4, refinery: 1.3, mining: 1, agri: 1 };
