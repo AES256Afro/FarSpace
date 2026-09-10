@@ -292,6 +292,9 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
 - [x] Three save slots with their own cloud codes (title screen)
 - [x] Rover engineering: suspension and battery blueprints; base milestones
       post to the Fleet Wire
+- [x] Mayday: a pilot under 25% hull automatically hails the system; others get
+      a comms line and a blinking marker for 30 s
+- [x] Paint jobs (O in SHIPS); prompts never throw in sandboxed embeds
 
 ## Later
 - [ ] Base-to-base trade routes; NPC squadrons

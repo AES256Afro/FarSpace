@@ -254,6 +254,13 @@ export class FlightScene implements Scene {
     // other pilots in this system
     presence.tick(p, sys.name);
     this.drainRoomEvents(g);
+    this.maydays = this.maydays.filter((m) => Date.now() - m.t < 30_000);
+    if (p.hull < p.hullMax * 0.25 && presence.ghosts.size && Date.now() - this.lastMayday > 30_000) {
+      this.lastMayday = Date.now();
+      presence.send({ t: "wing", kind: "mayday", x: p.x, y: p.y });
+      this.comms.push({ from: "SHIP", text: "MAYDAY SENT TO PILOTS IN THIS SYSTEM", life: 6, color: PAL.warn });
+      if (this.comms.length > 5) this.comms.shift();
+    }
     while (presence.chat.length) {
       const c = presence.chat.shift()!;
       this.comms.push({ from: c.squad ? `[${wire.getSquadron() ?? "SQ"}] ${c.from}` : c.from, text: c.text, life: 10, color: c.squad ? PAL.gold : c.from === wire.getCallsign() ? PAL.ui : PAL.info });
@@ -429,6 +436,8 @@ export class FlightScene implements Scene {
   arrivalLog = "";
   arrivalTimer = 0;
   raidBase: { tag: string; stationIdx: number; repelled: boolean } | null = null;
+  maydays: { from: string; x: number; y: number; t: number }[] = [];
+  lastMayday = 0;
   // First discovery: the wire remembers who logged a system first.
   async claimFirst(g: Game, sys: { id: string; name: string }): Promise<void> {
     const p = g.world.player;
@@ -490,6 +499,12 @@ export class FlightScene implements Scene {
           if (addCargo(p, e.id, e.qty)) { g.toast(`${e.from} SENT YOU ${e.qty} ${commodity(e.id).name.toUpperCase()}`); sfx.pickup(); flag(g, "wingmate"); }
           else { this.loot.push({ x: p.x + 30, y: p.y, commodityId: e.id, qty: e.qty, life: 120 }); g.toast(`${e.from} JETTISONED ${e.qty} ${commodity(e.id).name.toUpperCase()} BESIDE YOU - HOLD IS FULL`); }
         }
+      } else if (e.t === "wing" && e.kind === "mayday") {
+        if (!this.maydays.some((m) => m.from === e.from)) this.comms.push({ from: "MAYDAY", text: `${e.from} IS GOING DOWN - MARKER ON YOUR HUD`, life: 10, color: PAL.danger });
+        this.maydays = this.maydays.filter((m) => m.from !== e.from);
+        this.maydays.push({ from: e.from, x: e.x ?? 0, y: e.y ?? 0, t: Date.now() });
+        if (this.comms.length > 5) this.comms.shift();
+        sfx.alarm();
       } else if (e.t === "wing" && e.kind === "kill") {
         if (dist(p.x, p.y, e.x ?? 0, e.y ?? 0) > 700) continue;
         const share = e.tag === "captain" ? 200 : 60;
