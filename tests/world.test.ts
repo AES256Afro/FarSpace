@@ -18,6 +18,7 @@ import { ENCOUNTERS, pickEncounter } from "../src/data/encounters";
 import { STORY, storyObjective, CONVOY, convoyObjective } from "../src/core/story";
 import { homesteadYield, settleHomestead, HOMESTEAD_CAP, tickCrisis, crisisAt, tickGalaxyEvents, galaxyEventAt, rescuePoints, logEntry, embargoed, hasCharter } from "../src/world";
 import { genGround, groundKey, passable, GW, GH } from "../src/ground";
+import { SERIALS, tickSerial, serialDef, serialHookActive, serialLines, serialPremium, serialMissionFor, serialRecruitFor, SERIAL_GAP, SERIAL_HOOK_TTL } from "../src/data/serials";
 import { BLUEPRINTS, upgrade, addMaterials, nextCost, MATERIAL_CAP } from "../src/data/engineering";
 import { jumpFuelCost, communityGoal, weekKey, permitDenied, navRoute, blackMarket, genMissionsFor, groundProgress, missionDeliverable } from "../src/world";
 import { RNG } from "../src/core/rng";
@@ -1003,5 +1004,45 @@ describe("life on the deck", () => {
     expect(stormBlind(w, sysId)).toBe(false);
     w.infra[0].health = 10;
     expect(stormBlind(w, sysId)).toBe(true);
+  });
+});
+
+describe("galnet serials", () => {
+  it("a serial starts, runs its parts on the clock, leaves a hook at its station, and retires", () => {
+    const w = generateWorld(81, { realGalaxy: true });
+    w.serial = null;
+    let started = 0;
+    for (let i = 0; i < 40 && !w.serial; i++) { tickSerial(w, new RNG(i)); started++; }
+    expect(w.serial).not.toBeNull();
+    const s = w.serial!;
+    const def = serialDef(s.id)!;
+    expect(s.lines.length).toBe(0);
+    tickSerial(w, new RNG(1)); // first part lands at once
+    expect(s.lines.length).toBe(1);
+    expect(w.events[w.events.length - 1].text).toContain(def.title);
+    tickSerial(w, new RNG(2));
+    expect(s.lines.length).toBe(1); // not yet: the gap
+    w.time += SERIAL_GAP; tickSerial(w, new RNG(3));
+    w.time += SERIAL_GAP; tickSerial(w, new RNG(4));
+    expect(s.lines.length).toBe(def.parts.length);
+    expect(serialHookActive(w)).toBe(true);
+    const lines = serialLines(w)!;
+    expect(lines.parts.length).toBe(def.parts.length);
+    expect(lines.hook).not.toBeNull();
+    if (def.hook.kind === "premium") expect(serialPremium(w, s.stationId, def.hook.commodityId)).toBe(def.hook.mult);
+    if (def.hook.kind === "mission") { const m = serialMissionFor(w, s.stationId); expect(m).not.toBeNull(); expect(m!.fromStationId).toBe(s.stationId); }
+    if (def.hook.kind === "recruit") expect(serialRecruitFor(w, s.stationId)).toBe(def.hook.role);
+    expect(serialPremium(w, "elsewhere", "water")).toBe(1);
+    w.time += SERIAL_HOOK_TTL; tickSerial(w, new RNG(5));
+    expect(w.serial).toBeNull();
+    expect(w.serialsSeen).toContain(def.id);
+    void started;
+  });
+  it("every serial's parts and hook lines render for any station", () => {
+    const w = generateWorld(82, { realGalaxy: true });
+    const sys = Object.values(w.systems).find((s) => s.stations.length && s.links.length)!;
+    const other = w.systems[sys.links[0]];
+    const c = { sys, st: sys.stations[0], name: "Test Person", other };
+    for (const d of SERIALS) { for (const part of d.parts) expect(part(c).length).toBeGreaterThan(20); expect(d.hookLine(c).length).toBeGreaterThan(10); if (d.hook.kind === "mission") expect(d.hook.mission(w, c).reward).toBeGreaterThan(0); }
   });
 });

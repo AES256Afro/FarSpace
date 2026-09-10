@@ -23,6 +23,7 @@ import type { Encounter } from "../data/encounters";
 import type { EncounterScene } from "./encounter";
 import { CREW_LINES } from "../data/crew";
 import { storyObjective } from "../core/story";
+import { serialMissionFor, serialRecruitFor, serialPremium, serialLines } from "../data/serials";
 import { sfx } from "../core/sfx";
 import * as wire from "../core/wire";
 import { drawTutorial } from "../core/tutorial";
@@ -59,8 +60,10 @@ export class StationScene implements Scene {
     // today's galaxy-wide contract, unless already done or already carried
     const daily = dailyContract(g.world);
     if (p.dailyDone !== dailyKey() && !p.missions.some((m) => m.id === daily.id)) this.boardMissions.unshift(daily);
+    { const sm = serialMissionFor(g.world, this.station.id); if (sm) this.boardMissions.unshift(sm); }
     this.candidates = [];
     for (let i = 0; i < rng.int(1, 3); i++) this.candidates.push(genCrewCandidate(rng.fork(i + 1)));
+    { const role = serialRecruitFor(g.world, this.station.id); if (role && !p.flags?.[`serialHire:${this.station.id}`]) { const c = genCrewCandidate(rng.fork(99)); c.role = role; c.skill = 3; c.loyalty = 2; c.wage = ROLE_INFO[role].baseWage * 3; c.trait = "tells stories about the Steady Hand"; this.candidates.unshift(c); } }
     this.fares = genFares(g.world, this.station, rng.fork(77));
     this.barLine = "";
     refreshPrices(this.station);
@@ -372,7 +375,9 @@ export class StationScene implements Scene {
             const routeHit = !!dem && dem.goods.includes(id);
             const crisis = crisisAt(g.world, st.id);
             const crisisHit = !!crisis && crisis.commodityId === id;
-            const paid = Math.round(price * (goalHit ? 1 + this.goal.premium : 1) * (this.baseHas("market") ? 1.08 : 1) * (treaty === "pact" ? 1.05 : 1) * (routeHit ? 1 + ROUTE_PREMIUM + synBonus : 1) * (crisisHit ? CRISIS_PREMIUM : 1));
+            const serialMult = serialPremium(g.world, st.id, id);
+            const paid = Math.round(price * (goalHit ? 1 + this.goal.premium : 1) * (this.baseHas("market") ? 1.08 : 1) * (treaty === "pact" ? 1.05 : 1) * (routeHit ? 1 + ROUTE_PREMIUM + synBonus : 1) * (crisisHit ? CRISIS_PREMIUM : 1) * serialMult);
+            if (serialMult > 1 && !p.flags?.serialSale) { flag(g, "serialSale"); g.toast(`THE STORY PAYS: ${commodity(id).name.toUpperCase()} AT x${serialMult} HERE WHILE IT LASTS`); }
             if (crisisHit && crisis) {
               crisis.delivered++;
               if (crisis.delivered >= crisis.need) {
@@ -705,6 +710,7 @@ export class StationScene implements Scene {
     if (p.credits < cost) { g.toast(`SIGNING BONUS ${cost}CR - NOT ENOUGH`); return; }
     p.credits -= cost;
     p.crew.push({ ...c, home: this.station.id, docks: 0 });
+    if (c.trait === "tells stories about the Steady Hand") flag(g, `serialHire:${this.station.id}`);
     this.candidates = this.candidates.filter((x) => x !== c);
     g.toast(`${c.name.toUpperCase()} SIGNED ON AS ${ROLE_INFO[c.role].label}`);
     g.showHint("crew", "CREW LIVE ABOARD - VISIT THEM WITH I - KEEP FOOD IN CARGO");
@@ -1028,6 +1034,7 @@ export class StationScene implements Scene {
       const demHere = this.demandHere(g);
       const cr = crisisAt(g.world, st.id);
       if (cr && cr.commodityId === id) drawText(ctx, `CRISIS x${CRISIS_PREMIUM}`, 320, y, PAL.danger);
+      else if (serialPremium(g.world, st.id, id) > 1) drawText(ctx, `GALNET x${serialPremium(g.world, st.id, id)}`, 320, y, PAL.gold);
       else if (demHere && demHere.goods.includes(id)) drawText(ctx, `WANTED +${Math.round(ROUTE_PREMIUM * 100)}%`, 320, y, PAL.gold);
       else if (c.rare) drawText(ctx, st.rare === id ? "ORIGIN" : "RARE", 320, y, st.rare === id ? PAL.info : PAL.gold);
       else if (c.illegal) drawText(ctx, blackMarket(g.world, st) ? "FENCE +30%" : "CUSTOMS", 320, y, blackMarket(g.world, st) ? PAL.gold : PAL.danger);
@@ -1572,9 +1579,18 @@ export class StationScene implements Scene {
       bl.slice(0, 4).forEach((l, i) => drawText(ctx, l.toUpperCase().slice(0, 112), 8, top + 29 + i * 8, l.startsWith("URGENT") || l.startsWith("STRIKE") ? PAL.danger : l.startsWith("FESTIVAL") ? PAL.gold : PAL.grey));
       top += 29 + Math.min(4, bl.length) * 8 + 6;
     }
+    const serial = serialLines(g.world);
+    if (serial) {
+      drawText(ctx, `GALNET SERIAL: ${serial.title} - ${serial.where.toUpperCase()}`, 8, top, PAL.gold);
+      let sy = top + 9;
+      const parts = serial.parts.length ? serial.parts : ["(THE FIRST PART IS ON ITS WAY)"];
+      parts.forEach((l, i) => { drawText(ctx, `${i + 1}. ${l.toUpperCase()}`.slice(0, 112), 8, sy, PAL.grey); sy += 8; });
+      if (serial.hook) { drawText(ctx, `> ${serial.hook.toUpperCase()}`.slice(0, 112), 8, sy, PAL.gold); sy += 8; }
+      top = sy + 5;
+    }
     drawText(ctx, "GALNET NEWS FEED", 8, top, PAL.info);
     let y = top + 14;
-    for (const n of g.world.news.slice(0, 7)) {
+    for (const n of g.world.news.slice(0, serial ? 3 : 7)) {
       drawText(ctx, n.headline.slice(0, 60), 8, y, PAL.white); y += 9;
       drawText(ctx, n.body.slice(0, 112), 8, y, PAL.greyDark); y += 13;
     }

@@ -12,6 +12,7 @@ import { hull } from "./data/hulls";
 import { moduleDef } from "./data/modules";
 import type { CrewMember, CrewRole } from "./data/crew";
 import { ROLE_INFO, CREW_TRAITS, SICKNESS, LEAVE_DOCKS } from "./data/crew";
+import { tickSerial, type SerialState } from "./data/serials";
 
 // ---------- Types ----------
 
@@ -720,6 +721,9 @@ export interface World {
   infra?: Infra[];                   // beacons and depots people have built
   infraTick?: number;
   infraNews?: string[];              // lines from the last infra tick, for the HUD to toast
+  serial?: SerialState | null;       // the GalNet serial running now
+  serialsSeen?: string[];
+  serialTick?: number;
   seed: number;
   time: number;
   realGalaxy: boolean;
@@ -825,6 +829,8 @@ export function tickWorld(w: World, dt: number): void {
     }
   }
   tickWear(w.player, dt);
+  w.serialTick = (w.serialTick ?? 0) + dt;
+  if (w.serialTick >= 60) { w.serialTick = 0; tickSerial(w, new RNG((w.seed ^ Math.floor(w.time * 19)) >>> 0)); }
   w.infraTick = (w.infraTick ?? 0) + dt;
   if (w.infraTick >= 60 && w.infra?.length) { w.infraTick = 0; w.infraNews = tickInfra(w, new RNG((w.seed ^ Math.floor(w.time * 13)) >>> 0)); }
   w.eventTick = (w.eventTick ?? 0) + dt;
@@ -2164,7 +2170,7 @@ export function newsFromEvents(w: World): NewsItem[] {
   const items: NewsItem[] = [];
   const recent = w.events.slice(-6).reverse();
   for (const e of recent) {
-    items.push({ headline: `${EVENT_HEADLINES[e.kind]} — ${w.systems[e.systemId]?.name.toUpperCase() ?? ""}`, body: e.text });
+    items.push({ headline: `${EVENT_HEADLINES[e.kind]} - ${w.systems[e.systemId]?.name.toUpperCase() ?? ""}`, body: e.text });
   }
   const rng = new RNG((w.seed ^ 0xbeef ^ w.events.length) >>> 0);
   const names = Object.values(w.systems).map((s) => s.name);

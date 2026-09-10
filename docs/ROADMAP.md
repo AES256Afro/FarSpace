@@ -435,4 +435,9 @@ Time passes for the people on the ship, and for the ship.
 - [x] Ion storms: radar and charts blind unless a lit beacon holds the picture
 - [x] Fares wait on the promenade with their luggage
 
+## Milestone 23 — Serials ✅ (Sep 2026)
+- [x] Six GalNet serials that develop over dockings, kept on the NEWS tab
+- [x] Each ends in a hook at its station: a contract, a market premium, or a
+      skilled recruit in the lounge
+
 ## Later

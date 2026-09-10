@@ -101,6 +101,15 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   board: sample runs, outcrop runs, and a plant to fix on the spot. Jobs pay
   out when you walk back in.
 
+## GalNet serials
+
+- One story runs at a time on GalNet: an inquiry, a water vote, a captain's
+  farewell. Parts land every few minutes of ship time; the NEWS tab keeps
+  every part so far, and the title ticker carries the headlines.
+- The last part leaves something behind at the story's station for a while:
+  a contract on the board, a market premium (marked GALNET on the market),
+  or a skilled hand for hire in the lounge.
+
 ## Life on the deck
 
 - Crew learn by doing: an engineer's repairs, a gunner's kills, a pilot's
