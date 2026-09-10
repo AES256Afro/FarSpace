@@ -81,6 +81,7 @@ export class FlightScene implements Scene {
     this.floaters = [];
     this.comms = [];
     populate(this, g);
+    this.spawnDrifters(g);
     this.launchDrones(g);
     this.startEscortIfNeeded(g);
   }
@@ -246,6 +247,7 @@ export class FlightScene implements Scene {
       this.scanCharge = Math.min(1, this.scanCharge + dt * 0.5);
       if (this.scanCharge >= 1) {
         this.scanCharge = 0;
+        for (const d of this.drifters) if (!d.logged && dist(p.x, p.y, d.x, d.y) < 400) this.scanDrifter(g, d);
         let found = 0;
         for (const an of sys.anomalies) {
           if (!an.discovered && dist(an.x, an.y, p.x, p.y) < (galaxyEventAt(g.world, sys.id)?.kind === "flare" ? 450 : 900)) { an.discovered = true; found++; }
@@ -265,6 +267,7 @@ export class FlightScene implements Scene {
     this.updateRepairJob(g, dt);
     this.updateTow(g, dt);
     this.updateAmbient(g, dt);
+    this.updateDrifters(g, dt);
     // other pilots in this system
     presence.tick(p, sys.name);
     this.drainRoomEvents(g);
@@ -664,6 +667,42 @@ export class FlightScene implements Scene {
   }
 
   // ---------- Ambient life ----------
+  drifters: { x: number; y: number; vx: number; vy: number; angle: number; phase: number; logged: boolean }[] = [];
+  spawnDrifters(g: Game): void {
+    this.drifters = [];
+    const sys = g.world.systems[g.world.player.systemId];
+    const rng = new RNG((g.world.seed ^ sys.id.length * 977) >>> 0);
+    sys.planets.forEach((pl) => {
+      if (pl.palette < 6 || !rng.chance(0.5)) return; // gas giants only, and not always
+      const n = rng.int(1, 3);
+      for (let i = 0; i < n; i++) {
+        const a = rng.range(0, Math.PI * 2);
+        const r = pl.radius + rng.range(120, 260);
+        const px = Math.cos(pl.angle) * pl.orbit + Math.cos(a) * r, py = Math.sin(pl.angle) * pl.orbit + Math.sin(a) * r;
+        const ang = a + Math.PI / 2;
+        this.drifters.push({ x: px, y: py, vx: Math.cos(ang) * 9, vy: Math.sin(ang) * 9, angle: ang, phase: rng.range(0, 6), logged: !!g.world.player.codex?.["fauna:VOID DRIFTER"] });
+      }
+    });
+  }
+  updateDrifters(g: Game, dt: number): void {
+    for (const d of this.drifters) {
+      d.x += d.vx * dt; d.y += d.vy * dt;
+      d.angle += Math.sin(g.world.time * 0.3 + d.phase) * 0.002;
+      d.vx = Math.cos(d.angle) * 9; d.vy = Math.sin(d.angle) * 9;
+    }
+  }
+  scanDrifter(g: Game, d: { logged: boolean }): void {
+    const p = g.world.player;
+    d.logged = true;
+    p.codex ??= {};
+    const first = !p.codex["fauna:VOID DRIFTER"];
+    p.codex["fauna:VOID DRIFTER"] = (p.codex["fauna:VOID DRIFTER"] ?? 0) + 1;
+    p.expData = (p.expData ?? 0) + (first ? 200 : 60);
+    p.discoveries += 1;
+    g.toast(first ? "NEW SPECIES: VOID DRIFTER. IT DOESN'T SEEM TO MIND YOU. +200 DATA" : "VOID DRIFTER LOGGED +60 DATA");
+    flag(g, "drifter");
+    logEntry(g.world, `Logged a void drifter off a gas giant in ${g.world.systems[p.systemId].name}`);
+  }
   chatterTimer = 25;
   trafficTimer = 40;
   updateAmbient(g: Game, dt: number): void {
@@ -1021,6 +1060,7 @@ export class FlightScene implements Scene {
     this.escort = null;
     this.pursuitTimer = 0;
     populate(this, g);
+    this.spawnDrifters(g);
     this.launchDrones(g);
     this.startEscortIfNeeded(g);
     g.autosave();

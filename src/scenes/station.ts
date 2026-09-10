@@ -1347,11 +1347,12 @@ export class StationScene implements Scene {
   drawNews(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
     {
       const pr = stationProfile(g.world, this.station);
-      drawText(ctx, `${this.station.name.toUpperCase()} - POP. ${pr.population.toLocaleString()} - FOUNDED ${pr.founded} - KNOWN FOR ${pr.knownFor.toUpperCase()}. ALSO: ${pr.quirk.toUpperCase()}.`.slice(0, 118), 8, top, PAL.grey);
+      drawText(ctx, `${this.station.name.toUpperCase()} - POP. ${pr.population.toLocaleString()} - FOUNDED ${pr.founded}`, 8, top, PAL.grey);
+      drawText(ctx, `KNOWN FOR ${pr.knownFor.toUpperCase()}. ALSO: ${pr.quirk.toUpperCase()}.`.slice(0, 112), 8, top + 9, PAL.greyDark);
       const bl = stationBulletin(g.world, this.station);
-      drawText(ctx, "LOCAL BULLETIN", 8, top + 10, PAL.greyDark);
-      bl.slice(0, 4).forEach((l, i) => drawText(ctx, l.toUpperCase().slice(0, 116), 8, top + 19 + i * 8, l.startsWith("URGENT") || l.startsWith("STRIKE") ? PAL.danger : l.startsWith("FESTIVAL") ? PAL.gold : PAL.grey));
-      top += 19 + Math.min(4, bl.length) * 8 + 6;
+      drawText(ctx, "LOCAL BULLETIN", 8, top + 20, PAL.greyDark);
+      bl.slice(0, 4).forEach((l, i) => drawText(ctx, l.toUpperCase().slice(0, 112), 8, top + 29 + i * 8, l.startsWith("URGENT") || l.startsWith("STRIKE") ? PAL.danger : l.startsWith("FESTIVAL") ? PAL.gold : PAL.grey));
+      top += 29 + Math.min(4, bl.length) * 8 + 6;
     }
     drawText(ctx, "GALNET NEWS FEED", 8, top, PAL.info);
     let y = top + 14;

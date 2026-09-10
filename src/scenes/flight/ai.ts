@@ -574,6 +574,11 @@ export function updateNpcs(fs: FlightScene, g: Game, dt: number): void {
     n.angle += clamp(angDiff(n.angle, want), -3 * dt, 3 * dt);
     n.x += n.vx * dt;
     n.y += n.vy * dt;
+    // engines you can see: a puff now and then from anything under way, nearby only
+    if (Math.hypot(n.vx, n.vy) > 25 && Math.random() < dt * 6 && dist(n.x, n.y, p.x, p.y) < 700) {
+      const back = n.angle + Math.PI;
+      fs.particles.push({ x: n.x + Math.cos(back) * 8, y: n.y + Math.sin(back) * 8, vx: n.vx * 0.2 + Math.cos(back) * 30, vy: n.vy * 0.2 + Math.sin(back) * 30, life: 0.3, color: n.kind === "pirate" ? "#ff8a5a" : PAL.thrust });
+    }
 
     if (wantFire && n.fireCd <= 0 && !n.fleeing) {
       const pv = n.kind === "pirate" ? variantStats(n) : null;

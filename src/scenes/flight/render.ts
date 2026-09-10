@@ -81,6 +81,27 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
     }
   });
 
+  // void drifters: slow, enormous, harmless; they like gas giants
+  for (const d of fs.drifters) {
+    const [dx, dy] = toScreen(d.x, d.y);
+    if (dx < -80 || dx > VW + 80 || dy < -80 || dy > VH + 80) continue;
+    const segs = 9;
+    ctx.strokeStyle = d.logged ? "#7c88b8" : "#5a6a9a";
+    ctx.lineWidth = Math.max(1, 3 * z);
+    ctx.beginPath();
+    for (let i = 0; i <= segs; i++) {
+      const t = i / segs;
+      const wob = Math.sin(g.world.time * 1.2 + d.phase + t * 4) * 6 * z;
+      const px2 = dx - Math.cos(d.angle) * t * 60 * z + Math.cos(d.angle + Math.PI / 2) * wob;
+      const py2 = dy - Math.sin(d.angle) * t * 60 * z + Math.sin(d.angle + Math.PI / 2) * wob;
+      if (i === 0) ctx.moveTo(px2, py2); else ctx.lineTo(px2, py2);
+    }
+    ctx.stroke();
+    ctx.lineWidth = 1;
+    ctx.fillStyle = "#e8ecff"; ctx.fillRect(Math.round(dx), Math.round(dy), 2, 2);
+    if (dist(p.x, p.y, d.x, d.y) < 260) drawText(ctx, d.logged ? "VOID DRIFTER" : "UNKNOWN LIFEFORM - HOLD V", dx - 40, dy - 16 * z - 8, PAL.info);
+  }
+
   // stations
   for (const st of sys.stations) {
     const sx0 = Math.cos(st.angle) * st.orbit;
@@ -90,6 +111,11 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
     const s = spr.width * z;
     if (sx > -s && sx < VW + s && sy > -s && sy < VH + s) {
       ctx.drawImage(spr, sx - s / 2, sy - s / 2, s, s);
+      // nav lights: a slow red/green blink on the rim, and a bay strobe when someone is docking
+      const tphase = g.world.time * 1.5 + st.id.length;
+      if (Math.floor(tphase) % 2 === 0) { ctx.fillStyle = "#ff5a5a"; ctx.fillRect(Math.round(sx - s / 2), Math.round(sy), 2, 2); }
+      else { ctx.fillStyle = "#63f2c8"; ctx.fillRect(Math.round(sx + s / 2) - 2, Math.round(sy), 2, 2); }
+      if (Math.floor(g.world.time * 6) % 3 === 0) { ctx.fillStyle = "#ffffff"; ctx.fillRect(Math.round(sx), Math.round(sy - s / 2), 1, 1); }
       if (dist(p.x, p.y, sx0, sy0) < 200) {
         drawText(ctx, st.name, sx - textWidth(st.name) / 2, sy - s / 2 - 8, st.military ? PAL.danger : PAL.ui);
         if (dist(p.x, p.y, sx0, sy0) < 60) drawText(ctx, "[E] DOCK", sx - 16, sy + s / 2 + 3, PAL.gold);
