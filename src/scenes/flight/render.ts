@@ -129,6 +129,20 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
     const spr = g.asteroidSprite(a.spriteSeed, a.radius, a.rich);
     const s = spr.width * z;
     ctx.drawImage(spr, sx - s / 2, sy - s / 2, s, s);
+    if (a.core) {
+      // a motherlode glints: a slow gold pulse around the rock
+      const pulse = 0.4 + 0.3 * Math.sin(g.world.time * 3 + a.x);
+      ctx.globalAlpha = pulse; ctx.strokeStyle = PAL.gold;
+      ctx.beginPath(); ctx.arc(sx, sy, s / 2 + 3, 0, Math.PI * 2); ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  }
+  for (const c of fs.charges) {
+    const [sx, sy] = toScreen(c.ax, c.ay);
+    const t = Math.ceil(c.t);
+    const blink = Math.floor(c.t * (c.t < 1.5 ? 8 : 3)) % 2 === 0;
+    drawText(ctx, `CHARGE ${t}`, sx - 16, sy - 18, blink ? PAL.danger : PAL.gold);
+    if (dist(p.x, p.y, c.ax, c.ay) < 120) drawText(ctx, "GET CLEAR", sx - 18, sy + 12, PAL.danger);
   }
 
   // prospector limpets: read the rock you're pointing at
@@ -141,7 +155,7 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
     }
     if (best) {
       const [sx, sy] = toScreen(best.x, best.y);
-      const label = `${best.rich ? "MOTHERLODE" : "ORE"} ${Math.ceil(best.ore)}${best.rich ? " - RICH" : ""}`;
+      const label = best.core ? `CORE - SEISMIC CHARGE (C)` : `${best.rich ? "MOTHERLODE" : "ORE"} ${Math.ceil(best.ore)}${best.rich ? " - RICH" : ""}`;
       ctx.strokeStyle = best.rich ? PAL.gold : PAL.mining;
       ctx.strokeRect(Math.round(sx - best.radius * z) - 2.5, Math.round(sy - best.radius * z) - 2.5, Math.round(best.radius * z * 2) + 5, Math.round(best.radius * z * 2) + 5);
       drawText(ctx, label, sx - textWidth(label) / 2, sy - best.radius * z - 10, best.rich ? PAL.gold : PAL.mining);
@@ -394,7 +408,7 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
     }
   }
   if (p.crew && p.crew.some((c) => c.morale < 30)) { drawText(ctx, "! CREW MORALE LOW", 4, wy, PAL.warn); wy += 8; }
-  drawText(ctx, `${(p.shipName ?? hull(p.hullId).name).toUpperCase()}  TORP ${p.torpedoes ?? 0}`, 4, wy, PAL.greyDark);
+  drawText(ctx, `${(p.shipName ?? hull(p.hullId).name).toUpperCase()}  TORP ${p.torpedoes ?? 0}${p.seismic ? `  SEISMIC ${p.seismic}` : ""}`, 4, wy, PAL.greyDark);
   // heat: only shown when it matters
   const heat = p.heat ?? 0;
   if (heat > 4 || fs.scooping) {

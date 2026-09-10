@@ -15,13 +15,14 @@ import {
 } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
+import { BLUEPRINTS, MATERIALS, engGrade, nextCost, canAfford, upgrade } from "../data/engineering";
 import { flag } from "../core/achievements";
 import { sfx } from "../core/sfx";
 import * as wire from "../core/wire";
 import { drawTutorial } from "../core/tutorial";
 import { music } from "../core/music";
 
-const TABS = ["MARKET", "SHIPYARD", "SHIPS", "MISSIONS", "BAR", "SURVEY", "STORAGE", "NEWS", "WIRE", "RECORD"] as const;
+const TABS = ["MARKET", "SHIPYARD", "SHIPS", "MISSIONS", "BAR", "SURVEY", "ENGINEER", "STORAGE", "NEWS", "WIRE", "RECORD"] as const;
 
 export class StationScene implements Scene {
   touchMode = "menu" as const;
@@ -225,6 +226,23 @@ export class StationScene implements Scene {
         this.cursor = 0;
         if (enter) this.sellExploration(g);
         break;
+      case "ENGINEER": {
+        this.cursor = clamp(this.cursor, 0, BLUEPRINTS.length - 1);
+        if (enter && this.hasEngineer()) {
+          const bp = BLUEPRINTS[this.cursor];
+          const cost = nextCost(p, bp);
+          if (!cost) g.toast("ALREADY AT MAXIMUM GRADE");
+          else if (!canAfford(p, cost)) g.toast("NOT ENOUGH MATERIALS - MINE, SALVAGE, SURVEY");
+          else if (upgrade(p, bp)) {
+            if (bp.id === "shields") { p.shieldMax = Math.round(p.shieldMax * 1.1); p.shield = p.shieldMax; }
+            if (bp.id === "cargo") p.cargoMax += 5;
+            flag(g, "engineer");
+            g.toast(`${bp.name.toUpperCase()} GRADE ${engGrade(p, bp.id)} APPLIED`);
+            sfx.repair();
+          }
+        }
+        break;
+      }
       case "RECORD":
         this.cursor = 0;
         break;
@@ -357,6 +375,10 @@ export class StationScene implements Scene {
       if (!addCargo(p, "parts", 1)) return g.toast("CARGO FULL");
       p.credits -= cost; g.toast("PARTS STOWED IN CARGO");
     } });
+    opts.push({ label: `SEISMIC CHARGES x3 (NOW ${p.seismic ?? 0})`, sub: "300CR", action: () => {
+      if (p.credits < 300) return g.toast("NOT ENOUGH CREDITS");
+      p.credits -= 300; p.seismic = (p.seismic ?? 0) + 3; g.toast("CHARGES RACKED - PLANT ON A CORE ROCK WITH C");
+    } });
     opts.push({ label: `TORPEDOES x4 (NOW ${p.torpedoes ?? 0})`, sub: "240CR", action: () => {
       if (p.credits < 240) return g.toast("NOT ENOUGH CREDITS");
       p.credits -= 240; p.torpedoes = (p.torpedoes ?? 0) + 4; g.toast("TORPEDOES RACKED - FIRE WITH R");
@@ -442,6 +464,7 @@ export class StationScene implements Scene {
       case "WIRE": this.drawWire(g, ctx, top); break;
       case "RECORD": this.drawRecord(g, ctx, top); break;
       case "SURVEY": this.drawSurvey(g, ctx, top); break;
+      case "ENGINEER": this.drawEngineer(g, ctx, top); break;
     }
     if (g.toastTimer > 0) drawText(ctx, g.toastMsg, VW / 2 - textWidth(g.toastMsg) / 2, VH - 10, PAL.ui);
     if (g.hint) drawText(ctx, g.hint, VW / 2 - textWidth(g.hint) / 2, VH - 20, PAL.gold);
@@ -703,6 +726,40 @@ export class StationScene implements Scene {
     g.toast(`CARTOGRAPHICS PAID ${paid}CR${bonus > 1 ? " (RESEARCH POST BONUS)" : ""}`);
     sfx.pickup();
     if (paid >= 1000) void wire.post("discovery", `sold exploration data worth ${paid} CR`, g.world.systems[p.systemId].name);
+  }
+
+  hasEngineer(): boolean {
+    return this.station.type === "research" || this.station.type === "refinery";
+  }
+
+  drawEngineer(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
+    const p = g.world.player;
+    const here = this.hasEngineer();
+    drawText(ctx, here ? `ENGINEERING BAY - ${this.station.name.toUpperCase()}` : "NO ENGINEER HERE - RESEARCH AND REFINERY STATIONS HAVE ONE", 8, top, here ? PAL.info : PAL.warn);
+    BLUEPRINTS.forEach((bp, i) => {
+      const y = top + 12 + i * 11;
+      const grade = engGrade(p, bp.id);
+      const cost = nextCost(p, bp);
+      this.rowBoxes.push([y - 2, y + 8]);
+      if (i === this.cursor) { ctx.fillStyle = "#13203a"; ctx.fillRect(4, y - 2, 280, 10); }
+      drawText(ctx, `${bp.name.toUpperCase()} ${"*".repeat(grade)}${"-".repeat(3 - grade)}`, 8, y, grade >= 3 ? PAL.gold : PAL.white);
+      drawText(ctx, bp.desc.toUpperCase(), 118, y, PAL.grey);
+      if (i === this.cursor) {
+        const line = cost ? `NEXT GRADE: ${Object.entries(cost).map(([id, n]) => `${n} ${id.toUpperCase()}`).join(", ")}${canAfford(p, cost) && here ? " - ENTER TO APPLY" : ""}` : "MAXED";
+        drawText(ctx, line, 8, top + 12 + BLUEPRINTS.length * 11 + 6, cost && canAfford(p, cost) && here ? PAL.gold : PAL.greyDark);
+      }
+    });
+    const mx = 300;
+    drawText(ctx, "MATERIALS:", mx, top, PAL.greyDark);
+    MATERIALS.forEach((m, i) => {
+      const n = p.materials?.[m.id] ?? 0;
+      drawText(ctx, `${m.name.toUpperCase()} ${n}`, mx + (i % 2) * 84, top + 12 + Math.floor(i / 2) * 9, n ? (m.rarity === "rare" ? PAL.gold : m.rarity === "uncommon" ? PAL.ui : PAL.grey) : PAL.greyDark);
+    });
+    drawText(ctx, "MINING: IRON, NICKEL, CARBON", mx, top + 44, PAL.greyDark);
+    drawText(ctx, "RICH ROCKS: VANADIUM", mx, top + 53, PAL.greyDark);
+    drawText(ctx, "CORES, SIGNALS: POLONIUM", mx, top + 62, PAL.greyDark);
+    drawText(ctx, "DERELICTS: GERMANIUM", mx, top + 71, PAL.greyDark);
+    drawText(ctx, "GRADES ARE YOURS, NOT THE HULL'S", mx, top + 84, PAL.greyDark);
   }
 
   drawSurvey(g: Game, ctx: CanvasRenderingContext2D, top: number): void {

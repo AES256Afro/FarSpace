@@ -75,6 +75,7 @@ export interface AsteroidDef {
   x: number; y: number;
   radius: number;
   rich: boolean;
+  core?: boolean; // lasers won't crack it; needs a seismic charge
   ore: number;
   spriteSeed: number;
   rot: number; rotSpeed: number;
@@ -227,6 +228,9 @@ export interface PlayerState {
   bookmarks?: string[];              // system ids
   shipName?: string;
   rareRevenue?: number;              // credits from rares sold away from origin
+  seismic?: number;                  // seismic charges for core asteroids
+  materials?: Record<string, number>;
+  engineering?: Record<string, number>; // blueprint id → grade
 }
 
 export interface World {
@@ -450,8 +454,9 @@ export function genCrewCandidate(rng: RNG): CrewMember {
 
 export function jumpFuelCost(w: World, fromId: string, toId: string): number {
   const ly = w.systems[fromId]?.ly?.[toId];
-  if (ly === undefined) return 10;
-  return clamp(Math.round(4 + ly * 1.4), 6, 40);
+  const tuned = 1 - 0.08 * (w.player?.engineering?.fsd ?? 0);
+  if (ly === undefined) return Math.max(4, Math.round(10 * tuned));
+  return clamp(Math.round((4 + ly * 1.4) * tuned), 4, 40);
 }
 
 // Dijkstra on fuel cost; returns path + total fuel. Falls back to hop BFS.
@@ -584,9 +589,10 @@ function genSystem(rng: RNG, id: string, gx: number, gy: number, factionId: stri
     for (let i = 0; i < count; i++) {
       const a = rng.range(0, Math.PI * 2);
       const r = beltR + rng.range(-260, 260);
+      const rich = rng.chance(0.3);
       sys.asteroids.push({
         x: Math.cos(a) * r, y: Math.sin(a) * r,
-        radius: rng.int(4, 12), rich: rng.chance(0.3), ore: rng.int(3, 10),
+        radius: rng.int(4, 12), rich, core: rich && rng.chance(0.35), ore: rng.int(3, 10),
         spriteSeed: rng.int(0, 1e9), rot: rng.range(0, Math.PI * 2), rotSpeed: rng.range(-0.3, 0.3),
       });
     }
@@ -1176,6 +1182,9 @@ export function applyHull(p: PlayerState, hullId: string): void {
     p.fuelMax += m.fuel ?? 0; p.cargoMax += m.cargo ?? 0;
     p.shieldMax = Math.round(p.shieldMax * (1 + (m.shield ?? 0)));
   }
+  // engineering grades are part of the pilot, not the hull
+  p.shieldMax = Math.round(p.shieldMax * (1 + 0.1 * (p.engineering?.shields ?? 0)));
+  p.cargoMax += 5 * (p.engineering?.cargo ?? 0);
   p.shield = p.shieldMax;
   p.systems = defaultSystems();
   p.breaches = [];

@@ -6,6 +6,9 @@ import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
 import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem } from "../../world";
 import { hasModule } from "../../data/modules";
+import { engGrade } from "../../data/engineering";
+import { gainMaterials } from "../../core/materials";
+import { damagePlayer } from "./ai";
 import { flag } from "../../core/achievements";
 import { faction } from "../../data/data";
 import { hull } from "../../data/hulls";
@@ -114,7 +117,7 @@ export class FlightScene implements Scene {
     const weaponsSys = p.systems.find((s) => s.id === "weapons")!;
     const engineFactor = 0.3 + 0.7 * (engineSys.health / 100);
     const pilot = 1 + crewBonus(p, "pilot") * 0.15 + (p.skills?.piloting ?? 0) * 0.02;
-    const tuned = hasModule(p, "thrusters") ? 1.15 : 1;
+    const tuned = (hasModule(p, "thrusters") ? 1.15 : 1) * (1 + 0.06 * engGrade(p, "drives"));
     const ACCEL = h.accel * pilot * tuned;
     const ROT = h.rotSpeed * pilot;
     const MAXS = h.maxSpeed * tuned;
@@ -204,7 +207,9 @@ export class FlightScene implements Scene {
 
     if (g.input.wasPressed("r") && weaponsSys.health > 5) fireTorpedo(this, g);
     this.mining = g.input.isDown("m") || (this.mouseAim && g.input.mouseRight);
-    if (this.mining) mine(this, g, dt, h.miningRate, this.aim);
+    if (this.mining) mine(this, g, dt, h.miningRate * (1 + 0.2 * engGrade(p, "mining")), this.aim);
+    if (g.input.wasPressed("c")) this.plantCharge(g);
+    this.updateCharges(g, dt);
 
     // deep scan: hold V to charge; reveals anomalies within 900
     if (g.input.isDown("v")) {
@@ -395,6 +400,45 @@ export class FlightScene implements Scene {
     }
   }
 
+  // Seismic charges: the only way into a core asteroid.
+  charges: { ax: number; ay: number; t: number }[] = [];
+  plantCharge(g: Game): void {
+    const p = g.world.player;
+    const sys = g.world.systems[p.systemId];
+    const a = sys.asteroids.find((x) => x.core && x.ore > 0 && dist(p.x, p.y, x.x, x.y) < 90);
+    if (!a) { g.toast("NO CORE ROCK IN REACH - PROSPECT THE BELT FOR MOTHERLODES"); return; }
+    if ((p.seismic ?? 0) <= 0) { g.toast("NO SEISMIC CHARGES - SHIPYARDS SELL THEM"); return; }
+    if (this.charges.some((c) => c.ax === a.x && c.ay === a.y)) return;
+    p.seismic = (p.seismic ?? 0) - 1;
+    this.charges.push({ ax: a.x, ay: a.y, t: 4 });
+    g.toast("CHARGE PLANTED - GET CLEAR");
+    sfx.select();
+  }
+  updateCharges(g: Game, dt: number): void {
+    if (!this.charges.length) return;
+    const p = g.world.player;
+    const sys = g.world.systems[p.systemId];
+    for (const c of this.charges) {
+      c.t -= dt;
+      if (c.t > 0) continue;
+      const a = sys.asteroids.find((x) => x.x === c.ax && x.y === c.ay);
+      boom(this, c.ax, c.ay, 36, PAL.gold);
+      sfx.boom(true);
+      if (a) {
+        a.ore = 0;
+        const ore = 6 + Math.floor(Math.random() * 4), metals = 2 + Math.floor(Math.random() * 3);
+        this.loot.push({ x: a.x, y: a.y, commodityId: "ore", qty: ore, life: 90 });
+        this.loot.push({ x: a.x + 14, y: a.y - 8, commodityId: "metals", qty: metals, life: 90 });
+        if (Math.random() < 0.3) this.loot.push({ x: a.x - 12, y: a.y + 10, commodityId: "relics", qty: 1, life: 90 });
+        p.mined = (p.mined ?? 0) + ore;
+        gainMaterials(g, { vanadium: 1 + Math.floor(Math.random() * 2), polonium: Math.random() < 0.4 ? 1 : 0, germanium: Math.random() < 0.5 ? 1 : 0 });
+        flag(g, "coreCutter");
+      }
+      if (dist(p.x, p.y, c.ax, c.ay) < 120) { damagePlayer(this, g, 28); this.hitFlash = 0.4; }
+    }
+    this.charges = this.charges.filter((c) => c.t > 0);
+  }
+
   // Heat: stars cook you; a fuel scoop turns the corona into fuel.
   scooping = false;
   updateHeat(g: Game, dt: number): void {
@@ -408,13 +452,13 @@ export class FlightScene implements Scene {
     if (hot) p.heat += dt * 26 * (1 - Math.max(0, d) / 320);
     if (scoopZone && hasModule(p, "scoop") && p.fuel < p.fuelMax) {
       this.scooping = true;
-      p.fuel = Math.min(p.fuelMax, p.fuel + dt * 7);
+      p.fuel = Math.min(p.fuelMax, p.fuel + dt * 7 * (1 + 0.3 * engGrade(p, "scoop")));
       p.heat += dt * 10;
       if (!p.flags?.scooped) { flag(g, "scooped"); g.showHint("scoop", "SCOOPING - THE HEAT BAR IS YOUR CLOCK"); }
     } else if (scoopZone && !hasModule(p, "scoop") && !p.hints?.["noscoop"]) {
       g.showHint("noscoop", "TOO CLOSE TO THE STAR - A FUEL SCOOP WOULD TURN THIS INTO FUEL");
     }
-    p.heat = Math.max(0, p.heat - dt * (hasModule(p, "radiators") ? 24 : 12));
+    p.heat = Math.max(0, p.heat - dt * (hasModule(p, "radiators") ? 24 : 12) * (1 + 0.25 * engGrade(p, "vents")));
     if (p.heat > 100) {
       p.heat = Math.min(140, p.heat);
       p.hull -= dt * 5;
@@ -446,6 +490,7 @@ export class FlightScene implements Scene {
       if (an.discovered && !an.claimed && dist(p.x, p.y, an.x, an.y) < 60) {
         an.claimed = true;
         const reward = an.reward;
+        gainMaterials(g, { polonium: 1, germanium: Math.random() < 0.6 ? 1 : 0 });
         if (an.kind === "data") {
           g.toast(`${an.name}: DATA CORE RECOVERED`);
           this.loot.push({ x: an.x, y: an.y, commodityId: "data", qty: 2, life: 60 });

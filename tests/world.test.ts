@@ -12,6 +12,8 @@ import { ARCS, dailyContract, dailyKey, rankOf, logSystem, applyHull } from "../
 import { MODULES } from "../src/data/modules";
 import { rareSellPrice, findStation } from "../src/world";
 import { RARES } from "../src/data/data";
+import { BLUEPRINTS, upgrade, addMaterials, nextCost, MATERIAL_CAP } from "../src/data/engineering";
+import { jumpFuelCost } from "../src/world";
 
 describe("world generation", () => {
   it("is deterministic per seed", () => {
@@ -333,5 +335,32 @@ describe("rare goods", () => {
     expect(RARES.length).toBe(14);
     // rares never appear in ordinary stock lists
     for (const sys of Object.values(w.systems)) for (const st of sys.stations) for (const r of RARES) if (st.rare !== r.id) expect(st.prices[r.id]).toBeUndefined();
+  });
+});
+
+describe("engineering", () => {
+  it("upgrades spend materials, climb three grades, and tune the jump drive", () => {
+    const w = generateWorld(9);
+    const p = w.player;
+    const bp = BLUEPRINTS.find((b) => b.id === "fsd")!;
+    expect(upgrade(p, bp)).toBe(false);
+    addMaterials(p, { iron: 100, carbon: 100, nickel: 100, germanium: 100, vanadium: 100, polonium: 100 });
+    expect(p.materials!.iron).toBe(MATERIAL_CAP);
+    const sys = w.systems[p.systemId];
+    const to = sys.links[0];
+    const base = jumpFuelCost(w, sys.id, to);
+    expect(upgrade(p, bp)).toBe(true);
+    expect(upgrade(p, bp)).toBe(true);
+    expect(upgrade(p, bp)).toBe(true);
+    expect(upgrade(p, bp)).toBe(false);
+    expect(nextCost(p, bp)).toBeNull();
+    expect(jumpFuelCost(w, sys.id, to)).toBeLessThan(base);
+    expect(p.engineering!.fsd).toBe(3);
+  });
+  it("some rich asteroids are cores", () => {
+    const w = generateWorld(9, { realGalaxy: true });
+    const rocks = Object.values(w.systems).flatMap((s) => s.asteroids);
+    expect(rocks.some((a) => a.core)).toBe(true);
+    expect(rocks.every((a) => !a.core || a.rich)).toBe(true);
   });
 });
