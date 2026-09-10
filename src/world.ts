@@ -129,7 +129,7 @@ export interface SystemDef {
   permit?: boolean; // entry needs ALLIED standing with the owning faction
 }
 
-export type MissionKind = "delivery" | "bounty" | "mining" | "escort" | "passenger" | "research" | "arc";
+export type MissionKind = "delivery" | "bounty" | "mining" | "escort" | "passenger" | "research" | "arc" | "ground";
 
 export interface Mission {
   id: string;
@@ -152,6 +152,10 @@ export interface Mission {
   sightPlanetIdx?: number;  // tourists want to orbit this planet in the target system first
   sightSeen?: boolean;
   anomalyId?: string;
+  groundPlanetIdx?: number;            // ground contracts: which world
+  groundGoal?: "flora" | "probe" | "outcrop";
+  groundNeed?: number;
+  groundDone?: number;
   arcFaction?: string;
   arcStage?: number;
   repReward?: number;
@@ -902,8 +906,9 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
   const rep = world.player.rep[station.factionId] ?? 0;
   const tier = missionTier(rep);
   const n = rng.int(2, 4) + tier;
-  const kinds: MissionKind[] = ["delivery", "bounty", "mining", "escort", "passenger"];
+  const kinds: MissionKind[] = ["delivery", "bounty", "mining", "escort", "passenger", "ground"];
   if (tier >= 1) kinds.push("research", "research");
+  if (station.type === "research") kinds.push("ground");
   if (station.military) kinds.push("bounty", "bounty");
   for (let i = 0; i < n; i++) {
     const kind = rng.pick(kinds);
@@ -976,6 +981,25 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
         passengerName: name, passengerKind: pk, sightPlanetIdx: sightIdx, sightSeen: false,
         reward: pk === "vip" ? 600 + rng.int(0, 300) : pk === "refugee" ? 120 + rng.int(0, 80) : pk === "tourist" ? 700 + rng.int(0, 400) : 500 + rng.int(0, 400),
         repReward: pk === "refugee" ? 6 : pk === "tourist" ? 4 : 3,
+      });
+    } else if (kind === "ground") {
+      const pool = [sys, ...linked].filter((s) => s.planets.some((pl) => pl.surface));
+      const gsys = rng.pick(pool);
+      const pIdx = gsys.planets.findIndex((pl) => pl.surface);
+      if (pIdx < 0) continue;
+      const pl = gsys.planets[pIdx];
+      const goal = rng.pick(["flora", "probe", "outcrop"] as const);
+      const need = goal === "flora" ? rng.int(2, 4) : goal === "probe" ? rng.int(1, 2) : rng.int(3, 5);
+      const what = goal === "flora" ? "scan" : goal === "probe" ? "recover" : "mine";
+      const thing = goal === "flora" ? "alien flora" : goal === "probe" ? "crashed probes" : "mineral outcrops";
+      missions.push({
+        id: idn, kind, accepted: false, done: false, tier,
+        title: `${goal === "flora" ? "Field survey" : goal === "probe" ? "Recovery" : "Prospecting"}: ${pl.name}`,
+        desc: `Drop a rover on ${pl.name} in ${gsys.name} (L from orbit) and ${what} ${need} ${thing}. Any region counts. Report back here.`,
+        fromStationId: station.id, targetSystemId: gsys.id, targetStationId: station.id,
+        groundPlanetIdx: pIdx, groundGoal: goal, groundNeed: need, groundDone: 0,
+        reward: Math.round((300 + need * (goal === "probe" ? 220 : 110) + rng.int(0, 150)) * payMult),
+        repReward: 4,
       });
     } else if (kind === "research") {
       const pool = Object.values(world.systems).filter((s) => s === sys || sys.links.includes(s.id));
@@ -1155,6 +1179,19 @@ export function communityGoal(now = Date.now()): CommunityGoal {
   };
 }
 
+// Ground contract progress: called by the rover when it scans, recovers or mines
+export function groundProgress(w: World, planetIdx: number, goal: "flora" | "probe" | "outcrop"): Mission | null {
+  const p = w.player;
+  for (const m of p.missions) {
+    if (m.kind !== "ground" || !m.accepted || m.done || m.groundGoal !== goal) continue;
+    if (m.targetSystemId !== p.systemId || m.groundPlanetIdx !== planetIdx) continue;
+    if ((m.groundDone ?? 0) >= (m.groundNeed ?? 1)) continue;
+    m.groundDone = (m.groundDone ?? 0) + 1;
+    return m;
+  }
+  return null;
+}
+
 // ---------- Daily contract ----------
 // One contract everyone in the galaxy sees today: same goods, same quantity, same pay.
 
@@ -1196,6 +1233,7 @@ export function missionDeliverable(world: World, m: Mission, station: StationDef
     return !!an && an.claimed;
   }
   if (m.kind === "passenger") return m.targetStationId === station.id && (m.passengerKind !== "tourist" || !!m.sightSeen);
+  if (m.kind === "ground") return m.targetStationId === station.id && (m.groundDone ?? 0) >= (m.groundNeed ?? 1);
   if (m.targetStationId !== station.id) return false;
   if (m.commodityId && m.qty) return (p.cargo[m.commodityId] ?? 0) >= m.qty;
   return false;

@@ -734,7 +734,7 @@ export class StationScene implements Scene {
     const log = p.missions.filter((m) => m.accepted && !m.done);
     if (!log.length) drawText(ctx, "EMPTY", 12, y, PAL.greyDark);
     for (const m of log.slice(0, 4)) {
-      const prog = m.killsNeeded ? ` (${m.kills}/${m.killsNeeded})` : m.escortDone ? " (DONE - RETURN)" : "";
+      const prog = m.killsNeeded ? ` (${m.kills}/${m.killsNeeded})` : m.kind === "ground" ? ` (${m.groundDone ?? 0}/${m.groundNeed ?? 1})` : m.escortDone ? " (DONE - RETURN)" : "";
       drawText(ctx, `> ${m.title}${prog} - ${g.world.systems[m.targetSystemId].name}`, 12, y, PAL.uiDim);
       y += 9;
     }

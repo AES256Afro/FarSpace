@@ -12,7 +12,7 @@ import * as wire from "../core/wire";
 import { flag } from "../core/achievements";
 import { gainMaterials } from "../core/materials";
 import { GW, GH, GT, WATER, PLAIN, HILLS, MOUNTAIN, HAZARD, SAND, BIOMES, genGround, groundKey, passable, GroundMap, GroundNode } from "../ground";
-import { adjustRep, addCargo, GroundState } from "../world";
+import { adjustRep, addCargo, groundProgress, GroundState } from "../world";
 import { faction } from "../data/data";
 
 const COLORS: Record<number, { water: string; plain: string; plain2: string; hills: string; mountain: string; hazard: string; sand: string }> = {
@@ -206,6 +206,7 @@ export class SurfaceScene implements Scene {
         p.discoveries += 1;
         gainMaterials(g, { carbon: 1 + Math.floor(Math.random() * 2) });
         g.toast(first ? `NEW SPECIES: ${node.label} +120 EXPLORATION DATA` : `${node.label} LOGGED +45 EXPLORATION DATA`);
+        this.contract(g, "flora");
         flag(g, "exobio");
         sfx.pickup();
       }
@@ -219,6 +220,13 @@ export class SurfaceScene implements Scene {
     }
   }
 
+  contract(g: Game, goal: "flora" | "probe" | "outcrop"): void {
+    const m = groundProgress(g.world, g.orbitPlanetIdx, goal);
+    if (!m) return;
+    const done = (m.groundDone ?? 0) >= (m.groundNeed ?? 1);
+    this.say(done ? `CONTRACT COMPLETE: ${m.title.toUpperCase()} - REPORT BACK` : `CONTRACT: ${m.groundDone}/${m.groundNeed} - ${m.title.toUpperCase()}`);
+  }
+
   take(g: Game, i: number, node: GroundNode): void {
     const p = g.world.player;
     switch (node.kind) {
@@ -226,6 +234,7 @@ export class SurfaceScene implements Scene {
         this.state.taken.push(i);
         gainMaterials(g, { [node.material!]: 2 + Math.floor(Math.random() * 3) });
         sfx.mine();
+        this.contract(g, "outcrop");
         break;
       case "flora":
         this.say("HOLD V TO SCAN IT - DON'T PICK IT");
@@ -238,6 +247,7 @@ export class SurfaceScene implements Scene {
         if (addCargo(p, "data", 1)) g.toast("+1 DATA CORES FROM THE PROBE"); else g.toast("CARGO FULL - PROBE CORE LEFT BEHIND");
         p.expData = (p.expData ?? 0) + 30;
         sfx.pickup();
+        this.contract(g, "probe");
         break;
       case "wreck":
         this.state.taken.push(i);

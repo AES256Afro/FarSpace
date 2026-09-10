@@ -14,7 +14,8 @@ import { rareSellPrice, findStation } from "../src/world";
 import { RARES } from "../src/data/data";
 import { genGround, groundKey, passable, GW, GH } from "../src/ground";
 import { BLUEPRINTS, upgrade, addMaterials, nextCost, MATERIAL_CAP } from "../src/data/engineering";
-import { jumpFuelCost, communityGoal, weekKey, permitDenied, navRoute, blackMarket } from "../src/world";
+import { jumpFuelCost, communityGoal, weekKey, permitDenied, navRoute, blackMarket, genMissionsFor, groundProgress, missionDeliverable } from "../src/world";
+import { RNG } from "../src/core/rng";
 
 describe("world generation", () => {
   it("is deterministic per seed", () => {
@@ -442,5 +443,23 @@ describe("ground maps", () => {
     for (const e of a.entrances) expect(seen[e.y * GW + e.x]).toBe(1);
     // every biome generates
     for (let bi = 0; bi < 8; bi++) expect(genGround(key + bi, bi, pois, "ore").nodes.length).toBeGreaterThan(10);
+  });
+});
+
+describe("ground contracts", () => {
+  it("are offered, progress from the rover, and turn in at the issuing station", () => {
+    const w = generateWorld(14, { realGalaxy: true });
+    const sys = w.systems[w.player.systemId];
+    const st = sys.stations[0];
+    let m = null as ReturnType<typeof genMissionsFor>[number] | null;
+    for (let i = 0; i < 40 && !m; i++) m = genMissionsFor(w, st, new RNG(1000 + i)).find((x) => x.kind === "ground") ?? null;
+    expect(m).not.toBeNull();
+    m!.accepted = true;
+    w.player.missions.push(m!);
+    w.player.systemId = m!.targetSystemId;
+    expect(missionDeliverable(w, m!, st)).toBe(false);
+    for (let i = 0; i < (m!.groundNeed ?? 1); i++) expect(groundProgress(w, m!.groundPlanetIdx!, m!.groundGoal!)).toBe(m);
+    expect(groundProgress(w, m!.groundPlanetIdx!, m!.groundGoal!)).toBeNull();
+    expect(missionDeliverable(w, m!, st)).toBe(true);
   });
 });

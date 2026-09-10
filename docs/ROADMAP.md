@@ -233,6 +233,10 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
 - [x] Fog of war, minimap, day/night with headlights, storms per biome
 - [x] Charting and fully working a region pays exploration data; ground state
       is saved
+- [x] Ground contracts on mission boards: field surveys (scan flora),
+      recoveries (crashed probes) and prospecting (outcrops) on a named world
+- [x] Wind and storm ambience, rover drivetrain loop; codex of species and
+      biomes with first-find bonuses
 
 ## Milestone 13 — Other Pilots ✅ (Sep 2026)
 **Goal:** the shared universe becomes visible.

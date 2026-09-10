@@ -470,7 +470,7 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
   const active = p.missions.filter((m) => m.accepted && !m.done);
   let my = 4;
   for (const m of active.slice(0, 3)) {
-    const prog = m.kind === "bounty" ? ` ${m.kills}/${m.killsNeeded}` : "";
+    const prog = m.kind === "bounty" ? ` ${m.kills}/${m.killsNeeded}` : m.kind === "ground" ? ` ${m.groundDone ?? 0}/${m.groundNeed ?? 1}` : "";
     drawText(ctx, `> ${m.title}${prog}`, VW - textWidth(`> ${m.title}${prog}`) - 4, my, PAL.uiDim);
     my += 8;
   }
