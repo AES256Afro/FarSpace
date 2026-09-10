@@ -6,7 +6,7 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 import { faction, commodity } from "../data/data";
 import { dist } from "../core/mathx";
-import { navRoute, routeFuel, jumpFuelCost, repLabel, permitDenied } from "../world";
+import { navRoute, routeFuel, jumpFuelCost, repLabel, permitDenied, syndicateAt, findStation } from "../world";
 import { sfx } from "../core/sfx";
 import * as wire from "../core/wire";
 
@@ -93,6 +93,23 @@ export class GalaxyScene implements Scene {
       const cost = jumpFuelCost(w, cur.id, l);
       drawText(ctx, `${cost}F`, mx - 4, my - 3, cost > w.player.fuel ? PAL.danger : PAL.greyDark);
     }
+    // your trade runs of the last week, and the selected syndicate's partner lanes
+    {
+      const week = Date.now() - 7 * 86400_000;
+      ctx.globalAlpha = 0.5; ctx.strokeStyle = PAL.gold;
+      for (const r of (w.player.routes ?? []).filter((x) => x.t > week)) {
+        const a = findStation(w, r.from)?.sys, b = findStation(w, r.to)?.sys;
+        if (!a || !b || a === b) continue;
+        ctx.beginPath(); ctx.moveTo(OX + a.gx, OY + a.gy); ctx.lineTo(OX + b.gx, OY + b.gy); ctx.stroke();
+      }
+      const selSys = this.selected ? w.systems[this.selected] : null;
+      const sy = selSys ? (w.syndicates ?? []).find((x) => x.systemId === selSys.id) : null;
+      if (sy) {
+        ctx.strokeStyle = sy.color;
+        for (const pid of sy.partners) { const b = findStation(w, pid)?.sys; if (b) { ctx.beginPath(); ctx.moveTo(OX + selSys!.gx, OY + selSys!.gy); ctx.lineTo(OX + b.gx, OY + b.gy); ctx.stroke(); } }
+      }
+      ctx.globalAlpha = 1;
+    }
     let route: string[] | null = null;
     if (w.player.navTarget) {
       route = navRoute(w, w.player.systemId, w.player.navTarget);
@@ -158,7 +175,7 @@ export class GalaxyScene implements Scene {
       if (rares.length) { drawText(ctx, `RARE: ${rares.join(", ")}`.slice(0, 27), px + 6, y, PAL.gold); y += 9; }
       y += 3;
       drawText(ctx, "STATIONS:", px + 6, y, PAL.greyDark); y += 9;
-      for (const st of sys.stations) { const b = wire.baseAt(st.id); drawText(ctx, `${st.military ? "*" : "-"} ${st.name}${b ? ` [${b.tag}]` : ""}`.slice(0, 27), px + 6, y, b ? PAL.gold : st.military ? PAL.danger : PAL.ui); y += 8; }
+      for (const st of sys.stations) { const b = wire.baseAt(st.id); const sy = syndicateAt(w, st.id); drawText(ctx, `${st.military ? "*" : "-"} ${st.name}${b ? ` [${b.tag}]` : sy ? ` [${sy.tag}] AI` : ""}`.slice(0, 27), px + 6, y, b ? PAL.gold : sy ? sy.color : st.military ? PAL.danger : PAL.ui); y += 8; }
       y += 3;
       drawText(ctx, "LINKS:", px + 6, y, PAL.greyDark); y += 9;
       for (const l of sys.links) { drawText(ctx, `> ${w.systems[l].name} ${sys.ly[l] ?? "?"}LY`.slice(0, 27), px + 6, y, PAL.info); y += 8; }

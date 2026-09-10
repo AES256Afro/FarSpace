@@ -2,10 +2,10 @@
 // migration step so no player loses a game to an update.
 
 import type { World, SystemDef } from "./world";
-import { assignRares } from "./world";
+import { assignRares, assignSyndicates } from "./world";
 import { RNG } from "./core/rng";
 
-export const SAVE_VERSION = 8;
+export const SAVE_VERSION = 9;
 export const SAVE_KEY = "farspace-save";
 export const SLOTS = 3;
 const SLOT_KEY = "farspace-slot";
@@ -113,6 +113,17 @@ const MIGRATIONS: Record<number, Migration> = {
     p.materials ??= {};
     p.engineering ??= {};
     p.seismic ??= 0;
+  },
+  // 8 → 9: AI syndicates in existing galaxies
+  8: (w) => {
+    const p = w.player as Record<string, unknown>;
+    p.synRep ??= {};
+    p.routes ??= [];
+    if (!w.syndicates) {
+      const seed = typeof w.seed === "number" ? w.seed : 1;
+      const startId = String((w.player as { systemId?: string }).systemId ?? Object.keys(w.systems as object)[0]);
+      w.syndicates = assignSyndicates(w.systems as Record<string, SystemDef>, startId, new RNG((seed ^ 0x51d1) >>> 0));
+    }
   },
 };
 

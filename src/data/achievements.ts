@@ -27,6 +27,8 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "hardcore", title: "COLD VOID", desc: "Reach 5,000 credits in hardcore", check: (w) => !!w.hardcore && w.player.credits >= 5000 },
   { id: "rareRun", title: "RARE RUN", desc: "Sell a rare good far from home", check: (w) => !!w.player.flags?.rareRun },
   { id: "tourist", title: "TOUR GUIDE", desc: "Complete a sightseeing charter", check: (w) => !!w.player.flags?.tourist },
+  { id: "affiliate", title: "AFFILIATE", desc: "Reach affiliate standing with an AI syndicate", check: (w) => !!w.player.flags?.affiliate },
+  { id: "routeRunner", title: "ROUTE RUNNER", desc: "Run ten base trade routes", check: (w) => !!w.player.flags?.routeRunner },
   { id: "defender", title: "DEFENDER", desc: "Drive raiders off a squadron base", check: (w) => !!w.player.flags?.defender },
   { id: "baseFunder", title: "SHAREHOLDER", desc: "Fund a squadron treasury", check: (w) => !!w.player.flags?.baseFunder },
   { id: "baseFounder", title: "FOUNDER", desc: "Buy a squadron base", check: (w) => !!w.player.flags?.baseFounder },

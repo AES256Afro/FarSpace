@@ -13,6 +13,7 @@ import { MODULES } from "../src/data/modules";
 import { rareSellPrice, findStation } from "../src/world";
 import { RARES } from "../src/data/data";
 import { baseContract } from "../src/core/wire";
+import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding } from "../src/world";
 import { genGround, groundKey, passable, GW, GH } from "../src/ground";
 import { BLUEPRINTS, upgrade, addMaterials, nextCost, MATERIAL_CAP } from "../src/data/engineering";
 import { jumpFuelCost, communityGoal, weekKey, permitDenied, navRoute, blackMarket, genMissionsFor, groundProgress, missionDeliverable } from "../src/world";
@@ -499,5 +500,45 @@ describe("save slots", () => {
     expect(saveKeyFor(0)).toBe("farspace-save");
     expect(saveKeyFor(1)).toBe("farspace-save-1");
     expect(saveKeyFor(2)).toBe("farspace-save-2");
+  });
+});
+
+describe("syndicates", () => {
+  it("four AI syndicates per galaxy with distinct homes, partners and rivals", () => {
+    const w = generateWorld(16, { realGalaxy: true });
+    const sy = w.syndicates ?? [];
+    expect(sy.length).toBe(4);
+    expect(new Set(sy.map((s) => s.systemId)).size).toBe(4);
+    expect(sy.every((s) => s.systemId !== w.player.systemId)).toBe(true);
+    for (const s of sy) {
+      expect(syndicateAt(w, s.stationId)?.tag).toBe(s.tag);
+      expect(s.rivals.length).toBeGreaterThan(0);
+      expect(s.treasury).toBeGreaterThan(0);
+    }
+    // migration adds them to old worlds
+    const old = JSON.parse(JSON.stringify(w)); old.version = 5; delete old.syndicates;
+    const m = migrateSave(old)!;
+    expect(m.syndicates?.length).toBe(4);
+  });
+});
+
+describe("syndicate economy", () => {
+  it("offers contracts at a syndicate base, seeds weekly demand, and rivalry moves treasuries", () => {
+    const w = generateWorld(17, { realGalaxy: true });
+    const sy = w.syndicates![0];
+    const st = w.systems[sy.systemId].stations.find((x) => x.id === sy.stationId)!;
+    const ms = genMissionsFor(w, st, new RNG(5)).filter((m) => m.syndicate === sy.tag);
+    expect(ms.length).toBeGreaterThanOrEqual(1);
+    expect(ms.some((m) => m.kind === "delivery") || ms.some((m) => m.kind === "bounty")).toBe(true);
+    const d1 = baseDemand("syn:" + sy.tag, Date.UTC(2026, 8, 9)), d2 = baseDemand("syn:" + sy.tag, Date.UTC(2026, 8, 11));
+    expect(d1).toEqual(d2);
+    expect(d1.length).toBe(3);
+    expect(new Set(d1).size).toBe(3);
+    const total = () => w.syndicates!.reduce((a, s) => a + s.treasury, 0);
+    const before = total();
+    for (let i = 0; i < 20; i++) tickSyndicates(w, new RNG(100 + i));
+    expect(total()).toBeGreaterThanOrEqual(before); // raids move money, trade creates it
+    adjustSynRep(w, sy.tag, 35);
+    expect(synStanding(w, sy.tag)).toBe(35);
   });
 });

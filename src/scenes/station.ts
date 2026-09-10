@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember } from "../data/crew";
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket,
+  crewWages, genCrewCandidate, applyHull, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM,
 } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
@@ -102,6 +102,8 @@ export class StationScene implements Scene {
     presence.tick(g.world.player, g.world.systems[g.world.player.systemId].name); // still "here" while docked
     if (inp.wasPressed("Escape")) {
       this.flushGoal();
+      g.world.player.lastDockedAt = this.station.id;
+      if (this.routeShare > 0 && this.baseOwner) { const v = Math.min(5000, this.routeShare); this.routeShare = 0; void wire.baseActionFor(this.baseOwner, "route", { value: v }); }
       if (this.returnTo === "stationwalk") g.setScene("stationwalk");
       else { g.world.player.dockedAt = null; g.setScene("flight"); g.toast("UNDOCKED"); }
       return;
@@ -131,7 +133,8 @@ export class StationScene implements Scene {
     const p = g.world.player;
     const st = this.station;
     const patron = wire.patronOf(st.factionId);
-    const rep = (p.rep[st.factionId] ?? 0) + (patron && patron === wire.getSquadron() ? 25 : 0); // patrons trade like allies
+    const synHere = syndicateAt(g.world, st.id);
+    const rep = (p.rep[st.factionId] ?? 0) + (patron && patron === wire.getSquadron() ? 25 : 0) + (synHere && synStanding(g.world, synHere.tag) >= 30 ? 25 : 0); // patrons and affiliates trade like allies
     const enter = inp.wasPressed("Enter") || inp.wasPressed(" ") || clickedRow;
     if (enter) sfx.select();
 
@@ -162,7 +165,17 @@ export class StationScene implements Scene {
           } else {
             if (fence) flag(g, "fence");
             const goalHit = id === this.goal.commodityId && st.type === this.goal.stationType;
-            const paid = Math.round(price * (goalHit ? 1 + this.goal.premium : 1) * (this.baseHas("market") ? 1.08 : 1));
+            const dem = this.demandHere(g);
+            const sy = syndicateAt(g.world, st.id);
+            const synBonus = sy ? (synStanding(g.world, sy.tag) >= 60 ? 0.1 : 0) : 0;
+            const routeHit = !!dem && dem.goods.includes(id);
+            const paid = Math.round(price * (goalHit ? 1 + this.goal.premium : 1) * (this.baseHas("market") ? 1.08 : 1) * (routeHit ? 1 + ROUTE_PREMIUM + synBonus : 1));
+            if (routeHit) {
+              p.routes = [...(p.routes ?? []).slice(-29), { from: p.lastDockedAt ?? st.id, to: st.id, commodityId: id, t: Date.now() }];
+              if (sy) { sy.treasury += Math.round(paid * 0.1); if (Math.random() < 0.34) adjustSynRep(g.world, sy.tag, 1); }
+              else this.routeShare += Math.round(paid * 0.1);
+              if ((p.routes ?? []).length >= 10) flag(g, "routeRunner");
+            }
             if (goalHit) { this.goalPending++; p.goalContrib ??= {}; p.goalContrib[this.goal.id] = (p.goalContrib[this.goal.id] ?? 0) + 1; if ((p.goalContrib[this.goal.id] ?? 0) >= 20) flag(g, "communal"); }
             p.credits += paid; p.tradeRevenue = (p.tradeRevenue ?? 0) + paid;
             if (!rare || st.rare === id) { st.stock[id] = (st.stock[id] ?? 0) + 1; refreshPrices(st); }
@@ -388,6 +401,14 @@ export class StationScene implements Scene {
     p.credits += m.reward;
     adjustRep(g.world, st.factionId, m.repReward ?? 3);
     if (m.kind === "passenger" && m.passengerKind === "tourist") flag(g, "tourist");
+    if (m.syndicate) {
+      const before = synStanding(g.world, m.syndicate);
+      adjustSynRep(g.world, m.syndicate, 8);
+      const after = synStanding(g.world, m.syndicate);
+      if (before < 30 && after >= 30) { g.toast(`[${m.syndicate}] NOW CALLS YOU AN AFFILIATE - THEIR BASE TRADES CHEAPER FOR YOU`); flag(g, "affiliate"); }
+      else if (before < 60 && after >= 60) { g.toast(`[${m.syndicate}] PARTNER STATUS - THEIR MARKET PAYS YOU MORE`); }
+      else g.toast(`[${m.syndicate}] STANDING ${after} (${synStandingLabel(after)})`);
+    }
     if (m.id.startsWith("daily-")) { p.dailyDone = dailyKey(); flag(g, "daily"); void wire.post("daily", `completed today's contract (${m.title.replace("Daily: ", "")})`, g.world.systems[p.systemId].name); }
     if (m.kind === "arc" && m.arcFaction !== undefined && m.arcStage !== undefined) {
       p.arcs[m.arcFaction] = m.arcStage + 1;
@@ -572,6 +593,7 @@ export class StationScene implements Scene {
     const war = g.world.wars.find((w) => w.systemId === p.systemId);
     if (war) drawText(ctx, "SYSTEM AT WAR - PRICES UNSTABLE", VW - textWidth("SYSTEM AT WAR - PRICES UNSTABLE") - 6, 26, PAL.warn);
     else if (this.baseOwner) { const t = `[${this.baseOwner}] SQUADRON BASE${this.baseOwner === wire.getSquadron() ? " - HOME" : ""}`; drawText(ctx, t, VW - textWidth(t) - 6, 26, this.baseOwner === wire.getSquadron() ? PAL.gold : PAL.info); }
+    else if (syndicateAt(g.world, this.station.id)) { const sy = syndicateAt(g.world, this.station.id)!; const t = `[${sy.tag}] ${sy.name.toUpperCase()} BASE (AI) - ${synStandingLabel(synStanding(g.world, sy.tag))}`; drawText(ctx, t, VW - textWidth(t) - 6, 26, sy.color); }
     else {
       const patron = wire.patronOf(this.station.factionId);
       if (patron) { const t = `PATRON SQUADRON: [${patron}]${patron === wire.getSquadron() ? " - YOURS, TRADE LIKE ALLIES" : ""}`; drawText(ctx, t, VW - textWidth(t) - 6, 26, patron === wire.getSquadron() ? PAL.gold : PAL.info); }
@@ -620,6 +642,15 @@ export class StationScene implements Scene {
     return rows;
   }
 
+  // What this base pays a premium for this week (syndicate or squadron base)
+  demandHere(g: Game): { key: string; goods: string[]; label: string } | null {
+    const sy = syndicateAt(g.world, this.station.id);
+    if (sy) return { key: `syn:${sy.tag}`, goods: baseDemand(`syn:${sy.tag}`), label: `[${sy.tag}]` };
+    if (this.baseOwner) return { key: `base:${this.baseOwner}`, goods: baseDemand(`base:${this.baseOwner}`), label: `[${this.baseOwner}]` };
+    return null;
+  }
+  routeShare = 0; // credits owed to a squadron base treasury, flushed on undock
+
   // Best buy-here/sell-there margin over everything we've seen
   bestRoute(g: Game): { id: string; buy: number; sell: number; station: string; system: string } | null {
     const p = g.world.player;
@@ -667,7 +698,8 @@ export class StationScene implements Scene {
     const p = g.world.player;
     const st = this.station;
     const patron = wire.patronOf(st.factionId);
-    const rep = (p.rep[st.factionId] ?? 0) + (patron && patron === wire.getSquadron() ? 25 : 0);
+    const synHere = syndicateAt(g.world, st.id);
+    const rep = (p.rep[st.factionId] ?? 0) + (patron && patron === wire.getSquadron() ? 25 : 0) + (synHere && synStanding(g.world, synHere.tag) >= 30 ? 25 : 0);
     drawText(ctx, "COMMODITY", 8, top, PAL.greyDark);
     drawText(ctx, "BUY", 150, top, PAL.greyDark);
     drawText(ctx, "SELL", 190, top, PAL.greyDark);
@@ -687,7 +719,9 @@ export class StationScene implements Scene {
       drawText(ctx, `${c.rare ? rareSellPrice(g.world, st, id, rep) : sellPrice(st, id, rep)}`, 190, y, c.rare && st.rare !== id ? PAL.gold : PAL.grey);
       drawText(ctx, listed ? `${st.stock[id] ?? 0}` : "-", 235, y, PAL.grey);
       drawText(ctx, `${p.cargo[id] ?? 0}`, 280, y, PAL.ui);
-      if (c.rare) drawText(ctx, st.rare === id ? "ORIGIN" : "RARE", 320, y, st.rare === id ? PAL.info : PAL.gold);
+      const demHere = this.demandHere(g);
+      if (demHere && demHere.goods.includes(id)) drawText(ctx, `WANTED +${Math.round(ROUTE_PREMIUM * 100)}%`, 320, y, PAL.gold);
+      else if (c.rare) drawText(ctx, st.rare === id ? "ORIGIN" : "RARE", 320, y, st.rare === id ? PAL.info : PAL.gold);
       else if (c.illegal) drawText(ctx, blackMarket(g.world, st) ? "FENCE +30%" : "CUSTOMS", 320, y, blackMarket(g.world, st) ? PAL.gold : PAL.danger);
       else {
         const ratio = buyPrice(st, id, 0) / (c.base || 1);
@@ -703,6 +737,7 @@ export class StationScene implements Scene {
       const r = this.bestRoute(g);
       if (r) drawText(ctx, `BEST KNOWN RUN: BUY ${commodity(r.id).name.toUpperCase()} ${r.buy} - SELL ${r.sell} AT ${r.station.toUpperCase()}, ${r.system.toUpperCase()} (+${r.sell - r.buy}/UNIT)`.slice(0, 90), 8, ny + 18, PAL.gold);
       if (this.goal.stationType === st.type) drawText(ctx, `COMMUNITY GOAL: ${commodity(this.goal.commodityId).name.toUpperCase()} SELLS HERE AT +${Math.round(this.goal.premium * 100)}% THIS WEEK`, 8, ny + 27, PAL.info);
+      else { const dem = this.demandHere(g); if (dem) drawText(ctx, `${dem.label} BASE WANTS THIS WEEK: ${dem.goods.map((d) => commodity(d).name.toUpperCase()).join(", ")} AT +${Math.round(ROUTE_PREMIUM * 100)}% - A SHARE FEEDS THEIR TREASURY`, 8, ny + 27, PAL.gold); }
     }
     drawText(ctx, blackMarket(g.world, st) ? "* BLACK MARKET HERE: ILLEGAL GOODS FENCE AT +30%, NO QUESTIONS.  + RARE - WORTH MORE FAR FROM ORIGIN." : "* ILLEGAL - CUSTOMS MAY SEIZE A SALE HERE; FENCE IT AT VEIL OR PIRATE-HEAVY HUBS.  + RARE - WORTH MORE FAR FROM ORIGIN.", 8, ny, blackMarket(g.world, st) ? PAL.gold : PAL.greyDark);
   }
@@ -965,6 +1000,21 @@ export class StationScene implements Scene {
   drawBase(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
     const tag = wire.getSquadron();
     const st = this.station;
+    const syn = syndicateAt(g.world, st.id);
+    if (syn) {
+      const standing = synStanding(g.world, syn.tag);
+      drawText(ctx, `[${syn.tag}] ${syn.name.toUpperCase()} - AI SYNDICATE BASE`, 8, top, syn.color);
+      drawText(ctx, `STYLE ${syn.style.toUpperCase()}   TREASURY ${syn.treasury}CR   YOUR STANDING ${standing} (${synStandingLabel(standing)})`, 8, top + 10, PAL.grey);
+      drawText(ctx, "AFFILIATE (30): BUY HERE LIKE AN ALLY.  PARTNER (60): +10% ON THEIR WANTED GOODS.  CONTRACTS ON THE MISSIONS TAB.", 8, top + 19, PAL.greyDark);
+      const dem = baseDemand(`syn:${syn.tag}`);
+      drawText(ctx, `WANTED THIS WEEK (+${Math.round(ROUTE_PREMIUM * 100)}%): ${dem.map((d) => commodity(d).name.toUpperCase()).join(", ")}`, 8, top + 31, PAL.gold);
+      const partners = syn.partners.map((pid) => findStation(g.world, pid)).filter((x) => !!x).map((f) => `${f!.st.name.toUpperCase()} (${f!.sys.name.toUpperCase()})`);
+      drawText(ctx, `TRADE PARTNERS: ${partners.join(", ") || "NONE"}`, 8, top + 40, PAL.info);
+      const rivals = syn.rivals.map((t) => syndicateByTag(g.world, t)).filter((x) => !!x).map((r) => `[${r!.tag}] ${r!.name.toUpperCase()}`);
+      drawText(ctx, `RIVALS: ${rivals.join(", ") || "NONE"}`, 8, top + 49, PAL.danger);
+      drawText(ctx, "AI SYNDICATES ARE PART OF THE GALAXY, NOT PLAYERS. THEY NEVER APPEAR ON THE PILOT BOARDS.", 8, top + 61, PAL.greyDark);
+      return;
+    }
     if (this.baseOwner && this.baseOwner !== tag) {
       drawText(ctx, `${st.name.toUpperCase()} IS THE [${this.baseOwner}] SQUADRON BASE`, 8, top, PAL.info);
       drawText(ctx, "SQUADRON BASES BELONG TO THE PILOTS WHO POOLED THE CREDITS. FIND YOUR OWN, OR JOIN THEIRS.", 8, top + 12, PAL.greyDark);
@@ -987,6 +1037,7 @@ export class StationScene implements Scene {
     }
     drawText(ctx, b && b.stationId ? `[${tag}] SQUADRON BASE - ${st.name.toUpperCase()}` : `FOUND A [${tag}] BASE`, 8, top, PAL.gold);
     drawText(ctx, b && b.stationId ? `TREASURY ${b.treasury}CR   VAULT ${Object.values(b.vault).reduce((a, v) => a + v, 0)}/${b.upgrades.includes("vault") ? 600 : 200}   HALF-PRICE SERVICES FOR MEMBERS` : `POOL CREDITS, THEN BUY A CIVILIAN STATION. THIS ONE: ${wire.basePrice(st.type, st.military) ? wire.basePrice(st.type, st.military) + "CR" : "MILITARY, NOT FOR SALE"}`, 8, top + 10, PAL.grey);
+    if (b && b.stationId === st.id) drawText(ctx, `WANTED THIS WEEK (+${Math.round(ROUTE_PREMIUM * 100)}%, 10% TO THE TREASURY): ${baseDemand(`base:${tag}`).map((d) => commodity(d).name.toUpperCase()).join(", ")}`, 8, VH - 84, PAL.gold);
     rows.forEach((r, i) => {
       const y = top + 24 + i * 9;
       if (y > VH - 86) return;

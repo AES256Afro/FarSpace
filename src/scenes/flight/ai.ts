@@ -17,6 +17,7 @@ import { hasModule } from "../../data/modules";
 import { gainMaterials } from "../../core/materials";
 import { presence } from "../../core/presence";
 import { baseAt, fetchBases } from "../../core/wire";
+import { syndicateAt } from "../../world";
 
 // ---------- Population ----------
 
@@ -46,6 +47,22 @@ export function populate(fs: FlightScene, g: Game): void {
     });
   }
 
+  // AI syndicates: convoys around their base, raiders in rival space
+  for (const sy of g.world.syndicates ?? []) {
+    if (sy.systemId === sys.id) {
+      const home = sys.stations.findIndex((st) => st.id === sy.stationId);
+      if (home >= 0) for (let k = 0; k < 2; k++) {
+        spawnTrader(fs, g, rng);
+        const n = fs.npcs[fs.npcs.length - 1];
+        n.tag = sy.tag; n.targetIdx = home; n.hullMax = n.hull = 80;
+        if (sy.style === "pirate") { n.kind = "pirate"; n.variant = "raider"; }
+      }
+    } else if (sy.style === "pirate" && (g.world.syndicates ?? []).some((o) => sy.rivals.includes(o.tag) && o.systemId === sys.id) && rng.chance(0.5)) {
+      const n = spawnNpc(fs, g, "pirate", rng);
+      n.tag = sy.tag; n.variant = "raider";
+    }
+  }
+
   // squadron bases draw raiders unless a defense grid is up
   fs.raidBase = null;
   sys.stations.forEach((st, i) => {
@@ -64,7 +81,7 @@ export function populate(fs: FlightScene, g: Game): void {
   const hostile = sys.factionId === "vex";
   void fetchBases();
   sys.stations.forEach((st, i) => {
-    const grid = baseAt(st.id)?.upgrades.includes("defense") ? 3 : 0;
+    const grid = (baseAt(st.id)?.upgrades.includes("defense") ? 3 : 0) + (syndicateAt(g.world, st.id) ? 2 : 0);
     const n = (st.military ? 4 : 2) + grid;
     for (let k = 0; k < n; k++) {
       fs.platforms.push({

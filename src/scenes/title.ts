@@ -165,7 +165,7 @@ export class TitleScene implements Scene {
       const line = `FLEET WIRE: ${e.tag ? `[${e.tag}] ` : ""}${e.callsign} ${e.text} - ${e.system} (${wire.ageLabel(e.t)})`.slice(0, 110);
       drawText(ctx, line, VW / 2 - textWidth(line) / 2, VH - 38, PAL.info);
     }
-    const ver = `V0.14${g.input.padConnected ? " - GAMEPAD CONNECTED" : ""}${this.pilots ? ` - ${this.pilots} PILOT${this.pilots === 1 ? "" : "S"} FLYING NOW` : ""}`;
+    const ver = `V0.15${g.input.padConnected ? " - GAMEPAD CONNECTED" : ""}${this.pilots ? ` - ${this.pilots} PILOT${this.pilots === 1 ? "" : "S"} FLYING NOW` : ""}`;
     drawText(ctx, ver, VW / 2 - textWidth(ver) / 2, VH - 26, PAL.greyDark);
     const keys = "WSAD FLY - MOUSE AIM + FIRE - E DOCK/JUMP - TAB MAP - F FULLSCREEN - REBIND IN SETTINGS";
     drawText(ctx, keys, VW / 2 - textWidth(keys) / 2, VH - 14, PAL.uiDim);

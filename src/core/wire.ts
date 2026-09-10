@@ -239,6 +239,15 @@ export function baseContract(tag: string, now = Date.now()): { id: string; commo
   return { id: `bc-${key}`, commodityId, need, reward: 4000 + need * 40 };
 }
 
+// Actions on someone else's base (route shares): the callsign is still ours
+export async function baseActionFor(tag: string, action: string, payload: Record<string, unknown>): Promise<boolean> {
+  const callsign = getCallsign() ?? "ANONYMOUS";
+  try {
+    const r = await fetch(`${cloudBase()}/api/base`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action, callsign, tag, ...payload }) });
+    return r.ok;
+  } catch { return false; }
+}
+
 export function basePrice(stationType: string, military: boolean): number {
   if (military) return 0;
   const f: Record<string, number> = { trade: 1.5, research: 1.4, refinery: 1.3, mining: 1, agri: 1 };

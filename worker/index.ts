@@ -379,6 +379,14 @@ export default {
           }
           return save();
         }
+        if (action === "route") {
+          // a hauler sold goods this base wanted: a share lands in the treasury
+          const value = Math.min(5000, Math.max(0, Math.floor(num(body.value))));
+          if (!value) return json({ error: "bad value" }, 400);
+          b.treasury += value;
+          logLine(`ran a trade route (+${value} CR to the treasury)`);
+          return save();
+        }
         if (action === "kill") {
           // squadron bounty: members' captain kills this week
           const week = weekKey();

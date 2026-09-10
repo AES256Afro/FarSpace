@@ -62,6 +62,16 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   Depot) services, a defense grid, a market stake. A weekly base contract and
   a weekly squadron bounty pay the treasury. Undefended bases draw raiders.
 
+## Syndicates and trade routes
+
+- Four AI syndicates live in every galaxy, always marked (AI). Their bases show
+  on the galaxy map; dock there for convoy runs and rival bounties that build
+  standing. Affiliates buy like allies, partners get +10% on wanted goods.
+- Every base, AI or squadron, wants three goods this week at +30% (the MARKET
+  tab marks them WANTED). A tenth of each sale feeds that base's treasury.
+- Your runs of the last week draw on the galaxy map; select a syndicate's
+  system to see its partner lanes.
+
 ## Combat, when it finds you
 
 Mouse aims the turret; left-click fires, right-click mines. R fires a homing

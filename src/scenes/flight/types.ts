@@ -20,6 +20,7 @@ export interface Npc {
   name?: string;      // captains have names; they get hailed and mourned on the wire
   fleeing?: boolean;  // low hull: run for the belt
   hailed?: boolean;   // has said its line
+  tag?: string;       // syndicate convoy or raider
 }
 
 export interface Torpedo {

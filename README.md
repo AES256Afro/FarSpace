@@ -46,7 +46,10 @@ over cargo or credits and wing shares on kills. Squadrons are a shared tag that
 ranks members together and pools their standing: the best-standing squadron
 becomes a faction's patron and trades at its stations like an ally. A squadron
 can pool credits to buy a station as its base, with a shared vault, free
-services and a defense grid. The galaxy map shows where pilots are right now. No accounts, switch presence off in Settings. **Groundside:** drop a rover on any region of any
+services and a defense grid. Four AI syndicates (always labelled AI) run
+bases, convoys and rivalries of their own; every base wants three goods a week
+at a premium, and your trade runs draw on the galaxy map. The galaxy map also
+shows where pilots are right now. No accounts, switch presence off in Settings. **Groundside:** drop a rover on any region of any
 world and drive it: biomes, storms, day and night, outcrops, alien flora,
 geysers, wrecks, and the region's outposts, cities and ruins as doors.
 
@@ -93,7 +96,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestones 1–14 are live (v0.14). See the [roadmap](docs/ROADMAP.md) for what's next.
+Milestones 1–15 are live (v0.15). See the [roadmap](docs/ROADMAP.md) for what's next.
 
 ```bash
 npm test         # vitest: world-gen, routing, economy, law, missions, save migrations

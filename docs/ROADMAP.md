@@ -296,5 +296,18 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
       a comms line and a blinking marker for 30 s
 - [x] Paint jobs (O in SHIPS); prompts never throw in sandboxed embeds
 
+## Milestone 15 — Syndicates and Trade Routes ✅ (Sep 2026)
+**Goal:** the galaxy has its own squadrons, and bases trade with each other.
+
+- [x] Four AI syndicates per galaxy (always labelled AI, never on the pilot
+      boards): a home base with extra platforms, convoys around it, raiders in
+      rival space, treasuries, partners and rivals; rivalry events in the news
+- [x] Syndicate contracts at their bases (convoy runs, rival bounties) build
+      standing: affiliates buy like allies, partners get +10% on wanted goods
+- [x] Base-to-base trade routes: every base (AI or squadron) wants three goods
+      a week at +30%; sales feed the base treasury; your runs draw on the
+      galaxy map, syndicate partner lanes too
+- [x] Save v9 adds syndicates to existing galaxies
+
 ## Later
-- [ ] Base-to-base trade routes; NPC squadrons
+- [ ] Syndicate diplomacy: alliances that shift with player standing

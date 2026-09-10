@@ -248,6 +248,7 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
     ctx.fillStyle = col;
     ctx.fillRect(sx - 6, sy - 12, Math.round(12 * (n.hull / n.hullMax)), 1);
     if (n.variant === "captain") drawText(ctx, n.name ?? "CAPTAIN", sx - textWidth(n.name ?? "CAPTAIN") / 2, sy - 20, PAL.danger);
+    else if (n.tag) { const lbl = `[${n.tag}] ${n.kind === "pirate" ? "RAIDER" : "CONVOY"}`; drawText(ctx, lbl, sx - textWidth(lbl) / 2, sy - 20, n.kind === "pirate" ? PAL.danger : PAL.info); }
     else if (n.variant === "cutter") { ctx.fillStyle = PAL.danger; ctx.fillRect(sx - 8, sy - 12, 1, 1); ctx.fillRect(sx + 7, sy - 12, 1, 1); }
     if (n.fleeing) drawText(ctx, "FLEEING", sx - 14, sy - 18, PAL.warn);
     if (fs.escort && fs.escort.trader === n) drawText(ctx, "ESCORT", sx - 12, sy - 20, PAL.gold);

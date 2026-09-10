@@ -152,6 +152,7 @@ export interface Mission {
   sightPlanetIdx?: number;  // tourists want to orbit this planet in the target system first
   sightSeen?: boolean;
   anomalyId?: string;
+  syndicate?: string;                  // contract issued by an AI syndicate (tag)
   groundPlanetIdx?: number;            // ground contracts: which world
   groundGoal?: "flora" | "probe" | "outcrop";
   groundNeed?: number;
@@ -241,11 +242,25 @@ export interface PlayerState {
   fleet?: StoredShip[];              // hulls parked at stations
   ground?: Record<string, GroundState>; // ground map key → what's been taken/charted
   codex?: Record<string, number>;    // "flora:<species>", "biome:<name>" → count
+  synRep?: Record<string, number>;   // syndicate tag → standing
+  routes?: { from: string; to: string; commodityId: string; t: number }[]; // base trade runs (station ids)
+  lastDockedAt?: string;             // previous station id, for route bookkeeping
 }
 
 export interface GroundState { taken: number[]; charted: boolean; scanned: number[] }
 
 export interface StoredShip { hullId: string; stationId: string; name?: string; hull: number; torpedoes: number }
+
+// NPC syndicates: AI squadrons with a home base, partners and rivals. Always
+// labelled (AI) in the UI and never mixed into the human boards.
+export type SyndicateStyle = "trade" | "salvage" | "mining" | "pirate";
+export interface Syndicate {
+  tag: string; name: string; color: string; style: SyndicateStyle;
+  systemId: string; stationId: string;
+  partners: string[];   // partner station ids in linked systems
+  rivals: string[];     // rival tags
+  treasury: number;
+}
 
 export interface World {
   version: number;
@@ -253,6 +268,7 @@ export interface World {
   galaxyLy?: number;
   hardcore?: boolean; // destruction erases the save
   rareOrigin?: Record<string, string>; // rare commodity id → station id
+  syndicates?: Syndicate[];
   seed: number;
   time: number;
   realGalaxy: boolean;
@@ -262,6 +278,7 @@ export interface World {
   events: WorldEvent[];
   wars: War[];
   missionCounter: number;
+  synTick?: number;
   econTick: number;
   shockTick: number;
   warTick: number;
@@ -353,6 +370,11 @@ export function tickWorld(w: World, dt: number): void {
         refreshPrices(st);
       }
     }
+  }
+  w.synTick = (w.synTick ?? 0) + dt;
+  if (w.synTick >= 150) {
+    w.synTick = 0;
+    tickSyndicates(w, new RNG((w.seed ^ Math.floor(w.time * 3)) >>> 0));
   }
   w.shockTick += dt;
   if (w.shockTick >= 120) {
@@ -846,6 +868,7 @@ export function generateWorld(seed: number, opts: GenOptions = {}): World {
   const world: World = {
     version: 0, seed, time: 0, realGalaxy: !!opts.realGalaxy, galaxyLy: opts.realGalaxy ? (opts.maxLy ?? 20) : undefined, hardcore: !!opts.hardcore,
     rareOrigin: assignRares(systems, new RNG((seed ^ 0x5a5e) >>> 0)),
+    syndicates: assignSyndicates(systems, startId, new RNG((seed ^ 0x51d1) >>> 0)),
     ...(assignPermits(systems, startId, new RNG((seed ^ 0x9e3d) >>> 0)), {}),
     systems, player, news: [], events: [], wars: [],
     missionCounter: 0, econTick: 0, shockTick: 0, warTick: 0,
@@ -1028,6 +1051,39 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
       });
     }
   }
+  // AI syndicate contracts at its base: convoy runs to partners, bounties on rivals
+  const sy = syndicateAt(world, station.id);
+  if (sy) {
+    const goods: Record<SyndicateStyle, string[]> = { trade: ["lux", "parts", "med"], salvage: ["metals", "parts"], mining: ["ore", "metals"], pirate: ["contra", "lux"] };
+    for (const pid of sy.partners.slice(0, 2)) {
+      const f = findStation(world, pid);
+      if (!f) continue;
+      const wantId = rng.pick(goods[sy.style]);
+      const com = COMMODITIES.find((c) => c.id === wantId)!;
+      const qty = rng.int(4, 8);
+      missions.push({
+        id: `syn-${sy.tag}-${world.missionCounter++}`, kind: "delivery", accepted: false, done: false, tier: 0, syndicate: sy.tag,
+        title: `[${sy.tag}] Convoy run: ${qty} ${com.name}`,
+        desc: `${sy.name} wants ${qty}x ${com.name} at ${f.st.name} in ${f.sys.name}. Their goods, their route, your ship.${com.illegal ? " Don't get scanned." : ""}`,
+        fromStationId: station.id, targetSystemId: f.sys.id, targetStationId: f.st.id, commodityId: com.id, qty,
+        reward: Math.round((com.base * qty * 1.9 + 200) * (1 + Math.max(0, synStanding(world, sy.tag)) / 100)),
+        repReward: 0,
+      });
+    }
+    const rival = sy.rivals.map((t) => syndicateByTag(world, t)).find((r) => !!r);
+    if (rival) {
+      const kills = rng.int(2, 3);
+      missions.push({
+        id: `syn-${sy.tag}-${world.missionCounter++}`, kind: "bounty", accepted: false, done: false, tier: 0, syndicate: sy.tag,
+        title: `[${sy.tag}] Bounty: ${kills} raiders in ${world.systems[rival.systemId].name}`,
+        desc: `${sy.name} pays for ${kills} corsairs destroyed in ${world.systems[rival.systemId].name}, home of their rivals [${rival.tag}] ${rival.name}.`,
+        fromStationId: station.id, targetSystemId: rival.systemId, killsNeeded: kills, kills: 0,
+        reward: Math.round(380 * kills * (1 + Math.max(0, synStanding(world, sy.tag)) / 100)),
+        repReward: 0,
+      });
+    }
+  }
+
   // faction narrative arc: next stage if reputation allows
   const arc = ARCS[station.factionId];
   const stage = world.player.arcs[station.factionId] ?? 0;
@@ -1069,6 +1125,55 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
     missions.unshift(m);
   }
   return missions;
+}
+
+const SYNDICATE_POOL: { tag: string; name: string; color: string; style: SyndicateStyle }[] = [
+  { tag: "VULT", name: "Vulture Cartel", color: "#ff9a3a", style: "pirate" },
+  { tag: "ORBT", name: "Orbital Freight Guild", color: "#5ab3ff", style: "trade" },
+  { tag: "KRAK", name: "Kraken Salvage", color: "#63f2c8", style: "salvage" },
+  { tag: "DRIL", name: "Deepcore Drillers", color: "#ffd75a", style: "mining" },
+  { tag: "HALO", name: "Halo Logistics", color: "#e060ff", style: "trade" },
+  { tag: "ASHN", name: "Ashen Hand", color: "#ff5a5a", style: "pirate" },
+];
+
+// Four AI syndicates per galaxy, each based at a civilian station in its own
+// system (never the start system), trading with two partner stations nearby.
+export function assignSyndicates(systems: Record<string, SystemDef>, startId: string, rng: RNG): Syndicate[] {
+  const out: Syndicate[] = [];
+  const pool = [...SYNDICATE_POOL];
+  const used = new Set<string>([startId]);
+  const candidates = Object.values(systems).filter((s) => s.id !== startId && s.stations.some((st) => !st.military && !st.rare));
+  for (let i = 0; i < 4 && pool.length && candidates.length; i++) {
+    const open = candidates.filter((s) => !used.has(s.id));
+    if (!open.length) break;
+    const sys = rng.pick(open);
+    used.add(sys.id);
+    const st = rng.pick(sys.stations.filter((x) => !x.military && !x.rare));
+    const def = pool.splice(rng.int(0, pool.length - 1), 1)[0];
+    const partners: string[] = [];
+    for (const l of sys.links) { const o = systems[l]; const cand = o?.stations.filter((x) => !x.military) ?? []; if (cand.length) partners.push(rng.pick(cand).id); if (partners.length >= 2) break; }
+    out.push({ ...def, systemId: sys.id, stationId: st.id, partners, rivals: [], treasury: rng.int(20000, 60000) });
+  }
+  // rivals: pirate syndicates against everyone else; others against the next one
+  for (const sy of out) {
+    sy.rivals = sy.style === "pirate" ? out.filter((o) => o !== sy).map((o) => o.tag)
+      : out.filter((o) => o !== sy && o.style === "pirate").map((o) => o.tag);
+    if (!sy.rivals.length) { const other = out.find((o) => o !== sy); if (other) sy.rivals = [other.tag]; }
+  }
+  return out;
+}
+
+export function syndicateAt(w: World, stationId: string): Syndicate | null {
+  return w.syndicates?.find((s) => s.stationId === stationId) ?? null;
+}
+export function syndicateByTag(w: World, tag: string): Syndicate | null {
+  return w.syndicates?.find((s) => s.tag === tag) ?? null;
+}
+export function synStanding(w: World, tag: string): number { return w.player.synRep?.[tag] ?? 0; }
+export function synStandingLabel(v: number): string { return v >= 60 ? "PARTNER" : v >= 30 ? "AFFILIATE" : v >= 10 ? "KNOWN" : v <= -20 ? "MARKED" : "STRANGER"; }
+export function adjustSynRep(w: World, tag: string, delta: number): void {
+  w.player.synRep ??= {};
+  w.player.synRep[tag] = Math.max(-100, Math.min(100, (w.player.synRep[tag] ?? 0) + delta));
 }
 
 // Permits: one closed system per faction (never the start, never a dead end that
@@ -1201,6 +1306,38 @@ export function groundProgress(w: World, planetIdx: number, goal: "flora" | "pro
     return m;
   }
   return null;
+}
+
+// ---------- Base demand (trade routes) ----------
+// Every base (AI syndicate or squadron) wants three goods this week at +30%.
+
+export function baseDemand(key: string, now = Date.now()): string[] {
+  const rng = new RNG(hashStr(`demand:${key}:${weekKey(now)}`));
+  const pool = COMMODITIES.filter((c) => !c.illegal && !c.rare && c.id !== "relics").map((c) => c.id);
+  const out: string[] = [];
+  while (out.length < 3 && pool.length) out.push(pool.splice(rng.int(0, pool.length - 1), 1)[0]);
+  return out;
+}
+export const ROUTE_PREMIUM = 0.3;
+
+// Syndicate rivalry: every so often raiders hit a convoy, treasuries move, the news says so
+export function tickSyndicates(w: World, rng: RNG): void {
+  const list = w.syndicates ?? [];
+  if (!list.length) return;
+  const sy = rng.pick(list);
+  if (sy.style === "pirate") {
+    const victim = list.find((o) => sy.rivals.includes(o.tag) && rng.chance(0.6)) ?? list.find((o) => o !== sy);
+    if (!victim) return;
+    const take = Math.min(victim.treasury, rng.int(1500, 4500));
+    victim.treasury -= take; sy.treasury += take;
+    const sys = w.systems[victim.systemId];
+    sys.pirateActivity = Math.min(1, sys.pirateActivity + 0.05);
+    pushEvent(w, { t: w.time, kind: "raid", systemId: sys.id, text: `[${sy.tag}] ${sy.name} raiders hit an [${victim.tag}] convoy off ${sys.name} - ${take} CR in goods lost` });
+  } else {
+    const gain = rng.int(800, 2500);
+    sy.treasury += gain;
+    if (rng.chance(0.35)) pushEvent(w, { t: w.time, kind: "shock", systemId: sy.systemId, text: `[${sy.tag}] ${sy.name} posts a strong week: convoys clear ${gain} CR` });
+  }
 }
 
 // ---------- Daily contract ----------
