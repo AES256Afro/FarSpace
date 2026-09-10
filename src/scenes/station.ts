@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS, roleLabel } from "../
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter,
+  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter,
 } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
@@ -24,6 +24,7 @@ import type { EncounterScene } from "./encounter";
 import { CREW_LINES } from "../data/crew";
 import { storyObjective } from "../core/story";
 import { serialMissionFor, serialRecruitFor, serialPremium, serialLines } from "../data/serials";
+import { isOccasion, occasionFor } from "../data/occasions";
 import { sfx } from "../core/sfx";
 import * as wire from "../core/wire";
 import { drawTutorial } from "../core/tutorial";
@@ -68,6 +69,7 @@ export class StationScene implements Scene {
     { const line = rivalTakesFare(g.world, this.fares, rng.fork(78)); if (line) g.toast(line); }
     for (const fr of friendsAt(g.world, this.station.id)) if (!this.station.barPatrons.includes(fr.name)) this.station.barPatrons = [fr.name, ...this.station.barPatrons].slice(0, 4);
     this.barLine = "";
+    if (isOccasion("market") && (p.flags ?? {})[`marketday:${this.station.id}:${dailyKey()}`] !== true) { (p.flags ??= {})[`marketday:${this.station.id}:${dailyKey()}`] = true; for (const id of Object.keys(this.station.stock)) if (!id.startsWith("r_")) this.station.stock[id] = Math.round((this.station.stock[id] ?? 0) * 1.25); }
     refreshPrices(this.station);
     void wire.fetchSquadronData();
     if (p.ious?.length) { for (const iou of p.ious) { p.credits += iou.credits; g.toast(iou.text); } p.ious = []; sfx.pickup(); }
@@ -169,6 +171,7 @@ export class StationScene implements Scene {
     if (alum.length && rng.chance(0.4)) { const a = rng.pick(alum); g.toast(`${a.name.toUpperCase()} WAVES FROM THE LOUNGE. ${roleLabel(a.role)}, RETIRED. ${a.docks} DOCKINGS WITH YOU.`); }
     for (const line of tickBonds(p, rng)) g.toast(line);
     { const l = tickRideAlong(p); if (l) g.toast(l); }
+    if (isOccasion("founders")) for (const c of p.crew) c.morale = Math.min(100, c.morale + 5);
     if (isHome(p, this.station.id)) for (const c of p.crew) c.morale = Math.min(100, c.morale + 2);
     for (const line of settlePassengers(p)) g.toast(line);
     const evHere = galaxyEventAt(g.world, p.systemId);
@@ -695,7 +698,7 @@ export class StationScene implements Scene {
     m.done = true;
     const fest = m.kind === "passenger" && galaxyEventAt(g.world, p.systemId)?.kind === "festival" && galaxyEventAt(g.world, p.systemId)?.stationId === st.id;
     const charter = hasCharter(g.world, st.factionId) && !m.syndicate ? 1.15 : 1;
-    const base = m.kind === "passenger" && m.mood !== undefined ? passengerPay(m) : m.reward;
+    const base = Math.round((m.kind === "passenger" && m.mood !== undefined ? passengerPay(m) : m.reward) * (m.kind === "passenger" && isOccasion("founders") ? 1.5 : 1));
     p.credits += Math.round((fest ? base * 2 : base) * charter);
     if (fest) g.toast("FESTIVAL WEEK - YOUR PASSENGERS PAID DOUBLE");
     if (m.kind === "passenger" && m.mood !== undefined) {
@@ -803,7 +806,9 @@ export class StationScene implements Scene {
     }
     applyHull(p, id);
     g.spriteCache.delete(`player-ship-${p.hullId}`);
+    p.hullHistory = hullHistoryFor(g.world, new RNG((g.world.seed ^ Math.floor(g.world.time * 71)) >>> 0));
     g.toast(keepOld ? `WELCOME ABOARD THE ${h.name.toUpperCase()} - YOUR OLD HULL IS PARKED HERE` : `WELCOME ABOARD THE ${h.name.toUpperCase()}`);
+    if (p.hullHistory) { logEntry(g.world, `Took on a hull once flown by ${p.hullHistory.previous}: ${p.hullHistory.quirk}`); setTimeout(() => g.toast(`SHE WAS ${p.hullHistory!.previous.toUpperCase()}'S BEFORE YOU. THERE'S ${p.hullHistory!.quirk.toUpperCase()}.`), 2600); }
     sfx.dock();
     void wire.post("hull", `took delivery of a ${h.name}`, g.world.systems[p.systemId].name);
   }
@@ -815,7 +820,7 @@ export class StationScene implements Scene {
     // patron squadrons keep their faction's yards half price for members
     const patronHere = (!!wire.getSquadron() && wire.patronOf(st.factionId) === wire.getSquadron()) || this.myBaseHere() || hasCharter(g.world, st.factionId);
     const depot = this.baseHas("depot");
-    const homeMul = isHome(p, st.id) ? 0.85 : 1;
+    const homeMul = (isHome(p, st.id) ? 0.85 : 1) * (isOccasion("yard") ? 0.8 : 1);
     const fuelPrice = depot ? 0 : Math.max(1, Math.round((patronHere ? Math.max(1, Math.round(st.fuelPrice / 2)) : st.fuelPrice) * homeMul));
     const repairPrice = depot ? 0 : Math.max(1, Math.round((patronHere ? Math.max(1, Math.round(st.repairPrice / 2)) : st.repairPrice) * homeMul));
     const fuelNeed = Math.ceil(p.fuelMax - p.fuel);
@@ -1661,6 +1666,7 @@ export class StationScene implements Scene {
       bl.slice(0, 4).forEach((l, i) => drawText(ctx, l.toUpperCase().slice(0, 112), 8, top + 29 + i * 8, l.startsWith("URGENT") || l.startsWith("STRIKE") ? PAL.danger : l.startsWith("FESTIVAL") ? PAL.gold : PAL.grey));
       top += 29 + Math.min(4, bl.length) * 8 + 6;
     }
+    { const oc = occasionFor(); drawText(ctx, `TODAY: ${oc.name} - ${oc.effect}`, 8, top, PAL.gold); top += 9; }
     if (this.station.museum?.length) { const m = this.station.museum[this.station.museum.length - 1]; drawText(ctx, `MUSEUM: ${this.station.museum.length} PIECE${this.station.museum.length > 1 ? "S" : ""} - LATEST ${m.item.toUpperCase()}, DONATED BY ${m.by.toUpperCase()}`.slice(0, 112), 8, top, PAL.gold); top += 9; }
     const mail = g.world.player.mail ?? [];
     if (mail.length) {

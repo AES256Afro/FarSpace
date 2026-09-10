@@ -101,6 +101,17 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   board: sample runs, outcrop runs, and a plant to fix on the spot. Jobs pay
   out when you walk back in.
 
+## Rhythms
+
+- The week has a shape, the same for everyone: Founders' Day (fares +50%,
+  crew morale), the Long Silence (a quiet band, a talkative ship), Lantern
+  Night (beacons earn double, postcards pay data), Market Day (stock +25%),
+  Remembrance (the wall reads names), Yard Day (services -20%), Open Lanes
+  (jumps -10%). The title screen and the NEWS tab say which day it is.
+- A used hull sometimes comes with a history: who flew it and what they left.
+- A lit beacon is a watched lane: piracy eases in that system while the light
+  is on, faster with a waystation.
+
 ## Belonging
 
 - A friend in the lounge can be asked to ride along: their ship flies beside

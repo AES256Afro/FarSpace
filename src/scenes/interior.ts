@@ -31,6 +31,7 @@ import { sfx } from "../core/sfx";
 import { music } from "../core/music";
 import { rankOf, rescuePoints, STORY_LEN, findStation, canRetireCaptain, retireCaptain, RETIRE_AFTER } from "../world";
 import * as wire from "../core/wire";
+import { isOccasion } from "../data/occasions";
 import type { Encounter } from "../data/encounters";
 import type { EncounterScene } from "./encounter";
 import { ACHIEVEMENTS } from "../data/achievements";
@@ -177,6 +178,8 @@ export class InteriorScene implements Scene {
       p.log?.length ? `LAST ENTRY: ${p.log[p.log.length - 1].text.toUpperCase()}` : "THE LOG IS EMPTY.",
     ];
     if (p.lineage?.length) lines.push(`CAPTAINS BEFORE YOU: ${p.lineage.slice(-3).map((c) => c.name.toUpperCase()).join(", ")}${p.captainName ? `. NOW: ${p.captainName.toUpperCase()}` : ""}`);
+    if (p.hullHistory) lines.push(`THIS HULL WAS ${p.hullHistory.previous.toUpperCase()}'S. THEY LEFT ${p.hullHistory.quirk.toUpperCase()}.`);
+    if (isOccasion("remembrance")) lines.push(`REMEMBRANCE: ${[...(p.alumni ?? []).map((a) => a.name), ...(p.lineage ?? []).map((c) => c.name)].slice(-5).map((n) => n.toUpperCase()).join(", ") || "NO NAMES YET. GIVE IT TIME."}`);
     const opts: Encounter["options"] = [{ label: "CLOSE", result: () => "" }];
     const why = canRetireCaptain(g.world);
     if (!why) opts.push({ label: "RETIRE THIS CAPTAIN...", hint: "Hand the ship on; the galaxy carries on", result: (g2) => { this.retireMenu(g2); return ""; } });

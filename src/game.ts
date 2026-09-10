@@ -10,6 +10,7 @@ import * as cloud from "./core/cloud";
 import { syncScores } from "./core/wire";
 import { settings } from "./core/settings";
 import { hull } from "./data/hulls";
+import { isOccasion } from "./data/occasions";
 import {
   Sprite, genShip, genPlanet, genStation, genAsteroid, genGate, genSun, genPortrait,
   genPlatform, genNebula, genWreck, genGlobe,
@@ -94,6 +95,7 @@ export class Game {
       cx.restore();
       const p = this.world.player;
       p.postcards = (p.postcards ?? 0) + 1;
+      if (isOccasion("lantern")) p.expData = (p.expData ?? 0) + 60;
       c.toBlob((blob) => {
         if (!blob) return;
         const a = document.createElement("a");

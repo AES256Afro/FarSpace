@@ -12,6 +12,7 @@ import * as wire from "../core/wire";
 import { settings, toggleFullscreen } from "../core/settings";
 import { activeSlot, loadSave } from "../save";
 import { rankOf } from "../world";
+import { occasionFor } from "../data/occasions";
 import { hull } from "../data/hulls";
 import { music } from "../core/music";
 
@@ -189,6 +190,8 @@ export class TitleScene implements Scene {
       // alternate the shared wire with your own galaxy's news (syndicate wars, annexations)
       const local = g.world.events.slice(-6).reverse();
       const slot = Math.floor(this.t / 6);
+      if (slot % 3 === 2) { const oc = occasionFor(); const line = `TODAY IS ${oc.name}: ${oc.line}`.slice(0, 110); drawText(ctx, line, VW / 2 - textWidth(line) / 2, VH - 38, PAL.gold); }
+      else {
       const useLocal = local.length && (!this.ticker.length || slot % 2 === 1);
       if (useLocal) {
         const e = local[Math.floor(slot / 2) % local.length];
@@ -198,6 +201,7 @@ export class TitleScene implements Scene {
         const e = this.ticker[Math.floor(slot / 2) % this.ticker.length];
         const line = `FLEET WIRE: ${e.tag ? `[${e.tag}] ` : ""}${e.callsign} ${e.text} - ${e.system} (${wire.ageLabel(e.t)})`.slice(0, 110);
         drawText(ctx, line, VW / 2 - textWidth(line) / 2, VH - 38, PAL.info);
+      }
       }
     }
     const ver = `V${typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "?"}${g.input.padConnected ? " - GAMEPAD CONNECTED" : ""}${this.pilots ? ` - ${this.pilots} PILOT${this.pilots === 1 ? "" : "S"} FLYING NOW` : ""}`;

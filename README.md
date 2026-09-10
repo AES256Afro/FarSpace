@@ -51,6 +51,9 @@ charters and enforce embargoes, station profiles and bulletins, gate traffic,
 comms chatter, void drifters near gas giants, crew who talk to each other, a
 wall of record aboard your ship, and a second campaign about a missing convoy.
 
+**Rhythms:** a weekly calendar of occasions shared by everyone, hulls with
+histories, and beacons that pacify the lanes they light.
+
 **Belonging:** friends who ride along for a few dockings, a home port with
 cheaper services, and museums that take your relics with your name.
 
@@ -168,7 +171,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestones 1–34 are live (v0.34.0). See the [roadmap](docs/ROADMAP.md) for what's next.
+Milestones 1–35 are live (v0.35.0). See the [roadmap](docs/ROADMAP.md) for what's next.
 
 ```bash
 npm test         # vitest: world-gen, routing, economy, law, missions, save migrations

@@ -2,7 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
-  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn, captainByName, helpCaptain, isFriend, friendsAt, tickMail, pickCaptainFor, canUpgradeInfra, upgradeInfra, rivalOf, isRival, rivalTakesFare, rivalBeatsYouTo, askRideAlong, tickRideAlong, setHomePort, isHome, donateRelic } from "../src/world";
+  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn, captainByName, helpCaptain, isFriend, friendsAt, tickMail, pickCaptainFor, canUpgradeInfra, upgradeInfra, rivalOf, isRival, rivalTakesFare, rivalBeatsYouTo, askRideAlong, tickRideAlong, setHomePort, isHome, donateRelic, hullHistoryFor } from "../src/world";
+import { occasionFor, OCCASIONS } from "../src/data/occasions";
 import type { Charter } from "../src/world";
 import type { Infra } from "../src/world";
 import { migrateSave, SAVE_VERSION, saveKeyFor, SLOTS } from "../src/save";
@@ -1281,5 +1282,27 @@ describe("belonging", () => {
     expect(p.cargo.relics).toBe(1);
     const agri = Object.values(w.systems).flatMap((s) => s.stations).find((s) => s.type === "agri");
     if (agri) expect(donateRelic(w, agri, "TESTER")).toBeNull();
+  });
+});
+
+describe("rhythms", () => {
+  it("the occasion keys off the real week, lit beacons ease piracy, and used hulls carry a history", () => {
+    const monday = Date.UTC(2026, 8, 7, 12); // a Monday
+    expect(occasionFor(monday).id).toBe("founders");
+    expect(occasionFor(monday + 86400_000).id).toBe("silence");
+    expect(occasionFor(monday + 6 * 86400_000).id).toBe("lanes");
+    expect(occasionFor(monday + 7 * 86400_000).id).toBe("founders");
+    expect(OCCASIONS.length).toBe(7);
+    const w = generateWorld(181, { realGalaxy: true });
+    const sysId = w.player.systemId;
+    w.systems[sysId].pirateActivity = 0.8;
+    w.infra = [{ id: "b", kind: "beacon", systemId: sysId, x: 0, y: 0, owner: "ME", builtAt: 0, health: 100, till: 0, stock: 0, earned: 0, lastT: 0 }];
+    w.time = 600;
+    tickInfra(w, new RNG(9));
+    expect(w.systems[sysId].pirateActivity).toBeLessThan(0.8);
+    let hist = null;
+    for (let i = 0; i < 20 && !hist; i++) hist = hullHistoryFor(w, new RNG(i));
+    expect(hist).not.toBeNull();
+    expect(hist!.quirk.length).toBeGreaterThan(10);
   });
 });

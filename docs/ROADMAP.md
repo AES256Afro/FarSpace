@@ -498,4 +498,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] A home port with cheaper yard services and settled crew
 - [x] Museums at research stations that take relics with your name
 
+## Milestone 35 — Rhythms ✅ (Sep 2026)
+- [x] Seven weekly occasions keyed to the real calendar, shared by everyone
+- [x] Hulls with histories; beacons that pacify the lanes they light
+
 ## Later

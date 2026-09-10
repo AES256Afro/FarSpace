@@ -13,6 +13,7 @@ import { moduleDef } from "./data/modules";
 import type { CrewMember, CrewRole } from "./data/crew";
 import { ROLE_INFO, CREW_TRAITS, SICKNESS, LEAVE_DOCKS } from "./data/crew";
 import { tickSerial, type SerialState } from "./data/serials";
+import { isOccasion } from "./data/occasions";
 
 // ---------- Types ----------
 
@@ -293,6 +294,7 @@ export interface PlayerState {
   companion?: { name: string; ship: string; docks: number } | null; // a friend flying alongside for a few dockings
   homePort?: string;                 // station id: cheaper yard, happier crew, a place the chronicle names
   donations?: number;                // relics given to museums
+  hullHistory?: { previous: string; quirk: string } | null; // who flew this hull before you, and what they left
   grown?: number;                    // crates of provisions the greenhouse has grown
   postcards?: number;                // pictures taken
   lineage?: Captain[];               // captains who sat in this chair before
@@ -374,7 +376,9 @@ export function tickInfra(w: World, rng: RNG): string[] {
     if (elapsed <= 0) continue;
     const traffic = infraTraffic(w, inf.systemId);
     if (infraLit(inf)) {
-      if (inf.kind === "beacon") { const c = Math.round(traffic * (inf.upgraded ? 2.5 : 1.5) * (elapsed / 60)); inf.till += c; inf.earned += c; }
+      if (inf.kind === "beacon") { const c = Math.round(traffic * (inf.upgraded ? 2.5 : 1.5) * (elapsed / 60) * (isOccasion("lantern") ? 2 : 1)); inf.till += c; inf.earned += c; }
+      // a lit lane is a watched lane: piracy eases while the light is on
+      { const sys2 = w.systems[inf.systemId]; if (sys2) sys2.pirateActivity = Math.max(0.05, sys2.pirateActivity - 0.004 * (elapsed / 60) * (inf.upgraded ? 2 : 1)); }
       if (inf.upgraded) { const bar = Math.round(traffic * 0.8 * (elapsed / 60)); inf.till += bar; inf.earned += bar; } // the bar takes money too
       else if (inf.stock > 0) { const sold = Math.min(inf.stock, Math.max(0, Math.round(traffic * 0.4 * (elapsed / 60)))); inf.stock -= sold; inf.till += sold * DEPOT_PRICE; inf.earned += sold * DEPOT_PRICE; }
     }
@@ -796,6 +800,14 @@ export function tickRideAlong(p: PlayerState): string | null {
   p.companion.docks--;
   if (p.companion.docks <= 0) { const n = p.companion.name.toUpperCase(); p.companion = null; return `${n} PEELS OFF FOR HOME. 'ANY TIME. I MEAN THAT.'`; }
   return null;
+}
+// A used hull remembers its last captain
+export const HULL_QUIRKS = ["a dent in the galley bulkhead nobody will explain", "a lucky charm wired to the console", "a smell of coffee that never quite leaves", "a name scratched under the pilot's seat", "a playlist still in the comms buffer", "a plant, dead, still in its pot by the airlock", "a tally of jumps carved by the bunk", "a scorch on the reactor housing, old and painted over"];
+export function hullHistoryFor(w: World, rng: RNG): { previous: string; quirk: string } | null {
+  if (!rng.chance(0.6)) return null;
+  const caps = w.captains ?? [];
+  const previous = caps.length && rng.chance(0.5) ? rng.pick(caps).name : genPersonName(rng);
+  return { previous, quirk: rng.pick(HULL_QUIRKS) };
 }
 // Home port: one station you call yours
 export function setHomePort(p: PlayerState, stationId: string): void { p.homePort = stationId; }
@@ -1349,7 +1361,7 @@ export function genCrewCandidate(rng: RNG): CrewMember {
 export function jumpFuelCost(w: World, fromId: string, toId: string): number {
   const ly = w.systems[fromId]?.ly?.[toId];
   const tuned = (1 - 0.08 * (w.player?.engineering?.fsd ?? 0)) * (hull(w.player?.hullId).fuelEff ?? 1);
-  const beacon = beaconDiscount(w, fromId, toId);
+  const beacon = beaconDiscount(w, fromId, toId) * (isOccasion("lanes") ? 0.9 : 1);
   if (ly === undefined) return Math.max(4, Math.round(10 * tuned * beacon));
   return clamp(Math.round((4 + ly * 1.4) * tuned * beacon), 3, 40);
 }
