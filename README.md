@@ -14,7 +14,8 @@ dock at a station → walk your own ship's deck and repair the systems that got 
 Flight is top-down WSAD with real momentum — Battlestar Galactica meets The Expanse.
 Ships are more than health bars: they're places.
 
-See [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) for the full design and
+See [docs/PLAYING.md](docs/PLAYING.md) for a guide by career,
+[docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) for the full design and
 [docs/ROADMAP.md](docs/ROADMAP.md) for milestones.
 
 ## Controls
