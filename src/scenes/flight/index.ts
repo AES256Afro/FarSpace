@@ -1136,7 +1136,7 @@ export class FlightScene implements Scene {
     for (const st of sys.stations) {
       const sx = Math.cos(st.angle) * st.orbit;
       const sy = Math.sin(st.angle) * st.orbit;
-      if (dist(p.x, p.y, sx, sy) < 60) { this.dockAt(g, st); return; }
+      if (dist(p.x, p.y, sx, sy) < 110) { this.dockAt(g, st); return; } // the glide covers the rest
     }
     for (const jp of sys.jumpPoints) {
       if (dist(p.x, p.y, jp.x, jp.y) < 70) { this.doJump(g, jp.targetSystemId, jp.guarded); return; }
