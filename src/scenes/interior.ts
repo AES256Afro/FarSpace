@@ -252,6 +252,7 @@ export class InteriorScene implements Scene {
     for (const c of p.crew.slice(0, 3)) {
       opts.push({ label: `HAND THE SHIP TO ${c.name.toUpperCase()} (${ROLE_INFO[c.role].label}, SKILL ${c.skill})`, hint: c.role === "pilot" ? "Their piloting becomes yours" : c.role === "engineer" ? "Their engineering becomes yours" : "A steady hand", result: (g2) => {
         const cap = retireCaptain(g2.world, me, c);
+        void wire.post("achievement", `retired and handed ${g2.world.player.shipName ?? "the ship"} to ${c.name}`, st?.name ?? "");
         return `${me} SIGNS THE SHIP OVER AT ${(st?.name ?? "THE DOCK").toUpperCase()} AND WALKS DOWN THE RAMP WITH ${cap.credits - g2.world.player.credits}CR OF PENSION. ${c.name.toUpperCase()} SITS IN THE CHAIR. IT CREAKS THE SAME WAY.`;
       } });
     }

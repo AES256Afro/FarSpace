@@ -4,6 +4,7 @@
 import type { Game } from "../game";
 import { RNG } from "./rng";
 import { passengersAboard, wondersIn } from "../world";
+import { hull } from "../data/hulls";
 
 export function pickShipLine(g: Game, rng: RNG): string | null {
   const w = g.world; const p = w.player;
@@ -23,6 +24,12 @@ export function pickShipLine(g: Game, rng: RNG): string | null {
   if ((p.furnishings ?? []).includes("mural")) pool.push("THE CREW ADDED ANOTHER SYSTEM TO THE MURAL LAST NIGHT. THEY GOT THE STAR THE WRONG COLOUR. I DIDN'T SAY.");
   if ((p.haulers ?? []).length) pool.push("YOUR CHARTER HAULERS CHECK IN ON THE LONG BAND. THEY SOUND BORED. GOOD. BORED IS SAFE.");
   if ((p.alumni ?? []).length >= 3) pool.push("I COUNT THE PEOPLE WHO'VE WALKED MY CORRIDORS. IT'S A GOOD NUMBER. IT'S GETTING BIGGER.");
+  const deck = hull(p.hullId).deck;
+  if (deck === "scout") pool.push("I'M SMALL. I'M FAST. I'M NOT CARRYING THAT MANY CRATES AGAIN.", "SCOUT HULLS DON'T GET STATUES. WE GET THERE FIRST, THOUGH.");
+  else if (deck === "prospector") pool.push("THERE'S ORE IN THAT BELT. I CAN SMELL IT. I DON'T HAVE A NOSE. I CAN STILL SMELL IT.", "MY LASERS ARE WARM. POINT ME AT A ROCK.");
+  else if (deck === "freighter") pool.push("FORTY TONNES ABOARD AND I STILL TURN LIKE A MOON. THAT'S THE JOB.", "EVERY STATION IN THE SECTOR KNOWS MY HULL NUMBER. THAT'S A KIND OF FAME.");
+  else if (deck === "interceptor") pool.push("I WAS BUILT FOR SOMETHING FASTER THAN THIS. I'VE MADE MY PEACE. MOSTLY.", "SHORT LEGS, QUICK FEET. WATCH THE FUEL.");
+  else if (deck === "carrier") pool.push("THE DRONES ARE ASLEEP IN THEIR RACKS. THEY DREAM OF CORSAIRS. I DON'T ASK.", "THERE'S A HANGAR IN ME BIG ENOUGH TO GET LOST IN. SOMEONE DID, ONCE.");
   if (w.time > 7200 && !pool.length) pool.push("QUIET LANE. GOOD BURN. I LIKE THESE HOURS BEST.", "I WAS BUILT FOR THIS. STILL, IT'S NICE WHEN NOBODY SHOOTS AT US.");
   if (!pool.length) return null;
   return rng.pick(pool);

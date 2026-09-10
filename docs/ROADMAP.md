@@ -574,4 +574,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Stations count your dockings: bulletin lines about you, passenger
       reviews, a regular's rate at the yard, a greeting from control
 
+## Milestone 55 — Odds and Ends ✅ (Sep 2026)
+- [x] Hull personalities for the ship's voice; retirement posted to the wire;
+      a legend on the galaxy map; deeds counted on the title line
+
 ## Later

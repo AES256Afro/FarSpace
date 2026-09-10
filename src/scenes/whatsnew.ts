@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.55 - ODDS AND ENDS", [
+    "EACH HULL CLASS HAS ITS OWN VOICE. RETIREMENTS REACH THE WIRE. THE GALAXY MAP HAS A LEGEND.",
+  ]],
   ["0.54 - REGULARS", [
     "STATIONS COUNT YOUR DOCKINGS. BULLETINS MENTION YOU, PASSENGERS LEAVE REVIEWS, THE YARD GIVES REGULARS A RATE.",
   ]],

@@ -214,6 +214,11 @@ export class GalaxyScene implements Scene {
       drawText(ctx, `COURSE: ${dst.name} - ${route.length - 1} JUMPS - ${fuel} FUEL (${Math.round(w.player.fuel)} ABOARD)`, OX, VH - 30, ok ? PAL.gold : PAL.warn);
       if (!ok) drawText(ctx, "NOT ENOUGH FUEL: REFUEL AT THE MARKED STATIONS ALONG THE ROUTE", OX, VH - 21, PAL.warn);
     }
+    if (this.layers) {
+      let lx = 8; const ly = VH - 21;
+      const key: [string, string][] = [[PAL.gold, "ROUTE / STRUCTURE"], ["#ffe9a0", "WONDER"], [PAL.info, "OTHER PILOTS' LIGHTS"], [PAL.danger, "WAR / DARK"]];
+      for (const [col, label] of key) { ctx.fillStyle = col; ctx.fillRect(lx, ly + 1, 3, 3); drawText(ctx, label, lx + 6, ly, PAL.greyDark); lx += textWidth(label) + 16; }
+    }
     const help = `CLICK: INTEL - CLICK AGAIN/N: PLOT COURSE - B: BOOKMARK - V: LAYERS ${this.layers ? "ON" : "OFF"} - ESC BACK`;
     drawText(ctx, help, VW / 2 - textWidth(help) / 2, VH - 10, PAL.greyDark);
   }
