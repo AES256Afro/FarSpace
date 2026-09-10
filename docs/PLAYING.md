@@ -229,6 +229,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Town projects
+
+- Once an outpost is a town, its foreman takes funding: a school (metals), a
+  clinic (med supplies; sick crew treated free when you land, and med stops
+  being a need), a second pad (parts; more traffic and water ice on the desk),
+  a chapel (luxuries; crew steadier). Each adds growth toward a city and a
+  building on the deck.
+
 ## Settlements grow
 
 - Every crate sold at an outpost's trade desk, every foreman job paid out and

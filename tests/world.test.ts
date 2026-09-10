@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
-  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn, captainByName, helpCaptain, isFriend, friendsAt, tickMail, pickCaptainFor, canUpgradeInfra, upgradeInfra, rivalOf, isRival, rivalTakesFare, rivalBeatsYouTo, askRideAlong, tickRideAlong, setHomePort, isHome, donateRelic, hullHistoryFor, notableById, notableOutcome } from "../src/world";
+  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn, captainByName, helpCaptain, isFriend, friendsAt, tickMail, pickCaptainFor, canUpgradeInfra, upgradeInfra, rivalOf, isRival, rivalTakesFare, rivalBeatsYouTo, askRideAlong, tickRideAlong, setHomePort, isHome, donateRelic, hullHistoryFor, notableById, notableOutcome, canFundProject, fundProject, PROJECTS, settlementNeeds } from "../src/world";
 import { occasionFor, OCCASIONS } from "../src/data/occasions";
 import { STEPS } from "../src/core/tutorial";
 import { CREW_ARCS, arcObjective } from "../src/core/crewarcs";
@@ -1383,5 +1383,31 @@ describe("the keeper", () => {
     an.claimed = true;
     expect(KEEPER[2].check(g)).toBe(true);
     expect(KEEPER.length).toBe(4);
+  });
+});
+
+describe("town projects", () => {
+  it("a town's patron can fund projects with credits and goods; they add growth and change needs", () => {
+    const w = generateWorld(221, { realGalaxy: true });
+    const p = w.player;
+    const pl = Object.values(w.systems).flatMap((s) => s.planets).find((x) => x.surface && x.surface.pois.some((q) => q.kind === "outpost"))!;
+    const poi = pl.surface!.pois.find((q) => q.kind === "outpost")!;
+    expect(canFundProject(p, poi, "clinic")).toContain("TOWN");
+    poi.tier = 1; poi.growth = 100;
+    p.credits = 100; p.cargo = {};
+    expect(canFundProject(p, poi, "clinic")).toContain("CR NEEDED");
+    p.credits = 5000;
+    expect(canFundProject(p, poi, "clinic")).toContain("NEEDED ABOARD");
+    p.cargo = { med: 2 };
+    expect(canFundProject(p, poi, "clinic")).toBeNull();
+    const line = fundProject(w, poi, "clinic", "TESTER");
+    expect(line).not.toBeNull();
+    expect(poi.projects).toContain("clinic");
+    expect(p.credits).toBe(3800);
+    expect(p.cargo.med ?? 0).toBe(0);
+    expect(poi.growth).toBe(125);
+    expect(canFundProject(p, poi, "clinic")).toContain("ALREADY");
+    for (let i = 0; i < 20; i++) expect(settlementNeeds(w, poi, Date.now() + i * 7 * 86400_000)).not.toContain("med");
+    expect(PROJECTS.length).toBe(4);
   });
 });

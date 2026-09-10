@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.42 - TOWN PROJECTS", [
+    "A TOWN'S FOREMAN TAKES FUNDING: A SCHOOL, A CLINIC, A SECOND PAD, A CHAPEL. GROWTH, EFFECTS, AND A BUILDING TO SEE.",
+  ]],
   ["0.41 - THE KEEPER", [
     "A THIRD CAMPAIGN: A DYING LIGHTHOUSE, ITS KEEPER'S LOG, WHAT THE LIGHT SAW, AND WHOSE LIGHT IT IS.",
   ]],

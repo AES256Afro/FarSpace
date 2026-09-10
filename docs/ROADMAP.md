@@ -527,4 +527,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] A third campaign: a dying lighthouse, its keeper's log, what the light
       saw, and whose light it is
 
+## Milestone 42 — Town Projects ✅ (Sep 2026)
+- [x] Fund a school, a clinic, a second pad or a chapel at a town: growth,
+      effects on the deck and on your crew, a building to see
+
 ## Later

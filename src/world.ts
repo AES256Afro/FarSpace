@@ -39,6 +39,7 @@ export interface Poi {
   growth?: number;  // settlements: trade and work bring people; 100 makes a town, 250 a city
   tier?: number;    // 0 outpost, 1 town, 2 city (kind becomes "city")
   patron?: string;  // who pushed it over the last line
+  projects?: string[]; // town projects funded: school, clinic, pad, chapel
 }
 
 export interface PlanetSurface {
@@ -2464,7 +2465,7 @@ export function hasCharter(w: World, factionId: string): boolean {
 export const SETTLEMENT_PREMIUM = 0.4;
 export function settlementNeeds(w: World, poi: Poi, now = Date.now()): string[] {
   const rng = new RNG(hashStr(`needs:${w.seed}:${poi.id}:${weekKey(now)}`));
-  const pool = COMMODITIES.filter((c) => !c.illegal && !c.rare && c.id !== "relics" && c.id !== "ore").map((c) => c.id);
+  const pool = COMMODITIES.filter((c) => !c.illegal && !c.rare && c.id !== "relics" && c.id !== "ore" && !((poi.projects ?? []).includes("clinic") && c.id === "med")).map((c) => c.id);
   const out: string[] = [];
   while (out.length < 2 && pool.length) out.push(pool.splice(rng.int(0, pool.length - 1), 1)[0]);
   return out;
@@ -2490,6 +2491,33 @@ export function growSettlement(w: World, poi: Poi, amount: number, by: string): 
     return `${poi.name.toUpperCase()} IS A CITY. A MARKET SQUARE, A COUNCIL, AND A PLAQUE WITH YOUR NAME ON IT.`;
   }
   return null;
+}
+
+// Town projects: what a patron can fund once a settlement is a town
+export const PROJECTS: { id: string; name: string; credits: number; goods: { id: string; qty: number }; desc: string; growth: number }[] = [
+  { id: "school", name: "A School", credits: 1500, goods: { id: "metals", qty: 4 }, desc: "Two rooms and a teacher. Children stop leaving.", growth: 30 },
+  { id: "clinic", name: "A Clinic", credits: 1200, goods: { id: "med", qty: 2 }, desc: "Sick crew are treated when you land. Med supplies stop being a need.", growth: 25 },
+  { id: "pad", name: "A Second Pad", credits: 2000, goods: { id: "parts", qty: 6 }, desc: "More traffic, more faces, water ice on the desk.", growth: 40 },
+  { id: "chapel", name: "A Chapel", credits: 800, goods: { id: "lux", qty: 2 }, desc: "Somewhere quiet. Crew come back aboard steadier.", growth: 15 },
+];
+export function projectDef(id: string) { return PROJECTS.find((p) => p.id === id); }
+export function canFundProject(p: PlayerState, poi: Poi, id: string): string | null {
+  const def = projectDef(id); if (!def) return "NO SUCH PROJECT";
+  if ((poi.tier ?? 0) < 1) return "IT NEEDS TO BE A TOWN FIRST";
+  if ((poi.projects ?? []).includes(id)) return "ALREADY BUILT";
+  if (p.credits < def.credits) return `${def.credits}CR NEEDED`;
+  if ((p.cargo[def.goods.id] ?? 0) < def.goods.qty) return `${def.goods.qty} ${COMMODITIES.find((c) => c.id === def.goods.id)?.name.toUpperCase() ?? def.goods.id} NEEDED ABOARD`;
+  return null;
+}
+export function fundProject(w: World, poi: Poi, id: string, by: string): string | null {
+  const p = w.player; const def = projectDef(id)!;
+  if (canFundProject(p, poi, id)) return null;
+  p.credits -= def.credits; removeCargo(p, def.goods.id, def.goods.qty);
+  (poi.projects ??= []).push(id);
+  const line = growSettlement(w, poi, def.growth, by);
+  pushEvent(w, { t: w.time, kind: "discovery", systemId: p.systemId, text: `${poi.name} raised ${def.name.toLowerCase()} on ${by}'s credit` });
+  logEntry(w, `Funded ${def.name.toLowerCase()} at ${poi.name}`);
+  return line ?? `${def.name.toUpperCase()} GOES UP AT ${poi.name.toUpperCase()} OVER A WEEK OF SHIFTS. ${def.desc.toUpperCase()}`;
 }
 
 // Settlement mood: a line for outposts and cities, seeded per site and day

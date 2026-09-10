@@ -4,7 +4,7 @@
 import { Game, Scene, VW } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { settlementLine, settlementNeeds, SETTLEMENT_PREMIUM, missionDeliverable, growSettlement, settlementTierLabel, GROWTH_TOWN, GROWTH_CITY, logEntry } from "../world";
+import { settlementLine, settlementNeeds, SETTLEMENT_PREMIUM, missionDeliverable, growSettlement, settlementTierLabel, GROWTH_TOWN, GROWTH_CITY, logEntry, PROJECTS, canFundProject, fundProject } from "../world";
 import * as wire from "../core/wire";
 import { flag } from "../core/achievements";
 import type { Encounter } from "../data/encounters";
@@ -69,6 +69,9 @@ export class OutpostScene implements Scene {
       { id: "parts", buy: Math.round(commodity("parts").base * 1.4), sell: Math.round(commodity("parts").base * 1.2) },
       ...((poi.tier ?? 0) >= 1 ? [{ id: "lux", buy: 0, sell: Math.round(commodity("lux").base * 1.1) }] : []),
     ];
+    if ((poi.projects ?? []).includes("clinic")) { const sick = p.crew.filter((c) => c.sick); if (sick.length) { for (const c of sick) c.sick = null; g.toast(`THE CLINIC AT ${poi.name.toUpperCase()} TREATS ${sick.map((c) => c.name.toUpperCase()).join(" AND ")}. NO CHARGE. YOU BUILT IT.`); } }
+    if ((poi.projects ?? []).includes("chapel")) for (const c of p.crew) c.morale = Math.min(100, c.morale + 5);
+    if ((poi.projects ?? []).includes("pad")) { rows.push({ id: "water", buy: Math.round(commodity("water").base * 1.2), sell: Math.round(commodity("water").base * 0.9) }); this.npcs.push({ x: rng.int(3, 18) * T, y: rng.int(2, 5) * T + 5, name: genPersonName(rng), skin: "#c78a5a", suit: "#3a6ea5", line: "Second pad's busy all day now. You did that. Thanks." }); }
     for (let i = 0; i < (poi.tier ?? 0); i++) this.npcs.push({ x: rng.int(3, 18) * T, y: rng.int(2, 5) * T + 5, name: genPersonName(rng), skin: rng.pick(["#e8b48c", "#c78a5a"]), suit: "#7a5aa5", line: rng.pick(["New here. Came for the work. Stayed for the sky.", `They say ${poi.patron ?? "some captain"} built half this place out of a cargo hold.`, "There's a school now. Two rooms. It's something."]) });
     this.trade.rows = rows.filter((r, i, a) => a.findIndex((x) => x.id === r.id) === i);
     {
@@ -113,6 +116,13 @@ export class OutpostScene implements Scene {
       opts.push({ label: "OUTCROP RUN: MINE 3 OUTCROPS ON THIS WORLD (350CR)", result: (g2) => { g2.world.player.missions.push({ id: `fore-${Date.now() % 1e7 + 1}`, kind: "ground", accepted: true, done: false, tier: 0, title: `Outcrop run for ${poi.name}`, desc: "Work three outcrops anywhere on this world and report back.", fromStationId: poi.id, targetSystemId: g2.world.player.systemId, targetStationId: poi.id, groundPlanetIdx: g2.orbitPlanetIdx, groundGoal: "outcrop", groundNeed: 3, groundDone: 0, reward: 350, repReward: 3 }); return "'THE RIGS ARE DOWN. YOUR ROVER ISN'T. GO ON.'"; } });
     }
     if (!has("repair")) opts.push({ label: "FIX THE PLANT (400CR, RIGHT NOW)", hint: "Three systems, your hands", result: (g2) => { const m = { id: `fore-${Date.now() % 1e7 + 2}`, kind: "repair" as const, accepted: true, done: false, tier: 0, title: `Plant repair at ${poi.name}`, desc: "Bring the settlement's plant back online.", fromStationId: poi.id, targetSystemId: g2.world.player.systemId, targetStationId: poi.id, reward: 400, repReward: 4 }; g2.world.player.missions.push(m); g2.tenderMission = m; g2.tenderReturn = "outpost"; setTimeout(() => g2.setScene("repair"), 0); return ""; } });
+    if ((poi.tier ?? 0) >= 1) {
+      for (const pr of PROJECTS) {
+        if ((poi.projects ?? []).includes(pr.id)) continue;
+        const why = canFundProject(p, poi, pr.id);
+        opts.push({ label: `FUND ${pr.name.toUpperCase()} (${pr.credits}CR + ${pr.goods.qty} ${commodity(pr.goods.id).name.toUpperCase()})`, hint: why ?? pr.desc, requires: (g2) => !canFundProject(g2.world.player, poi, pr.id), result: (g2) => fundProject(g2.world, poi, pr.id, this.who(g2)) ?? "" });
+      }
+    }
     opts.push({ label: "NOT TODAY", result: () => "'SUIT YOURSELF. THE WORK'LL KEEP.'" });
     const needs = this.needs.map((id) => commodity(id).name.toUpperCase()).join(" AND ");
     const enc: Encounter = { id: "foreman", where: "ground", title: `${poi.name.toUpperCase()} - FOREMAN`, weight: 0, text: `THE FOREMAN LOOKS UP FROM A CLIPBOARD OLDER THAN THE OUTPOST. 'WE'RE SHORT ON ${needs || "EVERYTHING"} THIS WEEK, IF YOU'RE HAULING. AND THERE'S WORK, IF YOU'RE NOT.'`, options: opts };
@@ -192,6 +202,13 @@ export class OutpostScene implements Scene {
       else if (ch === "B") drawKiosk(ctx, x, y, "#7a5aa5", false);
       else if (ch === "A") drawKiosk(ctx, x, y, PAL.warn, true);
       return true;
+    });
+    (this.poi.projects ?? []).forEach((id, i) => {
+      const x = ox + (14 + i * 2) * T, y = oy + 2 * T;
+      if (id === "school") { ctx.fillStyle = "#c7a54a"; ctx.fillRect(x + 1, y + 3, 8, 6); ctx.fillStyle = "#0b1020"; ctx.fillRect(x + 3, y + 5, 2, 2); ctx.fillRect(x + 6, y + 5, 2, 2); }
+      else if (id === "clinic") { ctx.fillStyle = "#f2f4ff"; ctx.fillRect(x + 1, y + 3, 8, 6); ctx.fillStyle = "#a53a3a"; ctx.fillRect(x + 4, y + 4, 2, 4); ctx.fillRect(x + 3, y + 5, 4, 2); }
+      else if (id === "pad") { ctx.fillStyle = "#5d6680"; ctx.fillRect(x, y + 4, 10, 5); ctx.fillStyle = Math.floor(g.world.time * 2) % 2 ? "#ffd75a" : "#3a4a6c"; ctx.fillRect(x + 4, y + 6, 2, 2); }
+      else if (id === "chapel") { ctx.fillStyle = "#7a5aa5"; ctx.fillRect(x + 2, y + 4, 6, 5); ctx.fillRect(x + 4, y + 1, 2, 3); ctx.fillStyle = "#ffe9a0"; ctx.fillRect(x + 4, y + 6, 2, 1); }
     });
     for (const n of this.npcs) drawPerson(ctx, Math.round(ox + n.x), Math.round(oy + n.y), n.skin, n.suit);
     drawPerson(ctx, Math.round(ox + this.px), Math.round(oy + this.py), "#e8b48c", "#3a6ea5");
