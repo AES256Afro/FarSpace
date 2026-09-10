@@ -219,7 +219,7 @@ export class StationScene implements Scene {
     if (inp.wasPressed("ArrowDown")) { this.cursor++; sfx.blip(); }
     if (inp.wheel) this.cursor += Math.sign(inp.wheel);
 
-    let clickedRow = false;
+    let clickedRow = false, rightClickedRow = false; // right-click on a market row always buys
     if (inp.mousePressed) {
       let tx = 8;
       for (let i = 0; i < TABS.length; i++) {
@@ -230,7 +230,7 @@ export class StationScene implements Scene {
     }
     if (inp.mouseX > 4 && inp.mouseX < 476) {
       const row = this.rowBoxes.findIndex(([y0, y1]) => inp.mouseY >= y0 && inp.mouseY <= y1);
-      if (row >= 0) { this.cursor = row; if (inp.mousePressed) clickedRow = true; }
+      if (row >= 0) { this.cursor = row; if (inp.mousePressed) clickedRow = true; if (inp.mouseRightPressed) rightClickedRow = true; }
     }
 
     const p = g.world.player;
@@ -250,7 +250,7 @@ export class StationScene implements Scene {
         // Enter and click sell what you hold; they buy only when your hold is empty of it. B and S stay explicit.
         const holding = (p.cargo[id] ?? 0) > 0;
         const wantSell = inp.wasPressed("s") || inp.wasPressed("Backspace") || (enter && holding);
-        const wantBuy = inp.wasPressed("b") || (enter && !holding);
+        const wantBuy = inp.wasPressed("b") || rightClickedRow || (enter && !holding);
         // Shift trades in bulk: a stack of ten bought, or the whole hold of it sold. Prices move with every unit.
         const bulk = inp.isDown("Shift");
         const buyQty = wantBuy ? (bulk ? 10 : 1) : 0;
