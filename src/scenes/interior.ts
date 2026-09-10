@@ -9,6 +9,7 @@ import { hull, HullDef } from "../data/hulls";
 import { CREW_LINES, ROLE_INFO } from "../data/crew";
 import { clamp, dist } from "../core/mathx";
 import { sfx } from "../core/sfx";
+import { music } from "../core/music";
 import { rankOf, rescuePoints, STORY_LEN } from "../world";
 import type { Encounter } from "../data/encounters";
 import type { EncounterScene } from "./encounter";
@@ -164,6 +165,7 @@ export class InteriorScene implements Scene {
   }
 
   update(g: Game, dt: number): void {
+    music.setMood("ship", g.world.player.fires.length ? 0.4 : 0);
     const inp = g.input;
     const p = g.world.player;
     if (inp.wasPressed("Escape") || inp.wasPressed("i")) { g.setScene("flight"); return; }
