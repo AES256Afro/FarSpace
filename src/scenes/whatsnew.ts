@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.58 - CORRIDOR TALK", [
+    "THE CREW TALK TO EACH OTHER ABOARD, WALK THE DECK DOOR TO DOOR, AND GATHER AT THE GALLEY AT MESS CALL. EAT WITH THEM.",
+  ]],
   ["0.57 - ENCOUNTERS", [
     "TEN NEW CARDS ON THE LANES AND THE GROUND, NONE OF THEM FIGHTS: A BUOY, A LOST DRONE, A BIRTHDAY, A HOT POOL, AND MORE.",
   ]],

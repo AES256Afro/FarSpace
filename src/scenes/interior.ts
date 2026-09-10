@@ -6,6 +6,8 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond } from "../world";
 import { commodity } from "../data/data";
+import { crewChatter, soloChatter, MESS_LINES } from "../data/chatter";
+import { RNG } from "../core/rng";
 
 const PASSENGER_LINES: Record<string, { high: string[]; mid: string[]; low: string[] }> = {
   vip: { high: ["This is almost civilised.", "I've told my people about this ship. Good things, for once.", "Keep flying like this and I'll book you again."],
@@ -137,7 +139,47 @@ export class InteriorScene implements Scene {
   banterTimer = 20;
   talkIdx = 0;
   cat = { x: 0, y: 0, tx: 0, ty: 0, pause: 1, sat: false };
-  crewPos: { x: number; y: number; tx: number; ty: number; pause: number }[] = [];
+  crewPos: { x: number; y: number; tx: number; ty: number; pause: number; goal?: number; path?: { tx: number; ty: number }[] }[] = [];
+  // corridor talk: short lines over the crew's heads, and the galley at mess call
+  bubbles: { i: number; text: string; life: number }[] = [];
+  chatCd = 2;
+  messUntil = 0;
+  messFed = false;
+  lastMessSlot = -1;
+  tickChatter(g: Game, p: import("../world").PlayerState, dt: number): void {
+    for (const b of this.bubbles) b.life -= dt;
+    this.bubbles = this.bubbles.filter((b) => b.life > 0);
+    this.chatCd -= dt; if (this.chatCd > 0) return;
+    this.chatCd = 2;
+    const mess = g.world.time < this.messUntil;
+    const rng = new RNG((g.world.seed ^ Math.floor(g.world.time * 7)) >>> 0);
+    const free = (i: number) => !this.bubbles.some((b) => b.i === i);
+    for (let i = 0; i < p.crew.length; i++) {
+      const a = p.crew[i]; const at = this.crewAt(i); if (!at || a.sick || !free(i) || this.bubbles.length >= 2) continue;
+      for (let j = 0; j < p.crew.length; j++) {
+        if (j === i) continue; const b = p.crew[j]; const bt = this.crewAt(j);
+        if (!bt || b.sick || dist(at.x, at.y, bt.x, bt.y) > 18) continue;
+        if (rng.chance(mess ? 0.35 : 0.2)) { this.bubbles.push({ i, text: crewChatter(g.world, a, b, rng), life: 4.5 }); break; }
+      }
+      if (free(i) && (this.crewPos[i]?.pause ?? 0) > 0 && rng.chance(0.03)) { const line = soloChatter(a); if (line) this.bubbles.push({ i, text: line, life: 3 }); }
+    }
+    // mess call: every so often the crew eat together; eat with them and they notice
+    const slot = Math.floor(g.world.time / 300);
+    if (slot !== this.lastMessSlot) {
+      if (this.lastMessSlot >= 0 && p.crew.filter((c) => !c.sick).length >= 2) { this.messUntil = g.world.time + 45; this.messFed = false; g.toast("MESS CALL - THE CREW HEAD FOR THE GALLEY"); }
+      this.lastMessSlot = slot;
+    }
+    if (mess && !this.messFed) {
+      const k = nearestTile(this.deck, 0, 0, "K", 1e9);
+      if (k && dist(k.tx * T + T / 2, k.ty * T + T / 2, this.px, this.py) < 22) {
+        this.messFed = true;
+        for (const c of p.crew) if (!c.sick) c.morale = Math.min(100, c.morale + 1);
+        const i = p.crew.findIndex((c) => !c.sick);
+        if (i >= 0) this.bubbles.push({ i, text: rng.pick(MESS_LINES), life: 5 });
+        this.say("YOU EAT WITH THE CREW. MORALE UP.");
+      }
+    }
+  }
   paxPos: Record<string, { x: number; y: number; tx: number; ty: number; pause: number }> = {};
   // passengers stretch their legs: the seat, the galley, the viewport, back to the seat
   wanderPassengers(p: import("../world").PlayerState, dt: number): void {
@@ -172,29 +214,66 @@ export class InteriorScene implements Scene {
     const c = this.crewPos[i];
     return c ? { x: c.x, y: c.y } : { x: sp.tx * T + T / 2, y: sp.ty * T + T / 2 };
   }
-  wanderCrew(p: import("../world").PlayerState, dt: number): void {
+  // Breadth-first path across the deck, door to door. Returns the tiles to walk, goal last.
+  findPath(fx: number, fy: number, tx: number, ty: number): { tx: number; ty: number }[] {
+    if (fx === tx && fy === ty) return [];
+    const w = this.deck[0].length, h = this.deck.length;
+    const prev = new Int32Array(w * h).fill(-1);
+    const q: number[] = [fy * w + fx]; prev[fy * w + fx] = fy * w + fx;
+    for (let qi = 0; qi < q.length && qi < 4000; qi++) {
+      const cur = q[qi]; const cx = cur % w, cy = Math.floor(cur / w);
+      if (cx === tx && cy === ty) {
+        const path: { tx: number; ty: number }[] = [];
+        for (let n = cur; n !== fy * w + fx; n = prev[n]) path.push({ tx: n % w, ty: Math.floor(n / w) });
+        return path.reverse();
+      }
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = cx + dx, ny = cy + dy; if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+        const ni = ny * w + nx; if (prev[ni] !== -1 || this.solid(nx, ny)) continue;
+        prev[ni] = cur; q.push(ni);
+      }
+    }
+    return [];
+  }
+  // floor tiles around the galley: a table's worth of places to sit
+  seatsAround(t: { tx: number; ty: number }): { tx: number; ty: number }[] {
+    const out = [t, { tx: t.tx + 1, ty: t.ty }, { tx: t.tx - 1, ty: t.ty }, { tx: t.tx, ty: t.ty + 1 }, { tx: t.tx, ty: t.ty - 1 }, { tx: t.tx + 1, ty: t.ty + 1 }];
+    return out.filter((s) => !this.solid(s.tx, s.ty) && this.tileAt(s.tx, s.ty) !== "D");
+  }
+  wanderCrew(p: import("../world").PlayerState, dt: number, mess = false): void {
     const spots = this.crewSpots();
+    const galley = mess ? nearestTile(this.deck, 0, 0, "K", 1e9) : null;
+    const seats = galley ? this.seatsAround(galley) : [];
     p.crew.forEach((c, i) => {
       const sp = spots[i]; if (!sp) return;
       let cp = this.crewPos[i];
       if (!cp) { cp = { x: sp.tx * T + T / 2, y: sp.ty * T + T / 2, tx: sp.tx * T + T / 2, ty: sp.ty * T + T / 2, pause: 3 + Math.random() * 6 }; this.crewPos[i] = cp; }
-      if (c.sick) { cp.tx = sp.tx * T + T / 2; cp.ty = sp.ty * T + T / 2; } // the sick stay in their bunks
-      if (cp.pause > 0) { cp.pause -= dt; return; }
-      const d = Math.hypot(cp.tx - cp.x, cp.ty - cp.y);
-      if (d < 1.5) {
-        cp.pause = 6 + Math.random() * 14;
-        const goHome = Math.random() < 0.5;
-        const dest = goHome ? sp : nearestTile(this.deck, cp.x, cp.y, Math.random() < 0.5 ? "K" : Math.random() < 0.5 ? "B" : "C", 1e9);
-        if (dest) { const dx = this.tileAt(dest.tx + 1, dest.ty) === "." ? 1 : this.tileAt(dest.tx - 1, dest.ty) === "." ? -1 : 0; cp.tx = (dest.tx + (goHome ? 0 : dx)) * T + T / 2; cp.ty = dest.ty * T + T / 2; }
-      } else {
-        const step = 16 * dt; const nx = cp.x + ((cp.tx - cp.x) / d) * step, ny = cp.y + ((cp.ty - cp.y) / d) * step;
-        if (!this.solid(Math.floor(nx / T), Math.floor(ny / T))) { cp.x = nx; cp.y = ny; } else { cp.tx = cp.x; cp.ty = cp.y; }
+      const setGoal = (tx: number, ty: number) => { const key = tx * 1000 + ty; if (cp.goal !== key) { cp.goal = key; cp.path = this.findPath(Math.floor(cp.x / T), Math.floor(cp.y / T), tx, ty); } };
+      if (c.sick) setGoal(sp.tx, sp.ty); // the sick stay in their bunks
+      else if (galley && seats.length) { const st = seats[i % seats.length]; setGoal(st.tx, st.ty); if (cp.path?.length) cp.pause = 0; }
+      // walk the path, one tile at a time
+      if (cp.path?.length) {
+        const n = cp.path[0]; const nx = n.tx * T + T / 2, ny = n.ty * T + T / 2; cp.tx = nx; cp.ty = ny;
+        const d = Math.hypot(nx - cp.x, ny - cp.y);
+        if (d < 0.8) { cp.x = nx; cp.y = ny; cp.path.shift(); if (!cp.path.length) cp.pause = galley ? 0.5 : 6 + Math.random() * 14; return; }
+        const step = Math.min(d, 16 * dt); cp.x += ((nx - cp.x) / d) * step; cp.y += ((ny - cp.y) / d) * step;
+        return;
       }
+      if (galley || c.sick) return; // seated, or laid up
+      if (cp.pause > 0) { cp.pause -= dt; return; }
+      const goHome = Math.random() < 0.5;
+      const dest = goHome ? sp : nearestTile(this.deck, cp.x, cp.y, Math.random() < 0.5 ? "K" : Math.random() < 0.5 ? "B" : "C", 1e9);
+      if (dest) {
+        const dx = goHome ? 0 : this.tileAt(dest.tx + 1, dest.ty) === "." ? 1 : this.tileAt(dest.tx - 1, dest.ty) === "." ? -1 : 0;
+        setGoal(dest.tx + dx, dest.ty);
+      }
+      if (!cp.path?.length) cp.pause = 4 + Math.random() * 6;
     });
   }
 
   enter(g: Game): void {
     const p = g.world.player;
+    this.bubbles = []; this.lastMessSlot = Math.floor(g.world.time / 300);
     this.deck = DECKS[hull(p.hullId).deck];
     this.rooms = computeRooms(this.deck, (ch) => ch !== "#");
     const nRooms = Math.max(...this.rooms.flat()) + 1;
@@ -316,8 +395,9 @@ export class InteriorScene implements Scene {
     const near = nearestTile(this.deck, this.px, this.py, "CELRWGMBKSH");
     const fire = p.fires.find((f) => dist(f.tx * T + T / 2, f.ty * T + T / 2, this.px, this.py) < 16);
     const breach = p.breaches.find((b) => dist(b.tx * T + T / 2, b.ty * T + T / 2, this.px, this.py) < 16);
-    this.wanderCrew(p, dt);
+    this.wanderCrew(p, dt, g.world.time < this.messUntil);
     this.wanderPassengers(p, dt);
+    this.tickChatter(g, p, dt);
     const crewNear = p.crew.map((c, i) => ({ c, spot: this.crewSpots()[i], at: this.crewAt(i) })).find((x) => x.at && dist(x.at.x, x.at.y, this.px, this.py) < 16);
     const passenger = p.missions.find((m) => m.kind === "passenger" && m.accepted && !m.done);
     const pSpot = nearestTile(this.deck, this.px, this.py, "p");
@@ -548,6 +628,18 @@ export class InteriorScene implements Scene {
       ctx.fillStyle = "#e0b070"; ctx.fillRect(cx - 2, cy - 1, 4, 2); ctx.fillRect(cx + 1, cy - 3, 2, 2); // body, head
       ctx.fillStyle = "#3a2a1a"; ctx.fillRect(cx - 3, cy - 2, 1, 1); // tail tip
       if (Math.floor(g.world.time * 2) % 4 === 0) { ctx.fillStyle = "#63f2c8"; ctx.fillRect(cx + 2, cy - 3, 1, 1); } // an eye
+    }
+    // corridor talk over their heads
+    const placed: { x: number; y: number; w: number }[] = [];
+    for (const b of this.bubbles) {
+      const at = this.crewAt(b.i); if (!at) continue;
+      const w = textWidth(b.text) + 4;
+      const bx = clamp(Math.round(ox + at.x - w / 2), 2, VW - w - 2); let by = Math.round(oy + at.y) - 34;
+      while (placed.some((q) => Math.abs(q.y - by) < 10 && bx < q.x + q.w + 2 && q.x < bx + w + 2)) by -= 10; // stack, don't overlap
+      placed.push({ x: bx, y: by, w });
+      ctx.fillStyle = "#0b1020"; ctx.fillRect(bx, by - 1, w, 9);
+      ctx.fillStyle = "#2a3550"; ctx.fillRect(clamp(Math.round(ox + at.x) - 1, bx + 2, bx + w - 4), by + 8, 2, 2);
+      drawText(ctx, b.text, bx + 2, by, b.text.startsWith("*") ? PAL.greyDark : PAL.ui);
     }
     const passenger = p.missions.find((m) => m.kind === "passenger" && m.accepted && !m.done);
     const pSpot = nearestTile(this.deck, 0, 0, "p", 1e9);

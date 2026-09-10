@@ -229,6 +229,17 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Corridor talk
+
+- Aboard, the crew talk to each other when they cross paths: shop talk by
+  role, warmth or needle depending on how they get on, and the state of the
+  ship (low hull, low fuel, a worn drive, thin credits, the cat, paying
+  passengers). Alone, they hum, shuffle cards, water the plant.
+- Crew now walk the deck properly, door to door, instead of stopping at the
+  first wall.
+- Mess call: every so often the crew gather at the galley for a while. Stand
+  with them and they notice. Morale up.
+
 ## More encounters
 
 - Ten new cards on the lanes and on the ground, none of them fights: a memorial

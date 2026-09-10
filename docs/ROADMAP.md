@@ -587,4 +587,10 @@ Time passes for the people on the ship, and for the ship.
       pod with a note, the late show, meteor shower, birthday, spacesick,
       hot pool, someone else's rover
 
+## Milestone 58 — Corridor Talk ✅ (Sep 2026)
+- [x] Crew talk to each other aboard: role, bond, ship-state and trait lines
+      as speech bubbles; solo habits
+- [x] Deck path-finding so crew walk between rooms
+- [x] Mess call: the crew gather at the galley; eat with them for morale
+
 ## Later

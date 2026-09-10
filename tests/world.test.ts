@@ -15,11 +15,12 @@ import { STARS, starDistance } from "../src/data/stars";
 import { ACHIEVEMENTS } from "../src/data/achievements";
 import { ARCS, dailyContract, dailyKey, rankOf, logSystem, applyHull } from "../src/world";
 import { MODULES } from "../src/data/modules";
-import { rareSellPrice, findStation } from "../src/world";
+import { rareSellPrice, findStation, genCrewCandidate } from "../src/world";
 import { RARES } from "../src/data/data";
 import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
 import { ENCOUNTERS, pickEncounter } from "../src/data/encounters";
+import { crewChatter, soloChatter } from "../src/data/chatter";
 import { STORY, storyObjective, CONVOY, convoyObjective } from "../src/core/story";
 import { homesteadYield, settleHomestead, HOMESTEAD_CAP, tickCrisis, crisisAt, tickGalaxyEvents, galaxyEventAt, rescuePoints, logEntry, embargoed, hasCharter } from "../src/world";
 import { genGround, groundKey, passable, GW, GH } from "../src/ground";
@@ -638,6 +639,22 @@ describe("encounters", () => {
     for (let i = 0; i < 40; i++) if (pickEncounter(g, "space", new RNG(100 + i))!.id === first.id) same++;
     expect(same).toBeLessThan(6);
     expect(pickEncounter(g, "ground", new RNG(2))!.where).toBe("ground");
+  });
+});
+
+describe("corridor talk", () => {
+  it("crew have something to say in every state", () => {
+    const w = generateWorld(23, { realGalaxy: true });
+    const rng = new RNG(5);
+    const a = genCrewCandidate(rng), b = genCrewCandidate(rng);
+    w.player.crew = [a, b];
+    const seen = new Set<string>();
+    for (const bd of [-3, 0, 3]) { a.bonds = { [b.name]: bd }; for (let i = 0; i < 20; i++) seen.add(crewChatter(w, a, b, new RNG(i))); }
+    expect(seen.size).toBeGreaterThan(8);
+    w.player.hull = 10; w.player.fuel = 1; w.player.credits = 50; w.player.cat = { name: "Biscuit", since: 0 }; a.morale = 10;
+    for (let i = 0; i < 30; i++) expect(crewChatter(w, a, b, new RNG(i)).length).toBeGreaterThan(5);
+    a.trait = "plays cards for matchsticks";
+    expect(soloChatter(a)).toContain("CARDS");
   });
 });
 
