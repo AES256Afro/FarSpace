@@ -132,6 +132,33 @@ export function ageLabel(t: number): string {
 // First discovery: the edge remembers who logged a system first. Null when
 // there is no call sign or the wire is unreachable (nothing is lost; retried on
 // the next arrival).
+// Lights other pilots keep in the real galaxy, by system name
+export interface Light { callsign: string; system: string; kind: "beacon" | "depot"; upgraded: boolean; t: number }
+let lightsCache: { at: number; lights: Light[] } | null = null;
+export async function fetchLights(force = false): Promise<Light[]> {
+  if (!force && lightsCache && Date.now() - lightsCache.at < 180_000) return lightsCache.lights;
+  try {
+    const r = await fetch(`${cloudBase()}/api/lights`);
+    if (!r.ok) return lightsCache?.lights ?? [];
+    const j = (await r.json()) as { lights: Light[] };
+    lightsCache = { at: Date.now(), lights: j.lights ?? [] };
+    return lightsCache.lights;
+  } catch { return lightsCache?.lights ?? []; }
+}
+export function lightsAt(systemName: string): Light[] {
+  const me = getCallsign();
+  return (lightsCache?.lights ?? []).filter((l) => l.system.toLowerCase() === systemName.toLowerCase() && l.callsign !== me);
+}
+export async function postLight(system: string, kind: "beacon" | "depot", upgraded: boolean): Promise<boolean> {
+  const callsign = getCallsign();
+  if (!callsign) return false;
+  try {
+    const r = await fetch(`${cloudBase()}/api/lights`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ system, callsign, kind, upgraded }) });
+    if (r.ok) lightsCache = null;
+    return r.ok;
+  } catch { return false; }
+}
+
 export async function discover(system: string): Promise<{ first: boolean; by: string } | null> {
   const callsign = getCallsign();
   if (!callsign) return null;

@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.48 - OTHER KEEPERS", [
+    "IN THE REAL GALAXY, LIGHTS OTHER PILOTS HAVE PLANTED SHOW ON YOUR CHART. YOURS SHOW ON THEIRS.",
+  ]],
   ["0.47 - COMFORT", [
     "SETTINGS FOR THE COMMS BAND AND THE SHIP'S VOICE. V HIDES THE GALAXY MAP OVERLAYS. TOUCH GETS PAUSE AND LOG.",
   ]],

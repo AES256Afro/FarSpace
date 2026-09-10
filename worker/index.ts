@@ -7,6 +7,7 @@
 //   GET  /api/board/:name     -> top 20 { callsign, score }
 //   POST /api/board/:name     <- { callsign, score }  keeps each call sign's best
 //   GET  /api/discover?system= / POST { system, callsign }  first-discovery tags
+//   GET  /api/lights / POST { system, callsign, kind, upgraded }  lights planted in the real galaxy
 //   GET  /api/goal?id= / POST { id, callsign, amount }      weekly community goal
 //   WS   /api/room/:system    presence + chat, one Durable Object per system
 // Codes are the only secret (like a share link). CORS is open so self-hosted
@@ -278,6 +279,32 @@ export default {
         g.contributors[callsign] = (g.contributors[callsign] ?? 0) + amount;
         await env.SAVES.put(`goal:${id}`, JSON.stringify(g), { expirationTtl: 60 * 60 * 24 * 21 });
         return json(view(id, g));
+      }
+      return json({ error: "method" }, 405);
+    }
+
+    // Lights: beacons, depots and waystations pilots have planted in the real galaxy,
+    // by system name, so other pilots' charts can show that somebody keeps a light there.
+    if (url.pathname === "/api/lights") {
+      if (request.method === "GET") {
+        const { keys } = await env.SAVES.list({ prefix: "light:", limit: 300 });
+        const lights: unknown[] = [];
+        for (const k of keys) { const v = await env.SAVES.get(k.name, "text"); if (v) { try { lights.push(JSON.parse(v)); } catch { /* skip */ } } }
+        return json({ lights });
+      }
+      if (request.method === "POST") {
+        if (await rateLimited(env, request, "lights", 20)) return json({ error: "slow down" }, 429);
+        let body: Record<string, unknown>;
+        try { body = (await request.json()) as Record<string, unknown>; } catch { return json({ error: "not json" }, 400); }
+        const callsign = clean(body.callsign, 16).toUpperCase();
+        const system = clean(body.system, 40);
+        const kind = clean(body.kind, 10);
+        const upgraded = !!body.upgraded;
+        if (!CALLSIGN.test(callsign)) return json({ error: "bad callsign" }, 400);
+        if (!system || (kind !== "beacon" && kind !== "depot")) return json({ error: "bad light" }, 400);
+        const rec = { callsign, system, kind, upgraded, t: Date.now() };
+        await env.SAVES.put(`light:${system.toLowerCase()}:${callsign}`, JSON.stringify(rec), { expirationTtl: 60 * 60 * 24 * 30 });
+        return json({ ok: true, light: rec });
       }
       return json({ error: "method" }, 405);
     }

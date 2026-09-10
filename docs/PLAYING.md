@@ -229,6 +229,12 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Other keepers
+
+- In the real-stars galaxy, a light you plant or upgrade is reported to the
+  wire under your call sign. Other pilots' lights show on your galaxy map
+  (a blue mark, and a line in the system's intel) for a month.
+
 ## Comfort
 
 - Settings: COMMS BAND (quiet, normal, busy) and THE SHIP'S VOICE (on or off).

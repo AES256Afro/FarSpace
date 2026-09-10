@@ -136,7 +136,7 @@ export class FlightScene implements Scene {
     }
     if (inf.upgraded) { p.vx = 0; p.vy = 0; g.infraTarget = inf; g.setScene("waystation"); return; }
     if (!canUpgradeInfra(inf, p) && confirmBox(`Build a waystation here? ${WAYSTATION_CREDITS}cr and ${WAYSTATION_PARTS} spare parts: a deck, a bar, a bunk. Tolls rise, the bar earns, and the regulars stop by.`)) {
-      if (upgradeInfra(inf, p)) { g.toast("THE WAYSTATION GOES UP OVER A LONG SHIFT. THERE'S A BAR. THERE'S A BUNK. IT'S YOURS."); logEntry(g.world, `Built a waystation in ${g.world.systems[p.systemId].name}`); flag(g, "waystation"); sfx.dock(); void wire.post("discover", `opened a waystation in ${g.world.systems[p.systemId].name}`, g.world.systems[p.systemId].name); return; }
+      if (upgradeInfra(inf, p)) { g.toast("THE WAYSTATION GOES UP OVER A LONG SHIFT. THERE'S A BAR. THERE'S A BUNK. IT'S YOURS."); logEntry(g.world, `Built a waystation in ${g.world.systems[p.systemId].name}`); flag(g, "waystation"); sfx.dock(); void wire.post("discover", `opened a waystation in ${g.world.systems[p.systemId].name}`, g.world.systems[p.systemId].name); if (g.world.realGalaxy) void wire.postLight(g.world.systems[p.systemId].name, inf.kind, true); return; }
     }
     const name = inf.kind.toUpperCase();
     const c = collectInfra(inf, p);
@@ -1217,7 +1217,7 @@ export class FlightScene implements Scene {
       if (confirmBox(`PLANT THE ${INFRA_KITS[kit].name.toUpperCase()} HERE, IN ${sys.name.toUpperCase()}?\n\n${INFRA_KITS[kit].desc}`)) {
         const r = buildInfra(g.world, kit, p.x, p.y, wire.getCallsign() ?? "YOU");
         if (typeof r === "string") g.toast(r);
-        else { g.toast(`${INFRA_KITS[kit].name.toUpperCase()} DEPLOYED. ${sys.name.toUpperCase()} IS ON THE CHARTS NOW.`); logEntry(g.world, `Planted a ${kit} in ${sys.name}`); flag(g, "lighthouse"); sfx.repair(); void wire.post("discover", `lit a ${kit} in ${sys.name}`, sys.name); populate(this, g); }
+        else { g.toast(`${INFRA_KITS[kit].name.toUpperCase()} DEPLOYED. ${sys.name.toUpperCase()} IS ON THE CHARTS NOW.`); logEntry(g.world, `Planted a ${kit} in ${sys.name}`); flag(g, "lighthouse"); sfx.repair(); void wire.post("discover", `lit a ${kit} in ${sys.name}`, sys.name); if (g.world.realGalaxy) void wire.postLight(sys.name, kit, false); populate(this, g); }
       }
       return;
     }

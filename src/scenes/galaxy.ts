@@ -23,6 +23,7 @@ export class GalaxyScene implements Scene {
 
   enter(g: Game): void {
     this.selected = g.world.player.systemId;
+    if (g.world.realGalaxy) void wire.fetchLights();
     void wire.fetchSquadronData();
     void wire.fetchBases();
     void wire.fetchRooms().then((r) => { this.rooms = Object.fromEntries(r.rooms.map((x) => [x.system.toLowerCase(), x.count])); this.pilots = r.pilots; });
@@ -154,6 +155,7 @@ export class GalaxyScene implements Scene {
       }
       if (w.player.bookmarks?.includes(sys.id)) { ctx.fillStyle = PAL.gold; ctx.fillRect(Math.round(x) - 6, Math.round(y) - 6, 2, 2); ctx.fillRect(Math.round(x) + 4, Math.round(y) - 6, 2, 2); }
       if (this.layers) { const wd = wondersIn(w, sys.id)[0]; if (wd && (wd.seen || w.player.flags?.[`rumour:${wd.id}`])) { ctx.fillStyle = PAL.gold; ctx.fillRect(Math.round(x) + 6, Math.round(y) + 4, 2, 2); ctx.fillRect(Math.round(x) + 7, Math.round(y) + 3, 1, 1); } }
+      if (this.layers && w.realGalaxy && wire.lightsAt(sys.name).length) { ctx.fillStyle = PAL.info; ctx.fillRect(Math.round(x) - 9, Math.round(y) + 4, 2, 2); }
       if (this.layers) { const inf = infraAt(w, sys.id); if (inf.length) { const lit = inf.some(infraLit); if (lit && Math.floor(w.time * 1.5) % 2 === 0) { ctx.fillStyle = "#ffe9a0"; ctx.fillRect(Math.round(x) - 1, Math.round(y) - 9, 3, 3); } else if (!lit) { ctx.fillStyle = PAL.danger; ctx.fillRect(Math.round(x), Math.round(y) - 9, 2, 2); } } }
       const here = this.rooms[sys.name.toLowerCase()];
       if (here) { ctx.fillStyle = PAL.info; ctx.fillRect(Math.round(x) + 4, Math.round(y) - 1, 2, 2); drawText(ctx, `${here}`, x + 7, y - 4, PAL.info); }
@@ -186,6 +188,7 @@ export class GalaxyScene implements Scene {
       const homes = (w.player.homesteads ?? []).filter((h) => h.systemId === sys.id);
       if (homes.length) { drawText(ctx, `HOMESTEAD: ${homes.map((h) => sys.planets[h.planetIdx].name).join(", ")}`.slice(0, 27), px + 6, y, PAL.gold); y += 9; }
       for (const wd of wondersIn(w, sys.id)) { if (wd.seen || w.player.flags?.[`rumour:${wd.id}`]) { drawText(ctx, `${wd.seen ? "WONDER" : "RUMOURED"}: ${wd.name.toUpperCase()}`.slice(0, 27), px + 6, y, PAL.gold); y += 9; const fb = w.player.firsts?.[`wonder:${wd.id}`]; if (fb) { drawText(ctx, `FIRST LOGGED BY ${fb}`.slice(0, 27), px + 6, y, PAL.gold); y += 9; } } }
+      if (w.realGalaxy) for (const l of wire.lightsAt(sys.name).slice(0, 2)) { drawText(ctx, `${l.callsign}'S ${l.upgraded ? "WAYSTATION" : l.kind.toUpperCase()}`.slice(0, 27), px + 6, y, PAL.info); y += 9; }
       for (const inf of infraAt(w, sys.id)) { drawText(ctx, `${inf.kind.toUpperCase()}: ${infraLit(inf) ? `LIT, TILL ${Math.round(inf.till)}CR` : "DARK"}`.slice(0, 27), px + 6, y, infraLit(inf) ? PAL.gold : PAL.danger); y += 9; }
       if (!sys.stations.length && !infraAt(w, sys.id).length && ((w.player.kits?.beacon ?? 0) > 0 || (w.player.kits?.depot ?? 0) > 0)) { drawText(ctx, "DEAD SYSTEM: KIT DEPLOYABLE", px + 6, y, PAL.gold); y += 9; }
       const first = w.player.firsts?.[sys.id];

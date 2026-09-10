@@ -549,4 +549,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Settings for the comms band and the ship's voice; galaxy map layers (V);
       touch pause and log buttons; a title for Elite in every trade
 
+## Milestone 48 — Other Keepers ✅ (Sep 2026)
+- [x] Lights planted in the real galaxy are shared through the wire and shown
+      on every pilot's chart
+
 ## Later
