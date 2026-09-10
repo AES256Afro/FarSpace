@@ -493,4 +493,9 @@ Time passes for the people on the ship, and for the ship.
       hostile hails; won round by helping them
 - [x] The harbourmaster's office on the promenade
 
+## Milestone 34 — Belonging ✅ (Sep 2026)
+- [x] Friends ride along for three dockings
+- [x] A home port with cheaper yard services and settled crew
+- [x] Museums at research stations that take relics with your name
+
 ## Later

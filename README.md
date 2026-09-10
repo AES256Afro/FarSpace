@@ -51,6 +51,9 @@ charters and enforce embargoes, station profiles and bulletins, gate traffic,
 comms chatter, void drifters near gas giants, crew who talk to each other, a
 wall of record aboard your ship, and a second campaign about a missing convoy.
 
+**Belonging:** friends who ride along for a few dockings, a home port with
+cheaper services, and museums that take your relics with your name.
+
 **Rivals:** a regular captain who competes without shooting, takes fares
 and sights and routes, and can be won round; a harbourmaster's office.
 
@@ -165,7 +168,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestones 1–33 are live (v0.33.0). See the [roadmap](docs/ROADMAP.md) for what's next.
+Milestones 1–34 are live (v0.34.0). See the [roadmap](docs/ROADMAP.md) for what's next.
 
 ```bash
 npm test         # vitest: world-gen, routing, economy, law, missions, save migrations

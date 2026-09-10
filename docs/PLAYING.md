@@ -101,6 +101,15 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   board: sample runs, outcrop runs, and a plant to fix on the spot. Jobs pay
   out when you walk back in.
 
+## Belonging
+
+- A friend in the lounge can be asked to ride along: their ship flies beside
+  yours for three dockings, engages corsairs, and peels off for home after.
+- MAKE THIS YOUR HOME PORT at any shipyard: yard prices drop 15% there, crew
+  settle, control welcomes you home, the chronicle names it.
+- Research stations have a museum. Donate a relic and a card with your name
+  goes under the glass; GalNet and the NEWS tab mention it.
+
 ## Rivals and the harbourmaster
 
 - One of the regulars took against you before you ever met. They take the

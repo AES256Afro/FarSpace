@@ -451,7 +451,8 @@ export function npcKilled(fs: FlightScene, g: Game, n: Npc, byPlayer: boolean): 
       fs.loot.push({ x: n.x, y: n.y, commodityId: id, qty: 1 + Math.floor(Math.random() * 3), life: 60 });
     }
   } else if (n.kind === "drone") {
-    g.toast("ESCORT DRONE LOST - RE-ARMS AT NEXT DOCK");
+    if (n.companion) { g.toast(`${(n.name ?? "YOUR FRIEND").toUpperCase()} IS HIT AND BREAKS OFF FOR HOME. THEY'LL LIVE. THEY'LL REMEMBER.`); g.world.player.companion = null; }
+    else g.toast("ESCORT DRONE LOST - RE-ARMS AT NEXT DOCK");
   } else {
     // traders drop what they were hauling, whoever killed them
     if (n.cargo) fs.loot.push({ x: n.x, y: n.y, commodityId: n.cargo.id, qty: n.cargo.qty, life: 60 });

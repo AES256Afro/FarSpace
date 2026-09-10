@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
-  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn, captainByName, helpCaptain, isFriend, friendsAt, tickMail, pickCaptainFor, canUpgradeInfra, upgradeInfra, rivalOf, isRival, rivalTakesFare, rivalBeatsYouTo } from "../src/world";
+  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn, captainByName, helpCaptain, isFriend, friendsAt, tickMail, pickCaptainFor, canUpgradeInfra, upgradeInfra, rivalOf, isRival, rivalTakesFare, rivalBeatsYouTo, askRideAlong, tickRideAlong, setHomePort, isHome, donateRelic } from "../src/world";
 import type { Charter } from "../src/world";
 import type { Infra } from "../src/world";
 import { migrateSave, SAVE_VERSION, saveKeyFor, SLOTS } from "../src/save";
@@ -1252,5 +1252,34 @@ describe("rivals", () => {
     helpCaptain(w, r.name, "tow", new RNG(2));
     expect(isRival(r)).toBe(false);
     expect(rivalOf(w)).toBeNull();
+  });
+});
+
+describe("belonging", () => {
+  it("a friend rides along for three dockings, a home port is remembered, museums take relics with your name", () => {
+    const w = generateWorld(171, { realGalaxy: true });
+    const p = w.player;
+    const c = w.captains![0];
+    expect(askRideAlong(p, c)).toContain("LEAD ON");
+    expect(p.companion!.docks).toBe(3);
+    expect(askRideAlong(p, c)).toContain("ALREADY");
+    expect(tickRideAlong(p)).toBeNull(); expect(tickRideAlong(p)).toBeNull();
+    expect(tickRideAlong(p)).toContain("PEELS OFF");
+    expect(p.companion).toBeNull();
+    const st = w.systems[p.systemId].stations[0];
+    setHomePort(p, st.id);
+    expect(isHome(p, st.id)).toBe(true);
+    expect(chronicleText(w, "T")).toContain("Home port");
+    const research = Object.values(w.systems).flatMap((s) => s.stations).find((s) => s.type === "research")!;
+    p.cargo = {};
+    expect(donateRelic(w, research, "TESTER")).toBeNull();
+    p.cargo = { relics: 2 };
+    const line = donateRelic(w, research, "TESTER");
+    expect(line).toContain("YOUR NAME");
+    expect(research.museum!.length).toBe(1);
+    expect(research.museum![0].by).toBe("TESTER");
+    expect(p.cargo.relics).toBe(1);
+    const agri = Object.values(w.systems).flatMap((s) => s.stations).find((s) => s.type === "agri");
+    if (agri) expect(donateRelic(w, agri, "TESTER")).toBeNull();
   });
 });

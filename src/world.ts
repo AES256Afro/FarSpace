@@ -58,7 +58,9 @@ export interface Planet {
   surface: PlanetSurface | null;
 }
 
+export interface MuseumPiece { by: string; item: string; t: number }
 export interface StationDef {
+  museum?: MuseumPiece[];            // research stations: relics donated, with the donor's name
   id: string;
   name: string;
   type: StationType;
@@ -288,6 +290,9 @@ export interface PlayerState {
   furnishings?: string[];            // things bought for the deck (FURNISHINGS)
   haulers?: Charter[];               // haulers you pay to run your routes while you fly
   mail?: Letter[];                   // letters received (last 20)
+  companion?: { name: string; ship: string; docks: number } | null; // a friend flying alongside for a few dockings
+  homePort?: string;                 // station id: cheaper yard, happier crew, a place the chronicle names
+  donations?: number;                // relics given to museums
   grown?: number;                    // crates of provisions the greenhouse has grown
   postcards?: number;                // pictures taken
   lineage?: Captain[];               // captains who sat in this chair before
@@ -471,7 +476,7 @@ export function chronicleText(w: World, callsign: string | null): string {
   const name = (p.captainName ?? callsign ?? "The Captain");
   const lines: string[] = [];
   lines.push(`FARSPACE CHRONICLE - ${(p.shipName ?? hull(p.hullId).name).toUpperCase()}`);
-  lines.push(`Captain: ${name}. ${h}h ${m}m under way. ${p.credits} credits. ${w.realGalaxy ? "The real stars." : "An uncharted galaxy."}`);
+  lines.push(`Captain: ${name}. ${h}h ${m}m under way. ${p.credits} credits. ${w.realGalaxy ? "The real stars." : "An uncharted galaxy."}${p.homePort ? ` Home port: ${findStation(w, p.homePort)?.st.name ?? "?"}.` : ""}`);
   lines.push("");
   lines.push(`Ranks: explorer ${rankOf(p, "explorer").title}, trader ${rankOf(p, "trader").title}, miner ${rankOf(p, "miner").title}, rescuer ${rankOf(p, "rescuer").title}.`);
   lines.push(`Rescues ${p.rescues ?? 0}, repairs ${p.repairs ?? 0}, tows ${p.tows ?? 0}, lives ${p.lives ?? 0}, fares ${p.fares ?? 0}, first discoveries ${Object.values(p.firsts ?? {}).filter(Boolean).length}, postcards ${p.postcards ?? 0}.`);
@@ -778,6 +783,36 @@ export function tickMail(w: World): string[] {
   }
   return out;
 }
+// A friend can be asked to fly alongside for a few dockings. Their ship follows
+// yours, engages corsairs, and peels off for home when the time is up.
+export const RIDE_ALONG_DOCKS = 3;
+export function askRideAlong(p: PlayerState, c: NpcCaptain): string {
+  if (p.companion) return `${p.companion.name.toUpperCase()} IS ALREADY FLYING WITH YOU`;
+  p.companion = { name: c.name, ship: c.ship, docks: RIDE_ALONG_DOCKS };
+  return `${c.name.toUpperCase()}: 'THE ${c.ship.toUpperCase()} IS FUELLED. THREE DOCKINGS, THEN I'VE GOT MY OWN RUNS. LEAD ON.'`;
+}
+export function tickRideAlong(p: PlayerState): string | null {
+  if (!p.companion) return null;
+  p.companion.docks--;
+  if (p.companion.docks <= 0) { const n = p.companion.name.toUpperCase(); p.companion = null; return `${n} PEELS OFF FOR HOME. 'ANY TIME. I MEAN THAT.'`; }
+  return null;
+}
+// Home port: one station you call yours
+export function setHomePort(p: PlayerState, stationId: string): void { p.homePort = stationId; }
+export function isHome(p: PlayerState, stationId: string): boolean { return p.homePort === stationId; }
+// Museums at research stations take relics and remember who brought them
+export function donateRelic(w: World, st: StationDef, by: string): string | null {
+  if (st.type !== "research") return null;
+  const p = w.player;
+  if (!removeCargo(p, "relics", 1)) return null;
+  const item = `${["a carved stone", "a sealed data slate", "a drifter bone", "a coin from no mint", "a lamp that still burns", "a child's toy, very old"][(p.donations ?? 0) % 6]}`;
+  (st.museum ??= []).push({ by, item, t: w.time }); if (st.museum.length > 12) st.museum.shift();
+  p.donations = (p.donations ?? 0) + 1;
+  adjustRep(w, st.factionId, 4);
+  pushEvent(w, { t: w.time, kind: "discovery", systemId: findStation(w, st.id)?.sys.id ?? p.systemId, text: `${st.name}'s museum unveils ${item}, donated by ${by}` });
+  return `THE CURATOR TAKES ${item.toUpperCase()} WITH BOTH HANDS. A CARD WITH YOUR NAME GOES UNDER THE GLASS. STANDING UP.`;
+}
+
 // A rival: a regular who took against you (one starts that way). They grab fares,
 // beat you to sights, undercut your routes and talk on the wire. Helping them
 // when they're in trouble is the way back; disposition is one number for both.

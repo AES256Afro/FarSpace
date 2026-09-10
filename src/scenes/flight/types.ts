@@ -25,6 +25,7 @@ export interface Npc {
   casualties?: boolean; // wounded aboard: a medic's job, not a wrench's
   docked?: boolean;   // slipped into a bay: removed quietly, not destroyed
   transit?: { tx: number; ty: number }; // through-traffic in a lit system: gate to gate, then gone
+  companion?: boolean; // a friend's ship flying alongside
 }
 
 export interface Torpedo {

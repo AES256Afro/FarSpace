@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS, roleLabel } from "../
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, friendsAt, helpCaptain, rivalTakesFare, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter,
+  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter,
 } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
@@ -102,7 +102,7 @@ export class StationScene implements Scene {
     g.showHint("station", "ARROWS/CLICK TO BROWSE - ENTER TO ACT - ESC UNDOCKS - P WALKS THE DECK");
     g.autosave();
     const bay = g.lastBay || (1 + (this.station.id.length * 7 + Math.floor(g.world.time)) % 6);
-    const title = rankOf(p, "rescuer").idx >= 3 ? rankOf(p, "rescuer").title : hasCharter(g.world, this.station.factionId) ? "CHARTERED" : (p.lineage ?? []).length ? "OF THE LINE" : "";
+    const title = isHome(p, this.station.id) ? "WELCOME HOME" : rankOf(p, "rescuer").idx >= 3 ? rankOf(p, "rescuer").title : hasCharter(g.world, this.station.factionId) ? "CHARTERED" : (p.lineage ?? []).length ? "OF THE LINE" : "";
     g.toast(`${this.station.name.toUpperCase()} CONTROL: ${p.shipName ? p.shipName + ", " : ""}${title ? title + ", " : ""}CLEARANCE GRANTED, BAY ${bay}`);
     { const c = collectCharters(p); for (const l of c.lines) g.toast(l); if (c.total !== 0) sfx.pickup(); }
     { const m = tickMail(g.world); for (const l of m) g.toast(l); if (m.length) sfx.pickup(); }
@@ -168,6 +168,8 @@ export class StationScene implements Scene {
     const alum = (p.alumni ?? []).filter((a) => a.stationId === this.station.id);
     if (alum.length && rng.chance(0.4)) { const a = rng.pick(alum); g.toast(`${a.name.toUpperCase()} WAVES FROM THE LOUNGE. ${roleLabel(a.role)}, RETIRED. ${a.docks} DOCKINGS WITH YOU.`); }
     for (const line of tickBonds(p, rng)) g.toast(line);
+    { const l = tickRideAlong(p); if (l) g.toast(l); }
+    if (isHome(p, this.station.id)) for (const c of p.crew) c.morale = Math.min(100, c.morale + 2);
     for (const line of settlePassengers(p)) g.toast(line);
     const evHere = galaxyEventAt(g.world, p.systemId);
     if (evHere?.kind === "festival" && evHere.stationId === this.station.id && logSight(p, "festival", `the festival at ${this.station.name}`, p.systemId)) g.toast("YOUR PASSENGERS ARE OFF INTO THE FESTIVAL CROWD. THEY'LL REMEMBER THIS ONE.");
@@ -484,7 +486,14 @@ export class StationScene implements Scene {
         if (enter) {
           if (this.cursor < st.barPatrons.length) {
             const rng = new RNG((g.world.seed ^ (this.cursor * 7727) ^ Math.floor(g.world.time / 20)) >>> 0);
-            this.barLine = rng.pick(BAR_LINES)(g, this.station);
+            const fr = friendsAt(g.world, st.id).find((c) => c.name === st.barPatrons[this.cursor]);
+            if (fr && !p.companion) {
+              const enc: Encounter = { id: "ride", where: "space", title: `${fr.name.toUpperCase()} - ${fr.ship.toUpperCase()}`, weight: 0, text: `${fr.name.toUpperCase()} PUSHES A GLASS ACROSS. 'I'VE GOT A FEW DAYS. IF YOU WANT COMPANY ON THE LANES, THE ${fr.ship.toUpperCase()} FLIES WELL ENOUGH, AND I DON'T MIND CORSAIRS.'`, options: [
+                { label: `ASK THEM TO RIDE ALONG (${RIDE_ALONG_DOCKS} DOCKINGS)`, result: (g2) => { flag(g2, "rideAlong"); return askRideAlong(g2.world.player, fr); } },
+                { label: "JUST TALK", result: (g2) => rng.pick(BAR_LINES)(g2, this.station).toUpperCase() },
+              ] };
+              (g.scenes["encounter"] as EncounterScene).open(g, enc, "station", true);
+            } else this.barLine = rng.pick(BAR_LINES)(g, this.station);
           } else if (this.cursor < st.barPatrons.length + this.candidates.length) {
             const c = this.candidates[this.cursor - st.barPatrons.length];
             if (c) this.hire(g, c);
@@ -806,8 +815,9 @@ export class StationScene implements Scene {
     // patron squadrons keep their faction's yards half price for members
     const patronHere = (!!wire.getSquadron() && wire.patronOf(st.factionId) === wire.getSquadron()) || this.myBaseHere() || hasCharter(g.world, st.factionId);
     const depot = this.baseHas("depot");
-    const fuelPrice = depot ? 0 : patronHere ? Math.max(1, Math.round(st.fuelPrice / 2)) : st.fuelPrice;
-    const repairPrice = depot ? 0 : patronHere ? Math.max(1, Math.round(st.repairPrice / 2)) : st.repairPrice;
+    const homeMul = isHome(p, st.id) ? 0.85 : 1;
+    const fuelPrice = depot ? 0 : Math.max(1, Math.round((patronHere ? Math.max(1, Math.round(st.fuelPrice / 2)) : st.fuelPrice) * homeMul));
+    const repairPrice = depot ? 0 : Math.max(1, Math.round((patronHere ? Math.max(1, Math.round(st.repairPrice / 2)) : st.repairPrice) * homeMul));
     const fuelNeed = Math.ceil(p.fuelMax - p.fuel);
     opts.push({ label: `REFUEL (${fuelNeed} UNITS)${patronHere ? " - PATRON RATE" : ""}`, sub: `${fuelNeed * fuelPrice}CR`, action: () => {
       if (fuelNeed <= 0) return g.toast("TANKS FULL");
@@ -892,6 +902,8 @@ export class StationScene implements Scene {
         opts.push({ label: "CHARTER A HAULER", sub: "VISIT ANOTHER MARKET FIRST: A CHARTER RUNS YOUR BEST KNOWN ROUTE FROM HERE", action: () => g.toast("NO KNOWN RUN FROM HERE YET - DOCK AT ANOTHER STATION AND COME BACK") });
       }
     }
+    if (!isHome(p, st.id)) opts.push({ label: "MAKE THIS YOUR HOME PORT", sub: `YARD PRICES -15% HERE, CREW SETTLE, THE CHRONICLE NAMES IT${p.homePort ? " (REPLACES " + (findStation(g.world, p.homePort)?.st.name.toUpperCase() ?? "?") + ")" : ""}`, action: () => { setHomePort(p, st.id); logEntry(g.world, `${st.name} is home port now`); g.toast(`${st.name.toUpperCase()} IS HOME. THE HARBOURMASTER WRITES IT DOWN.`); sfx.select(); flag(g, "homePort"); } });
+    if (st.type === "research" && (p.cargo.relics ?? 0) > 0) opts.push({ label: "DONATE A RELIC TO THE MUSEUM", sub: "STANDING UP, A CARD WITH YOUR NAME UNDER THE GLASS", action: () => { const l = donateRelic(g.world, st, p.captainName ?? wire.getCallsign() ?? (p.shipName ? `the ${p.shipName}` : "an independent captain")); if (l) { g.toast(l); sfx.pickup(); flag(g, "donor"); } } });
     opts.push({ label: "REST A WHILE (TEN MINUTES OF SHIP TIME)", sub: "MARKETS BREATHE, TILLS FILL, THE SICK MEND, CREW SETTLE", action: () => {
       const lines = restAtDock(g.world);
       g.toast(lines[0] ?? "TEN MINUTES PASS. THE DECK HUMS. NOTHING BROKE."); for (const l of lines.slice(1)) g.toast(l);
@@ -1649,6 +1661,7 @@ export class StationScene implements Scene {
       bl.slice(0, 4).forEach((l, i) => drawText(ctx, l.toUpperCase().slice(0, 112), 8, top + 29 + i * 8, l.startsWith("URGENT") || l.startsWith("STRIKE") ? PAL.danger : l.startsWith("FESTIVAL") ? PAL.gold : PAL.grey));
       top += 29 + Math.min(4, bl.length) * 8 + 6;
     }
+    if (this.station.museum?.length) { const m = this.station.museum[this.station.museum.length - 1]; drawText(ctx, `MUSEUM: ${this.station.museum.length} PIECE${this.station.museum.length > 1 ? "S" : ""} - LATEST ${m.item.toUpperCase()}, DONATED BY ${m.by.toUpperCase()}`.slice(0, 112), 8, top, PAL.gold); top += 9; }
     const mail = g.world.player.mail ?? [];
     if (mail.length) {
       drawText(ctx, `LETTERS (${mail.length})`, 8, top, PAL.gold);

@@ -5,7 +5,7 @@ import { ask, confirmBox } from "../../core/dialog";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, crewXp, stormBlind, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, crewXp, stormBlind, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra } from "../../world";
 import { COMMODITIES, commodity } from "../../data/data";
 import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
@@ -99,6 +99,11 @@ export class FlightScene implements Scene {
     populate(this, g);
     this.spawnDrifters(g);
     this.launchDrones(g);
+    if (g.world.player.companion) {
+      const p = g.world.player; const c = p.companion!;
+      this.npcs.push({ kind: "drone", x: p.x - Math.cos(p.angle) * 50, y: p.y - Math.sin(p.angle) * 50, vx: p.vx, vy: p.vy, angle: p.angle, hull: 90, hullMax: 90, fireCd: 0, targetIdx: 1, name: c.name, companion: true });
+      this.comms.push({ from: `${c.name.toUpperCase()}, ${c.ship.toUpperCase()}`, text: ["RIGHT BEHIND YOU.", "STILL HERE. PICK A HEADING.", "LAST STOP BEFORE I TURN FOR HOME. MAKE IT A GOOD ONE."][Math.max(0, RIDE_ALONG_DOCKS - c.docks)] ?? "RIGHT BEHIND YOU.", life: 6, color: PAL.gold });
+    }
     this.startEscortIfNeeded(g);
     {
       const p = g.world.player;
