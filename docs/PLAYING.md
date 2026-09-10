@@ -81,6 +81,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   across and hold off the two corsair waves that come for a sitting duck.
 - Damaged convoys and freighters take a spare part for credits and standing;
   syndicate convoys remember it.
+- Or tow the freighter into any dock (slow, no cruise, no jumps, keep the line
+  under 420m), or take its three survivors aboard and hand them over at your
+  next dock.
+- Stations post engineering tenders (walk their plant and fix three systems,
+  paid on the spot) and call crises: an outbreak, famine or blackout that pays
+  2.5x for med supplies, provisions or fuel cells before the clock runs out,
+  with a bonus and standing for whoever brings the last unit.
 
 ## Syndicates and trade routes
 
