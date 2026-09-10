@@ -112,6 +112,7 @@ export class InteriorScene implements Scene {
   spreadCd = 20;
   talk = "";
   talkTimer = 0;
+  banterTimer = 20;
 
   enter(g: Game): void {
     const p = g.world.player;
@@ -288,6 +289,29 @@ export class InteriorScene implements Scene {
     }
     if (this.msgTimer > 0) { this.msgTimer -= dt; if (this.msgTimer <= 0) this.msg = ""; }
     if (this.talkTimer > 0) { this.talkTimer -= dt; if (this.talkTimer <= 0) this.talk = ""; }
+    // crew talk to each other when you're not talking to them
+    this.banterTimer -= dt;
+    if (this.banterTimer <= 0 && !this.talk && p.crew.length >= 2) {
+      this.banterTimer = 30 + Math.random() * 30;
+      const a = p.crew[Math.floor(Math.random() * p.crew.length)];
+      let b = p.crew[Math.floor(Math.random() * p.crew.length)];
+      if (b === a) b = p.crew.find((c) => c !== a) ?? a;
+      const lowMorale = Math.min(a.morale, b.morale) < 35;
+      const lines = lowMorale ? [
+        [`${a.name}: How long since we ate anything that wasn't a bar?`, `${b.name}: Don't. I'm trying not to count.`],
+        [`${a.name}: I had an offer at the last station.`, `${b.name}: You say that every station.`],
+        [`${a.name}: Is the captain even listening to us?`, `${b.name}: Ask the wall of record. It listens more.`],
+      ] : [
+        [`${a.name}: Nice burn through the belt back there.`, `${b.name}: That was me. The captain just held on.`],
+        [`${a.name}: Bet you a shift the next mayday's a medic job.`, `${b.name}: Bet you two it's corsairs pretending.`],
+        [`${a.name}: Galley's stocked. Real coffee.`, `${b.name}: Then this is the best ship in the sector.`],
+        [`${a.name}: Did you see the drifters off the gas giant?`, `${b.name}: I saw them. They saw us. Nobody blinked.`],
+        [`${a.name}: The reactor's humming in tune again.`, `${b.name}: I retuned it. You're welcome. Again.`],
+      ];
+      const pick = lines[Math.floor(Math.random() * lines.length)];
+      this.talk = `${pick[0].toUpperCase()}   ${pick[1].toUpperCase()}`;
+      this.talkTimer = 7;
+    }
   }
 
   draw(g: Game, ctx: CanvasRenderingContext2D): void {
