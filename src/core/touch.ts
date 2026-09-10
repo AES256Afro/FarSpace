@@ -26,11 +26,14 @@ export function touchButtons(mode: "flight" | "walk" | "menu"): Btn[] {
       { key: "e", label: "USE", x: VW - 62, y: VH - 82, r: 13 },
       { key: "Tab", label: "MAP", x: VW - 16, y: 14, r: 10 },
       { key: "i", label: "SHIP", x: VW - 40, y: 14, r: 10 },
+      { key: "j", label: "CRZ", x: VW - 64, y: 14, r: 10 },
+      { key: "n", label: "AUTO", x: VW - 88, y: 14, r: 10 },
     ];
   }
   if (mode === "walk") {
     return [
       { key: "e", label: "USE", x: VW - 30, y: VH - 50, r: 16 },
+      { key: "v", label: "SCAN", x: VW - 66, y: VH - 40, r: 13 },
       { key: "Escape", label: "ESC", x: VW - 16, y: 14, r: 10 },
     ];
   }

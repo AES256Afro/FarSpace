@@ -15,6 +15,7 @@ import { RuinScene } from "./scenes/ruin";
 import { SettingsScene } from "./scenes/settings";
 import { SurfaceScene } from "./scenes/surface";
 import { HelpScene } from "./scenes/help";
+import { WhatsNewScene } from "./scenes/whatsnew";
 import { checkAchievements } from "./core/achievements";
 import { presence } from "./core/presence";
 import { initAudioUnlock } from "./core/sfx";
@@ -39,6 +40,7 @@ game.scenes["ruin"] = new RuinScene();
 game.scenes["settings"] = new SettingsScene();
 game.scenes["surface"] = new SurfaceScene();
 game.scenes["help"] = new HelpScene();
+game.scenes["whatsnew"] = new WhatsNewScene();
 
 game.setScene("title");
 initAudioUnlock();
