@@ -45,6 +45,12 @@ bring three dead systems back on a suit clock, or send your engineer across and
 stand guard while they work. Crew ask for things when you dock, and loyalty
 means something. Stake homestead claims on worlds you've charted.
 
+**A living galaxy:** four career ladders including Rescuer, comets and solar
+flares and festivals and strikes, faction envoys who sell amnesties and grant
+charters and enforce embargoes, station profiles and bulletins, gate traffic,
+comms chatter, void drifters near gas giants, crew who talk to each other, a
+wall of record aboard your ship, and a second campaign about a missing convoy.
+
 **The Signal:** a seven-stage campaign that starts once you've logged a few
 systems and ends beside a star with a warship that has no faction. Fourteen
 encounter cards interrupt flight and rover drives with choices that matter.
@@ -105,7 +111,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestones 1–17 are live (v0.17). See the [roadmap](docs/ROADMAP.md) for what's next.
+Milestones 1–17 are live (v0.17.5). See the [roadmap](docs/ROADMAP.md) for what's next.
 
 ```bash
 npm test         # vitest: world-gen, routing, economy, law, missions, save migrations
