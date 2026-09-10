@@ -1636,6 +1636,28 @@ export function hasCharter(w: World, factionId: string): boolean {
   return (w.player.charters ?? []).includes(factionId);
 }
 
+// Settlement mood: a line for outposts and cities, seeded per site and day
+export function settlementLine(w: World, poi: Poi, region: Region, now = Date.now()): string {
+  const rng = new RNG(hashStr(`settle:${w.seed}:${poi.id}:${dailyKey(now)}`));
+  const res = COMMODITIES.find((c) => c.id === region.resource)?.name ?? region.resource;
+  const cr = w.crisis;
+  if (cr) { const f = findStation(w, cr.stationId); if (f && f.sys.id === w.player.systemId) return `Word from orbit: ${f.st.name} has ${cr.kind === "outbreak" ? "an outbreak" : cr.kind === "famine" ? "a famine" : "a blackout"}. Every shuttle that can fly is flying.`; }
+  const pool = poi.kind === "city" ? [
+    `Market day. The ${res.toLowerCase()} lorries came in before dawn and the square smells of it.`,
+    "The tram is down again. Everyone walks; everyone complains; everyone gets there.",
+    `A ${rng.pick(["wedding", "funeral", "strike vote", "festival"])} in the lower district. Bring nothing sharp.`,
+    "Curfew talk in the council. Nobody expects it to pass. Nobody expected the last one either.",
+    "Kids are flying kites off the ridge. Mind them when you lift off.",
+  ] : [
+    `Shift change. The ${res.toLowerCase()} rigs run hot and the crews run tired.`,
+    "Dust storm two valleys over. The rover shed is full of people waiting it out.",
+    `Somebody found ${rng.pick(["a fossil", "an old survey marker", "a crate nobody will claim", "a second entrance"])} in the workings.`,
+    "The cook has provisions and opinions. Both are strong.",
+    "Comms to orbit are patchy. The relay tech blames the weather; the weather blames the tech.",
+  ];
+  return rng.pick(pool);
+}
+
 // ---------- Captain's log ----------
 export function logEntry(w: World, text: string): void {
   const p = w.player;

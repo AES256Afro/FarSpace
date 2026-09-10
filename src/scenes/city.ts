@@ -4,6 +4,7 @@
 import { Game, Scene, VW } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
+import { settlementLine } from "../world";
 import { RNG, hashStr } from "../core/rng";
 import { addCargo, removeCargo, cargoUsed, Poi, Region, Mission, genCrewCandidate, missionDeliverable, adjustRep, genMissionsFor, findStation } from "../world";
 import { commodity, faction, genPersonName } from "../data/data";
@@ -203,6 +204,7 @@ export class CityScene implements Scene {
     if (res) drawText(ctx, `${res.name} [E]`, ox + res.x - textWidth(res.name) / 2, oy + res.y - 12, PAL.grey);
     drawText(ctx, `${this.poi.name.toUpperCase()} - CITY`, 8, 6, PAL.white);
     drawText(ctx, `${this.region.name} - ${fac ? fac.name : "FREE CITY"}`, 8, 15, fac ? fac.color : PAL.grey);
+    { const line = settlementLine(g.world, this.poi, this.region); drawText(ctx, line.toUpperCase().slice(0, 112), 8, 24, PAL.greyDark); }
     drawText(ctx, `${p.credits}CR  CARGO ${cargoUsed(p)}/${p.cargoMax}  CREW ${p.crew.length}/${hull(p.hullId).crewSlots}`, VW - 150, 6, PAL.gold);
     drawText(ctx, "ESC ORBIT", VW - textWidth("ESC ORBIT") - 6, 15, PAL.greyDark);
     footer(ctx, g, this.msg);
