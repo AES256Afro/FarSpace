@@ -642,4 +642,8 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 69 — The Band ✅ (Sep 2026)
 - [x] The comms array aboard plays the serial, the news and the wire
 
+## Milestone 70 — Passage ✅ (Sep 2026)
+- [x] L on the SHIPS tab: take a liner to your nearest parked hull (fare per
+      jump and head, time passes, this ship parks here)
+
 ## Later

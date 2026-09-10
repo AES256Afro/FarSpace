@@ -229,6 +229,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Passage on a liner
+
+- A hull parked at another station is no longer a walk away. On the SHIPS tab,
+  L takes the liner to your nearest parked ship: a fare per jump for you and
+  each crew member, an empty hold and no passengers aboard, and this ship
+  stays parked here. Hours pass, the crew rest, and you wake up at the other
+  station with the other ship waiting.
+
 ## The band
 
 - E at the comms array aboard: sit with the band a while. The latest part of

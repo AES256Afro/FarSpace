@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS, roleLabel } from "../
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, tickAlumniMail, catGift, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, notableOutcome, ledger, ledgerAround, LEDGER_LABELS, dockingsAt, OLD_HAND_AT, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter, RACE_GATES, raceHolder, postDelivered, captainNickname } from "../world";
+  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, tickAlumniMail, catGift, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, notableOutcome, ledger, ledgerAround, LEDGER_LABELS, dockingsAt, OLD_HAND_AT, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter, RACE_GATES, raceHolder, postDelivered, captainNickname, charterRoute, tickWorld } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
 import { BLUEPRINTS, MATERIALS, engGrade, nextCost, canAfford, upgrade } from "../data/engineering";
@@ -461,6 +461,7 @@ export class StationScene implements Scene {
           else this.swapShip(g, stored[this.cursor - HULLS.length]);
         }
         if (inp.wasPressed("k") && this.cursor < HULLS.length) this.buyHull(g, HULLS[this.cursor].id, true);
+        if (inp.wasPressed("l")) this.takeTheLiner(g);
         if (inp.wasPressed("r") && (p.haulers ?? []).length) {
           const c = p.haulers![p.haulers!.length - 1];
           if (confirmBox(`Release ${c.name} from the charter? The till (${Math.round(c.till)}cr) pays out now; the crew find other work.`)) { p.credits += Math.round(c.till); releaseCharter(p, c); g.toast(`${c.name.toUpperCase()} RELEASED. THE CREW WAVE FROM THE BAY.`); }
@@ -799,6 +800,39 @@ export class StationScene implements Scene {
   }
 
   // Park the current hull here and take another one out of storage
+  // Passage on a liner to wherever your other ship is parked. This one stays here; the crew come with you.
+  takeTheLiner(g: Game): void {
+    const p = g.world.player; const w = g.world;
+    const elsewhere = (p.fleet ?? []).filter((f) => f.stationId !== this.station.id).map((f) => ({ f, hops: charterRoute(w, this.station.id, f.stationId).hops })).sort((a, b) => a.hops - b.hops);
+    if (!elsewhere.length) { g.toast("NO SHIP OF YOURS PARKED ANYWHERE ELSE"); return; }
+    if (passengersAboard(p).length) { g.toast("YOUR PASSENGERS BOOKED A SHIP, NOT A LINER. LAND THEM FIRST"); return; }
+    const { f, hops } = elsewhere[0];
+    const dest = findStation(w, f.stationId); if (!dest) return;
+    const h = hull(f.hullId);
+    if (cargoUsed(p) > 0) { g.toast("THE LINER TAKES PEOPLE, NOT CARGO. STORE OR SELL YOUR HOLD FIRST"); return; }
+    if (p.crew.length > h.crewSlots) { g.toast(`THE ${h.name.toUpperCase()} HAS ${h.crewSlots} BERTHS. TOO MANY CREW TO MOVE`); return; }
+    const fare = (120 + 140 * hops) * (1 + p.crew.length);
+    if (p.credits < fare) { g.toast(`PASSAGE FOR YOU AND ${p.crew.length} CREW IS ${fare}CR. YOU'RE SHORT`); return; }
+    if (!confirmBox(`Take the liner to ${dest.st.name}, ${dest.sys.name} (${hops} jump${hops > 1 ? "s" : ""}) for ${fare}cr? The ${(p.shipName ?? hull(p.hullId).name)} stays parked here; you fly the ${f.name ?? h.name} from there.`)) return;
+    p.credits -= fare; ledger(p, "yard", -fare);
+    // park this one, board that one
+    const parked: StoredShip = { hullId: p.hullId, stationId: this.station.id, name: p.shipName, hull: p.hull, torpedoes: p.torpedoes ?? 0 };
+    p.fleet = (p.fleet ?? []).filter((x) => x !== f); p.fleet.push(parked);
+    applyHull(p, f.hullId); p.hull = Math.min(p.hullMax, f.hull); p.fuel = p.fuelMax * 0.5; p.torpedoes = f.torpedoes; p.shipName = f.name;
+    g.spriteCache.delete(`player-ship-${p.hullId}`);
+    // the journey: time passes, the crew rest
+    const secs = 90 * hops;
+    for (let i = 0; i < secs; i++) tickWorld(w, 1);
+    w.time += secs;
+    for (const c of p.crew) c.morale = Math.min(100, c.morale + 4);
+    p.systemId = dest.sys.id; p.dockedAt = dest.st.id;
+    p.x = Math.cos(dest.st.angle) * dest.st.orbit; p.y = Math.sin(dest.st.angle) * dest.st.orbit; p.vx = 0; p.vy = 0;
+    logEntry(w, `Took the liner to ${dest.st.name} to pick up the ${f.name ?? h.name}`);
+    flag(g, "liner");
+    sfx.jump();
+    g.toast(`${hops * 3} HOURS ON A LINER: BAD COFFEE, A GOOD VIEW. YOU WAKE UP AT ${dest.st.name.toUpperCase()}. THE ${(f.name ?? h.name).toUpperCase()} IS WAITING`);
+    g.setScene("station");
+  }
   swapShip(g: Game, ship: StoredShip | undefined): void {
     if (!ship) return;
     const p = g.world.player;
@@ -1234,7 +1268,7 @@ export class StationScene implements Scene {
       });
     }
     if (elsewhere.length) {
-      drawText(ctx, `FLEET ELSEWHERE: ${elsewhere.map((f) => `${(f.name ?? hull(f.hullId).name).toUpperCase()} AT ${findStation(g.world, f.stationId)?.st.name.toUpperCase() ?? "?"}`).join("; ")}`.slice(0, 110), 8, y, PAL.greyDark);
+      drawText(ctx, `FLEET ELSEWHERE: ${elsewhere.map((f) => `${(f.name ?? hull(f.hullId).name).toUpperCase()} AT ${findStation(g.world, f.stationId)?.st.name.toUpperCase() ?? "?"}`).join("; ")} - L TAKE THE LINER THERE`.slice(0, 110), 8, y, PAL.greyDark);
       y += 9;
     }
     for (const c of p.haulers ?? []) {
