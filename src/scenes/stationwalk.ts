@@ -49,6 +49,8 @@ interface WalkerNpc {
   name: string;
   skin: string; suit: string;
   pause: number;
+  tag?: string;   // ON LEAVE, RETIRED: someone from your own ship, here on the deck
+  line?: string;  // what they say when you press E beside them
 }
 
 export class StationWalkScene implements Scene {
@@ -80,6 +82,18 @@ export class StationWalkScene implements Scene {
         suit: this.station.military && i < 2 ? "#5d6680" : rng.pick(["#3a6ea5", "#7a5aa5", "#3aa55e", "#a53a3a", "#c7a54a"]),
         pause: rng.range(0, 3),
       });
+    }
+    // your own people, out on the deck: crew on shore leave here, and shipmates who retired here
+    const p = g.world.player;
+    for (const sl of (p.shoreCrew ?? []).filter((x) => x.stationId === this.station.id)) {
+      const spot = this.randomFloor(rng);
+      this.npcs.push({ x: spot.x, y: spot.y, tx: spot.x, ty: spot.y, name: sl.member.name, skin: "#c78a5a", suit: sl.member.role === "engineer" ? "#c7a54a" : sl.member.role === "gunner" ? "#a53a3a" : sl.member.role === "pilot" ? "#3a6ea5" : "#3aa55e", pause: 2, tag: "ON LEAVE",
+        line: rng.pick([`${sl.member.name.toUpperCase()}: 'Not yet, Captain. Two more days. I ${sl.member.trait ?? "sleep"} and it's glorious.'`, `${sl.member.name.toUpperCase()}: 'Berth's still mine, right? Good. Go on, I'll find you when you dock next.'`, `${sl.member.name.toUpperCase()}: 'They've got real coffee here. REAL coffee. Don't wait for me.'`]) });
+    }
+    for (const a of (p.alumni ?? []).filter((x) => x.stationId === this.station.id).slice(-2)) {
+      const spot = this.randomFloor(rng);
+      this.npcs.push({ x: spot.x, y: spot.y, tx: spot.x, ty: spot.y, name: a.name, skin: "#e8b48c", suit: "#5d6680", pause: 4, tag: "RETIRED",
+        line: rng.pick([`${a.name.toUpperCase()}: '${a.docks} dockings with you. I still count the gates in my sleep. How's the old ship?'`, `${a.name.toUpperCase()}: 'They let me run the ${a.role === "engineer" ? "yard" : a.role === "medic" ? "clinic" : a.role === "gunner" ? "range" : "tug"} here. Quieter. Good quiet.'`, `${a.name.toUpperCase()}: 'If you ever need a ${a.role} again... no. No, I'm done. But it was good.'`]) });
     }
     this.msg = `${this.station.name.toUpperCase()} PROMENADE`;
     this.msgTimer = 3;
@@ -155,6 +169,10 @@ export class StationWalkScene implements Scene {
 
     // kiosk interaction
     const near = this.nearestKiosk();
+    if (inp.wasPressed("e") && !near) {
+      const who = this.npcs.find((n) => n.line && dist(this.px, this.py, n.x, n.y) < 16);
+      if (who) { this.msg = who.line!; this.msgTimer = 6; }
+    }
     if (near && inp.wasPressed("e")) {
       if (near.def.tab === null) {
         g.world.player.dockedAt = null;
@@ -263,7 +281,12 @@ export class StationWalkScene implements Scene {
     for (const n of this.npcs) {
       if (dist(this.px, this.py, n.x, n.y) < 16) {
         const x = Math.round(ox + n.x), y = Math.round(oy + n.y);
-        drawText(ctx, n.name, x - textWidth(n.name) / 2, y - 12, PAL.grey);
+        const label = n.tag ? `${n.name} - ${n.tag}` : n.name;
+        drawText(ctx, label, x - textWidth(label) / 2, y - 12, n.tag ? PAL.gold : PAL.grey);
+        if (n.line) drawText(ctx, "[E] TALK", x - textWidth("[E] TALK") / 2, y + 8, PAL.gold);
+      } else if (n.tag) {
+        const x = Math.round(ox + n.x), y = Math.round(oy + n.y);
+        ctx.fillStyle = PAL.gold; ctx.fillRect(x - 1, y - 8, 2, 2); // a marker so you can spot your own people across the deck
       }
     }
 
@@ -285,7 +308,14 @@ export class StationWalkScene implements Scene {
     }
 
     if (this.msg) {
-      drawText(ctx, this.msg, VW / 2 - textWidth(this.msg) / 2, VH - 12, PAL.ui);
+      if (textWidth(this.msg) <= VW - 16) drawText(ctx, this.msg, VW / 2 - textWidth(this.msg) / 2, VH - 12, PAL.ui);
+      else {
+        // two lines, broken at a space near the middle
+        const words = this.msg.split(" "); let a = "", b = "";
+        for (const wd of words) { if (textWidth(a + " " + wd) <= VW - 16 && !b) a = a ? a + " " + wd : wd; else b = b ? b + " " + wd : wd; }
+        drawText(ctx, a, VW / 2 - textWidth(a) / 2, VH - 21, PAL.ui);
+        drawText(ctx, b, VW / 2 - textWidth(b) / 2, VH - 12, PAL.ui);
+      }
     }
     if (g.toastTimer > 0) {
       drawText(ctx, g.toastMsg, VW / 2 - textWidth(g.toastMsg) / 2, VH - 22, PAL.ui);

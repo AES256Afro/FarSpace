@@ -144,6 +144,8 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   halves the lay-up.
 - After thirty dockings someone may want to go home. Send them off with a
   bonus and the rest of the crew remember it; alumni wave from the lounge.
+- Walk the deck (P) and you'll find your own people: crew on leave here and
+  shipmates who retired here, marked in gold, with something to say (E).
 - The ship wears: hours under way and every jump. Past 50% the thrusters lose
   their edge; past 70% systems start to fault. YARD SERVICE at any shipyard
   clears it and signs the berth log. An engineer aboard slows the wear.
