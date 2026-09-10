@@ -1169,7 +1169,7 @@ export function dailyContract(w: World, now = Date.now()): Mission {
   const com = rng.pick(pool);
   const qty = rng.int(6, 16);
   return {
-    id: `daily-${key}`, kind: "delivery", accepted: false, done: false, tier: 0,
+    id: `daily-${key}`, kind: "mining", accepted: false, done: false, tier: 0,
     title: `Daily: ${qty} ${com.name}`,
     desc: `Today's galaxy-wide contract (${key}): hand in ${qty}x ${com.name} at any station. Every pilot sees the same one.`,
     fromStationId: "daily", targetSystemId: w.player.systemId, targetStationId: "any",
