@@ -16,6 +16,22 @@ export interface Npc {
   targetIdx: number;              // traders: destination station; fighters: home station
   cargo?: { id: string; qty: number }; // traders haul real goods; dropped on death
   originStationId?: string;
+  variant?: "raider" | "cutter" | "captain"; // pirate flavours; undefined = standard
+  name?: string;      // captains have names; they get hailed and mourned on the wire
+  fleeing?: boolean;  // low hull: run for the belt
+  hailed?: boolean;   // has said its line
+}
+
+export interface Torpedo {
+  x: number; y: number; vx: number; vy: number; life: number; target: Npc | null;
+}
+
+export interface Floater {
+  x: number; y: number; text: string; life: number; color: string;
+}
+
+export interface Comms {
+  from: string; text: string; life: number; color: string;
 }
 
 export interface Particle {

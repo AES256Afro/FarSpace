@@ -194,6 +194,9 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
     const col = n.kind === "pirate" ? PAL.danger : n.kind === "patrol" || n.kind === "fighter" ? PAL.info : n.kind === "drone" ? PAL.ui : PAL.gold;
     ctx.fillStyle = col;
     ctx.fillRect(sx - 6, sy - 12, Math.round(12 * (n.hull / n.hullMax)), 1);
+    if (n.variant === "captain") drawText(ctx, n.name ?? "CAPTAIN", sx - textWidth(n.name ?? "CAPTAIN") / 2, sy - 20, PAL.danger);
+    else if (n.variant === "cutter") { ctx.fillStyle = PAL.danger; ctx.fillRect(sx - 8, sy - 12, 1, 1); ctx.fillRect(sx + 7, sy - 12, 1, 1); }
+    if (n.fleeing) drawText(ctx, "FLEEING", sx - 14, sy - 18, PAL.warn);
     if (fs.escort && fs.escort.trader === n) drawText(ctx, "ESCORT", sx - 12, sy - 20, PAL.gold);
   }
 
@@ -201,6 +204,13 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
     const [sx, sy] = toScreen(b.x, b.y);
     ctx.fillStyle = b.hostile ? PAL.danger : PAL.ui;
     ctx.fillRect(sx - 1, sy - 1, 2, 2);
+  }
+  for (const t of fs.torps) {
+    const [sx, sy] = toScreen(t.x, t.y);
+    ctx.fillStyle = PAL.gold;
+    ctx.fillRect(sx - 1, sy - 1, 3, 3);
+    ctx.fillStyle = PAL.white;
+    ctx.fillRect(sx, sy, 1, 1);
   }
   for (const pt of fs.particles) {
     const [sx, sy] = toScreen(pt.x, pt.y);
@@ -226,6 +236,16 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
     }
   }
 
+  for (const f of fs.floaters) {
+    const [sx, sy] = toScreen(f.x, f.y);
+    ctx.globalAlpha = Math.min(1, f.life * 1.5);
+    drawText(ctx, f.text, sx - textWidth(f.text) / 2, sy, f.color);
+    ctx.globalAlpha = 1;
+  }
+  if (fs.hitFlash > 0) {
+    ctx.fillStyle = `rgba(255,60,60,${(fs.hitFlash * 0.22).toFixed(3)})`;
+    ctx.fillRect(0, 0, VW, VH);
+  }
   drawEdgeMarkers(fs, g, ctx, camX, camY, z);
   drawHud(fs, g, ctx);
   drawTutorial(g, ctx, 68);
@@ -355,7 +375,14 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
     }
   }
   if (p.crew && p.crew.some((c) => c.morale < 30)) { drawText(ctx, "! CREW MORALE LOW", 4, wy, PAL.warn); wy += 8; }
-  drawText(ctx, hull(p.hullId).name.toUpperCase(), 4, wy, PAL.greyDark);
+  drawText(ctx, `${hull(p.hullId).name.toUpperCase()}  TORP ${p.torpedoes ?? 0}`, 4, wy, PAL.greyDark);
+  wy += 10;
+  for (const c of fs.comms) {
+    ctx.globalAlpha = Math.min(1, c.life);
+    drawText(ctx, `${c.from}: ${c.text}`.slice(0, 70), 4, wy, c.color);
+    ctx.globalAlpha = 1;
+    wy += 8;
+  }
 
   if (fs.scanMsg) drawText(ctx, fs.scanMsg, VW / 2 - textWidth(fs.scanMsg) / 2, 30, PAL.warn);
   if (g.toastTimer > 0) drawText(ctx, g.toastMsg, VW / 2 - textWidth(g.toastMsg) / 2, 40, PAL.ui);

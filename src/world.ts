@@ -207,6 +207,7 @@ export interface PlayerState {
   fires: { tx: number; ty: number }[];
   arcs: Record<string, number>; // faction id → completed stage count
   tutorial?: number; // flight school step; -1 = off/done
+  torpedoes?: number; // homing torpedo ammo
 }
 
 export interface World {
@@ -731,6 +732,7 @@ export function generateWorld(seed: number, opts: GenOptions = {}): World {
     fires: [],
     arcs: {},
     tutorial: 0,
+    torpedoes: 2,
   };
 
   const world: World = {

@@ -20,6 +20,8 @@ import {
   updatePlatforms, updateParticles, updateLoot, updateSos, boom,
 } from "./ai";
 import { drawFlight } from "./render";
+import type { Torpedo, Floater, Comms } from "./types";
+import { fireTorpedo, updateTorpedoes, updateFloaters, updateSmoke, updateComms, escortLine } from "./combat";
 
 export class FlightScene implements Scene {
   touchMode = "flight" as const;
@@ -41,6 +43,10 @@ export class FlightScene implements Scene {
   scanCharge = 0;      // deep-scan charge 0..1 (hold V)
   aim = 0;             // gun/laser direction; equals heading in keyboard mode
   mouseAim = false;
+  torps: Torpedo[] = [];
+  floaters: Floater[] = [];
+  comms: Comms[] = [];
+  hitFlash = 0;
   pursuitTimer = 0;    // time the law has been chasing us this system
 
   enter(g: Game): void {
@@ -51,6 +57,9 @@ export class FlightScene implements Scene {
     this.mapOpen = false;
     this.escort = null;
     this.scanCharge = 0;
+    this.torps = [];
+    this.floaters = [];
+    this.comms = [];
     populate(this, g);
     this.launchDrones(g);
     this.startEscortIfNeeded(g);
@@ -189,6 +198,7 @@ export class FlightScene implements Scene {
       }
     }
 
+    if (g.input.wasPressed("r") && weaponsSys.health > 5) fireTorpedo(this, g);
     this.mining = g.input.isDown("m") || (this.mouseAim && g.input.mouseRight);
     if (this.mining) mine(this, g, dt, h.miningRate, this.aim);
 
@@ -223,6 +233,10 @@ export class FlightScene implements Scene {
     updateParticles(this, dt);
     updateLoot(this, g, dt);
     updateSos(this, g, dt);
+    updateTorpedoes(this, g, dt);
+    updateFloaters(this, dt);
+    updateSmoke(this, g, dt);
+    updateComms(this, g, dt);
     this.updateEscort(g, dt);
     this.updateLaw(g, dt);
 
@@ -312,6 +326,7 @@ export class FlightScene implements Scene {
     const dest = sys.stations.find((s) => s.id === m.targetStationId);
     if (dest && dist(t.x, t.y, Math.cos(dest.angle) * dest.orbit, Math.sin(dest.angle) * dest.orbit) < 80) {
       m.escortDone = true;
+      escortLine(this);
       g.toast("FREIGHTER DOCKED - COLLECT PAYMENT AT THE STATION");
       this.npcs = this.npcs.filter((n) => n !== t);
       this.escort = null;
@@ -432,6 +447,8 @@ export class FlightScene implements Scene {
     this.bullets = [];
     this.npcs = [];
     this.loot = [];
+    this.torps = [];
+    this.comms = [];
     this.escort = null;
     this.pursuitTimer = 0;
     populate(this, g);

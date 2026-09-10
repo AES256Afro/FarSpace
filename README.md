@@ -21,7 +21,7 @@ See [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) for the full design and
 
 | Context | Keys |
 |---|---|
-| Flight | **W/S** thrust · **A/D** rotate · **Space** fire · **M** mining laser · **X** brake assist · **V** (hold) deep scan · **E** dock / jump / orbit / board wreck · **Tab** system map · **G** galaxy map · **I** board ship |
+| Flight | **W/S** thrust · **A/D** rotate · **mouse** aims the turret (left-click fire, right-click mine) or **Space** fire / **M** mine in keyboard mode · **R** torpedo · **X** brake assist · **V** (hold) deep scan · **E** dock / jump / orbit / board wreck · **Tab** system map · **G** galaxy map · **I** board ship · **F** fullscreen |
 | Ship / station / wreck / outpost | **WASD** walk · **E** interact · **E** (hold) repair, seal, extinguish |
 | Orbit | **↑/↓** or click to target a site · **V** (hold) survey scan · **E** land · **Esc** leave orbit |
 | Station menus | **↑/↓ / ←/→** or click · **Enter** select · **B/S** buy/sell · **P** walk the deck · **Esc** undock |

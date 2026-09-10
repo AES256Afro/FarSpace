@@ -58,6 +58,8 @@ export class StationScene implements Scene {
     }
     g.showHint("station", "ARROWS/CLICK TO BROWSE - ENTER TO ACT - ESC UNDOCKS - P WALKS THE DECK");
     g.autosave();
+    const bay = 1 + (this.station.id.length * 7 + Math.floor(g.world.time)) % 6;
+    g.toast(`${this.station.name.toUpperCase()} CONTROL: CLEARANCE GRANTED, BAY ${bay}`);
   }
 
   settleCrew(g: Game): void {
@@ -321,6 +323,10 @@ export class StationScene implements Scene {
       if (p.credits < cost) return g.toast("NOT ENOUGH CREDITS");
       if (!addCargo(p, "parts", 1)) return g.toast("CARGO FULL");
       p.credits -= cost; g.toast("PARTS STOWED IN CARGO");
+    } });
+    opts.push({ label: `TORPEDOES x4 (NOW ${p.torpedoes ?? 0})`, sub: "240CR", action: () => {
+      if (p.credits < 240) return g.toast("NOT ENOUGH CREDITS");
+      p.credits -= 240; p.torpedoes = (p.torpedoes ?? 0) + 4; g.toast("TORPEDOES RACKED - FIRE WITH R");
     } });
     opts.push({ label: `CARGO POD +10 (NOW ${p.cargoMax})`, sub: "500CR", action: () => {
       if (p.credits < 500) return g.toast("NOT ENOUGH CREDITS");

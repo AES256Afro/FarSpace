@@ -11,6 +11,7 @@ import { sfx } from "../../core/sfx";
 import { addCargo, stationExports, adjustRep } from "../../world";
 import { commodity } from "../../data/data";
 import * as wire from "../../core/wire";
+import { applyVariant, variantStats, fleeLine, captainDown } from "./combat";
 
 // ---------- Population ----------
 
@@ -87,6 +88,7 @@ export function spawnNpc(fs: FlightScene, g: Game, kind: NpcKind, rng: RNG): Npc
     fireCd: 0,
     targetIdx: rng.int(0, 10),
   };
+  if (kind === "pirate") applyVariant(npc, rng, g.world.systems[p.systemId].pirateActivity);
   fs.npcs.push(npc);
   return npc;
 }
@@ -130,12 +132,14 @@ export function spawnPirateNearBelt(fs: FlightScene, g: Game): void {
   const rng = new RNG((Math.random() * 1e9) >>> 0);
   const rock = sys.asteroids.length ? sys.asteroids[rng.int(0, sys.asteroids.length - 1)] : null;
   if (!rock) { spawnNpc(fs, g, "pirate", rng); return; }
-  fs.npcs.push({
+  const npc: Npc = {
     kind: "pirate",
     x: rock.x + rng.range(-200, 200), y: rock.y + rng.range(-200, 200),
     vx: 0, vy: 0, angle: rng.range(0, TAU),
     hull: 40, hullMax: 40, fireCd: 0, targetIdx: 0,
-  });
+  };
+  applyVariant(npc, rng, sys.pirateActivity);
+  fs.npcs.push(npc);
 }
 
 // ---------- Effects ----------
@@ -265,6 +269,7 @@ export function updateBullets(fs: FlightScene, g: Game, dt: number): void {
           b.life = 0;
           n.hull -= b.dmg;
           boom(fs, b.x, b.y, 3, PAL.danger);
+          if (b.fromPlayer) fs.floaters.push({ x: n.x, y: n.y - 10, text: `${Math.round(b.dmg)}`, life: 0.8, color: PAL.white });
           if (n.hull <= 0) npcKilled(fs, g, n, b.fromPlayer === true);
           if (b.fromPlayer && n.kind !== "pirate") {
             p.wanted = Math.min(1, p.wanted + 0.15);
@@ -281,11 +286,15 @@ export function updateBullets(fs: FlightScene, g: Game, dt: number): void {
 export function damagePlayer(fs: FlightScene, g: Game, dmg: number): void {
   const p = g.world.player;
   fs.camShake = 4;
+  let absorbedTotal = 0;
   if (p.shield > 0) {
     const absorbed = Math.min(p.shield, dmg);
     p.shield -= absorbed;
     dmg -= absorbed;
+    absorbedTotal = absorbed;
   }
+  fs.hitFlash = 1;
+  fs.floaters.push({ x: p.x, y: p.y - 12, text: `-${Math.round(dmg + Math.max(0, absorbedTotal))}`, life: 0.9, color: dmg > 0 ? PAL.danger : PAL.shield });
   if (dmg > 0) {
     p.hull -= dmg;
     if (Math.random() < 0.4) {
@@ -302,6 +311,7 @@ export function npcKilled(fs: FlightScene, g: Game, n: Npc, byPlayer: boolean): 
   const facId = g.world.systems[p.systemId].factionId;
   boom(fs, n.x, n.y, 20, PAL.thrust);
   if (n.kind === "pirate") {
+    if (byPlayer && n.variant === "captain") captainDown(fs, g, n);
     if (byPlayer) {
       p.kills++;
       if (facId !== "vex") adjustRep(g.world, facId, 2);
@@ -345,6 +355,14 @@ export function updateNpcs(fs: FlightScene, g: Game, dt: number): void {
     let tx = n.x, ty = n.y, wantFire = false, speed = 60;
     let fireHostile = true;
     if (n.kind === "pirate") {
+      const vs = variantStats(n);
+      // low hull: break off and run for the belt; despawn once well away
+      if (!n.fleeing && n.variant !== "captain" && n.hull < n.hullMax * 0.3) { n.fleeing = true; fleeLine(fs, n); }
+      if (n.fleeing) {
+        const away = Math.atan2(n.y - p.y, n.x - p.x);
+        tx = n.x + Math.cos(away) * 400; ty = n.y + Math.sin(away) * 400; speed = vs.speed * 1.2;
+        if (dist(n.x, n.y, p.x, p.y) > 2600) n.hull = 0; // gone
+      } else {
       let threat: Platform | null = null;
       for (const pf of fs.platforms) {
         if (dist(n.x, n.y, pf.x, pf.y) < 360) { threat = pf; break; }
@@ -366,6 +384,8 @@ export function updateNpcs(fs: FlightScene, g: Game, dt: number): void {
           tx = n.x + Math.cos(n.angle) * 100; ty = n.y + Math.sin(n.angle) * 100;
         }
       }
+      }
+      if (!n.fleeing) speed = Math.max(speed, vs.speed * (wantFire ? 1 : 0.8));
     } else if (n.kind === "drone") {
       speed = 130;
       let target: Npc | null = null;
@@ -437,7 +457,7 @@ export function updateNpcs(fs: FlightScene, g: Game, dt: number): void {
       else { tx = n.x + Math.cos(n.angle) * 100; ty = n.y + Math.sin(n.angle) * 100; }
     }
 
-    const maxs = n.kind === "pirate" ? 160 : n.kind === "drone" ? 300 : 130;
+    const maxs = n.kind === "pirate" ? variantStats(n).maxs * (n.fleeing ? 1.25 : 1) : n.kind === "drone" ? 300 : 130;
     const dx = tx - n.x, dy = ty - n.y;
     const dd = Math.hypot(dx, dy) || 1;
     let desSpeed = Math.min(maxs, dd * 0.8);
@@ -454,18 +474,24 @@ export function updateNpcs(fs: FlightScene, g: Game, dt: number): void {
     n.x += n.vx * dt;
     n.y += n.vy * dt;
 
-    if (wantFire && n.fireCd <= 0) {
-      n.fireCd = n.kind === "patrol" || n.kind === "fighter" || n.kind === "drone" ? 0.5 : 0.7;
+    if (wantFire && n.fireCd <= 0 && !n.fleeing) {
+      const pv = n.kind === "pirate" ? variantStats(n) : null;
+      n.fireCd = pv ? pv.fireCd : 0.5;
       const tvx = targetingPlayer ? p.vx : 0;
       const tvy = targetingPlayer ? p.vy : 0;
-      const tof = Math.hypot(tx - n.x, ty - n.y) / 300;
+      const bs = pv ? pv.bulletSpeed : 300;
+      const tof = Math.hypot(tx - n.x, ty - n.y) / bs;
       const aim = Math.atan2(ty + (tvy - n.vy) * tof - n.y, tx + (tvx - n.vx) * tof - n.x);
       if (dist(n.x, n.y, p.x, p.y) < 450) sfx.enemyLaser();
-      fs.bullets.push({
-        x: n.x + Math.cos(aim) * 10, y: n.y + Math.sin(aim) * 10,
-        vx: n.vx + Math.cos(aim) * 300, vy: n.vy + Math.sin(aim) * 300,
-        life: 1.8, hostile: fireHostile, dmg: n.kind === "patrol" || n.kind === "fighter" ? 8 : n.kind === "drone" ? 7 : 6,
-      });
+      const dmg = pv ? pv.dmg : n.kind === "patrol" || n.kind === "fighter" ? 8 : 7;
+      const shots = n.variant === "captain" ? [-0.12, 0.12] : [0];
+      for (const spread of shots) {
+        fs.bullets.push({
+          x: n.x + Math.cos(aim + spread) * 10, y: n.y + Math.sin(aim + spread) * 10,
+          vx: n.vx + Math.cos(aim + spread) * bs, vy: n.vy + Math.sin(aim + spread) * bs,
+          life: 1.8, hostile: fireHostile, dmg,
+        });
+      }
     }
   }
   fs.npcs = fs.npcs.filter((n) => n.hull > 0);
