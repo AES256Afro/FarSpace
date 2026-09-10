@@ -1,7 +1,7 @@
 // Orbit view: a spinning globe with territories, POIs to pin/target, orbital
 // satellites, scanning, and landing at surface outposts.
 
-import { logSight, settlementTierLabel } from "../world";
+import { logSight, settlementTierLabel, planetLore } from "../world";
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
@@ -237,6 +237,7 @@ export class OrbitScene implements Scene {
       y += 9;
       if (rr) drawText(ctx, `[L] DROP ROVER IN ${rr.name.toUpperCase()}${gs?.charted ? " (CHARTED)" : ""}  [ ] PICK REGION`, px, y, PAL.ui);
     }
+    drawText(ctx, planetLore(g.world, sys, g.orbitPlanetIdx).toUpperCase().slice(0, 112), 8, VH - 31, PAL.greyDark);
     drawText(ctx, `SATELLITES: ${surf.satellites}   HOLD V: SURVEY SCAN   L: ROVER`, 8, VH - 22, PAL.greyDark);
     if (this.msg) drawText(ctx, this.msg, VW / 2 - textWidth(this.msg) / 2, VH - 12, PAL.ui);
     if (g.toastTimer > 0) drawText(ctx, g.toastMsg, VW / 2 - textWidth(g.toastMsg) / 2, VH - 32, PAL.ui);

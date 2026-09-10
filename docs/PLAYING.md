@@ -229,6 +229,11 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Lore
+
+- Every system has a line of history; the chart reads it on the band when
+  you arrive. Every world has one too, under the orbit panel.
+
 ## The chronicle room
 
 - Read the whole chronicle in-game: C on the RECORD tab, THE CHRONICLE on

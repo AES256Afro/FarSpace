@@ -970,6 +970,43 @@ export function friendsAt(w: World, stationId: string): NpcCaptain[] {
   return (w.captains ?? []).filter((c) => c.homeStationId === stationId && isFriend(c));
 }
 
+// ---------- Lore: a line of history for every system and world ----------
+export function systemLore(w: World, sys: SystemDef): string {
+  const rng = new RNG(hashStr(`lore:${w.seed}:${sys.id}`));
+  const fac = FACTIONS.find((f) => f.id === sys.factionId)?.name ?? "nobody";
+  const st = sys.stations[0]?.name;
+  const pool = [
+    `${sys.name} was charted by a survey ship that never filed the report; the name is from the captain's diary.`,
+    `${sys.name} changed hands ${rng.int(2, 5)} times before the ${fac} kept it. The gates still carry the old codes.`,
+    st ? `${st} began as a fuel dump for the first gate crews. The dump is still there, under the promenade.` : `${sys.name} has no station because the first three burned. Nobody says why.`,
+    `The belt at ${sys.name} is younger than the stations: a moon came apart within living memory.`,
+    `${sys.name}'s star was worshipped, once, by people who are gone. Their word for it meant "the patient one".`,
+    `Every ship that jumps into ${sys.name} hears a half-second of an old song on the band. The relay engineers have given up.`,
+    `${sys.name} was a prison system for a decade. The prisoners stayed and became the ${st ? "harbour office" : "belt crews"}.`,
+    `The first child born in ${sys.name} is ${rng.int(60, 90)} now and still refuses to leave.`,
+    `${sys.name} is where the ${fac} signed the gate treaty. The pen is in a museum somewhere else.`,
+    `A comet split over ${sys.name} in the old calendar; half the settlements still keep the anniversary.`,
+  ];
+  return rng.pick(pool);
+}
+export function planetLore(w: World, sys: SystemDef, idx: number): string {
+  const pl = sys.planets[idx]; if (!pl) return "";
+  const rng = new RNG(hashStr(`plore:${w.seed}:${sys.id}:${idx}`));
+  const gas = pl.palette >= 6;
+  const pool = gas ? [
+    `${pl.name} sings in radio: a slow chord that changes with the seasons. Drifters seem to like it.`,
+    `The storms on ${pl.name} are older than the stations that watch them.`,
+    `${pl.name} has ${rng.int(11, 60)} moons on the charts and, by most counts, more.`,
+  ] : [
+    `${pl.name} was named by a pilot who lost a bet. The name stuck; the pilot didn't.`,
+    `The first landing on ${pl.name} took ${rng.int(3, 20)} attempts. The lander is a monument now.`,
+    `${pl.name}'s day is ${rng.int(9, 40)} hours long and every settlement keeps a different clock.`,
+    `Something on ${pl.name} sings at dusk. The survey lists it as wind. The settlers don't.`,
+    `${pl.name} exports ${rng.pick(["a dye nobody can synthesise", "a stone that stays warm", "a grain that grows in the dark", "silence, mostly"])}.`,
+  ];
+  return rng.pick(pool);
+}
+
 // ---------- Wonders: the places people cross a galaxy to see ----------
 export type WonderKind = "ring" | "pulsar" | "ark" | "glass" | "twins" | "nursery" | "cathedral" | "lantern" | "garden";
 export interface Wonder { id: string; kind: WonderKind; name: string; systemId: string; x: number; y: number; seen: boolean; seenBy?: string; desc: string }

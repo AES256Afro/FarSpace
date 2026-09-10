@@ -5,7 +5,7 @@ import { ask, confirmBox } from "../../core/dialog";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra } from "../../world";
 import { COMMODITIES, commodity } from "../../data/data";
 import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
@@ -85,6 +85,7 @@ export class FlightScene implements Scene {
     this.comms = [];
     this.wonderSeen.clear();
     this.docking = null;
+    { const sysNow = g.world.systems[g.world.player.systemId]; if (!this.loreSeen.has(sysNow.id)) { this.loreSeen.add(sysNow.id); this.comms.push({ from: "CHART", text: systemLore(g.world, sysNow).toUpperCase(), life: 9, color: PAL.greyDark }); } }
     if (g.justUndocked) {
       // launch sequence: out of the bay along your nose, control on the band
       g.justUndocked = false;
@@ -830,6 +831,7 @@ export class FlightScene implements Scene {
   }
   faultTimer = 40;
   wonderSeen = new Set<string>();
+  loreSeen = new Set<string>();
   docking: { st: StationDef; t: number; x0: number; y0: number; bay: number } | null = null;
   launching = 0;
   // the comms log: everything said on the band this session, L to read back

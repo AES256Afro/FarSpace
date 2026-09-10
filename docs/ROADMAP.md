@@ -564,4 +564,7 @@ Time passes for the people on the ship, and for the ship.
 - [x] Four more serials (ten), four more encounters (twenty-four), two more
       wonder kinds, six crew traits, two furnishings, three lines for the ship
 
+## Milestone 52 — Lore ✅ (Sep 2026)
+- [x] A line of history for every system and world, read out on arrival
+
 ## Later

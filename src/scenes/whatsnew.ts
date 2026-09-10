@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.52 - LORE", [
+    "EVERY SYSTEM AND EVERY WORLD HAS A LINE OF HISTORY NOW. THE CHART READS IT ON ARRIVAL.",
+  ]],
   ["0.51 - MORE OF EVERYTHING", [
     "TEN SERIALS, TWENTY-FOUR ENCOUNTERS, NINE KINDS OF WONDER, MORE TRAITS, A HAMMOCK AND A MURAL FOR THE DECK.",
   ]],
