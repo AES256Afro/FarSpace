@@ -141,8 +141,20 @@ const WIRE_MAX = 40;
 interface WireEvent { t: number; callsign: string; kind: string; text: string; system: string; tag?: string }
 interface BoardEntry { callsign: string; score: number; t: number; tag?: string }
 const SQUAD = /^[A-Z0-9]{2,5}$/;
-interface BaseRec { stationId: string | null; stationName: string | null; systemName: string | null; treasury: number; vault: Record<string, number>; upgrades: string[]; founded: number; log: { t: number; callsign: string; text: string }[] }
+interface BaseRec { stationId: string | null; stationName: string | null; systemName: string | null; treasury: number; vault: Record<string, number>; upgrades: string[]; founded: number; log: { t: number; callsign: string; text: string }[]; contractsPaid?: string[] }
 const BASE_UPGRADES: Record<string, number> = { defense: 8000, depot: 5000, market: 6000, vault: 4000 };
+// Weekly base contract: the base "needs" a commodity; filling the vault to the
+// target pays the treasury once per week. Same seed function as the client.
+const CONTRACT_GOODS = ["ore", "metals", "fuel", "food", "water", "med", "parts", "lux", "data"];
+function weekKey(now = Date.now()): string { const d = new Date(now); const day = (d.getUTCDay() + 6) % 7; d.setUTCDate(d.getUTCDate() - day); return d.toISOString().slice(0, 10); }
+function hash32(str: string): number { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+function baseContract(tag: string, now = Date.now()): { id: string; commodityId: string; need: number; reward: number } {
+  const key = weekKey(now);
+  const h = hash32(`basecontract:${tag}:${key}`);
+  const commodityId = CONTRACT_GOODS[h % CONTRACT_GOODS.length];
+  const need = 40 + ((h >>> 8) % 5) * 20;
+  return { id: `bc-${key}`, commodityId, need, reward: 4000 + need * 40 };
+}
 
 function clean(s: unknown, max: number): string {
   return String(s ?? "").replace(/[^\x20-\x7e]/g, "").trim().slice(0, max);
@@ -343,6 +355,15 @@ export default {
           if (action === "withdraw") { if (cur < qty) return json({ error: "vault short" }, 402); b.vault[id] = cur - qty; if (!b.vault[id]) delete b.vault[id]; }
           else { const cap = b.upgrades.includes("vault") ? 600 : 200; const total = Object.values(b.vault).reduce((a, v) => a + v, 0); if (total + qty > cap) return json({ error: "vault full", cap }, 409); b.vault[id] = cur + qty; }
           logLine(`${action === "deposit" ? "deposited" : "withdrew"} ${qty} ${id}`);
+          // weekly base contract: filled by deposits, paid once
+          const c = baseContract(tag);
+          b.contractsPaid ??= [];
+          if (action === "deposit" && id === c.commodityId && (b.vault[id] ?? 0) >= c.need && !b.contractsPaid.includes(c.id)) {
+            b.contractsPaid.push(c.id);
+            b.contractsPaid = b.contractsPaid.slice(-8);
+            b.treasury += c.reward;
+            logLine(`filled the weekly base contract (+${c.reward} CR to the treasury)`);
+          }
           return save();
         }
         if (action === "upgrade") {

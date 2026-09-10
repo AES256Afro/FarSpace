@@ -984,6 +984,13 @@ export class StationScene implements Scene {
       drawText(ctx, r.label, 8, y, r.kind === "upgrade" && r.label.startsWith("FITTED") ? PAL.good : PAL.white);
       drawText(ctx, r.sub, 200, y, PAL.grey);
     });
+    if (b && b.stationId) {
+      const c = wire.baseContract(tag);
+      const have = b.vault[c.commodityId] ?? 0;
+      const paid = b.contractsPaid?.includes(c.id);
+      const line = paid ? `WEEKLY BASE CONTRACT FILLED: +${c.reward}CR WENT TO THE TREASURY. NEXT ONE MONDAY.` : `WEEKLY BASE CONTRACT: STOCK ${c.need} ${commodity(c.commodityId).name.toUpperCase()} IN THE VAULT (${have}/${c.need}) FOR +${c.reward}CR TO THE TREASURY`;
+      drawText(ctx, line, 8, VH - 66, paid ? PAL.good : PAL.gold);
+    }
     if (b?.log.length) {
       const ly = VH - 56;
       drawText(ctx, "BASE LOG:", 8, ly, PAL.greyDark);
