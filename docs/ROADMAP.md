@@ -515,4 +515,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] One personal story per crew role, offered to loyal crew, advanced by
       real play, ending in a plaque and a crew member at their best
 
+## Milestone 39 — Faces ✅ (Sep 2026)
+- [x] Three notables per galaxy who turn up as fares, with consequences by mood
+- [x] Promenade crowds that match the day and the event
+
 ## Later

@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
-  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn, captainByName, helpCaptain, isFriend, friendsAt, tickMail, pickCaptainFor, canUpgradeInfra, upgradeInfra, rivalOf, isRival, rivalTakesFare, rivalBeatsYouTo, askRideAlong, tickRideAlong, setHomePort, isHome, donateRelic, hullHistoryFor } from "../src/world";
+  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn, captainByName, helpCaptain, isFriend, friendsAt, tickMail, pickCaptainFor, canUpgradeInfra, upgradeInfra, rivalOf, isRival, rivalTakesFare, rivalBeatsYouTo, askRideAlong, tickRideAlong, setHomePort, isHome, donateRelic, hullHistoryFor, notableById, notableOutcome } from "../src/world";
 import { occasionFor, OCCASIONS } from "../src/data/occasions";
 import { STEPS } from "../src/core/tutorial";
 import { CREW_ARCS, arcObjective } from "../src/core/crewarcs";
@@ -1331,5 +1331,26 @@ describe("crew arcs", () => {
       if (def.role === "engineer") expect(w.systems[c.arc.targetSystemId!].wrecks.some((x) => x.id === c.arc!.wreckId)).toBe(true);
       expect(def.finale(g, c).length).toBeGreaterThan(20);
     }
+  });
+});
+
+describe("faces", () => {
+  it("every galaxy has three notables, they turn up as fares, and delivery has consequences by mood", () => {
+    const w = generateWorld(201, { realGalaxy: true });
+    expect(w.notables!.length).toBe(3);
+    const st = w.systems[w.player.systemId].stations[0];
+    let fare: import("../src/world").Mission | null = null;
+    for (let i = 0; i < 60 && !fare; i++) fare = genFares(w, st, new RNG(i)).find((f) => f.notable) ?? null;
+    expect(fare).not.toBeNull();
+    const n = notableById(w, fare!.notable)!;
+    const before = w.player.rep[n.factionId] ?? 0;
+    const happy = notableOutcome(w, { ...fare!, mood: 95 });
+    expect(happy).not.toBeNull();
+    if (n.kind === "senator") expect(hasCharter(w, n.factionId) || (w.player.rep[n.factionId] ?? 0) > before).toBe(true);
+    const sour = notableOutcome(w, { ...fare!, mood: 10 });
+    expect(sour).not.toBeNull();
+    expect(n.carried).toBe(2);
+    const raw = JSON.parse(JSON.stringify({ ...w, version: 13, notables: undefined }));
+    expect(migrateSave(raw)!.notables!.length).toBe(3);
   });
 });

@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS, roleLabel } from "../
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter,
+  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, notableOutcome, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter,
 } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
@@ -704,6 +704,7 @@ export class StationScene implements Scene {
     const base = Math.round((m.kind === "passenger" && m.mood !== undefined ? passengerPay(m) : m.reward) * (m.kind === "passenger" && isOccasion("founders") ? 1.5 : 1));
     p.credits += Math.round((fest ? base * 2 : base) * charter);
     if (fest) g.toast("FESTIVAL WEEK - YOUR PASSENGERS PAID DOUBLE");
+    if (m.kind === "passenger" && m.notable) { const line = notableOutcome(g.world, m); if (line) { g.toast(line); logEntry(g.world, line.toLowerCase().slice(0, 100)); flag(g, "notable"); } }
     if (m.kind === "passenger" && m.mood !== undefined) {
       const mood = m.mood;
       const name = (m.passengerName ?? "YOUR PASSENGER").toUpperCase();
@@ -1308,7 +1309,7 @@ export class StationScene implements Scene {
       for (const f of this.fares) {
         const sel = idx === this.cursor;
         this.row(ctx, y, sel);
-        drawText(ctx, `${f.title.toUpperCase()}  -  ${g.world.systems[f.targetSystemId].name.toUpperCase()}${f.demand ? "  (WANTS " + commodity(f.demand).name.toUpperCase() + ")" : ""}`, 12, y, f.passengerKind === "fugitive" ? PAL.danger : PAL.ui);
+        drawText(ctx, `${f.notable ? "* " : ""}${f.title.toUpperCase()}  -  ${g.world.systems[f.targetSystemId].name.toUpperCase()}${f.demand ? "  (WANTS " + commodity(f.demand).name.toUpperCase() + ")" : ""}`, 12, y, f.notable ? PAL.gold : f.passengerKind === "fugitive" ? PAL.danger : PAL.ui);
         drawText(ctx, `+${f.reward}CR`, VW - textWidth(`+${f.reward}CR`) - 8, y, PAL.gold);
         y += 9;
         if (sel) { drawText(ctx, f.desc.toUpperCase().slice(0, 112), 12, y, PAL.greyDark); y += 9; }

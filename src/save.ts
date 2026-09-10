@@ -2,10 +2,10 @@
 // migration step so no player loses a game to an update.
 
 import type { World, SystemDef } from "./world";
-import { assignRares, assignSyndicates, assignWonders, assignCaptains } from "./world";
+import { assignRares, assignSyndicates, assignWonders, assignCaptains, assignNotables } from "./world";
 import { RNG } from "./core/rng";
 
-export const SAVE_VERSION = 13;
+export const SAVE_VERSION = 14;
 export const SAVE_KEY = "farspace-save";
 export const SLOTS = 3;
 const SLOT_KEY = "farspace-slot";
@@ -162,6 +162,14 @@ MIGRATIONS[12] = (w) => {
   }
   w.mailQueue ??= [];
   (w.player as Record<string, unknown>).mail ??= [];
+};
+
+MIGRATIONS[13] = (w) => {
+  // 13 → 14: notables
+  if (!w.notables) {
+    const seed = typeof w.seed === "number" ? w.seed : 1;
+    w.notables = assignNotables(w as unknown as { systems: Record<string, SystemDef>; syndicates?: import("./world").Syndicate[] }, new RNG((seed ^ 0x9b1e) >>> 0));
+  }
 };
 
 export function migrateSave(raw: unknown): World | null {

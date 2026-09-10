@@ -5,6 +5,10 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.39 - FACES", [
+    "A SENATOR, AN HEIR AND A SINGER WANT SHIPS NOW AND THEN. LAND THEM HAPPY OR SOUR AND THE GALAXY HEARS.",
+    "THE PROMENADE CROWD MATCHES THE DAY: STALLS, MOURNERS, PICKETS, REVELLERS.",
+  ]],
   ["0.38 - CREW ARCS", [
     "CREW WHO TRUST YOU ASK FOR SOMETHING BIGGER: THEIR OWN STORY, THREE BEATS LONG, ADVANCED BY REAL PLAY.",
   ]],

@@ -160,6 +160,7 @@ export interface Mission {
   sightSeen?: boolean;
   sightKind?: SightKind;    // what the tourists booked to see
   sights?: string[];        // everything they saw on the way (pays extra)
+  notable?: string;         // one of the galaxy's notables is aboard (id)
   mood?: number;            // 0..100: how the journey is going for them
   demand?: string | null;   // a commodity they'd like brought aboard
   patience?: number;        // dockings before they start to sour
@@ -659,6 +660,7 @@ export function genFares(w: World, station: StationDef, rng: RNG): Mission[] {
   if (!pool.length) return [];
   const fares: Mission[] = [];
   const n = rng.int(2, 4);
+  { const target = rng.pick(pool); const nf = notableFare(w, station, target, rng.pick(target.stations), rng); if (nf) fares.push(nf); }
   for (let i = 0; i < n; i++) {
     const target = rng.pick(pool);
     const tStation = rng.pick(target.stations);
@@ -723,6 +725,59 @@ export function passengerPay(m: Mission): number {
   const mood = m.mood ?? 60;
   const extra = m.passengerKind === "tourist" ? Math.min(3, Math.max(0, (m.sights?.length ?? 0) - 1)) * 0.15 : 0;
   return Math.round(m.reward * (0.6 + (mood / 100) * 0.6 + extra));
+}
+
+// ---------- Notables: passengers whose journeys matter ----------
+export type NotableKind = "senator" | "heir" | "singer";
+export interface Notable { id: string; kind: NotableKind; name: string; factionId: string; synTag?: string; carried: number; lastMood: number }
+export function assignNotables(w: Pick<World, "systems" | "syndicates">, rng: RNG): Notable[] {
+  const facs = [...new Set(Object.values(w.systems).map((s) => s.factionId).filter((f) => f !== "vex"))];
+  const syn = (w.syndicates ?? [])[0];
+  const out: Notable[] = [
+    { id: "senator", kind: "senator", name: `Senator ${genPersonName(rng).split(" ")[1] ?? "Vance"}`, factionId: facs.length ? rng.pick(facs) : "tsc", carried: 0, lastMood: 60 },
+    { id: "heir", kind: "heir", name: genPersonName(rng), factionId: facs.length ? rng.pick(facs) : "tsc", synTag: syn?.tag, carried: 0, lastMood: 60 },
+    { id: "singer", kind: "singer", name: genPersonName(rng), factionId: facs.length ? rng.pick(facs) : "tsc", carried: 0, lastMood: 60 },
+  ];
+  return out;
+}
+export function notableById(w: World, id?: string): Notable | null { return id ? (w.notables ?? []).find((n) => n.id === id) ?? null : null; }
+// Sometimes one of them wants a ship: a VIP fare with a name the galaxy knows
+export function notableFare(w: World, station: StationDef, target: SystemDef, tStation: StationDef, rng: RNG): Mission | null {
+  const pool = (w.notables ?? []).filter((n) => n.carried < 3);
+  if (!pool.length || !rng.chance(0.15)) return null;
+  const n = rng.pick(pool);
+  const desc = n.kind === "senator" ? `${n.name} of the ${facName(n.factionId)} needs ${tStation.name}, ${target.name}, quietly and in comfort. Luxuries aboard would be noticed. Friends in high places would too.`
+    : n.kind === "heir" ? `${n.name}, heir to ${n.synTag ? `the [${n.synTag}] concern` : "a trading house"}, wants ${tStation.name}, ${target.name}. Wants it fast. Pays like it.`
+    : `${n.name}, the singer, is playing ${tStation.name}, ${target.name}. The crew will want to be aboard for this one.`;
+  return {
+    id: `fare-notable-${n.id}-${w.missionCounter++}`, kind: "passenger", accepted: false, done: false, tier: 0,
+    title: `${n.kind === "senator" ? "Senator" : n.kind === "heir" ? "The heir" : "The singer"}: ${n.name}`, desc,
+    fromStationId: station.id, targetSystemId: target.id, targetStationId: tStation.id,
+    passengerName: n.name, passengerKind: n.kind === "heir" ? "courier" : "vip", sightSeen: false, sights: [],
+    mood: 60, demand: n.kind === "senator" ? "lux" : n.kind === "singer" ? "food" : null, patience: n.kind === "heir" ? 2 : 4, docksAboard: 0, party: n.kind === "singer" ? 3 : 1,
+    reward: 1500 + rng.int(0, 600), repReward: 4, notable: n.id,
+  };
+}
+// Delivered: what a happy or a sour notable does about it
+export function notableOutcome(w: World, m: Mission): string | null {
+  const n = notableById(w, m.notable);
+  if (!n) return null;
+  const p = w.player; const mood = m.mood ?? 60;
+  n.carried++; n.lastMood = mood;
+  if (mood >= 80) {
+    if (n.kind === "senator") { if (!hasCharter(w, n.factionId)) { (p.charters ??= []).push(n.factionId); return `${n.name.toUpperCase()} MAKES A CALL FROM THE RAMP. BY MORNING YOU HOLD A ${facName(n.factionId).toUpperCase()} CHARTER. 'FRIENDS IN HIGH PLACES,' THEY SAID.`; } adjustRep(w, n.factionId, 15); return `${n.name.toUpperCase()} SPEAKS WELL OF YOU WHERE IT COUNTS. ${facName(n.factionId).toUpperCase()} STANDING UP.`; }
+    if (n.kind === "heir") { if (n.synTag) { p.synRep ??= {}; p.synRep[n.synTag] = Math.min(100, (p.synRep[n.synTag] ?? 0) + 20); return `${n.name.toUpperCase()} WIRES THE FAMILY. [${n.synTag}] REMEMBERS WHO GOT THE HEIR HOME ON TIME. STANDING +20.`; } p.credits += 800; return `${n.name.toUpperCase()} TIPS LIKE AN HEIR. +800CR.`; }
+    for (const c of p.crew) c.morale = Math.min(100, c.morale + 15);
+    pushEvent(w, { t: w.time, kind: "discovery", systemId: p.systemId, text: `${n.name} played a set in the bunk room of ${p.shipName ?? "an independent ship"} on the way in; the crew are still humming it` });
+    return `${n.name.toUpperCase()} SINGS ONE FOR THE CREW BEFORE THE RAMP GOES DOWN. NOBODY WILL SHUT UP ABOUT IT. MORALE UP.`;
+  }
+  if (mood < 30) {
+    if (n.kind === "senator") { adjustRep(w, n.factionId, -8); return `${n.name.toUpperCase()} LEAVES WITHOUT A WORD. A ${facName(n.factionId).toUpperCase()} MEMO ABOUT YOUR SHIP GOES OUT BEFORE YOU'VE REFUELLED.`; }
+    if (n.kind === "heir" && n.synTag) { p.synRep ??= {}; p.synRep[n.synTag] = Math.max(-100, (p.synRep[n.synTag] ?? 0) - 10); return `${n.name.toUpperCase()} TELLS THE FAMILY EXACTLY HOW LONG IT TOOK. [${n.synTag}] STANDING -10.`; }
+    pushEvent(w, { t: w.time, kind: "shock", systemId: p.systemId, text: `${n.name} wrote a song about a ship. It is not a kind song.` });
+    return `${n.name.toUpperCase()} WRITES A SONG ABOUT THE TRIP. IT IS NOT A KIND SONG. IT IS, UNFORTUNATELY, CATCHY.`;
+  }
+  return `${n.name.toUpperCase()} DISEMBARKS WITH A NOD. YOU'LL HEAR THEIR NAME AGAIN.`;
 }
 
 // ---------- Contacts: the pilots you keep meeting ----------
@@ -1084,6 +1139,7 @@ export interface World {
   serial?: SerialState | null;       // the GalNet serial running now
   wonders?: Wonder[];                // the galaxy's landmarks: a handful, unique, worth the trip
   captains?: NpcCaptain[];           // the recurring pilots of this galaxy, who remember you
+  notables?: Notable[];              // a few people whose journeys matter: a senator, an heir, a singer
   mailQueue?: Letter[];              // letters on their way, delivered at a dock after dueT
   serialsSeen?: string[];
   serialTick?: number;
@@ -1714,6 +1770,7 @@ export function generateWorld(seed: number, opts: GenOptions = {}): World {
     rareOrigin: assignRares(systems, new RNG((seed ^ 0x5a5e) >>> 0)),
     syndicates: assignSyndicates(systems, startId, new RNG((seed ^ 0x51d1) >>> 0)),
     wonders: assignWonders(systems, startId, new RNG((seed ^ 0x77d3) >>> 0)),
+    notables: assignNotables({ systems, syndicates: assignSyndicates(systems, startId, new RNG((seed ^ 0x51d1) >>> 0)) }, new RNG((seed ^ 0x9b1e) >>> 0)),
     captains: (() => { const caps = assignCaptains(systems, new RNG((seed ^ 0xc4b7) >>> 0)); const r = new RNG((seed ^ 0x71a1) >>> 0); const rv = caps.length ? r.pick(caps) : null; if (rv) rv.disposition = -2; return caps; })(),
     ...(assignPermits(systems, startId, new RNG((seed ^ 0x9e3d) >>> 0)), {}),
     systems, player, news: [], events: [], wars: [],

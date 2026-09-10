@@ -6,7 +6,8 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 import { RNG, hashStr } from "../core/rng";
 import { dist } from "../core/mathx";
-import { StationDef, findStation, isFriend, isRival, rivalOf } from "../world";
+import { StationDef, findStation, isFriend, isRival, rivalOf, galaxyEventAt } from "../world";
+import { occasionFor } from "../data/occasions";
 import type { Encounter } from "../data/encounters";
 import type { EncounterScene } from "./encounter";
 import { faction, genPersonName } from "../data/data";
@@ -105,6 +106,17 @@ export class StationWalkScene implements Scene {
       const spot = this.randomFloor(rng);
       this.npcs.push({ x: spot.x, y: spot.y, tx: spot.x, ty: spot.y, name: f.passengerName ?? "A FARE", skin: rng.pick(["#e8b48c", "#c78a5a", "#f0d0b0"]), suit: f.passengerKind === "vip" ? "#c7a54a" : f.passengerKind === "tourist" ? "#5ab3ff" : "#7a5aa5", pause: 6, tag: "WAITING FOR A SHIP",
         line: `${(f.passengerName ?? "").toUpperCase()}: '${f.desc.split(". ")[0]}. Ask at the lounge if you've a cabin.'` });
+    }
+    // the crowd matches the day: stalls on market day, pickets in a strike, revellers at a festival, mourners on remembrance
+    {
+      const oc = occasionFor();
+      const ev = galaxyEventAt(g.world, p.systemId);
+      const crowd: { tag: string; suit: string; lines: string[]; n: number }[] = [];
+      if (oc.id === "market") crowd.push({ tag: "STALLHOLDER", suit: "#c7a54a", n: 3, lines: ["'Fresh in from the belt! Well. Fresh-ish.'", "'Two for the price of one and a half. Market day, captain.'", "'Don't squeeze the fruit. Or do. I'm not your mother.'"] });
+      if (oc.id === "remembrance") crowd.push({ tag: "MOURNER", suit: "#5d6680", n: 2, lines: ["'My brother flew the lanes. They read his name at noon.'", "'It's a good list. A long one. Mind how you go out there.'"] });
+      if (ev?.kind === "strike" && ev.stationId === this.station.id) crowd.push({ tag: "PICKET", suit: "#a53a3a", n: 3, lines: ["'No yard work at standard rates! Not until they pay the night shift!'", "'You want your hull patched, captain? Tell the harbourmaster to settle.'", "'We're not against you. We're against them. Have a sandwich.'"] });
+      if (ev?.kind === "festival" && ev.stationId === this.station.id) crowd.push({ tag: "REVELLER", suit: "#e060ff", n: 3, lines: ["'FESTIVAL! Are you the band? You look like the band.'", "'Three days of this. My feet are gone. I regret nothing.'", "'Tourists everywhere. Bless them. They tip.'"] });
+      for (const c of crowd) for (let i = 0; i < c.n; i++) { const spot = this.randomFloor(rng); this.npcs.push({ x: spot.x, y: spot.y, tx: spot.x, ty: spot.y, name: genPersonName(rng), skin: rng.pick(["#e8b48c", "#c78a5a", "#f0d0b0"]), suit: c.suit, pause: rng.range(1, 5), tag: c.tag, line: c.lines[i % c.lines.length] }); }
     }
     this.msg = `${this.station.name.toUpperCase()} PROMENADE`;
     this.msgTimer = 3;

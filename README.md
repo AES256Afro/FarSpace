@@ -51,6 +51,9 @@ charters and enforce embargoes, station profiles and bulletins, gate traffic,
 comms chatter, void drifters near gas giants, crew who talk to each other, a
 wall of record aboard your ship, and a second campaign about a missing convoy.
 
+**Faces:** three notables per galaxy who turn up as fares with consequences,
+and promenade crowds that match the day.
+
 **Crew arcs:** each crew role has a personal story, offered to crew who
 trust you and advanced by real play.
 
@@ -177,7 +180,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestones 1–38 are live (v0.38.0). See the [roadmap](docs/ROADMAP.md) for what's next.
+Milestones 1–39 are live (v0.39.0). See the [roadmap](docs/ROADMAP.md) for what's next.
 
 ```bash
 npm test         # vitest: world-gen, routing, economy, law, missions, save migrations

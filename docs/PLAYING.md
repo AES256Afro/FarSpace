@@ -105,6 +105,16 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   board: sample runs, outcrop runs, and a plant to fix on the spot. Jobs pay
   out when you walk back in.
 
+## Faces
+
+- Three people in every galaxy matter: a senator, an heir to a trading house,
+  a singer. Now and then one of them wants a ship, marked * and gold in the
+  lounge. Land a senator happy and you may hold a charter by morning; an heir
+  moves a syndicate's standing; a singer sings for the crew. Land them sour
+  and memos, families and songs follow you.
+- The promenade crowd matches the day: stalls on Market Day, mourners on
+  Remembrance, pickets in a strike, revellers at a festival.
+
 ## Crew arcs
 
 - Crew who trust you (loyalty 2) sometimes ask for something bigger at a
