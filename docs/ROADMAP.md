@@ -541,4 +541,8 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 45 — The Ledger ✅ (Sep 2026)
 - [x] Lifetime credits in and out by source, on the RECORD tab (B)
 
+## Milestone 46 — Small Kindnesses ✅ (Sep 2026)
+- [x] The Crossing returns to a kept light; the cat brings gifts; the wall
+      records all three campaigns
+
 ## Later

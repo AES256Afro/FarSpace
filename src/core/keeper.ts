@@ -95,12 +95,31 @@ export function keeperFinale(g: Game): void {
   ];
   showCard(g, "THE KEEPER - WHOSE LIGHT", text, g.sceneName === "station" ? "station" : "flight", opts);
 }
+// Once a year of ship time (an hour here), the Crossing passes a kept light again. Log it, and it counts.
+export const CROSSING_PERIOD = 3600;
+export function crossingUpdate(g: Game): void {
+  const w = g.world; const pl = p(g);
+  if (!pl.flags?.keeperDone || !pl.keeper) return;
+  const k = keeperInfra(w) ?? (w.infra ?? []).find((i) => i.id.startsWith("keeper-"));
+  if (!k || !infraLit(k) || pl.systemId !== k.systemId) return;
+  const last = pl.crossingT ?? w.time - CROSSING_PERIOD * 0.5;
+  if (w.time - last < CROSSING_PERIOD) return;
+  if (Math.hypot(pl.x - k.x, pl.y - k.y) > 900) return;
+  pl.crossingT = w.time;
+  const key = "wonder:The Crossing";
+  (pl.codex ??= {})[key] = ((pl.codex ?? {})[key] ?? 0) + 1;
+  pl.expData = (pl.expData ?? 0) + 300;
+  logEntry(w, `Logged the Crossing at the Keeper's light (${pl.codex[key]})`);
+  g.toast(`THE CROSSING PASSES THE LIGHT AGAIN, SLOW AND DARK. YOU LOG IT, AS THE KEEPER DID. +300 DATA (${pl.codex[key]} LOGGED)`);
+  pushEvent(w, { t: w.time, kind: "discovery", systemId: k.systemId, text: `The Crossing passed the ${w.systems[k.systemId]?.name ?? "?"} light again; somebody was there to log it` });
+}
+
 export function keeperUpdate(g: Game): void {
   const pl = p(g); const w = g.world;
   if ((pl.tutorial ?? -1) >= 0 || g.sceneName === "encounter") return;
   const s = pl.story3 ?? -1;
   if (s < 0) { if (!pl.flags?.keeperDone && keeperReady(w) && g.sceneName === "station") { if (startKeeper(w)) showCard(g, "THE KEEPER - A LIGHT GOES OUT", `A LINE ON THE WIRE, THEN A LINE ON EVERY BAND: THE OLD KEEPER OF THE ${sysName(w, pl.keeper?.systemId)} LIGHT HAS DIED AT THEIR POST. FORTY YEARS OUT THERE ALONE, AND THE BEACON IS FAILING WITH NOBODY TO TEND IT.\n\nSOMEONE WITH SPARE PARTS SHOULD GO. YOU KNOW LIGHTS. GO.`, "station"); } return; }
-  if (s >= KEEPER.length) return;
+  if (s >= KEEPER.length) { crossingUpdate(g); return; }
   // relit: mark it once the keeper's beacon is lit by your hand
   if (s === 0) { const k = keeperInfra(w); if (k && infraLit(k) && !pl.flags?.keeperRelit) { (pl.flags ??= {}).keeperRelit = true; } }
   if (s === 2 && KEEPER[2].check(g) && !pl.flags?.keeperFinale) { (pl.flags ??= {}).keeperFinale = true; pl.story3 = 3; keeperFinale(g); return; }

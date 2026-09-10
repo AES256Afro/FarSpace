@@ -303,6 +303,7 @@ export interface PlayerState {
   ledger?: Record<string, number>;   // credits in and out by source, lifetime
   story3?: number;                   // The Keeper: stage index; -1 = not started
   keeper?: { systemId: string; wreckSystemId: string; wreckId: string; contactId: string } | null;
+  crossingT?: number;                // when the Crossing was last logged at the kept light
   lastOrbit?: { systemId: string; planetIdx: number } | null;
   grown?: number;                    // crates of provisions the greenhouse has grown
   postcards?: number;                // pictures taken
@@ -615,6 +616,16 @@ export const FURNISHINGS: { id: string; name: string; price: number; desc: strin
 ];
 
 // ---------- The ship's cat ----------
+// Now and then the cat brings something up from the hold. It is usually useful.
+export function catGift(p: PlayerState, rng: RNG): string | null {
+  if (!p.cat || !rng.chance(0.1)) return null;
+  const name = p.cat.name.toUpperCase();
+  const roll = rng.int(0, 3);
+  if (roll === 0 && addCargo(p, "parts", 1)) return `${name} HAS DRAGGED A SPARE PART OUT FROM BEHIND THE REACTOR HOUSING. NOBODY KNEW IT WAS THERE.`;
+  if (roll === 1) { for (const c of p.crew) c.morale = Math.min(100, c.morale + 4); return `${name} SAT ON EVERY BUNK IN TURN THIS DOCKING. MORALE UP.`; }
+  if (roll === 2) { p.expData = (p.expData ?? 0) + 40; return `${name} WAS FOUND ASLEEP ON THE SCANNER. IT LOGGED SOMETHING. +40 DATA.`; }
+  return `${name} HAS LEFT A DEAD SOMETHING ON THE CAPTAIN'S CHAIR. IT IS A GIFT. YOU SAY THANK YOU.`;
+}
 export const CAT_NAMES = ["Biscuit", "Ferrule", "Moth", "Sprocket", "Halyard", "Nebula", "Ratchet", "Comet", "Pixel", "Grommet", "Ballast", "Ember"];
 export function adoptCat(p: PlayerState, name: string, now: number): void {
   p.cat = { name, since: now };

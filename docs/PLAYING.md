@@ -229,6 +229,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Small kindnesses
+
+- Keep the Keeper's light lit and be there an hour later: the Crossing passes
+  again, and you log it as the Keeper did, for data and a codex count.
+- The cat brings things up from the hold now and then.
+- The wall of record keeps all three campaigns.
+
 ## The ledger
 
 - B on the RECORD tab: lifetime credits in and out by source: trade sales and

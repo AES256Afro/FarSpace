@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.46 - SMALL KINDNESSES", [
+    "THE CROSSING RETURNS TO A KEPT LIGHT. THE CAT BRINGS THINGS UP FROM THE HOLD. THE WALL KEEPS ALL THREE CAMPAIGNS.",
+  ]],
   ["0.45 - THE LEDGER", [
     "B ON THE RECORD TAB: WHERE THE MONEY CAME FROM AND WHERE IT WENT, LIFETIME, BY SOURCE.",
   ]],
