@@ -86,6 +86,7 @@ function noise(dur: number, vol = 1, lowpass = 2000): void {
 
 let lastLaser = 0;
 let thrustNode: GainNode | null = null;
+let roverNode: GainNode | null = null;
 export const sfx = {
   laser(): void {
     const now = performance.now();
@@ -122,6 +123,28 @@ export const sfx = {
     const now = c.currentTime;
     thrustNode.gain.cancelScheduledValues(now);
     thrustNode.gain.setTargetAtTime(target, now, on ? 0.08 : 0.25);
+  },
+  // rover drivetrain: a lower, grittier loop than the ship's engines
+  rover(on: boolean): void {
+    const c = ac();
+    if (!c || !master) return;
+    if (!roverNode) {
+      const src = c.createBufferSource();
+      const len = c.sampleRate * 2;
+      const buf = c.createBuffer(1, len, c.sampleRate);
+      const d = buf.getChannelData(0);
+      let last = 0;
+      for (let i = 0; i < len; i++) { last = (last + 0.08 * (Math.random() * 2 - 1)) / 1.08; d[i] = last * 3 * (1 + 0.3 * Math.sin(i / 90)); }
+      src.buffer = buf; src.loop = true;
+      const lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 150;
+      const g = c.createGain(); g.gain.value = 0;
+      src.connect(lp); lp.connect(g); g.connect(fxBus ?? master);
+      src.start();
+      roverNode = g;
+    }
+    const now = c.currentTime;
+    roverNode.gain.cancelScheduledValues(now);
+    roverNode.gain.setTargetAtTime(on ? 0.3 : 0, now, on ? 0.1 : 0.3);
   },
   boom(big = false): void {
     noise(big ? 0.5 : 0.25, big ? 0.7 : 0.4, big ? 900 : 1400);

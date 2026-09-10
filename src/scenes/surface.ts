@@ -7,6 +7,7 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 import { clamp } from "../core/mathx";
 import { sfx } from "../core/sfx";
+import { music } from "../core/music";
 import * as wire from "../core/wire";
 import { flag } from "../core/achievements";
 import { gainMaterials } from "../core/materials";
@@ -102,6 +103,7 @@ export class SurfaceScene implements Scene {
 
   leave(g: Game): void {
     g.surfaceReturn = false;
+    sfx.rover(false);
     g.setScene("orbit");
   }
 
@@ -119,6 +121,8 @@ export class SurfaceScene implements Scene {
     if (inp.isDown("d")) ax += 1;
     const powered = this.power > 0;
     const top = (here === HILLS ? 50 : here === SAND ? 70 : 95) * (powered ? 1 : 0.35) * (this.storm > 0 ? 0.7 : 1);
+    sfx.rover(!!(ax || ay) && powered);
+    music.setMood(this.storm > 0 ? "storm" : "ground", 0);
     if (ax || ay) {
       const l = Math.hypot(ax, ay); ax /= l; ay /= l;
       this.vx += ax * 320 * dt; this.vy += ay * 320 * dt;
@@ -179,6 +183,7 @@ export class SurfaceScene implements Scene {
         if (ent.kind === "defense") this.say("MILITARY SITE - THE GATE STAYS SHUT");
         else {
           g.landedPoiId = ent.poiId;
+          sfx.rover(false);
           sfx.select();
           g.setScene(ent.kind === "city" ? "city" : ent.kind === "ruin" ? "ruin" : "outpost");
           return;

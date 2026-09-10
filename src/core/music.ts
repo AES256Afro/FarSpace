@@ -16,6 +16,8 @@ const MOODS: Record<string, Mood> = {
   ora:   { sub: 58.3, sub2: 87.3, cutoff: 200, noise: 0.18, air: 0.007, gain: 1.0 }, // open, airy
   vex:   { sub: 46.2, sub2: 71.8, cutoff: 160, noise: 0.2, air: 0.006, gain: 1.0 },  // slightly wrong: subs beat against each other
   void:  { sub: 41.2, sub2: 61.7, cutoff: 120, noise: 0.1, air: 0.003, gain: 0.8 },
+  ground: { sub: 36, sub2: 48, cutoff: 700, noise: 0.22, air: 0.02, gain: 0.55 },   // wind over the plains
+  storm:  { sub: 36, sub2: 48, cutoff: 1600, noise: 0.5, air: 0.05, gain: 0.8 },    // weather on the hull
 };
 
 function noiseBuffer(ctx: AudioContext, seconds: number, brown: boolean): AudioBuffer {

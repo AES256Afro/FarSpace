@@ -7,6 +7,7 @@ import { PAL } from "../gfx/palette";
 import { faction } from "../data/data";
 import { Poi, adjustRep, pushEvent } from "../world";
 import { sfx } from "../core/sfx";
+import { music } from "../core/music";
 import { hasModule } from "../data/modules";
 import { clamp } from "../core/mathx";
 
@@ -28,6 +29,7 @@ export class OrbitScene implements Scene {
     this.scan = 0;
     const sys = g.world.systems[g.world.player.systemId];
     const pl = sys.planets[g.orbitPlanetIdx];
+    music.setMood(sys.factionId, 0);
     this.msg = `ORBIT ESTABLISHED: ${pl.name.toUpperCase()}`;
     this.msgTimer = 3;
     for (const m of g.world.player.missions) {
