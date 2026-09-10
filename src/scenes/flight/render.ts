@@ -397,7 +397,7 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
   else if (law === 1) drawText(ctx, "WANTED", VW - 76, VH - 19, PAL.danger);
   if (inSafeZone(fs, g, p.x, p.y) && law === 0) drawText(ctx, "PROTECTED SPACE", VW - 130, VH - 11, PAL.good);
   drawText(ctx, "TAB MAP", VW - 36, VH - 19, PAL.greyDark);
-  drawText(ctx, "I SHIP", VW - 36, VH - 11, PAL.greyDark);
+  drawText(ctx, "J CRUISE", VW - 36, VH - 11, PAL.greyDark);
   if (g.cloudStatus) drawText(ctx, g.cloudStatus, VW - 36 - textWidth(g.cloudStatus) - 6, VH - 11, g.cloudStatus === "SYNCED" ? PAL.uiDim : PAL.warn);
 
   let wy = 4;
@@ -418,6 +418,10 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
     ctx.fillStyle = heat > 100 ? PAL.danger : heat > 70 ? PAL.warn : PAL.thrust;
     ctx.fillRect(hx, hy + 1, Math.round(50 * clamp(heat / 100, 0, 1)), 4);
     if (heat > 100 && Math.floor(g.world.time * 6) % 2 === 0) drawText(ctx, "OVERHEAT", hx + 8, hy - 9, PAL.danger);
+  }
+  if (fs.cruise || fs.autopilot) {
+    const t = `${fs.cruise ? "CRUISE" : ""}${fs.cruise && fs.autopilot ? " - " : ""}${fs.autopilot ? `AUTOPILOT: ${fs.apLabel}` : ""}`;
+    drawText(ctx, t, VW / 2 - textWidth(t) / 2, VH - 34, fs.cruise ? PAL.info : PAL.ui);
   }
   if (fs.dockTimer > 0.2) {
     const t = `DOCKING COMPUTER ${".".repeat(1 + Math.floor(fs.dockTimer * 2) % 3)}`;

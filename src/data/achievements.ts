@@ -27,6 +27,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "hardcore", title: "COLD VOID", desc: "Reach 5,000 credits in hardcore", check: (w) => !!w.hardcore && w.player.credits >= 5000 },
   { id: "rareRun", title: "RARE RUN", desc: "Sell a rare good far from home", check: (w) => !!w.player.flags?.rareRun },
   { id: "tourist", title: "TOUR GUIDE", desc: "Complete a sightseeing charter", check: (w) => !!w.player.flags?.tourist },
+  { id: "communal", title: "COMMUNAL", desc: "Contribute 20 units to a community goal", check: (w) => !!w.player.flags?.communal },
   { id: "coreCutter", title: "CORE CUTTER", desc: "Detonate a core asteroid", check: (w) => !!w.player.flags?.coreCutter },
   { id: "engineer", title: "ENGINEERED", desc: "Apply an engineering grade", check: (w) => !!w.player.flags?.engineer },
   { id: "outfitted", title: "OUTFITTED", desc: "Fit a module", check: (w) => !!w.player.flags?.outfitted },

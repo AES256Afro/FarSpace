@@ -21,11 +21,11 @@ See [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) for the full design and
 
 | Context | Keys |
 |---|---|
-| Flight | **W/S** thrust · **A/D** rotate · **mouse** aims the turret (left-click fire, right-click mine) or **Space** fire / **M** mine in keyboard mode · **R** torpedo · **X** brake assist · **V** (hold) deep scan · **E** dock / jump / orbit / board wreck · **Tab** system map · **G** galaxy map · **I** board ship · **F** fullscreen |
+| Flight | **W/S** thrust · **A/D** rotate · **mouse** aims the turret (left-click fire, right-click mine) or **Space** fire / **M** mine in keyboard mode · **R** torpedo · **C** seismic charge · **X** brake assist · **J** cruise · **N** autopilot to your course · **V** (hold) deep scan (logs the system) · **E** dock / jump / orbit / board wreck · **Tab** system map · **G** galaxy map · **I** board ship · **F** fullscreen |
 | Ship / station / wreck / outpost | **WASD** walk · **E** interact · **E** (hold) repair, seal, extinguish |
 | Orbit | **↑/↓** or click to target a site · **V** (hold) survey scan · **E** land · **Esc** leave orbit |
-| Station menus | **↑/↓ / ←/→** or click · **Enter** select · **B/S** buy/sell · **P** walk the deck · **Esc** undock · RECORD tab shows achievements |
-| Galaxy map | click a system for intel · click again (or **N**) to plot a course |
+| Station menus | **↑/↓ / ←/→** or click · **Enter** select · **B/S** buy/sell · **P** walk the deck · **Esc** undock · SURVEY sells exploration data · ENGINEER (research/refinery) spends materials · RECORD shows achievements and ranks · **N** in SHIPS names your ship |
+| Galaxy map | click a system for intel · click again (or **N**) to plot a course · **B** bookmark |
 | Global | **F5** save (local + cloud) · **F9** load · **H** music · every flight key can be rebound in SETTINGS · touch: left stick + on-screen buttons · gamepad: sticks/D-pad, A use, X fire, Y mine, RB brake, LB scan, LT map, Start galaxy, Select ship |
 
 ## What's in the game
@@ -38,10 +38,21 @@ a call sign and your arc completions, rescues, surveys and relic hauls appear on
 every player's WIRE tab and the title ticker, with leaderboards for discoveries,
 arcs, credits and kills.
 
+**The non-combat game** (the Elite Dangerous side): twelve ship modules
+(fuel scoop, docking computer, collector and prospector limpets, refinery,
+discovery and surface scanners, racks, tanks, thrusters), fuel scooping off
+stars with a heat model, cruise drive with mass lock and an autopilot, core
+asteroids cracked with seismic charges, six materials and an engineer bay with
+seven three-grade blueprints, exploration data sold at cartographics with
+first-discovery tags shared across all players, Explorer/Trader/Miner career
+ranks up to ELITE, fourteen rare goods that appreciate with distance, market
+memory with best-known-sell and best-run hints, bookmarks, ship naming,
+sightseeing charters, a weekly galaxy-wide community goal and a daily contract.
+
 Five hulls, a dynamic economy with shocks and faction wars, reputation with five
 factions and a law ladder from routine scans to shoot-on-sight, escort and
 passenger and research missions, five faction story arcs, pirate captains and
-homing torpedoes, achievements and a galaxy-wide daily contract, a hardcore
+homing torpedoes, achievements, a hardcore
 mode where destruction erases the save, recruitable crew who
 talk and quit, ship interiors with fires and breaches, derelicts to board,
 planets to orbit and survey with landable outposts, and a "Sol Neighbourhood"
@@ -68,7 +79,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestones 1–10 are live (v0.10). See the [roadmap](docs/ROADMAP.md) for what's next.
+Milestones 1–11 are live (v0.11). See the [roadmap](docs/ROADMAP.md) for what's next.
 
 ```bash
 npm test         # vitest: world-gen, routing, economy, law, missions, save migrations

@@ -310,6 +310,7 @@ export function damagePlayer(fs: FlightScene, g: Game, dmg: number): void {
   if (g.world.hardcore) dmg *= 1.5; // cold void: everything hits harder
   const p = g.world.player;
   fs.camShake = 4;
+  if (fs.cruise) { fs.cruise = false; g.toast("HIT - DROPPED FROM CRUISE"); }
   let absorbedTotal = 0;
   if (p.shield > 0) {
     const absorbed = Math.min(p.shield, dmg);

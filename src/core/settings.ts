@@ -14,6 +14,7 @@ export const ACTIONS: { key: string; label: string }[] = [
   { key: "w", label: "THRUST" }, { key: "s", label: "RETRO" }, { key: "a", label: "TURN LEFT" }, { key: "d", label: "TURN RIGHT" },
   { key: " ", label: "FIRE" }, { key: "r", label: "TORPEDO" }, { key: "m", label: "MINE" }, { key: "x", label: "BRAKE" },
   { key: "v", label: "DEEP SCAN" }, { key: "e", label: "INTERACT" }, { key: "i", label: "BOARD SHIP" },
+  { key: "j", label: "CRUISE" }, { key: "n", label: "AUTOPILOT" }, { key: "c", label: "SEISMIC CHARGE" },
   { key: "Tab", label: "SYSTEM MAP" }, { key: "g", label: "GALAXY MAP" }, { key: "h", label: "MUSIC" }, { key: "f", label: "FULLSCREEN" },
 ];
 

@@ -89,6 +89,40 @@ export default {
       return json({ error: "method" }, 405);
     }
 
+    // Community goal: a weekly shared counter with a small contributor board.
+    if (url.pathname === "/api/goal") {
+      const GOAL = /^cg-\d{4}-\d{2}-\d{2}$/;
+      const load = async (id: string): Promise<{ progress: number; contributors: Record<string, number> }> => {
+        const raw = await env.SAVES.get(`goal:${id}`, "text");
+        return raw ? JSON.parse(raw) : { progress: 0, contributors: {} };
+      };
+      const view = (id: string, g: { progress: number; contributors: Record<string, number> }) => ({
+        id, progress: g.progress,
+        top: Object.entries(g.contributors).map(([callsign, amount]) => ({ callsign, amount })).sort((a, b) => b.amount - a.amount).slice(0, 5),
+      });
+      if (request.method === "GET") {
+        const id = clean(url.searchParams.get("id"), 16);
+        if (!GOAL.test(id)) return json({ error: "bad goal" }, 400);
+        return json(view(id, await load(id)));
+      }
+      if (request.method === "POST") {
+        if (await rateLimited(env, request, "goal", 3)) return json({ error: "slow down" }, 429);
+        let body: Record<string, unknown>;
+        try { body = (await request.json()) as Record<string, unknown>; } catch { return json({ error: "not json" }, 400); }
+        const id = clean(body.id, 16);
+        const callsign = clean(body.callsign, 16).toUpperCase() || "ANONYMOUS";
+        const amount = Math.floor(Number(body.amount));
+        if (!GOAL.test(id)) return json({ error: "bad goal" }, 400);
+        if (!Number.isFinite(amount) || amount < 1 || amount > 60) return json({ error: "bad amount" }, 400);
+        const g = await load(id);
+        g.progress += amount;
+        g.contributors[callsign] = (g.contributors[callsign] ?? 0) + amount;
+        await env.SAVES.put(`goal:${id}`, JSON.stringify(g), { expirationTtl: 60 * 60 * 24 * 21 });
+        return json(view(id, g));
+      }
+      return json({ error: "method" }, 405);
+    }
+
     // First discovery tags: one call sign per system name, first come first served.
     if (url.pathname === "/api/discover") {
       if (request.method === "GET") {

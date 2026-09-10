@@ -190,6 +190,33 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
 - [x] Two more faction arcs: Hexagon Combine "Ledger of Glass" and Outer Ring
       Autonomy "Free Drift" (five arcs, fifteen stages)
 
+## Milestone 11 — The Quiet Professions ✅ (Sep 2026)
+**Goal:** a full non-combat game in the Elite Dangerous mould.
+
+- [x] Outfitting: twelve modules at every shipyard (fuel scoop, radiators,
+      tank, rack, docking computer, collector + prospector limpets, refinery,
+      discovery + surface scanners, tuned thrusters, shield capacitor); fittings
+      carry across hull changes
+- [x] Fuel scooping and heat: stars cook the hull, a scoop turns the corona into
+      fuel; overheating hurts
+- [x] Cruise drive (J) with mass lock, and an autopilot (N) that flies your
+      plotted course gate to gate and brakes at the end
+- [x] Exploration: nav logs on arrival, detailed scans, orbital surveys and
+      first discoveries earn data sold at the SURVEY tab; research posts pay
+      more; first-discovery tags are shared galaxy-wide through the wire
+- [x] Careers: Explorer, Trader and Miner ranks, nine grades to ELITE
+- [x] Mining: core asteroids (seismic charges, C), prospector readouts, refinery
+      yields, materials from every rock
+- [x] Engineering: six materials, seven blueprints with three grades each at
+      research and refinery stations (jump range, drives, scoop, mining, cargo,
+      shields, heat vents)
+- [x] Trade: fourteen rare goods with distance pricing, market memory with
+      best-known-sell and best-run hints, bookmarks, ship naming
+- [x] Passengers: sightseeing charters that require an orbit before drop-off
+- [x] Community goal: one shared weekly target for the whole galaxy with a
+      contributor board and a sales premium; daily contract; achievements for
+      all of it
+
 ## Later
 - [ ] Ground exploration beyond outposts and ruins (planet-scale maps)
 - [ ] Multiplayer proper

@@ -101,3 +101,25 @@ export async function discover(system: string): Promise<{ first: boolean; by: st
     return (await r.json()) as { first: boolean; by: string };
   } catch { return null; }
 }
+
+export interface GoalState { id: string; progress: number; top: { callsign: string; amount: number }[] }
+
+export async function fetchGoal(id: string): Promise<GoalState | null> {
+  try {
+    const r = await fetch(`${cloudBase()}/api/goal?id=${encodeURIComponent(id)}`);
+    if (!r.ok) return null;
+    return (await r.json()) as GoalState;
+  } catch { return null; }
+}
+
+export async function contributeGoal(id: string, amount: number): Promise<GoalState | null> {
+  const callsign = getCallsign();
+  try {
+    const r = await fetch(`${cloudBase()}/api/goal`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id, amount, callsign: callsign ?? "ANONYMOUS" }),
+    });
+    if (!r.ok) return null;
+    return (await r.json()) as GoalState;
+  } catch { return null; }
+}

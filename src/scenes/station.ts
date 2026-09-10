@@ -11,7 +11,7 @@ import { ROLE_INFO, CrewMember } from "../data/crew";
 import {
   StationDef, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES,
+  crewWages, genCrewCandidate, applyHull, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal,
 } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
@@ -94,6 +94,7 @@ export class StationScene implements Scene {
     const inp = g.input;
     music.setMood(this.station.factionId, 0);
     if (inp.wasPressed("Escape")) {
+      this.flushGoal();
       if (this.returnTo === "stationwalk") g.setScene("stationwalk");
       else { g.world.player.dockedAt = null; g.setScene("flight"); g.toast("UNDOCKED"); }
       return;
@@ -143,7 +144,10 @@ export class StationScene implements Scene {
           const price = rare ? rareSellPrice(g.world, st, id, rep) : sellPrice(st, id, rep);
           if (!removeCargo(p, id, 1)) g.toast("NONE IN CARGO");
           else {
-            p.credits += price; p.tradeRevenue = (p.tradeRevenue ?? 0) + price;
+            const goalHit = id === this.goal.commodityId && st.type === this.goal.stationType;
+            const paid = goalHit ? Math.round(price * (1 + this.goal.premium)) : price;
+            if (goalHit) { this.goalPending++; p.goalContrib ??= {}; p.goalContrib[this.goal.id] = (p.goalContrib[this.goal.id] ?? 0) + 1; if ((p.goalContrib[this.goal.id] ?? 0) >= 20) flag(g, "communal"); }
+            p.credits += paid; p.tradeRevenue = (p.tradeRevenue ?? 0) + paid;
             if (!rare || st.rare === id) { st.stock[id] = (st.stock[id] ?? 0) + 1; refreshPrices(st); }
             if (rare && st.rare !== id) { p.rareRevenue = (p.rareRevenue ?? 0) + price; if (!p.flags?.rareRun) flag(g, "rareRun"); }
           }
@@ -169,6 +173,7 @@ export class StationScene implements Scene {
         break;
       }
       case "MISSIONS": {
+        if (Date.now() - this.goalFetched > 60_000) { this.goalFetched = Date.now(); this.flushGoal(); void wire.fetchGoal(this.goal.id).then((st) => { if (st) this.goalState = st; }); }
         const avail = this.boardMissions.filter((m) => !m.accepted);
         const deliverable = p.missions.filter((m) => missionDeliverable(g.world, m, st));
         const rows = deliverable.length + avail.length;
@@ -484,6 +489,33 @@ export class StationScene implements Scene {
     return rows;
   }
 
+  // Best buy-here/sell-there margin over everything we've seen
+  bestRoute(g: Game): { id: string; buy: number; sell: number; station: string; system: string } | null {
+    const p = g.world.player;
+    const st = this.station;
+    const rep = p.rep[st.factionId] ?? 0;
+    let best: { id: string; buy: number; sell: number; station: string; system: string } | null = null;
+    for (const id of Object.keys(st.prices)) {
+      if ((st.stock[id] ?? 0) <= 0 || commodity(id).illegal) continue;
+      const buy = buyPrice(st, id, rep);
+      const b = this.bestKnownSell(g, id);
+      if (b && b.price - buy > (best ? best.sell - best.buy : 0)) best = { id, buy, sell: b.price, station: b.station, system: b.system };
+    }
+    return best;
+  }
+
+  // Community goal: fetched when the MISSIONS tab opens, contributions batched until undock
+  goal = communityGoal();
+  goalState: wire.GoalState | null = null;
+  goalFetched = 0;
+  goalPending = 0;
+  flushGoal(): void {
+    if (this.goalPending <= 0) return;
+    const n = Math.min(60, this.goalPending);
+    this.goalPending -= n;
+    void wire.contributeGoal(this.goal.id, n).then((st) => { if (st) this.goalState = st; });
+  }
+
   // Best price for this commodity among stations we've actually visited
   bestKnownSell(g: Game, id: string): { price: number; station: string; system: string; ago: number } | null {
     const p = g.world.player;
@@ -512,7 +544,7 @@ export class StationScene implements Scene {
     drawText(ctx, "TREND", 320, top, PAL.greyDark);
     drawText(ctx, "ENTER/B BUY - S SELL", 370, top, PAL.greyDark);
     const rows = this.marketRows(g);
-    const rowH = rows.length > 14 ? 9 : 11;
+    const rowH = rows.length > 12 ? 9 : 11;
     rows.forEach((id, i) => {
       const y = top + 12 + i * rowH;
       const c = commodity(id);
@@ -534,10 +566,12 @@ export class StationScene implements Scene {
       const id = rows[this.cursor];
       const best = id ? this.bestKnownSell(g, id) : null;
       const line = best ? `${commodity(id).name.toUpperCase()} - BEST KNOWN SELL: ${best.price}CR AT ${best.station.toUpperCase()}, ${best.system.toUpperCase()} (${Math.floor(best.ago / 60)}M AGO)` : id ? `${commodity(id).name.toUpperCase()} - NO OTHER MARKET SEEN YET; PRICES ARE REMEMBERED WHEREVER YOU DOCK` : "";
-      drawText(ctx, line, 8, ny + 18, PAL.info);
+      drawText(ctx, line, 8, ny + 9, PAL.info);
+      const r = this.bestRoute(g);
+      if (r) drawText(ctx, `BEST KNOWN RUN: BUY ${commodity(r.id).name.toUpperCase()} ${r.buy} - SELL ${r.sell} AT ${r.station.toUpperCase()}, ${r.system.toUpperCase()} (+${r.sell - r.buy}/UNIT)`.slice(0, 90), 8, ny + 18, PAL.gold);
+      if (this.goal.stationType === st.type) drawText(ctx, `COMMUNITY GOAL: ${commodity(this.goal.commodityId).name.toUpperCase()} SELLS HERE AT +${Math.round(this.goal.premium * 100)}% THIS WEEK`, 8, ny + 27, PAL.info);
     }
     drawText(ctx, "* ILLEGAL - SEIZED AT GATE SCANS.  + RARE - WORTH MORE FAR FROM ITS ORIGIN.  GOOD STANDING = BETTER PRICES.", 8, ny, PAL.greyDark);
-    if (st.rare) drawText(ctx, `THIS STATION IS THE ONLY SOURCE OF ${commodity(st.rare).name.toUpperCase()}. STOCK TRICKLES IN.`, 8, ny + 9, PAL.gold);
   }
 
   drawShipyard(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
@@ -601,6 +635,20 @@ export class StationScene implements Scene {
     const tier = missionTier(p.rep[st.factionId] ?? 0);
     let y = top;
     let idx = 0;
+    {
+      const gl = this.goal;
+      const prog = this.goalState?.progress ?? 0;
+      const mine = p.goalContrib?.[gl.id] ?? 0;
+      drawText(ctx, gl.title.toUpperCase(), 8, y, PAL.info);
+      const done = prog >= gl.target;
+      drawText(ctx, done ? "GOAL MET - PREMIUM STILL PAYS" : `${prog}/${gl.target} UNITS`, 300, y, done ? PAL.good : PAL.grey);
+      ctx.fillStyle = PAL.greyDark; ctx.fillRect(380, y + 1, 90, 4);
+      ctx.fillStyle = done ? PAL.good : PAL.info; ctx.fillRect(380, y + 1, Math.round(90 * Math.min(1, prog / gl.target)), 4);
+      y += 9;
+      const top5 = this.goalState?.top.map((t) => `${t.callsign} ${t.amount}`).join("  ") ?? "";
+      drawText(ctx, `${gl.desc.toUpperCase().slice(0, 88)}`, 8, y, PAL.greyDark); y += 9;
+      drawText(ctx, `${mine ? `YOU: ${mine} UNITS.  ` : ""}${top5 ? `TOP: ${top5}` : this.goalState ? "NO CONTRIBUTIONS YET - BE FIRST" : "GOAL BOARD OFFLINE"}`, 8, y, mine ? PAL.gold : PAL.greyDark); y += 12;
+    }
     if (deliverable.length) {
       drawText(ctx, "READY TO TURN IN:", 8, y, PAL.good); y += 10;
       for (const m of deliverable) {

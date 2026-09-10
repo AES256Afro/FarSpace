@@ -13,7 +13,7 @@ import { MODULES } from "../src/data/modules";
 import { rareSellPrice, findStation } from "../src/world";
 import { RARES } from "../src/data/data";
 import { BLUEPRINTS, upgrade, addMaterials, nextCost, MATERIAL_CAP } from "../src/data/engineering";
-import { jumpFuelCost } from "../src/world";
+import { jumpFuelCost, communityGoal, weekKey } from "../src/world";
 
 describe("world generation", () => {
   it("is deterministic per seed", () => {
@@ -362,5 +362,18 @@ describe("engineering", () => {
     const rocks = Object.values(w.systems).flatMap((s) => s.asteroids);
     expect(rocks.some((a) => a.core)).toBe(true);
     expect(rocks.every((a) => !a.core || a.rich)).toBe(true);
+  });
+});
+
+describe("community goal", () => {
+  it("is the same all week and changes on Monday", () => {
+    const wed = Date.UTC(2026, 8, 9, 15); // Wednesday
+    expect(weekKey(wed)).toBe("2026-09-07");
+    const a = communityGoal(wed), b = communityGoal(wed + 3 * 86400_000), c = communityGoal(wed + 7 * 86400_000);
+    expect(a.id).toBe(b.id);
+    expect(a.commodityId).toBe(b.commodityId);
+    expect(c.id).not.toBe(a.id);
+    expect(a.target).toBeGreaterThanOrEqual(300);
+    expect(/^cg-\d{4}-\d{2}-\d{2}$/.test(a.id)).toBe(true);
   });
 });

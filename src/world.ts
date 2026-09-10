@@ -231,6 +231,7 @@ export interface PlayerState {
   seismic?: number;                  // seismic charges for core asteroids
   materials?: Record<string, number>;
   engineering?: Record<string, number>; // blueprint id → grade
+  goalContrib?: Record<string, number>; // community goal id → units contributed
 }
 
 export interface World {
@@ -1051,6 +1052,34 @@ export function logSystem(p: PlayerState, sys: SystemDef, level: 1 | 2): number 
   p.expLog[sys.id] = level;
   p.expData = (p.expData ?? 0) + value;
   return value;
+}
+
+// ---------- Community goal ----------
+// One goal a week for the whole galaxy: a station type needs a commodity.
+// Progress lives on the edge; contributions come from market sales.
+
+export interface CommunityGoal { id: string; title: string; desc: string; commodityId: string; stationType: StationType; target: number; premium: number }
+
+export function weekKey(now = Date.now()): string {
+  const d = new Date(now);
+  const day = (d.getUTCDay() + 6) % 7; // Monday = 0
+  d.setUTCDate(d.getUTCDate() - day);
+  return d.toISOString().slice(0, 10);
+}
+
+export function communityGoal(now = Date.now()): CommunityGoal {
+  const key = weekKey(now);
+  const rng = new RNG(hashStr(`goal:${key}`));
+  const pool = COMMODITIES.filter((c) => !c.illegal && !c.rare && c.id !== "relics");
+  const com = rng.pick(pool);
+  const type = rng.pick(["research", "refinery", "trade", "agri", "mining"] as StationType[]);
+  const target = 300 + rng.int(0, 5) * 100;
+  const names: Record<string, string> = { research: "research posts", refinery: "refineries", trade: "trade hubs", agri: "agri stations", mining: "mining stations" };
+  return {
+    id: `cg-${key}`, commodityId: com.id, stationType: type, target, premium: 0.25,
+    title: `Community goal: ${com.name} for ${names[type]}`,
+    desc: `Week of ${key}: every pilot's sales of ${com.name} at ${names[type]} count toward ${target} units. Sales pay 25% over market while the goal runs.`,
+  };
 }
 
 // ---------- Daily contract ----------

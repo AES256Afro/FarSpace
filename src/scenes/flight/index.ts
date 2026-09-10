@@ -4,7 +4,7 @@
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute } from "../../world";
 import { hasModule } from "../../data/modules";
 import { engGrade } from "../../data/engineering";
 import { gainMaterials } from "../../core/materials";
@@ -61,6 +61,7 @@ export class FlightScene implements Scene {
     this.particles = [];
     this.loot = [];
     this.mapOpen = false;
+    this.cruise = false; this.autopilot = false;
     this.escort = null;
     this.scanCharge = 0;
     this.torps = [];
@@ -118,9 +119,14 @@ export class FlightScene implements Scene {
     const engineFactor = 0.3 + 0.7 * (engineSys.health / 100);
     const pilot = 1 + crewBonus(p, "pilot") * 0.15 + (p.skills?.piloting ?? 0) * 0.02;
     const tuned = (hasModule(p, "thrusters") ? 1.15 : 1) * (1 + 0.06 * engGrade(p, "drives"));
-    const ACCEL = h.accel * pilot * tuned;
-    const ROT = h.rotSpeed * pilot;
-    const MAXS = h.maxSpeed * tuned;
+    // cruise: the long-haul drive. Fast, blind, and it drops the moment anything big is near.
+    if (g.input.wasPressed("j")) this.toggleCruise(g);
+    if (this.cruise && this.massLocked(g)) { this.cruise = false; this.scanMsg = "MASS LOCK - DROPPED FROM CRUISE"; this.scanTimer = 2; sfx.alarm(); }
+    const cruiseMul = this.cruise ? 4.5 : 1;
+    const ACCEL = h.accel * pilot * tuned * (this.cruise ? 3 : 1);
+    const ROT = h.rotSpeed * pilot * (this.cruise ? 0.6 : 1);
+    const MAXS = h.maxSpeed * tuned * cruiseMul;
+    this.updateAutopilot(g, dt);
 
     if (lifeSys.health < 50) {
       p.oxygen = Math.max(0, p.oxygen - dt * (50 - lifeSys.health) * 0.02);
@@ -131,13 +137,22 @@ export class FlightScene implements Scene {
 
     if (g.input.isDown("a")) p.angle -= ROT * dt;
     if (g.input.isDown("d")) p.angle += ROT * dt;
+    if (this.autopilot) {
+      const d = angDiff(p.angle, this.apAngle);
+      p.angle += clamp(d, -ROT * dt, ROT * dt);
+    }
 
     // aim: the turret follows the cursor in mouse mode (ship sits at screen centre)
     this.mouseAim = settings().aim === "mouse" && !touch.enabled;
     this.aim = this.mouseAim ? Math.atan2(g.input.mouseY - VH / 2, g.input.mouseX - VW / 2) : p.angle;
 
-    const thrusting = g.input.isDown("w") && p.fuel > 0;
-    const retro = g.input.isDown("s") && p.fuel > 0;
+    const thrusting = (g.input.isDown("w") || (this.autopilot && this.apThrust)) && p.fuel > 0;
+    const retro = (g.input.isDown("s") || (this.autopilot && this.apBrake)) && p.fuel > 0;
+    if (this.cruise && Math.random() < dt * 40) {
+      // star streaks past the canopy
+      const back = Math.atan2(-p.vy, -p.vx);
+      this.particles.push({ x: p.x + (Math.random() - 0.5) * 160, y: p.y + (Math.random() - 0.5) * 100, vx: Math.cos(back) * 700, vy: Math.sin(back) * 700, life: 0.25, color: PAL.starMid });
+    }
     sfx.thrust(thrusting || retro || (g.input.isDown("x") && p.fuel > 0 && Math.hypot(p.vx, p.vy) > 4));
     if (thrusting) {
       p.vx += Math.cos(p.angle) * ACCEL * engineFactor * dt;
@@ -176,7 +191,7 @@ export class FlightScene implements Scene {
 
     // firing
     this.fireCd -= dt;
-    const firing = g.input.isDown(" ") || (this.mouseAim && g.input.mouseDown);
+    const firing = !this.cruise && (g.input.isDown(" ") || (this.mouseAim && g.input.mouseDown));
     if (firing && this.fireCd <= 0 && weaponsSys.health > 5) {
       this.fireCd = h.fireRate;
       sfx.laser();
@@ -207,6 +222,7 @@ export class FlightScene implements Scene {
 
     if (g.input.wasPressed("r") && weaponsSys.health > 5) fireTorpedo(this, g);
     this.mining = g.input.isDown("m") || (this.mouseAim && g.input.mouseRight);
+    if (this.cruise) this.mining = false;
     if (this.mining) mine(this, g, dt, h.miningRate * (1 + 0.2 * engGrade(p, "mining")), this.aim);
     if (g.input.wasPressed("c")) this.plantCharge(g);
     this.updateCharges(g, dt);
@@ -397,6 +413,89 @@ export class FlightScene implements Scene {
       p.expData = (p.expData ?? 0) + 250;
       flag(g, "first");
       sfx.pickup();
+    }
+  }
+
+  // ---------- Cruise & autopilot ----------
+  cruise = false;
+  autopilot = false;
+  apAngle = 0; apThrust = false; apBrake = false; apLabel = "";
+
+  massLocked(g: Game): boolean {
+    const p = g.world.player;
+    const sys = g.world.systems[p.systemId];
+    for (const st of sys.stations) if (dist(p.x, p.y, Math.cos(st.angle) * st.orbit, Math.sin(st.angle) * st.orbit) < 260) return true;
+    for (const pl of sys.planets) if (dist(p.x, p.y, Math.cos(pl.angle) * pl.orbit, Math.sin(pl.angle) * pl.orbit) < pl.radius + 200) return true;
+    if (Math.hypot(p.x, p.y) < sys.sunRadius + 400) return true;
+    return false;
+  }
+
+  toggleCruise(g: Game): void {
+    if (this.cruise) { this.cruise = false; g.toast("CRUISE DISENGAGED"); sfx.select(); return; }
+    if (this.massLocked(g)) { g.toast("MASS LOCKED - GET CLEAR OF STATIONS, WORLDS AND THE STAR"); return; }
+    if (g.world.player.fuel < 5) { g.toast("NOT ENOUGH FUEL FOR CRUISE"); return; }
+    this.cruise = true;
+    g.toast("CRUISE ENGAGED - WEAPONS AND LASERS OFFLINE");
+    sfx.jump();
+    g.showHint("cruise", "CRUISE (J) CROSSES A SYSTEM FAST; ANYTHING BIG NEARBY DROPS YOU OUT");
+  }
+
+  // Autopilot flies to the next gate on your course (or the nearest station),
+  // engaging cruise for the long middle and braking at the end.
+  apTarget(g: Game): { x: number; y: number; label: string } | null {
+    const p = g.world.player;
+    const sys = g.world.systems[p.systemId];
+    if (p.navTarget && p.navTarget !== p.systemId) {
+      const route = navRoute(g.world, p.systemId, p.navTarget);
+      const next = route && route[1];
+      const jp = next ? sys.jumpPoints.find((j) => j.targetSystemId === next) : null;
+      if (jp) return { x: jp.x, y: jp.y, label: `GATE ${g.world.systems[jp.targetSystemId].name.toUpperCase()}` };
+    }
+    let best: { x: number; y: number; label: string } | null = null; let bd = Infinity;
+    for (const st of sys.stations) {
+      const x = Math.cos(st.angle) * st.orbit, y = Math.sin(st.angle) * st.orbit;
+      const d = dist(p.x, p.y, x, y);
+      if (d < bd) { bd = d; best = { x, y, label: st.name.toUpperCase() }; }
+    }
+    return best;
+  }
+
+  updateAutopilot(g: Game, dt: number): void {
+    void dt;
+    const inp = g.input;
+    if (inp.wasPressed("n")) {
+      if (this.autopilot) { this.autopilot = false; g.toast("AUTOPILOT OFF"); }
+      else {
+        const t = this.apTarget(g);
+        if (!t) { g.toast("AUTOPILOT: NOTHING TO FLY TO - PLOT A COURSE ON THE GALAXY MAP"); return; }
+        this.autopilot = true; this.apLabel = t.label;
+        g.toast(`AUTOPILOT: FLYING TO ${t.label} - TOUCH THE CONTROLS TO TAKE OVER`);
+        sfx.select();
+      }
+    }
+    if (!this.autopilot) return;
+    if (inp.isDown("w") || inp.isDown("s") || inp.isDown("a") || inp.isDown("d") || inp.isDown("x")) { this.autopilot = false; g.toast("MANUAL CONTROL"); return; }
+    const p = g.world.player;
+    const t = this.apTarget(g);
+    if (!t) { this.autopilot = false; return; }
+    this.apLabel = t.label;
+    const d = dist(p.x, p.y, t.x, t.y);
+    const spd = Math.hypot(p.vx, p.vy);
+    const toward = Math.atan2(t.y - p.y, t.x - p.x);
+    this.apThrust = false; this.apBrake = false;
+    if (d > 140) {
+      // point along the desired velocity, correcting for drift
+      const wantSpd = Math.min(d > 900 ? 2000 : 180, d * 0.9);
+      const dvx = Math.cos(toward) * wantSpd - p.vx, dvy = Math.sin(toward) * wantSpd - p.vy;
+      this.apAngle = Math.atan2(dvy, dvx);
+      this.apThrust = Math.hypot(dvx, dvy) > 12 && Math.abs(angDiff(p.angle, this.apAngle)) < 0.5;
+      if (d > 900 && !this.cruise && !this.massLocked(g) && p.fuel > 5 && Math.abs(angDiff(p.angle, toward)) < 0.3) { this.cruise = true; sfx.jump(); }
+      if (d < 700 && this.cruise) this.cruise = false;
+    } else {
+      // arrival: kill velocity
+      this.cruise = false;
+      if (spd > 6) { this.apAngle = Math.atan2(-p.vy, -p.vx); this.apThrust = Math.abs(angDiff(p.angle, this.apAngle)) < 0.4; }
+      else { p.vx = 0; p.vy = 0; this.autopilot = false; g.toast(`AUTOPILOT: ARRIVED AT ${t.label} - PRESS E`); sfx.dock(); }
     }
   }
 
