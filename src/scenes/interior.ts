@@ -357,7 +357,8 @@ export class InteriorScene implements Scene {
       if (p2.hull < p2.hullMax * 0.6) {
         // scorch: a few dark blotches on the deck, seeded so they stay put until the yard fixes the hull
         ctx.globalAlpha = 0.35; ctx.fillStyle = "#000";
-        for (let i = 0; i < 5; i++) { const tx = 2 + ((i * 7 + g.world.seed) % (this.deck[0].length - 4)), ty = 1 + ((i * 3 + (g.world.seed >> 3)) % (this.deck.length - 2)); if (this.deck[ty][tx] === ".") ctx.fillRect(ox + tx * T + 1, oy + ty * T + 2, T - 2, T - 3); }
+        const seed = (g.world.seed >>> 0) % 100000;
+        for (let i = 0; i < 5; i++) { const tx = 2 + ((i * 7 + seed) % (this.deck[0].length - 4)), ty = 1 + ((i * 3 + (seed >> 3)) % (this.deck.length - 2)); if (this.deck[ty]?.[tx] === ".") ctx.fillRect(ox + tx * T + 1, oy + ty * T + 2, T - 2, T - 3); }
         ctx.globalAlpha = 1;
       }
     }
