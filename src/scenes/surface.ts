@@ -144,7 +144,7 @@ export class SurfaceScene implements Scene {
         if (enc) { sfx.rover(false); this.vx = 0; this.vy = 0; (g.scenes["encounter"] as EncounterScene).open(g, enc, "surface"); return; }
       }
     }
-    music.setMood(this.storm > 0 ? "storm" : "ground", 0);
+    music.setMood(this.storm > 0 ? "storm" : this.biome === 1 ? "desert" : this.biome === 5 ? "ice" : this.biome === 4 ? "volcanic" : "ground", 0);
     if (ax || ay) {
       const l = Math.hypot(ax, ay); ax /= l; ay /= l;
       this.vx += ax * 320 * dt; this.vy += ay * 320 * dt;

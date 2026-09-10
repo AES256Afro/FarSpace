@@ -18,6 +18,9 @@ const MOODS: Record<string, Mood> = {
   void:  { sub: 41.2, sub2: 61.7, cutoff: 120, noise: 0.1, air: 0.003, gain: 0.8 },
   ground: { sub: 36, sub2: 48, cutoff: 700, noise: 0.22, air: 0.02, gain: 0.55 },   // wind over the plains
   storm:  { sub: 36, sub2: 48, cutoff: 1600, noise: 0.5, air: 0.05, gain: 0.8 },    // weather on the hull
+  desert: { sub: 36, sub2: 48, cutoff: 1000, noise: 0.3, air: 0.03, gain: 0.6 },    // dry wind, sand on the hull
+  ice:    { sub: 30, sub2: 40, cutoff: 1400, noise: 0.18, air: 0.06, gain: 0.5 },   // thin, high, whistling
+  volcanic: { sub: 44, sub2: 58, cutoff: 500, noise: 0.28, air: 0.01, gain: 0.7 }, // low rumble from below
 };
 
 function noiseBuffer(ctx: AudioContext, seconds: number, brown: boolean): AudioBuffer {
