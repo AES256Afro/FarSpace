@@ -13,6 +13,8 @@ import type { EncounterScene } from "./encounter";
 import { faction, genPersonName } from "../data/data";
 import { StationScene } from "./station";
 import { concourseGossip } from "../data/gossip";
+import { hull } from "../data/hulls";
+import * as spriteMod from "../gfx/sprites";
 
 const T = 10;
 
@@ -346,6 +348,24 @@ export class StationWalkScene implements Scene {
         else if (type === "trade") { ctx.fillStyle = i % 2 ? "#6a4a2a" : "#7a5a3a"; ctx.fillRect(x + 1, y + 3, 4, 4); ctx.fillRect(x + 5, y + 5, 4, 3); ctx.fillStyle = "#c7a54a"; ctx.fillRect(x + 2, y + 3, 1, 1); }
         else if (type === "military") { ctx.fillStyle = "#5d6680"; ctx.fillRect(x + 1, y + 2, 8, 6); ctx.fillStyle = "#ff5a5a"; ctx.fillRect(x + 3, y + 4, 1, 1); ctx.fillRect(x + 6, y + 4, 1, 1); }
       });
+    }
+    // the bays: your ship on the airlock side, a parked hull of yours across the deck, traffic below
+    {
+      const fit = (spr: HTMLCanvasElement, cx: number, cy: number, max: number) => { const sc = Math.min(1, max / Math.max(spr.width, spr.height)); ctx.drawImage(spr, Math.round(cx - spr.width * sc / 2), Math.round(cy - spr.height * sc / 2), Math.round(spr.width * sc), Math.round(spr.height * sc)); };
+      const p = g.world.player;
+      fit(g.playerShip(), ox + 37 * T, oy + 2.5 * T, 30);
+      ctx.fillStyle = "#3a4a6c"; ctx.fillRect(ox + 35 * T + 2, oy + 4 * T + 4, 4 * T - 4, 1); // the clamp rail
+      const parked = (p.fleet ?? []).find((f) => f.stationId === this.station.id);
+      if (parked) {
+        const h = hull(parked.hullId);
+        const spr = g.sprite(`hull-preview-${h.id}`, () => spriteMod.genShip(new RNG(g.world.seed ^ 0x51e9 ^ h.id.length), h.spriteSize, h.color, h.accent));
+        fit(spr, ox + 2.5 * T, oy + 2.5 * T, 26);
+        ctx.fillStyle = "#3a4a6c"; ctx.fillRect(ox + T + 2, oy + 4 * T + 4, 4 * T - 4, 1);
+        const nm = (parked.name ?? h.name).toUpperCase().slice(0, 9);
+        drawText(ctx, nm, ox + 2.5 * T - textWidth(nm) / 2, oy + 4 * T + 6, PAL.greyDark);
+      }
+      const sx = ox + 28 * T + ((g.world.time * 9) % (11 * T)); const sy = oy + 9 * T + 4;
+      ctx.fillStyle = "#9aa5bd"; ctx.fillRect(Math.round(sx), sy, 3, 2); ctx.fillStyle = Math.floor(g.world.time * 3) % 2 ? "#ff5a5a" : "#3aa55e"; ctx.fillRect(Math.round(sx) + 3, sy, 1, 1);
     }
     // NPCs
     for (const n of this.npcs) {

@@ -613,4 +613,9 @@ Time passes for the people on the ship, and for the ship.
 - [x] Wire course records: `/api/race` GET/POST, top five per station, shown
       in the lounge
 
+## Milestone 63 — Windows and Bays ✅ (Sep 2026)
+- [x] The viewport scene: look out of the ship by bearing, with captions and
+      company
+- [x] Your ship and parked hulls visible in the promenade bays; shuttle traffic
+
 ## Later

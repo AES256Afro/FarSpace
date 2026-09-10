@@ -229,6 +229,16 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## The viewport and the bays
+
+- V aboard: look out of your own ship. The sun, the planets, the station, the
+  gate and anything vast are laid along the window by bearing; A and D turn
+  your head. The caption tells you what you're looking at, and whoever's
+  aboard comes to look too. Crew and passengers like it.
+- On a station promenade your ship sits in the bay by the airlock, a hull
+  you've parked there sits in the far bay, and a shuttle crosses the lower
+  window now and then.
+
 ## Watches and passengers
 
 - With two or more aboard, half the crew are on watch and half are off; the

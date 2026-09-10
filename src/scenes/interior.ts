@@ -304,7 +304,7 @@ export class InteriorScene implements Scene {
     // spawn near cockpit
     const c = nearestTile(this.deck, 0, 0, "C", 1e9)!;
     this.px = c.tx * T - T; this.py = c.ty * T + T / 2;
-    this.msg = "YOUR SHIP. WASD WALK - E INTERACT";
+    this.msg = "YOUR SHIP. WASD WALK - E INTERACT - V LOOK OUT";
     this.msgTimer = 4;
     this.repairing = null;
     g.showHint("interior", "DAMAGED PANELS BLINK RED - HOLD E TO REPAIR (SPARE PARTS FOR HEAVY DAMAGE)");
@@ -377,6 +377,7 @@ export class InteriorScene implements Scene {
     const inp = g.input;
     const p = g.world.player;
     if (inp.wasPressed("Escape") || inp.wasPressed("i")) { g.setScene("flight"); return; }
+    if (inp.wasPressed("v")) { g.setScene("vista"); return; }
     if (inp.wasPressed("r")) { g.settingsReturn = "interior"; g.setScene("roster"); return; }
     if (inp.wasPressed("F5")) g.save();
     const moved = moveWalker(g, this, dt, (tx, ty) => this.solid(tx, ty));
