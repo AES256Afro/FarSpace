@@ -3,11 +3,11 @@
 // silence for a few seconds and a ghost fades; the socket reconnects on its own.
 
 import { cloudBase } from "./cloud";
-import { getCallsign } from "./wire";
+import { getCallsign, getSquadron } from "./wire";
 import { settings } from "./settings";
 import type { PlayerState } from "../world";
 
-export interface Ghost { callsign: string; x: number; y: number; angle: number; vx: number; vy: number; hull: string; name: string; t: number }
+export interface Ghost { callsign: string; x: number; y: number; angle: number; vx: number; vy: number; hull: string; name: string; tag: string; t: number }
 export interface ChatLine { from: string; text: string; t: number }
 export interface RoomEvent { t: "xfer" | "wing"; from: string; to?: string; kind: string; id?: string; qty?: number; x?: number; y?: number; tag?: string; at: number }
 
@@ -62,7 +62,7 @@ class Presence {
         if (!cs || cs === me) continue;
         this.ghosts.set(cs, {
           callsign: cs, x: Number(p.x) || 0, y: Number(p.y) || 0, angle: Number(p.angle) || 0,
-          vx: Number(p.vx) || 0, vy: Number(p.vy) || 0, hull: String(p.hull ?? "scout"), name: String(p.name ?? ""), t: Date.now(),
+          vx: Number(p.vx) || 0, vy: Number(p.vy) || 0, hull: String(p.hull ?? "scout"), name: String(p.name ?? ""), tag: String(p.tag ?? ""), t: Date.now(),
         });
       }
     } else if (m.t === "bye") {
@@ -89,7 +89,7 @@ class Presence {
     if (this.ws && this.ws.readyState === 1 && now - this.lastSend > 250) {
       this.lastSend = now;
       try {
-        this.ws.send(JSON.stringify({ t: "pos", callsign: getCallsign(), x: p.x, y: p.y, angle: p.angle, vx: p.vx, vy: p.vy, hull: p.hullId, name: p.shipName ?? "" }));
+        this.ws.send(JSON.stringify({ t: "pos", callsign: getCallsign(), x: p.x, y: p.y, angle: p.angle, vx: p.vx, vy: p.vy, hull: p.hullId, name: p.shipName ?? "", tag: getSquadron() ?? "" }));
       } catch { /* fine */ }
     }
     for (const [k, g] of this.ghosts) if (now - g.t > 6000) this.ghosts.delete(k);

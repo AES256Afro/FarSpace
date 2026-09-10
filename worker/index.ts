@@ -71,7 +71,7 @@ export class SystemRoom {
       if (now - att.last < 120) return; // 8 Hz cap per pilot
       const pos = {
         t: "pos", callsign, x: num(m.x), y: num(m.y), angle: num(m.angle), vx: num(m.vx), vy: num(m.vy),
-        hull: clean(m.hull, 16), name: clean(m.name, 18), at: now,
+        hull: clean(m.hull, 16), name: clean(m.name, 18), tag: clean(m.tag, 5).toUpperCase(), at: now,
       };
       sock.serializeAttachment({ callsign, last: now, pos });
       this.broadcast(ws, JSON.stringify(pos));
@@ -121,8 +121,9 @@ const WIRE_KINDS = new Set(["arc", "discovery", "rescue", "relics", "war", "boun
 const BOARDS = new Set(["discoveries", "arcs", "credits", "kills", "explorers", "traders"]);
 const WIRE_MAX = 40;
 
-interface WireEvent { t: number; callsign: string; kind: string; text: string; system: string }
-interface BoardEntry { callsign: string; score: number; t: number }
+interface WireEvent { t: number; callsign: string; kind: string; text: string; system: string; tag?: string }
+interface BoardEntry { callsign: string; score: number; t: number; tag?: string }
+const SQUAD = /^[A-Z0-9]{2,5}$/;
 
 function clean(s: unknown, max: number): string {
   return String(s ?? "").replace(/[^\x20-\x7e]/g, "").trim().slice(0, max);
@@ -183,7 +184,8 @@ export default {
         if (!WIRE_KINDS.has(kind) || !text) return json({ error: "bad event" }, 400);
         const raw = await env.SAVES.get("wire", "text");
         const events: WireEvent[] = raw ? JSON.parse(raw) : [];
-        events.push({ t: Date.now(), callsign, kind, text, system });
+        const tag = clean(body.tag, 5).toUpperCase();
+        events.push({ t: Date.now(), callsign, kind, text, system, ...(SQUAD.test(tag) ? { tag } : {}) });
         while (events.length > WIRE_MAX) events.shift();
         await env.SAVES.put("wire", JSON.stringify(events));
         return json({ ok: true, count: events.length });
@@ -250,6 +252,27 @@ export default {
       return json({ error: "method" }, 405);
     }
 
+    // Squadrons: call signs that share a tag, ranked by their members' board scores
+    if (url.pathname === "/api/squadrons") {
+      const acc = new Map<string, { tag: string; members: Set<string>; credits: number; discoveries: number; kills: number }>();
+      for (const name of ["credits", "discoveries", "kills"] as const) {
+        const raw = await env.SAVES.get(`board:${name}`, "text");
+        const entries: BoardEntry[] = raw ? JSON.parse(raw) : [];
+        for (const e of entries) {
+          if (!e.tag) continue;
+          const sq = acc.get(e.tag) ?? { tag: e.tag, members: new Set<string>(), credits: 0, discoveries: 0, kills: 0 };
+          sq.members.add(e.callsign);
+          sq[name] += e.score;
+          acc.set(e.tag, sq);
+        }
+      }
+      const squadrons = [...acc.values()].map((sq) => ({
+        tag: sq.tag, members: sq.members.size, credits: sq.credits, discoveries: sq.discoveries, kills: sq.kills,
+        score: Math.round(sq.credits / 100 + sq.discoveries * 10 + sq.kills * 5),
+      })).sort((a, b) => b.score - a.score).slice(0, 20);
+      return json({ squadrons });
+    }
+
     const bm = url.pathname.match(/^\/api\/board\/([a-z]+)$/);
     if (bm) {
       const name = bm[1];
@@ -269,9 +292,10 @@ export default {
         if (!Number.isFinite(score) || score < 0 || score > 1e9) return json({ error: "bad score" }, 400);
         const raw = await env.SAVES.get(key, "text");
         let entries: BoardEntry[] = raw ? JSON.parse(raw) : [];
+        const tag = clean(body.tag, 5).toUpperCase();
         const mine = entries.find((e) => e.callsign === callsign);
-        if (mine) { if (score > mine.score) { mine.score = score; mine.t = Date.now(); } }
-        else entries.push({ callsign, score, t: Date.now() });
+        if (mine) { if (score > mine.score) { mine.score = score; mine.t = Date.now(); } mine.tag = SQUAD.test(tag) ? tag : undefined; }
+        else entries.push({ callsign, score, t: Date.now(), ...(SQUAD.test(tag) ? { tag } : {}) });
         entries = entries.sort((a, b) => b.score - a.score || a.t - b.t).slice(0, 20);
         await env.SAVES.put(key, JSON.stringify(entries));
         const rank = entries.findIndex((e) => e.callsign === callsign) + 1;

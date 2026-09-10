@@ -28,6 +28,7 @@ export class TitleScene implements Scene {
     opts.push({ label: `NEW GAME - UNCHARTED${hc}`, sub: "A procedural galaxy", act: () => { g.newGame(false); g.setScene("flight"); } });
     const cs = wire.getCallsign();
     opts.push({ label: cs ? `CALL SIGN: ${cs}` : "CHOOSE A CALL SIGN", sub: "Your name on the Fleet Wire and the leaderboards", act: () => { void this.callsign(g); } });
+    if (cs) opts.push({ label: wire.getSquadron() ? `SQUADRON: [${wire.getSquadron()}]` : "JOIN A SQUADRON", sub: "A 2-5 letter tag shared with friends; squadrons rank together on the WIRE tab", act: () => { void this.squadron(g); } });
     if (code) {
       opts.push({ label: `CLOUD: ${code}`, sub: "F5 in game saves here too. Enter this code on another device to link it", act: () => { g.toast(`YOUR CODE: ${code}`); } });
       opts.push({ label: "CLOUD: DOWNLOAD LATEST", sub: "Replace the local save with the cloud copy", act: () => { void this.download(g, code); } });
@@ -41,6 +42,17 @@ export class TitleScene implements Scene {
     opts.push({ label: "EXPORT SAVE FILE", sub: "Download the current save as JSON", act: () => { cloud.exportFile(g.world); g.toast("SAVE FILE DOWNLOADED"); } });
     opts.push({ label: "IMPORT SAVE FILE", sub: "Load a save JSON from this device", act: () => { void this.importFile(g); } });
     return opts;
+  }
+
+  async squadron(g: Game): Promise<void> {
+    const raw = window.prompt("Squadron tag (2-5 letters or digits; empty to leave):", wire.getSquadron() ?? "");
+    if (raw === null) return;
+    const t = raw.trim().toUpperCase();
+    if (!t) { wire.setSquadron(null); g.toast("LEFT THE SQUADRON"); wire.syncScores(g.world); return; }
+    if (!wire.validSquadron(t)) { g.toast("TAG NOT ACCEPTED - 2 TO 5 LETTERS OR DIGITS"); return; }
+    wire.setSquadron(t);
+    g.toast(`SQUADRON [${t}] - FLY WITH YOUR TAG`);
+    wire.syncScores(g.world);
   }
 
   async callsign(g: Game): Promise<void> {
@@ -89,7 +101,7 @@ export class TitleScene implements Scene {
     if (g.input.wasPressed("ArrowDown")) { this.cursor = (this.cursor + 1) % opts.length; sfx.blip(); }
     let clicked = false;
     for (let i = 0; i < opts.length; i++) {
-      const y = 106 + i * 10;
+      const y = 106 + i * (opts.length > 11 ? 9 : 10);
       if (g.input.mouseY >= y - 3 && g.input.mouseY < y + 10) {
         this.cursor = i;
         if (g.input.mousePressed) clicked = true;
@@ -135,16 +147,16 @@ export class TitleScene implements Scene {
 
     const opts = this.options(g);
     opts.forEach((o, i) => {
-      const y = 106 + i * 10;
+      const y = 106 + i * (opts.length > 11 ? 9 : 10);
       const sel = i === this.cursor;
       if (sel && Math.floor(this.t * 3) % 2 === 0) drawText(ctx, ">", VW / 2 - textWidth(o.label) / 2 - 10, y, PAL.gold);
       drawText(ctx, o.label, VW / 2 - textWidth(o.label) / 2, y, sel ? PAL.white : PAL.greyDark);
     });
     const sub = opts[this.cursor]?.sub ?? "";
-    drawText(ctx, sub, VW / 2 - textWidth(sub) / 2, 106 + opts.length * 10 + 3, PAL.uiDim);
+    drawText(ctx, sub, VW / 2 - textWidth(sub) / 2, 106 + opts.length * (opts.length > 11 ? 9 : 10) + 3, PAL.uiDim);
     if (this.ticker.length) {
       const e = this.ticker[Math.floor(this.t / 6) % this.ticker.length];
-      const line = `FLEET WIRE: ${e.callsign} ${e.text} - ${e.system} (${wire.ageLabel(e.t)})`.slice(0, 110);
+      const line = `FLEET WIRE: ${e.tag ? `[${e.tag}] ` : ""}${e.callsign} ${e.text} - ${e.system} (${wire.ageLabel(e.t)})`.slice(0, 110);
       drawText(ctx, line, VW / 2 - textWidth(line) / 2, VH - 38, PAL.info);
     }
     const ver = `V0.12${g.input.padConnected ? " - GAMEPAD CONNECTED" : ""}`;

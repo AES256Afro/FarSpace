@@ -268,8 +268,10 @@ export class StationScene implements Scene {
     }
   }
 
+  squadrons: wire.Squadron[] = [];
   async loadWire(): Promise<void> {
     this.wireEvents = await wire.fetchWire(true);
+    this.squadrons = await wire.fetchSquadrons();
     for (const b of ["discoveries", "arcs", "credits", "kills", "explorers", "traders"]) this.boards[b] = await wire.fetchBoard(b);
   }
 
@@ -798,7 +800,7 @@ export class StationScene implements Scene {
     if (!this.wireEvents.length) drawText(ctx, this.wireLoaded ? "NOTHING ON THE WIRE YET - BE THE FIRST." : "TUNING...", 8, y, PAL.greyDark);
     for (const e of this.wireEvents.slice(0, 9)) {
       drawText(ctx, `${wire.ageLabel(e.t).padStart(3)} ${e.callsign}`, 8, y, PAL.gold);
-      drawText(ctx, `${e.text} - ${e.system}`.slice(0, 96), 84, y, PAL.grey);
+      drawText(ctx, `${e.tag ? `[${e.tag}] ` : ""}${e.text} - ${e.system}`.slice(0, 96), 84, y, PAL.grey);
       y += 9;
     }
     y = top + 12 + 9 * 9 + 6;
@@ -814,6 +816,14 @@ export class StationScene implements Scene {
         drawText(ctx, `${r.score >= 100000 ? Math.round(r.score / 1000) + "K" : r.score}`, x + 52, y + 9 + i * 8, PAL.greyDark);
       }
       if (!rows.length) drawText(ctx, "-", x, y + 9, PAL.greyDark);
+    });
+    const sy = y + 9 + 5 * 8 + 4;
+    const mine = wire.getSquadron();
+    drawText(ctx, `SQUADRONS${mine ? ` - YOURS: [${mine}]` : " - JOIN ONE ON THE TITLE SCREEN"}`, 8, sy, PAL.ui);
+    if (!this.squadrons.length) drawText(ctx, "NONE RANKED YET", 8, sy + 9, PAL.greyDark);
+    this.squadrons.slice(0, 6).forEach((sq, i) => {
+      const x = 8 + (i % 3) * 158, yy = sy + 9 + Math.floor(i / 3) * 8;
+      drawText(ctx, `${i + 1}. [${sq.tag}] ${sq.members} PILOT${sq.members === 1 ? "" : "S"}  ${sq.score} PTS`, x, yy, sq.tag === mine ? PAL.gold : PAL.grey);
     });
   }
 

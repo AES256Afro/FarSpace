@@ -6,9 +6,10 @@ import { cloudBase } from "./cloud";
 import type { World } from "../world";
 
 const CALLSIGN_KEY = "farspace-callsign";
+const SQUAD_KEY = "farspace-squadron";
 
-export interface WireEvent { t: number; callsign: string; kind: string; text: string; system: string }
-export interface BoardEntry { callsign: string; score: number; t: number }
+export interface WireEvent { t: number; callsign: string; kind: string; text: string; system: string; tag?: string }
+export interface BoardEntry { callsign: string; score: number; t: number; tag?: string }
 
 export function getCallsign(): string | null {
   try { return localStorage.getItem(CALLSIGN_KEY); } catch { return null; }
@@ -16,6 +17,24 @@ export function getCallsign(): string | null {
 
 export function setCallsign(c: string | null): void {
   try { if (c) localStorage.setItem(CALLSIGN_KEY, c); else localStorage.removeItem(CALLSIGN_KEY); } catch { /* ignore */ }
+}
+
+export function getSquadron(): string | null {
+  try { return localStorage.getItem(SQUAD_KEY); } catch { return null; }
+}
+export function setSquadron(tag: string | null): void {
+  try { if (tag) localStorage.setItem(SQUAD_KEY, tag); else localStorage.removeItem(SQUAD_KEY); } catch { /* ignore */ }
+}
+export function validSquadron(t: string): boolean {
+  return /^[A-Z0-9]{2,5}$/.test(t);
+}
+export interface Squadron { tag: string; members: number; credits: number; discoveries: number; kills: number; score: number }
+export async function fetchSquadrons(): Promise<Squadron[]> {
+  try {
+    const r = await fetch(`${cloudBase()}/api/squadrons`);
+    if (!r.ok) return [];
+    return ((await r.json()) as { squadrons: Squadron[] }).squadrons;
+  } catch { return []; }
 }
 
 export function validCallsign(c: string): boolean {
@@ -44,7 +63,7 @@ export async function post(kind: string, text: string, system: string): Promise<
   try {
     await fetch(`${cloudBase()}/api/wire`, {
       method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ callsign, kind, text: text.slice(0, 140), system: system.slice(0, 32) }),
+      body: JSON.stringify({ callsign, kind, text: text.slice(0, 140), system: system.slice(0, 32), tag: getSquadron() ?? "" }),
     });
     cache = null;
   } catch { /* offline: fine */ }
@@ -64,7 +83,7 @@ export async function postScore(name: string, score: number): Promise<void> {
   try {
     await fetch(`${cloudBase()}/api/board/${name}`, {
       method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ callsign, score: Math.round(score) }),
+      body: JSON.stringify({ callsign, score: Math.round(score), tag: getSquadron() ?? "" }),
     });
   } catch { /* offline */ }
 }

@@ -232,7 +232,7 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
     ctx.globalAlpha = 0.8;
     drawRotated(ctx, spr, sx, sy, gh.angle, z);
     ctx.globalAlpha = 1;
-    const tag = gh.name ? `${gh.callsign} - ${gh.name}` : gh.callsign;
+    const tag = `${gh.tag ? `[${gh.tag}] ` : ""}${gh.callsign}${gh.name ? ` - ${gh.name}` : ""}`;
     drawText(ctx, tag, sx - textWidth(tag) / 2, sy - (h.spriteSize / 2) * z - 10, PAL.info);
   }
 
