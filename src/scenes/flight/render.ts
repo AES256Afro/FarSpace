@@ -458,7 +458,7 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
   const law = fs.lawLevel(g);
   if (law >= 2) drawText(ctx, "SHOOT ON SIGHT", VW - 100, VH - 19, PAL.danger);
   else if (law === 1) drawText(ctx, "WANTED", VW - 76, VH - 19, PAL.danger);
-  if (inSafeZone(fs, g, p.x, p.y) && law === 0) drawText(ctx, "PROTECTED SPACE", VW - 130, VH - 11, PAL.good);
+  if (inSafeZone(fs, g, p.x, p.y) && law === 0) drawText(ctx, "PROTECTED SPACE", VW - textWidth("PROTECTED SPACE") - 4, 24, PAL.good);
   drawText(ctx, "TAB MAP", VW - 36, VH - 19, PAL.greyDark);
   drawText(ctx, "J CRUISE", VW - 36, VH - 11, PAL.greyDark);
   if (presence.status === "on") {
