@@ -42,7 +42,9 @@ arcs, credits and kills.
 **Other pilots:** with a call sign set, everyone in the same star system sees
 each other's ships and shares a text channel (T), with /give and /pay to hand
 over cargo or credits and wing shares on kills. Squadrons are a shared tag that
-ranks members together. No accounts, switch presence off in Settings. **Groundside:** drop a rover on any region of any
+ranks members together and pools their standing: the best-standing squadron
+becomes a faction's patron and trades at its stations like an ally. The galaxy
+map shows where pilots are right now. No accounts, switch presence off in Settings. **Groundside:** drop a rover on any region of any
 world and drive it: biomes, storms, day and night, outcrops, alien flora,
 geysers, wrecks, and the region's outposts, cities and ruins as doors.
 

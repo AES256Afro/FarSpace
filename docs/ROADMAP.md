@@ -257,5 +257,9 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
       wire posts and boards; squadrons rank together (credits, discoveries,
       kills of their members) on the WIRE tab
 
+- [x] Squadron standing: members' faction reputation is pooled; the
+      best-standing squadron becomes a faction's patron, named on its stations
+      and the galaxy map, and its members trade there like allies
+
 ## Later
-- [ ] Squadron standing with NPC factions and squadron-owned stations
+- [ ] Squadron-owned stations and territory

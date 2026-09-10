@@ -57,6 +57,7 @@ export class StationScene implements Scene {
     for (let i = 0; i < rng.int(1, 3); i++) this.candidates.push(genCrewCandidate(rng.fork(i + 1)));
     this.barLine = "";
     refreshPrices(this.station);
+    void wire.fetchSquadronData();
     {
       const rep0 = p.rep[this.station.factionId] ?? 0;
       const seen: Record<string, [number, number]> = {};
@@ -125,7 +126,8 @@ export class StationScene implements Scene {
 
     const p = g.world.player;
     const st = this.station;
-    const rep = p.rep[st.factionId] ?? 0;
+    const patron = wire.patronOf(st.factionId);
+    const rep = (p.rep[st.factionId] ?? 0) + (patron && patron === wire.getSquadron() ? 25 : 0); // patrons trade like allies
     const enter = inp.wasPressed("Enter") || inp.wasPressed(" ") || clickedRow;
     if (enter) sfx.select();
 
@@ -491,6 +493,10 @@ export class StationScene implements Scene {
     if (st.military) drawText(ctx, "SECURITY LEVEL: HIGH", VW - textWidth("SECURITY LEVEL: HIGH") - 6, 17, PAL.danger);
     const war = g.world.wars.find((w) => w.systemId === p.systemId);
     if (war) drawText(ctx, "SYSTEM AT WAR - PRICES UNSTABLE", VW - textWidth("SYSTEM AT WAR - PRICES UNSTABLE") - 6, 26, PAL.warn);
+    else {
+      const patron = wire.patronOf(this.station.factionId);
+      if (patron) { const t = `PATRON SQUADRON: [${patron}]${patron === wire.getSquadron() ? " - YOURS, TRADE LIKE ALLIES" : ""}`; drawText(ctx, t, VW - textWidth(t) - 6, 26, patron === wire.getSquadron() ? PAL.gold : PAL.info); }
+    }
 
     let tx = 8;
     TABS.forEach((t, i) => {
@@ -580,7 +586,8 @@ export class StationScene implements Scene {
   drawMarket(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
     const p = g.world.player;
     const st = this.station;
-    const rep = p.rep[st.factionId] ?? 0;
+    const patron = wire.patronOf(st.factionId);
+    const rep = (p.rep[st.factionId] ?? 0) + (patron && patron === wire.getSquadron() ? 25 : 0);
     drawText(ctx, "COMMODITY", 8, top, PAL.greyDark);
     drawText(ctx, "BUY", 150, top, PAL.greyDark);
     drawText(ctx, "SELL", 190, top, PAL.greyDark);
@@ -827,7 +834,8 @@ export class StationScene implements Scene {
     if (!this.squadrons.length) drawText(ctx, "NONE RANKED YET", 8, sy + 9, PAL.greyDark);
     this.squadrons.slice(0, 6).forEach((sq, i) => {
       const x = 8 + (i % 3) * 158, yy = sy + 9 + Math.floor(i / 3) * 8;
-      drawText(ctx, `${i + 1}. [${sq.tag}] ${sq.members} PILOT${sq.members === 1 ? "" : "S"}  ${sq.score} PTS`, x, yy, sq.tag === mine ? PAL.gold : PAL.grey);
+      const top = Object.entries(sq.standing ?? {}).sort((a, b) => b[1] - a[1])[0];
+      drawText(ctx, `${i + 1}. [${sq.tag}] ${sq.members} PILOT${sq.members === 1 ? "" : "S"}  ${sq.score} PTS${top ? `  ${top[0].toUpperCase()} ${top[1] >= 0 ? "+" : ""}${top[1]}` : ""}`, x, yy, sq.tag === mine ? PAL.gold : PAL.grey);
     });
   }
 

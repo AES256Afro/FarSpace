@@ -281,6 +281,27 @@ export default {
       return json({ error: "method" }, 405);
     }
 
+    // Squadron standing: members post their faction reputation; the squadron's
+    // standing is the sum, and the best-standing squadron becomes a faction's patron.
+    if (url.pathname === "/api/squad" && request.method === "POST") {
+      if (await rateLimited(env, request, "squad", 20)) return json({ error: "slow down" }, 429);
+      let body: Record<string, unknown>;
+      try { body = (await request.json()) as Record<string, unknown>; } catch { return json({ error: "not json" }, 400); }
+      const callsign = clean(body.callsign, 16).toUpperCase();
+      const tag = clean(body.tag, 5).toUpperCase();
+      if (!CALLSIGN.test(callsign) || !SQUAD.test(tag)) return json({ error: "bad ids" }, 400);
+      const rep: Record<string, number> = {};
+      const raw = body.rep as Record<string, unknown> | undefined;
+      if (raw && typeof raw === "object") for (const [k, v] of Object.entries(raw).slice(0, 8)) rep[clean(k, 8)] = Math.max(-100, Math.min(100, Math.round(num(v))));
+      const key = `squad:${tag}`;
+      const cur = JSON.parse((await env.SAVES.get(key, "text")) ?? "{}") as { members?: Record<string, { rep: Record<string, number>; t: number }> };
+      const members = cur.members ?? {};
+      members[callsign] = { rep, t: Date.now() };
+      for (const [cs, m] of Object.entries(members)) if (Date.now() - m.t > 30 * 86400_000) delete members[cs];
+      await env.SAVES.put(key, JSON.stringify({ members }), { expirationTtl: 60 * 86400 });
+      return json({ ok: true, members: Object.keys(members).length });
+    }
+
     // Squadrons: call signs that share a tag, ranked by their members' board scores
     if (url.pathname === "/api/squadrons") {
       const acc = new Map<string, { tag: string; members: Set<string>; credits: number; discoveries: number; kills: number }>();
@@ -295,11 +316,26 @@ export default {
           acc.set(e.tag, sq);
         }
       }
+      // standing from posted reputations
+      const standing = new Map<string, Record<string, number>>();
+      const { keys: sqKeys } = await env.SAVES.list({ prefix: "squad:", limit: 200 });
+      for (const k of sqKeys) {
+        const tag = k.name.slice(6);
+        const data = JSON.parse((await env.SAVES.get(k.name, "text")) ?? "{}") as { members?: Record<string, { rep: Record<string, number> }> };
+        const sum: Record<string, number> = {};
+        for (const m of Object.values(data.members ?? {})) for (const [f, v] of Object.entries(m.rep)) sum[f] = (sum[f] ?? 0) + v;
+        standing.set(tag, sum);
+        if (!acc.has(tag)) acc.set(tag, { tag, members: new Set(Object.keys(data.members ?? {})), credits: 0, discoveries: 0, kills: 0 });
+      }
+      const patrons: Record<string, string> = {};
+      const best: Record<string, number> = {};
+      for (const [tag, sum] of standing) for (const [f, v] of Object.entries(sum)) if (v >= 100 && v > (best[f] ?? 0)) { best[f] = v; patrons[f] = tag; }
       const squadrons = [...acc.values()].map((sq) => ({
         tag: sq.tag, members: sq.members.size, credits: sq.credits, discoveries: sq.discoveries, kills: sq.kills,
         score: Math.round(sq.credits / 100 + sq.discoveries * 10 + sq.kills * 5),
+        standing: standing.get(sq.tag) ?? {},
       })).sort((a, b) => b.score - a.score).slice(0, 20);
-      return json({ squadrons });
+      return json({ squadrons, patrons });
     }
 
     const bm = url.pathname.match(/^\/api\/board\/([a-z]+)$/);

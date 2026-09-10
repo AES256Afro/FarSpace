@@ -28,13 +28,34 @@ export function setSquadron(tag: string | null): void {
 export function validSquadron(t: string): boolean {
   return /^[A-Z0-9]{2,5}$/.test(t);
 }
-export interface Squadron { tag: string; members: number; credits: number; discoveries: number; kills: number; score: number }
-export async function fetchSquadrons(): Promise<Squadron[]> {
+export interface Squadron { tag: string; members: number; credits: number; discoveries: number; kills: number; score: number; standing?: Record<string, number> }
+let squadCache: { at: number; squadrons: Squadron[]; patrons: Record<string, string> } | null = null;
+export async function fetchSquadrons(force = false): Promise<Squadron[]> {
+  return (await fetchSquadronData(force)).squadrons;
+}
+export async function fetchSquadronData(force = false): Promise<{ squadrons: Squadron[]; patrons: Record<string, string> }> {
+  if (!force && squadCache && Date.now() - squadCache.at < 120_000) return squadCache;
   try {
     const r = await fetch(`${cloudBase()}/api/squadrons`);
-    if (!r.ok) return [];
-    return ((await r.json()) as { squadrons: Squadron[] }).squadrons;
-  } catch { return []; }
+    if (!r.ok) return squadCache ?? { squadrons: [], patrons: {} };
+    const j = (await r.json()) as { squadrons: Squadron[]; patrons: Record<string, string> };
+    squadCache = { at: Date.now(), squadrons: j.squadrons, patrons: j.patrons ?? {} };
+    return squadCache;
+  } catch { return squadCache ?? { squadrons: [], patrons: {} }; }
+}
+// Patron squadron of a faction, from the last fetch (null until one has happened)
+export function patronOf(factionId: string): string | null {
+  return squadCache?.patrons[factionId] ?? null;
+}
+export async function postSquadRep(w: World): Promise<void> {
+  const callsign = getCallsign(), tag = getSquadron();
+  if (!callsign || !tag) return;
+  try {
+    await fetch(`${cloudBase()}/api/squad`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ callsign, tag, rep: w.player.rep }),
+    });
+  } catch { /* offline */ }
 }
 
 export function validCallsign(c: string): boolean {
@@ -97,6 +118,7 @@ export function syncScores(w: World): void {
   void postScore("kills", p.kills);
   void postScore("explorers", Math.round(p.expSold ?? 0));
   void postScore("traders", Math.round(p.tradeRevenue ?? 0));
+  void postSquadRep(w);
 }
 
 export function ageLabel(t: number): string {

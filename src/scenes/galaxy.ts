@@ -21,6 +21,7 @@ export class GalaxyScene implements Scene {
 
   enter(g: Game): void {
     this.selected = g.world.player.systemId;
+    void wire.fetchSquadronData();
     void wire.fetchRooms().then((r) => { this.rooms = Object.fromEntries(r.rooms.map((x) => [x.system.toLowerCase(), x.count])); this.pilots = r.pilots; });
   }
 
@@ -150,6 +151,8 @@ export class GalaxyScene implements Scene {
       if (w.player.bookmarks?.includes(sys.id)) { drawText(ctx, "BOOKMARKED (B)", px + 6, y, PAL.gold); y += 9; }
       const n = this.rooms[sys.name.toLowerCase()];
       if (n) { drawText(ctx, `${n} PILOT${n === 1 ? "" : "S"} HERE NOW`, px + 6, y, PAL.info); y += 9; }
+      const patron = wire.patronOf(sys.factionId);
+      if (patron) { drawText(ctx, `FACTION PATRON: [${patron}]`, px + 6, y, patron === wire.getSquadron() ? PAL.gold : PAL.info); y += 9; }
       const rares = sys.stations.filter((st) => st.rare && (w.player.marketMemory?.[st.id])).map((st) => commodity(st.rare!).name);
       if (rares.length) { drawText(ctx, `RARE: ${rares.join(", ")}`.slice(0, 27), px + 6, y, PAL.gold); y += 9; }
       y += 3;
