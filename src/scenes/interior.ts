@@ -237,6 +237,7 @@ export class InteriorScene implements Scene {
     } else this.repairing = null;
 
     // ---- tap E: verbs
+    if (inp.wasPressed("e") && dist(1 * T + T / 2, 1 * T + T / 2, this.px, this.py) < 14) { this.readWall(g); return; }
     if (inp.wasPressed("e")) {
       if (crewNear) {
         const c = crewNear.c;
