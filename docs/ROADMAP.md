@@ -519,4 +519,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Three notables per galaxy who turn up as fares, with consequences by mood
 - [x] Promenade crowds that match the day and the event
 
+## Milestone 40 — Quiet Moments ✅ (Sep 2026)
+- [x] A pause menu in flight (ESC): resume, save, settings, handbook, quit
+- [x] Sounds for the wonders
+
 ## Later

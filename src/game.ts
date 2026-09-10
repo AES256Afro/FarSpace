@@ -74,6 +74,7 @@ export class Game {
   justUndocked = false; // the next flight enter plays the launch
   lastBay = 0;          // the bay control cleared you for, so the deck agrees with the band
   infraTarget: import("./world").Infra | null = null; // the structure you walked into
+  settingsReturn = "title"; // where SETTINGS and the HANDBOOK go back to
 
   save(): void {
     this.autosave();

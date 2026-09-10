@@ -11,7 +11,7 @@ export class AlmanacScene implements Scene {
   enter(): void { this.scroll = 0; }
   update(g: Game, dt: number): void {
     void dt;
-    if (g.input.wasPressed("Escape") || g.input.wasPressed("Enter") || g.input.mousePressed) { g.setScene("title"); return; }
+    if (g.input.wasPressed("Escape") || g.input.wasPressed("Enter") || g.input.mousePressed) { const back = g.settingsReturn; g.settingsReturn = "title"; g.setScene(back); return; }
     const total = ALMANAC.reduce((a, [, lines]) => a + 9 + lines.length * 8 + 6, 0);
     const max = Math.max(0, total - (VH - 44));
     if (g.input.wasPressed("ArrowDown")) this.scroll = Math.min(max, this.scroll + 24);

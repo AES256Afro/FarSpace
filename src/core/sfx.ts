@@ -198,6 +198,16 @@ export const sfx = {
   purr(): void {
     for (let i = 0; i < 5; i++) setTimeout(() => osc("triangle", 90 + i * 6, 0.12, 0.08, 120 + i * 6), i * 110);
   },
+  // a pulsar, ticking: one short click a second, louder the closer you are
+  tick(vol: number): void {
+    osc("square", 1600, 0.03, 0.05 * Math.max(0, vol));
+  },
+  // the cathedral, the twins: a low chord that swells and goes
+  choir(vol: number): void {
+    osc("sine", 110, 1.6, 0.06 * Math.max(0, vol));
+    osc("sine", 165, 1.6, 0.04 * Math.max(0, vol));
+    osc("triangle", 220, 1.2, 0.03 * Math.max(0, vol));
+  },
   // a letter delivered: two soft notes, like a door chime
   letter(): void {
     osc("sine", 880, 0.12, 0.12);

@@ -57,7 +57,7 @@ export class SettingsScene implements Scene {
       } else if (raw === "Escape") { this.binding = null; inp.lastRawKey = null; }
       return;
     }
-    if (inp.wasPressed("Escape")) { g.setScene("title"); return; }
+    if (inp.wasPressed("Escape")) { const back = g.settingsReturn; g.settingsReturn = "title"; g.setScene(back); return; }
     const rows = this.rows();
     if (inp.wasPressed("ArrowUp")) { this.cursor = (this.cursor + rows.length - 1) % rows.length; sfx.blip(); }
     if (inp.wasPressed("ArrowDown")) { this.cursor = (this.cursor + 1) % rows.length; sfx.blip(); }

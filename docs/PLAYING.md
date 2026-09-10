@@ -105,6 +105,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   board: sample runs, outcrop runs, and a plant to fix on the spot. Jobs pay
   out when you walk back in.
 
+## Quiet moments
+
+- ESC in flight pauses the galaxy: resume, save, settings, the handbook, or
+  save and quit to the title. Settings and the handbook come back to flight.
+- The wonders have voices: a pulsar ticks on the band as you close, the
+  cathedral and the twins hum.
+
 ## Faces
 
 - Three people in every galaxy matter: a senator, an heir to a trading house,

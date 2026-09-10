@@ -382,6 +382,15 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
   drawTutorial(g, ctx, 68);
   drawTouchControls(g, ctx);
   if (fs.mapOpen) drawSystemMap(g, ctx);
+  if (fs.paused) {
+    ctx.fillStyle = "rgba(5,6,10,0.8)"; ctx.fillRect(0, 0, VW, VH);
+    drawText(ctx, "PAUSED", VW / 2 - textWidth("PAUSED") / 2, 84, PAL.white);
+    const sub = `${(g.world.player.shipName ?? hull(g.world.player.hullId).name).toUpperCase()} - ${g.world.systems[g.world.player.systemId].name.toUpperCase()} - ${Math.floor(g.world.time / 3600)}H ${Math.floor((g.world.time % 3600) / 60)}M UNDER WAY`;
+    drawText(ctx, sub, VW / 2 - textWidth(sub) / 2, 94, PAL.grey);
+    fs.pauseOptions(g).forEach((o, i) => { const y = 110 + i * 12; const sel = i === fs.pauseCursor; if (sel) drawText(ctx, ">", VW / 2 - textWidth(o.label) / 2 - 10, y, PAL.gold); drawText(ctx, o.label, VW / 2 - textWidth(o.label) / 2, y, sel ? PAL.white : PAL.greyDark); });
+    drawText(ctx, "ESC RESUMES", VW / 2 - textWidth("ESC RESUMES") / 2, 180, PAL.greyDark);
+    return;
+  }
   if (fs.logOpen) {
     ctx.fillStyle = "rgba(5,6,10,0.92)"; ctx.fillRect(0, 0, VW, VH);
     drawText(ctx, "COMMS LOG - L OR ESC TO CLOSE", VW / 2 - textWidth("COMMS LOG - L OR ESC TO CLOSE") / 2, 6, PAL.ui);

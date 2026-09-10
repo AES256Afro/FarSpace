@@ -114,6 +114,16 @@ export class FlightScene implements Scene {
     }
   }
 
+  pauseOptions(g: Game): { label: string; act: () => void }[] {
+    return [
+      { label: "RESUME", act: () => { this.paused = false; } },
+      { label: "SAVE (F5)", act: () => { g.save(); this.paused = false; } },
+      { label: "SETTINGS", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("settings"); } },
+      { label: "HANDBOOK", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("almanac"); } },
+      { label: "SAVE AND QUIT TO TITLE", act: () => { g.save(); this.paused = false; g.setScene("title"); } },
+    ];
+  }
+
   // Collect the till, patch the structure, stock or draw on a depot.
   tendInfra(g: Game, inf: Infra): void {
     const p = g.world.player;
@@ -171,6 +181,17 @@ export class FlightScene implements Scene {
       return;
     }
     this.recordComms(w.time);
+    // pause: the galaxy holds its breath; save, settings, the handbook, or home
+    if (g.input.wasPressed("Escape") && !this.logOpen && !this.mapOpen && !this.docking) { this.paused = !this.paused; this.pauseCursor = 0; sfx.blip(); }
+    if (this.paused) {
+      w.time -= dt; // undo this frame's clock; nothing moves while paused
+      const opts = this.pauseOptions(g);
+      if (g.input.wasPressed("ArrowUp")) { this.pauseCursor = (this.pauseCursor + opts.length - 1) % opts.length; sfx.blip(); }
+      if (g.input.wasPressed("ArrowDown")) { this.pauseCursor = (this.pauseCursor + 1) % opts.length; sfx.blip(); }
+      for (let i = 0; i < opts.length; i++) { const y = 110 + i * 12; if (g.input.mouseY >= y - 3 && g.input.mouseY < y + 9 && g.input.mouseX > VW / 2 - 80 && g.input.mouseX < VW / 2 + 80) { this.pauseCursor = i; if (g.input.mousePressed) { sfx.select(); opts[i].act(); return; } } }
+      if (g.input.wasPressed("Enter") || g.input.wasPressed(" ")) { sfx.select(); opts[this.pauseCursor].act(); }
+      return;
+    }
     if (g.input.wasPressed("l")) { this.logOpen = !this.logOpen; sfx.blip(); }
     if (this.logOpen) { if (g.input.wasPressed("Escape")) this.logOpen = false; this.updateAmbient(g, dt); return; }
     if (g.input.wasPressed("Tab")) this.mapOpen = !this.mapOpen;
@@ -802,6 +823,9 @@ export class FlightScene implements Scene {
   docking: { st: StationDef; t: number; x0: number; y0: number; bay: number } | null = null;
   launching = 0;
   // the comms log: everything said on the band this session, L to read back
+  paused = false;
+  pauseCursor = 0;
+  wonderSfx = 1;
   commsLog: { from: string; text: string; t: number }[] = [];
   logged = new WeakSet<object>();
   logOpen = false;
@@ -825,6 +849,17 @@ export class FlightScene implements Scene {
         : isFriend(cap) ? (["GOOD TO SEE THAT HULL. STILL OWE YOU.", "IF YOU'RE HEADING MY WAY, THERE'S A DRINK WITH YOUR NAME ON IT.", "KEEP FLYING LIKE THAT AND I'LL HAVE TO START PAYING YOU."][cap.met % 3])
         : cap.helped > 0 ? "THAT YOU? I HAVEN'T FORGOTTEN." : cap.met > 3 ? "WE KEEP CROSSING PATHS. SMALL GALAXY." : "CLEAR SKIES, STRANGER.";
       this.comms.push({ from: `${cap.name.toUpperCase()}, ${cap.ship.toUpperCase()}`, text: line, life: 7, color: isRival(cap) ? PAL.danger : isFriend(cap) ? PAL.gold : PAL.info });
+    }
+    // the wonders have voices: a pulsar ticks, the cathedral hums
+    this.wonderSfx -= dt;
+    if (this.wonderSfx <= 0) {
+      this.wonderSfx = 1;
+      for (const wd of wondersIn(g.world, sys.id)) {
+        const d = dist(p.x, p.y, wd.x, wd.y);
+        if (d > 1600) continue;
+        if (wd.kind === "pulsar") sfx.tick(1 - d / 1600);
+        else if (wd.kind === "cathedral" || wd.kind === "twins") { if (Math.floor(g.world.time) % 4 === 0) sfx.choir(1 - d / 1600); }
+      }
     }
     // a wonder within sight: the codex, the data, the tourists
     for (const wd of wondersIn(g.world, sys.id)) {
