@@ -13,7 +13,7 @@ import { MODULES } from "../src/data/modules";
 import { rareSellPrice, findStation } from "../src/world";
 import { RARES } from "../src/data/data";
 import { baseContract } from "../src/core/wire";
-import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding } from "../src/world";
+import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding } from "../src/world";
 import { genGround, groundKey, passable, GW, GH } from "../src/ground";
 import { BLUEPRINTS, upgrade, addMaterials, nextCost, MATERIAL_CAP } from "../src/data/engineering";
 import { jumpFuelCost, communityGoal, weekKey, permitDenied, navRoute, blackMarket, genMissionsFor, groundProgress, missionDeliverable } from "../src/world";
@@ -471,13 +471,14 @@ describe("living galaxy", () => {
     const w = generateWorld(15, { realGalaxy: true });
     let flips = 0;
     const before = Object.fromEntries(Object.values(w.systems).map((s) => [s.id, s.factionId]));
-    for (let i = 0; i < 400; i++) tickWorld(w, 10);
+    let sawWar = false;
+    for (let i = 0; i < 400; i++) { tickWorld(w, 10); if (w.events.some((e) => e.kind === "war")) sawWar = true; }
     for (const sys of Object.values(w.systems)) {
       if (sys.factionId !== before[sys.id]) flips++;
       for (const st of sys.stations) expect(st.factionId).toBe(sys.factionId);
     }
     expect(flips).toBeGreaterThanOrEqual(0);
-    expect(w.events.some((e) => e.kind === "war")).toBe(true);
+    expect(sawWar).toBe(true);
   });
 });
 
@@ -540,5 +541,23 @@ describe("syndicate economy", () => {
     expect(total()).toBeGreaterThanOrEqual(before); // raids move money, trade creates it
     adjustSynRep(w, sy.tag, 35);
     expect(synStanding(w, sy.tag)).toBe(35);
+  });
+});
+
+describe("syndicate diplomacy", () => {
+  it("relations move rivalry lists, alliances share perks, and the news reports it", () => {
+    const w = generateWorld(18, { realGalaxy: true });
+    const [a, b] = w.syndicates!.filter((s) => s.style !== "pirate");
+    expect(a && b).toBeTruthy();
+    const start = synRelation(w, a.tag, b.tag);
+    shiftRelation(w, a.tag, b.tag, 60 - start);
+    expect(synAllies(w, a.tag)).toContain(b.tag);
+    expect(w.events.some((e) => e.text.includes("alliance"))).toBe(true);
+    adjustSynRep(w, b.tag, 60);
+    expect(effectiveSynStanding(w, a.tag)).toBe(30); // partner of an ally counts as affiliate
+    shiftRelation(w, a.tag, b.tag, -100);
+    expect(a.rivals).toContain(b.tag);
+    expect(b.rivals).toContain(a.tag);
+    expect(w.events.some((e) => e.text.includes("feud"))).toBe(true);
   });
 });

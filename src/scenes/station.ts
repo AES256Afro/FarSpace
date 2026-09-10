@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember } from "../data/crew";
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM,
+  crewWages, genCrewCandidate, applyHull, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation,
 } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
@@ -134,7 +134,7 @@ export class StationScene implements Scene {
     const st = this.station;
     const patron = wire.patronOf(st.factionId);
     const synHere = syndicateAt(g.world, st.id);
-    const rep = (p.rep[st.factionId] ?? 0) + (patron && patron === wire.getSquadron() ? 25 : 0) + (synHere && synStanding(g.world, synHere.tag) >= 30 ? 25 : 0); // patrons and affiliates trade like allies
+    const rep = (p.rep[st.factionId] ?? 0) + (patron && patron === wire.getSquadron() ? 25 : 0) + (synHere && effectiveSynStanding(g.world, synHere.tag) >= 30 ? 25 : 0); // patrons and affiliates (or partners of allies) trade like allies
     const enter = inp.wasPressed("Enter") || inp.wasPressed(" ") || clickedRow;
     if (enter) sfx.select();
 
@@ -404,6 +404,15 @@ export class StationScene implements Scene {
     if (m.syndicate) {
       const before = synStanding(g.world, m.syndicate);
       adjustSynRep(g.world, m.syndicate, 8);
+      if (m.syndicateTarget) {
+        adjustSynRep(g.world, m.syndicateTarget, -6);
+        const r = shiftRelation(g.world, m.syndicate, m.syndicateTarget, -6);
+        if (synStanding(g.world, m.syndicateTarget) <= -20) g.toast(`[${m.syndicateTarget}] HAS MARKED YOU - EXPECT THEIR RAIDERS`);
+        void r;
+      } else {
+        // honest work for A warms A toward whoever you've also worked for
+        for (const [t, v] of Object.entries(g.world.player.synRep ?? {})) if (t !== m.syndicate && v >= 30) shiftRelation(g.world, m.syndicate, t, 2);
+      }
       const after = synStanding(g.world, m.syndicate);
       if (before < 30 && after >= 30) { g.toast(`[${m.syndicate}] NOW CALLS YOU AN AFFILIATE - THEIR BASE TRADES CHEAPER FOR YOU`); flag(g, "affiliate"); }
       else if (before < 60 && after >= 60) { g.toast(`[${m.syndicate}] PARTNER STATUS - THEIR MARKET PAYS YOU MORE`); }
@@ -593,7 +602,7 @@ export class StationScene implements Scene {
     const war = g.world.wars.find((w) => w.systemId === p.systemId);
     if (war) drawText(ctx, "SYSTEM AT WAR - PRICES UNSTABLE", VW - textWidth("SYSTEM AT WAR - PRICES UNSTABLE") - 6, 26, PAL.warn);
     else if (this.baseOwner) { const t = `[${this.baseOwner}] SQUADRON BASE${this.baseOwner === wire.getSquadron() ? " - HOME" : ""}`; drawText(ctx, t, VW - textWidth(t) - 6, 26, this.baseOwner === wire.getSquadron() ? PAL.gold : PAL.info); }
-    else if (syndicateAt(g.world, this.station.id)) { const sy = syndicateAt(g.world, this.station.id)!; const t = `[${sy.tag}] ${sy.name.toUpperCase()} BASE (AI) - ${synStandingLabel(synStanding(g.world, sy.tag))}`; drawText(ctx, t, VW - textWidth(t) - 6, 26, sy.color); }
+    else if (syndicateAt(g.world, this.station.id)) { const sy = syndicateAt(g.world, this.station.id)!; const t = `[${sy.tag}] ${sy.name.toUpperCase()} BASE (AI) - ${synStandingLabel(effectiveSynStanding(g.world, sy.tag))}`; drawText(ctx, t, VW - textWidth(t) - 6, 26, sy.color); }
     else {
       const patron = wire.patronOf(this.station.factionId);
       if (patron) { const t = `PATRON SQUADRON: [${patron}]${patron === wire.getSquadron() ? " - YOURS, TRADE LIKE ALLIES" : ""}`; drawText(ctx, t, VW - textWidth(t) - 6, 26, patron === wire.getSquadron() ? PAL.gold : PAL.info); }
@@ -699,7 +708,7 @@ export class StationScene implements Scene {
     const st = this.station;
     const patron = wire.patronOf(st.factionId);
     const synHere = syndicateAt(g.world, st.id);
-    const rep = (p.rep[st.factionId] ?? 0) + (patron && patron === wire.getSquadron() ? 25 : 0) + (synHere && synStanding(g.world, synHere.tag) >= 30 ? 25 : 0);
+    const rep = (p.rep[st.factionId] ?? 0) + (patron && patron === wire.getSquadron() ? 25 : 0) + (synHere && effectiveSynStanding(g.world, synHere.tag) >= 30 ? 25 : 0);
     drawText(ctx, "COMMODITY", 8, top, PAL.greyDark);
     drawText(ctx, "BUY", 150, top, PAL.greyDark);
     drawText(ctx, "SELL", 190, top, PAL.greyDark);
@@ -1004,15 +1013,20 @@ export class StationScene implements Scene {
     if (syn) {
       const standing = synStanding(g.world, syn.tag);
       drawText(ctx, `[${syn.tag}] ${syn.name.toUpperCase()} - AI SYNDICATE BASE`, 8, top, syn.color);
-      drawText(ctx, `STYLE ${syn.style.toUpperCase()}   TREASURY ${syn.treasury}CR   YOUR STANDING ${standing} (${synStandingLabel(standing)})`, 8, top + 10, PAL.grey);
+      const eff = effectiveSynStanding(g.world, syn.tag);
+      drawText(ctx, `STYLE ${syn.style.toUpperCase()}   TREASURY ${syn.treasury}CR   YOUR STANDING ${standing} (${synStandingLabel(eff)}${eff > standing ? " VIA ALLY" : ""})`, 8, top + 10, PAL.grey);
       drawText(ctx, "AFFILIATE (30): BUY HERE LIKE AN ALLY.  PARTNER (60): +10% ON THEIR WANTED GOODS.  CONTRACTS ON THE MISSIONS TAB.", 8, top + 19, PAL.greyDark);
       const dem = baseDemand(`syn:${syn.tag}`);
       drawText(ctx, `WANTED THIS WEEK (+${Math.round(ROUTE_PREMIUM * 100)}%): ${dem.map((d) => commodity(d).name.toUpperCase()).join(", ")}`, 8, top + 31, PAL.gold);
       const partners = syn.partners.map((pid) => findStation(g.world, pid)).filter((x) => !!x).map((f) => `${f!.st.name.toUpperCase()} (${f!.sys.name.toUpperCase()})`);
       drawText(ctx, `TRADE PARTNERS: ${partners.join(", ") || "NONE"}`, 8, top + 40, PAL.info);
       const rivals = syn.rivals.map((t) => syndicateByTag(g.world, t)).filter((x) => !!x).map((r) => `[${r!.tag}] ${r!.name.toUpperCase()}`);
-      drawText(ctx, `RIVALS: ${rivals.join(", ") || "NONE"}`, 8, top + 49, PAL.danger);
-      drawText(ctx, "AI SYNDICATES ARE PART OF THE GALAXY, NOT PLAYERS. THEY NEVER APPEAR ON THE PILOT BOARDS.", 8, top + 61, PAL.greyDark);
+      drawText(ctx, `FEUDS: ${rivals.join(", ") || "NONE"}`, 8, top + 49, PAL.danger);
+      const allies = synAllies(g.world, syn.tag);
+      const rel = (g.world.syndicates ?? []).filter((o) => o.tag !== syn.tag).map((o) => `[${o.tag}] ${synRelation(g.world, syn.tag, o.tag) >= 0 ? "+" : ""}${synRelation(g.world, syn.tag, o.tag)}`).join("  ");
+      drawText(ctx, `ALLIES: ${allies.length ? allies.map((t) => `[${t}]`).join(" ") : "NONE"}   RELATIONS: ${rel}`, 8, top + 58, allies.length ? PAL.good : PAL.grey);
+      drawText(ctx, "YOUR CONTRACTS MOVE THESE: BOUNTIES SOUR THEIR TARGET, HONEST RUNS WARM SYNDICATES YOU ALREADY WORK FOR.", 8, top + 70, PAL.greyDark);
+      drawText(ctx, "AI SYNDICATES ARE PART OF THE GALAXY, NOT PLAYERS. THEY NEVER APPEAR ON THE PILOT BOARDS.", 8, top + 82, PAL.greyDark);
       return;
     }
     if (this.baseOwner && this.baseOwner !== tag) {

@@ -17,7 +17,7 @@ import { hasModule } from "../../data/modules";
 import { gainMaterials } from "../../core/materials";
 import { presence } from "../../core/presence";
 import { baseAt, fetchBases } from "../../core/wire";
-import { syndicateAt } from "../../world";
+import { syndicateAt, synAllies } from "../../world";
 
 // ---------- Population ----------
 
@@ -57,9 +57,13 @@ export function populate(fs: FlightScene, g: Game): void {
         n.tag = sy.tag; n.targetIdx = home; n.hullMax = n.hull = 80;
         if (sy.style === "pirate") { n.kind = "pirate"; n.variant = "raider"; }
       }
-    } else if (sy.style === "pirate" && (g.world.syndicates ?? []).some((o) => sy.rivals.includes(o.tag) && o.systemId === sys.id) && rng.chance(0.5)) {
+    } else if (sy.style === "pirate" && ((g.world.syndicates ?? []).some((o) => sy.rivals.includes(o.tag) && o.systemId === sys.id) || (g.world.player.synRep?.[sy.tag] ?? 0) <= -20) && rng.chance(0.5)) {
       const n = spawnNpc(fs, g, "pirate", rng);
       n.tag = sy.tag; n.variant = "raider";
+    } else if (sy.style !== "pirate" && synAllies(g.world, sy.tag).some((t) => (g.world.syndicates ?? []).find((o) => o.tag === t)?.systemId === sys.id) && rng.chance(0.6)) {
+      spawnTrader(fs, g, rng);
+      const n = fs.npcs[fs.npcs.length - 1];
+      n.tag = sy.tag; n.hullMax = n.hull = 80;
     }
   }
 

@@ -309,5 +309,9 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
       galaxy map, syndicate partner lanes too
 - [x] Save v9 adds syndicates to existing galaxies
 
+- [x] Syndicate diplomacy: relations drift, raids sour them, your contracts
+      move them; alliances share convoy lanes and perks (a partner of an ally
+      counts as an affiliate), feuds spawn raiders; marked pilots get hunted
+
 ## Later
-- [ ] Syndicate diplomacy: alliances that shift with player standing
+- [ ] Syndicate wars over systems with player-facing campaigns

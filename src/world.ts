@@ -153,6 +153,7 @@ export interface Mission {
   sightSeen?: boolean;
   anomalyId?: string;
   syndicate?: string;                  // contract issued by an AI syndicate (tag)
+  syndicateTarget?: string;            // bounty against this syndicate: they will remember
   groundPlanetIdx?: number;            // ground contracts: which world
   groundGoal?: "flora" | "probe" | "outcrop";
   groundNeed?: number;
@@ -269,6 +270,7 @@ export interface World {
   hardcore?: boolean; // destruction erases the save
   rareOrigin?: Record<string, string>; // rare commodity id → station id
   syndicates?: Syndicate[];
+  synRelations?: Record<string, number>; // "A|B" (sorted tags) → -100..100; allies ≥ 50, feud ≤ -30
   seed: number;
   time: number;
   realGalaxy: boolean;
@@ -1066,7 +1068,7 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
         title: `[${sy.tag}] Convoy run: ${qty} ${com.name}`,
         desc: `${sy.name} wants ${qty}x ${com.name} at ${f.st.name} in ${f.sys.name}. Their goods, their route, your ship.${com.illegal ? " Don't get scanned." : ""}`,
         fromStationId: station.id, targetSystemId: f.sys.id, targetStationId: f.st.id, commodityId: com.id, qty,
-        reward: Math.round((com.base * qty * 1.9 + 200) * (1 + Math.max(0, synStanding(world, sy.tag)) / 100)),
+        reward: Math.round((com.base * qty * 1.9 + 200) * (1 + Math.max(0, effectiveSynStanding(world, sy.tag)) / 100)),
         repReward: 0,
       });
     }
@@ -1078,7 +1080,8 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
         title: `[${sy.tag}] Bounty: ${kills} raiders in ${world.systems[rival.systemId].name}`,
         desc: `${sy.name} pays for ${kills} corsairs destroyed in ${world.systems[rival.systemId].name}, home of their rivals [${rival.tag}] ${rival.name}.`,
         fromStationId: station.id, targetSystemId: rival.systemId, killsNeeded: kills, kills: 0,
-        reward: Math.round(380 * kills * (1 + Math.max(0, synStanding(world, sy.tag)) / 100)),
+        reward: Math.round(380 * kills * (1 + Math.max(0, effectiveSynStanding(world, sy.tag)) / 100)),
+        syndicateTarget: rival.tag,
         repReward: 0,
       });
     }
@@ -1170,6 +1173,45 @@ export function syndicateByTag(w: World, tag: string): Syndicate | null {
   return w.syndicates?.find((s) => s.tag === tag) ?? null;
 }
 export function synStanding(w: World, tag: string): number { return w.player.synRep?.[tag] ?? 0; }
+
+// ---------- Syndicate diplomacy ----------
+export function relKey(a: string, b: string): string { return a < b ? `${a}|${b}` : `${b}|${a}`; }
+export function synRelation(w: World, a: string, b: string): number {
+  if (a === b) return 100;
+  const r = w.synRelations?.[relKey(a, b)];
+  if (r !== undefined) return r;
+  // seed from the static rivalry lists until history moves it
+  const sa = syndicateByTag(w, a);
+  return sa?.rivals.includes(b) ? -40 : 10;
+}
+export function shiftRelation(w: World, a: string, b: string, delta: number): { before: number; after: number } {
+  w.synRelations ??= {};
+  const k = relKey(a, b);
+  const before = synRelation(w, a, b);
+  const after = Math.max(-100, Math.min(100, before + delta));
+  w.synRelations[k] = after;
+  const sa = syndicateByTag(w, a), sb = syndicateByTag(w, b);
+  if (sa && sb) {
+    // rivalry lists follow the relation so raids and bounties track diplomacy
+    const feud = after <= -30;
+    sa.rivals = feud ? Array.from(new Set([...sa.rivals, b])) : sa.rivals.filter((t) => t !== b);
+    sb.rivals = feud ? Array.from(new Set([...sb.rivals, a])) : sb.rivals.filter((t) => t !== a);
+    const wasAllied = before >= 50, isAllied = after >= 50;
+    if (!wasAllied && isAllied) pushEvent(w, { t: w.time, kind: "peace", systemId: sa.systemId, text: `[${a}] ${sa.name} and [${b}] ${sb.name} sign an alliance - convoys share lanes` });
+    if (wasAllied && !isAllied) pushEvent(w, { t: w.time, kind: "war", systemId: sa.systemId, text: `The [${a}]-[${b}] alliance collapses` });
+    if (before > -30 && feud) pushEvent(w, { t: w.time, kind: "war", systemId: sb.systemId, text: `[${a}] ${sa.name} declares a feud with [${b}] ${sb.name}` });
+  }
+  return { before, after };
+}
+export function synAllies(w: World, tag: string): string[] {
+  return (w.syndicates ?? []).filter((o) => o.tag !== tag && synRelation(w, tag, o.tag) >= 50).map((o) => o.tag);
+}
+// Perks flow through alliances: a PARTNER of an ally counts as an AFFILIATE here
+export function effectiveSynStanding(w: World, tag: string): number {
+  const own = synStanding(w, tag);
+  const viaAlly = Math.max(0, ...synAllies(w, tag).map((t) => synStanding(w, t) >= 60 ? 30 : 0));
+  return Math.max(own, viaAlly);
+}
 export function synStandingLabel(v: number): string { return v >= 60 ? "PARTNER" : v >= 30 ? "AFFILIATE" : v >= 10 ? "KNOWN" : v <= -20 ? "MARKED" : "STRANGER"; }
 export function adjustSynRep(w: World, tag: string, delta: number): void {
   w.player.synRep ??= {};
@@ -1325,11 +1367,15 @@ export function tickSyndicates(w: World, rng: RNG): void {
   const list = w.syndicates ?? [];
   if (!list.length) return;
   const sy = rng.pick(list);
+  // diplomacy drift: traders warm to each other, everyone cools toward pirates
+  const other = rng.pick(list.filter((o) => o !== sy));
+  if (other) shiftRelation(w, sy.tag, other.tag, sy.style === "pirate" || other.style === "pirate" ? -rng.int(1, 4) : rng.int(1, 3));
   if (sy.style === "pirate") {
     const victim = list.find((o) => sy.rivals.includes(o.tag) && rng.chance(0.6)) ?? list.find((o) => o !== sy);
     if (!victim) return;
     const take = Math.min(victim.treasury, rng.int(1500, 4500));
     victim.treasury -= take; sy.treasury += take;
+    shiftRelation(w, sy.tag, victim.tag, -3);
     const sys = w.systems[victim.systemId];
     sys.pirateActivity = Math.min(1, sys.pirateActivity + 0.05);
     pushEvent(w, { t: w.time, kind: "raid", systemId: sys.id, text: `[${sy.tag}] ${sy.name} raiders hit an [${victim.tag}] convoy off ${sys.name} - ${take} CR in goods lost` });
