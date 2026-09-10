@@ -631,4 +631,8 @@ Time passes for the people on the ship, and for the ship.
       and the chronicle; talk of the ship catches up on races, post, watches
       and weddings
 
+## Milestone 67 — Cards After Watch ✅ (Sep 2026)
+- [x] C beside crew: a hand of cards for matchsticks or a round; the cook's
+      meal
+
 ## Later

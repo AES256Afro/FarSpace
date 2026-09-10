@@ -229,6 +229,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Cards after watch
+
+- C beside any crew member aboard: a hand of cards on an upturned crate, for
+  matchsticks or a twenty-credit round. Whoever's off watch pulls up a seat.
+  Nobody wins much; everybody's happier. A crew member who plays cards for
+  matchsticks is hard to beat.
+- A crew member who cooks on the reactor housing makes the galley meal better.
+
 ## A name on the lanes
 
 - Do one thing more than anything else and the lanes give you a name for it:

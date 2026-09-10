@@ -31,7 +31,7 @@ import { CREW_LINES, ROLE_INFO, roleLabel } from "../data/crew";
 import { clamp, dist } from "../core/mathx";
 import { sfx } from "../core/sfx";
 import { music } from "../core/music";
-import { rankOf, rescuePoints, STORY_LEN, findStation, canRetireCaptain, retireCaptain, RETIRE_AFTER } from "../world";
+import { rankOf, rescuePoints, STORY_LEN, findStation, canRetireCaptain, retireCaptain, RETIRE_AFTER, ledger, logEntry } from "../world";
 import * as wire from "../core/wire";
 import { isOccasion } from "../data/occasions";
 import type { Encounter } from "../data/encounters";
@@ -227,6 +227,24 @@ export class InteriorScene implements Scene {
   passengerNear(p: import("../world").PlayerState): import("../world").Mission | null {
     for (const m of passengersAboard(p)) { const pp = this.paxPos[m.id]; if (pp && dist(pp.x, pp.y, this.px, this.py) < 16) return m; }
     return null;
+  }
+  // a hand of cards on an upturned crate: matchsticks, or a round of drinks
+  playCards(g: Game, c: import("../data/crew").CrewMember): void {
+    const p = g.world.player;
+    const others = p.crew.filter((o) => o !== c && !o.sick).slice(0, 2);
+    const rng = new RNG((g.world.seed ^ Math.floor(g.world.time * 17)) >>> 0);
+    const sharp = !!c.trait?.includes("cards");
+    const edge = sharp ? 0.65 : 0.5;
+    const seated = [c, ...others];
+    const cheer = (n: number) => { for (const o of seated) o.morale = Math.min(100, o.morale + n); c.loyalty = (c.loyalty ?? 0) + 0.25; };
+    const enc: Encounter = { id: "cards", where: "space", title: `A HAND OF CARDS WITH ${c.name.toUpperCase()}`, weight: 0,
+      text: `${c.name.toUpperCase()} DEALS ON AN UPTURNED CRATE.${others.length ? ` ${others.map((o) => o.name.toUpperCase()).join(" AND ")} PULL${others.length === 1 ? "S" : ""} UP A SEAT.` : ""} ${sharp ? "THEY PLAY FOR MATCHSTICKS. THEY PLAY VERY WELL FOR MATCHSTICKS." : "NOBODY'S VERY GOOD. THAT'S THE POINT."}`,
+      options: [
+        { label: "MATCHSTICKS", result: () => { const win = rng.chance(1 - edge); cheer(5); logEntry(g.world, `A hand of cards with ${c.name} after watch`); return win ? `YOU TAKE THE POT: ELEVEN MATCHSTICKS AND ${c.name.toUpperCase()}'S GRUDGING RESPECT. MORALE UP.` : `${c.name.toUpperCase()} CLEANS YOU OUT AND DOESN'T EVEN GLOAT. MUCH. MORALE UP ANYWAY.`; } },
+        { label: "A ROUND OF DRINKS (20CR STAKE)", requires: () => p.credits >= 20, result: () => { const win = rng.chance(1 - edge); if (win) { p.credits += 20; ledger(p, "crew", 20); } else { p.credits -= 20; ledger(p, "crew", -20); } cheer(8); return win ? "YOU WIN THE ROUND AND BUY IT ANYWAY. THE CREW NOTICE. +20CR, MORALE UP." : "YOU LOSE THE ROUND AND PAY FOR IT. THE CREW NOTICE THAT TOO. -20CR, MORALE UP."; } },
+        { label: "NOT TONIGHT", result: () => `${c.name.toUpperCase()} SHRUGS AND DEALS ${others.length ? "THE OTHERS IN" : "A PATIENCE HAND"}.` },
+      ] };
+    (g.scenes["encounter"] as EncounterScene).open(g, enc, "interior", true);
   }
   // where each crew member is right now: their post, or wandering between the galley, the bunks and the bridge
   crewAt(i: number): { x: number; y: number } | null {
@@ -425,6 +443,7 @@ export class InteriorScene implements Scene {
     this.wanderPassengers(p, dt);
     this.tickChatter(g, p, dt);
     const crewNear = p.crew.map((c, i) => ({ c, spot: this.crewSpots()[i], at: this.crewAt(i) })).find((x) => x.at && dist(x.at.x, x.at.y, this.px, this.py) < 16);
+    if (inp.wasPressed("c") && crewNear && !crewNear.c.sick) { this.playCards(g, crewNear.c); return; }
     const passenger = p.missions.find((m) => m.kind === "passenger" && m.accepted && !m.done);
     const pSpot = nearestTile(this.deck, this.px, this.py, "p");
     const repairSpeed = 1.2 / (1 + eng * 0.5 + (p.skills.engineering ?? 0) * 0.05);
@@ -500,8 +519,9 @@ export class InteriorScene implements Scene {
           if ((p.cargo.food ?? 0) > 0) {
             removeCargo(p, "food", 1);
             p.hull = Math.min(p.hullMax, p.hull + 5);
-            for (const c of p.crew) c.morale = Math.min(100, c.morale + 10);
-            this.say(p.crew.length ? "A HOT MEAL FOR EVERYONE. MORALE UP, +5 HULL" : "A HOT MEAL. +5 HULL");
+            const cook = p.crew.find((c) => c.trait?.includes("cooks"));
+            for (const c of p.crew) c.morale = Math.min(100, c.morale + (cook ? 12 : 10));
+            this.say(cook ? `${cook.name.toUpperCase()} COOKS. NOBODY KNOWS WHAT IT IS. EVERYBODY HAS SECONDS. MORALE UP, +5 HULL` : p.crew.length ? "A HOT MEAL FOR EVERYONE. MORALE UP, +5 HULL" : "A HOT MEAL. +5 HULL");
           } else this.say("GALLEY'S EMPTY. BUY PROVISIONS AT A STATION");
         } else if (near.ch === "H") {
           const n = hull(p.hullId).drones ?? 0;
@@ -712,7 +732,7 @@ export class InteriorScene implements Scene {
     else if (p.cat && dist(this.cat.x, this.cat.y, this.px, this.py) < 14 && !crewNear) tooltip(ctx, ox, oy, Math.floor(this.cat.x / T), Math.floor(this.cat.y / T), p.cat.name.toUpperCase(), "[E] PAT", "#e0b070");
     else if (fire) tooltip(ctx, ox, oy, fire.tx, fire.ty, "FIRE", "[HOLD E] EXTINGUISH", PAL.danger);
     else if (breach) tooltip(ctx, ox, oy, breach.tx, breach.ty, "HULL BREACH", "[HOLD E] SEAL (1 PART)", PAL.danger);
-    else if (crewNear) tooltip(ctx, ox, oy, Math.floor(crewNear.at!.x / T), Math.floor(crewNear.at!.y / T), `${crewNear.c.name} - ${ROLE_INFO[crewNear.c.role].label}`, "[E] TALK", PAL.ui);
+    else if (crewNear) tooltip(ctx, ox, oy, Math.floor(crewNear.at!.x / T), Math.floor(crewNear.at!.y / T), `${crewNear.c.name} - ${ROLE_INFO[crewNear.c.role].label}`, crewNear.c.sick ? "[E] TALK" : "[E] TALK  [C] CARDS", PAL.ui);
     else if (passenger && this.passengerNear(p)) { const m = this.passengerNear(p)!; const pp = this.paxPos[m.id]; tooltip(ctx, ox, oy, Math.floor(pp.x / T), Math.floor(pp.y / T), m.passengerName ?? "PASSENGER", "[E] TALK", "#b28fe0"); }
     else if (near) {
       const def = PANELS.find((x) => x.ch === near.ch)!;
