@@ -403,5 +403,13 @@ Time passes for the people on the ship, and for the ship.
       fare; every extra sight on the way pays 15% more
 - [x] Passengers live in the bunk room with their own lines by mood
 
+## Milestone 20 — The Lighthouse ✅ (Sep 2026)
+- [x] Beacon and fuel depot kits from any shipyard, planted in dead systems
+- [x] Beacons: through-traffic, tolls in a till, cheaper jumps for everyone;
+      depots: stock fuel cells, sell to traffic, draw for yourself
+- [x] Raids in pirate space wear structures down; dark below 30% until you
+      bring spare parts; galaxy map and HUD show lit, dark and a full till
+- [x] Owned by call sign, so a shared galaxy can carry them later
+
 ## Later
 - [ ] Cross-squadron rivalries and treaties

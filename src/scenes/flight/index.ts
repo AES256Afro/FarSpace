@@ -5,7 +5,7 @@ import { ask, confirmBox } from "../../core/dialog";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra } from "../../world";
 import { COMMODITIES, commodity } from "../../data/data";
 import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
@@ -89,6 +89,21 @@ export class FlightScene implements Scene {
       const ev = galaxyEventAt(g.world, p.systemId);
       if (ev?.kind === "comet" && logSight(p, "comet", `the comet over ${g.world.systems[p.systemId].name}`, p.systemId)) g.toast("THE COMET FILLS THE VIEWPORT. YOUR PASSENGERS WON'T FORGET THIS ONE.");
     }
+  }
+
+  // Collect the till, patch the structure, stock or draw on a depot.
+  tendInfra(g: Game, inf: Infra): void {
+    const p = g.world.player;
+    const name = inf.kind.toUpperCase();
+    const c = collectInfra(inf, p);
+    const lines: string[] = [];
+    if (c > 0) { lines.push(`TILL EMPTIED: +${c}CR`); sfx.pickup(); }
+    if (inf.health < 100) { if (repairInfra(inf, p)) lines.push(`PATCHED WITH A SPARE PART: ${inf.health}%`); else lines.push(`${inf.health}% - BRING SPARE PARTS`); }
+    if (inf.kind === "depot") {
+      if (p.fuel < p.fuelMax * 0.5 && inf.stock > 0) { const n = drawDepot(inf, p); if (n) lines.push(`DREW ${n} FUEL FROM YOUR OWN DEPOT`); }
+      else { const n = stockDepot(inf, p, 40); if (n) lines.push(`STOCKED ${n} FUEL CELLS (${inf.stock}/${DEPOT_CAP})`); else lines.push(`STOCK ${inf.stock}/${DEPOT_CAP} - FUEL CELLS IN THE HOLD RESTOCK IT`); }
+    }
+    g.toast(`${name}: ${lines.join(" - ")}`.slice(0, 110));
   }
 
   launchDrones(g: Game): void {
@@ -723,6 +738,7 @@ export class FlightScene implements Scene {
     const p = g.world.player;
     const sys = g.world.systems[p.systemId];
     // comms chatter when the channel is quiet
+    if (g.world.infraNews?.length) { for (const line of g.world.infraNews) g.toast(line); g.world.infraNews = []; }
     // a worn ship throws faults now and then; the engineer keeps the interval long
     this.faultTimer -= dt;
     if (this.faultTimer <= 0) {
@@ -1016,6 +1032,20 @@ export class FlightScene implements Scene {
         g.setScene("orbit");
         return;
       }
+    }
+    // your lighthouse: tend it
+    const inf = infraAt(g.world, sys.id).find((i) => dist(p.x, p.y, i.x, i.y) < 90);
+    if (inf) { this.tendInfra(g, inf); return; }
+    // a dead system and a kit aboard: build
+    const kit = (["beacon", "depot"] as const).find((k) => ((p.kits ?? {})[k] ?? 0) > 0);
+    if (kit && !canBuildInfra(g.world, sys.id)) {
+      if (dist(p.x, p.y, 0, 0) < 500) { g.toast("TOO CLOSE TO THE STAR TO PLANT ANYTHING - FLY OUT PAST 500M"); return; }
+      if (confirmBox(`PLANT THE ${INFRA_KITS[kit].name.toUpperCase()} HERE, IN ${sys.name.toUpperCase()}?\n\n${INFRA_KITS[kit].desc}`)) {
+        const r = buildInfra(g.world, kit, p.x, p.y, wire.getCallsign() ?? "YOU");
+        if (typeof r === "string") g.toast(r);
+        else { g.toast(`${INFRA_KITS[kit].name.toUpperCase()} DEPLOYED. ${sys.name.toUpperCase()} IS ON THE CHARTS NOW.`); logEntry(g.world, `Planted a ${kit} in ${sys.name}`); flag(g, "lighthouse"); sfx.repair(); void wire.post("discover", `lit a ${kit} in ${sys.name}`, sys.name); populate(this, g); }
+      }
+      return;
     }
     g.toast("NOTHING IN RANGE");
   }

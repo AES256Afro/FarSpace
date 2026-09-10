@@ -279,7 +279,107 @@ export interface PlayerState {
   berthLog?: { stationId: string; t: number; wear: number; cost: number }[]; // signed yard services
   shoreCrew?: ShoreLeave[];          // crew waiting for you at a station
   alumni?: Alumnus[];                // crew who served and went home
+  infraEarned?: number;              // lifetime tolls and fuel sales collected
   fares?: number;                    // passengers carried to their destination
+  kits?: Record<string, number>;     // infrastructure kits aboard (beacon, depot)
+}
+
+// ---------- Infrastructure: a lighthouse in a dead system ----------
+// A beacon or a fuel depot planted where nobody else has built. Traffic reroutes
+// through it and pays; pirates notice. Owned by a call sign so a shared galaxy
+// can carry it later.
+export type InfraKind = "beacon" | "depot";
+export interface Infra {
+  id: string; kind: InfraKind; systemId: string; x: number; y: number;
+  owner: string; builtAt: number;
+  health: number;      // 0..100; below 30 it's dark and earns nothing
+  till: number;        // credits waiting to be collected
+  stock: number;       // depot fuel units for sale (beacons: 0)
+  earned: number;      // lifetime
+  lastT: number;
+}
+export const INFRA_KITS: Record<InfraKind, { name: string; price: number; desc: string }> = {
+  beacon: { name: "Beacon Kit", price: 2500, desc: "A nav beacon for a system with no station. Traffic reroutes through it and pays tolls; jumps in and out cost a fifth less fuel." },
+  depot: { name: "Fuel Depot Kit", price: 4000, desc: "An unmanned fuel depot for a dead system. Stock it with fuel cells; passing ships buy at a premium, and so can you." },
+};
+export const DEPOT_CAP = 120;
+export const DEPOT_PRICE = 30; // what traffic pays per unit
+export function infraAt(w: World, systemId: string): Infra[] {
+  return (w.infra ?? []).filter((i) => i.systemId === systemId);
+}
+export function canBuildInfra(w: World, systemId: string): string | null {
+  const sys = w.systems[systemId];
+  if (!sys) return "NO SUCH SYSTEM";
+  if (sys.stations.length) return "SOMEBODY ALREADY BUILT HERE - DEAD SYSTEMS ONLY";
+  if (infraAt(w, systemId).length >= 2) return "TWO STRUCTURES IS ALL A SYSTEM WILL BEAR";
+  return null;
+}
+export function buildInfra(w: World, kind: InfraKind, x: number, y: number, owner: string): Infra | string {
+  const p = w.player;
+  const why = canBuildInfra(w, p.systemId);
+  if (why) return why;
+  if (infraAt(w, p.systemId).some((i) => i.kind === kind)) return `THERE'S ALREADY A ${kind.toUpperCase()} HERE`;
+  if (((p.kits ?? {})[kind] ?? 0) <= 0) return `NO ${INFRA_KITS[kind].name.toUpperCase()} ABOARD`;
+  p.kits![kind]--;
+  const inf: Infra = { id: `${kind}-${p.systemId}-${Math.floor(w.time)}`, kind, systemId: p.systemId, x, y, owner, builtAt: w.time, health: 100, till: 0, stock: 0, earned: 0, lastT: w.time };
+  (w.infra ??= []).push(inf);
+  return inf;
+}
+// How much traffic a dead system would see: the stations next door, and syndicate partners.
+export function infraTraffic(w: World, systemId: string): number {
+  const sys = w.systems[systemId];
+  if (!sys) return 0;
+  let t = 0;
+  for (const l of sys.links) { const o = w.systems[l]; if (!o) continue; t += o.stations.length; if ((w.syndicates ?? []).some((s) => s.systemId === o.id)) t += 2; }
+  return t;
+}
+export function infraLit(inf: Infra): boolean { return inf.health >= 30; }
+// Every so often the till fills; depots sell fuel from stock; pirate neighbourhoods wear structures down.
+export function tickInfra(w: World, rng: RNG): string[] {
+  const out: string[] = [];
+  for (const inf of w.infra ?? []) {
+    const elapsed = w.time - inf.lastT; inf.lastT = w.time;
+    if (elapsed <= 0) continue;
+    const traffic = infraTraffic(w, inf.systemId);
+    if (infraLit(inf)) {
+      if (inf.kind === "beacon") { const c = Math.round(traffic * 1.5 * (elapsed / 60)); inf.till += c; inf.earned += c; }
+      else if (inf.stock > 0) { const sold = Math.min(inf.stock, Math.max(0, Math.round(traffic * 0.4 * (elapsed / 60)))); inf.stock -= sold; inf.till += sold * DEPOT_PRICE; inf.earned += sold * DEPOT_PRICE; }
+    }
+    const sys = w.systems[inf.systemId];
+    const piracy = sys?.pirateActivity ?? 0;
+    if (rng.chance(0.08 + piracy * 0.25)) {
+      inf.health = Math.max(0, inf.health - rng.int(10, 30));
+      const name = `${inf.kind} in ${sys?.name ?? "?"}`;
+      out.push(inf.health < 30 ? `YOUR ${name.toUpperCase()} IS DARK - RAIDERS STRIPPED IT. BRING SPARE PARTS.` : `RAIDERS HIT YOUR ${name.toUpperCase()} - ${inf.health}% AND STILL LIT`);
+      pushEvent(w, { t: w.time, kind: "raid", systemId: inf.systemId, text: `Corsairs raided the ${inf.kind} at ${sys?.name ?? "?"}` });
+    } else if (inf.health < 100 && rng.chance(0.2)) inf.health = Math.min(100, inf.health + 5); // passing crews patch a lit beacon
+  }
+  return out;
+}
+export function collectInfra(inf: Infra, p: PlayerState): number {
+  const c = Math.round(inf.till); inf.till = 0; p.credits += c; p.infraEarned = (p.infraEarned ?? 0) + c; return c;
+}
+export function repairInfra(inf: Infra, p: PlayerState): boolean {
+  if (inf.health >= 100) return false;
+  if (!removeCargo(p, "parts", 1)) return false;
+  inf.health = Math.min(100, inf.health + 35); return true;
+}
+export function stockDepot(inf: Infra, p: PlayerState, units: number): number {
+  if (inf.kind !== "depot") return 0;
+  const n = Math.min(units, DEPOT_CAP - inf.stock, p.cargo.fuel ?? 0);
+  if (n <= 0) return 0;
+  removeCargo(p, "fuel", n); inf.stock += n; return n;
+}
+export function drawDepot(inf: Infra, p: PlayerState): number {
+  if (inf.kind !== "depot") return 0;
+  const n = Math.min(inf.stock, Math.max(0, Math.floor(p.fuelMax - p.fuel)));
+  if (n <= 0) return 0;
+  inf.stock -= n; p.fuel += n; return n;
+}
+// Beacons guide jumps: a fifth off the fuel for anyone jumping in or out of a lit system.
+export function beaconDiscount(w: World, fromId: string, toId: string): number {
+  const lit = (id: string) => infraAt(w, id).some((i) => i.kind === "beacon" && infraLit(i));
+  return lit(fromId) || lit(toId) ? 0.8 : 1;
 }
 
 export interface ShoreLeave { member: CrewMember; stationId: string; docks: number }
@@ -536,6 +636,9 @@ export interface World {
   synWar?: SynWar | null;            // at most one syndicate war at a time
   crisis?: Crisis | null;            // a station in trouble: goods needed, fast
   galaxyEvent?: GalaxyEvent | null;  // one colourful thing at a time
+  infra?: Infra[];                   // beacons and depots people have built
+  infraTick?: number;
+  infraNews?: string[];              // lines from the last infra tick, for the HUD to toast
   seed: number;
   time: number;
   realGalaxy: boolean;
@@ -641,6 +744,8 @@ export function tickWorld(w: World, dt: number): void {
     }
   }
   tickWear(w.player, dt);
+  w.infraTick = (w.infraTick ?? 0) + dt;
+  if (w.infraTick >= 60 && w.infra?.length) { w.infraTick = 0; w.infraNews = tickInfra(w, new RNG((w.seed ^ Math.floor(w.time * 13)) >>> 0)); }
   w.eventTick = (w.eventTick ?? 0) + dt;
   if (w.eventTick >= 180) { w.eventTick = 0; tickGalaxyEvents(w, new RNG((w.seed ^ Math.floor(w.time * 11)) >>> 0)); }
   w.crisisTick = (w.crisisTick ?? 0) + dt;
@@ -797,8 +902,9 @@ export function genCrewCandidate(rng: RNG): CrewMember {
 export function jumpFuelCost(w: World, fromId: string, toId: string): number {
   const ly = w.systems[fromId]?.ly?.[toId];
   const tuned = (1 - 0.08 * (w.player?.engineering?.fsd ?? 0)) * (hull(w.player?.hullId).fuelEff ?? 1);
-  if (ly === undefined) return Math.max(4, Math.round(10 * tuned));
-  return clamp(Math.round((4 + ly * 1.4) * tuned), 4, 40);
+  const beacon = beaconDiscount(w, fromId, toId);
+  if (ly === undefined) return Math.max(4, Math.round(10 * tuned * beacon));
+  return clamp(Math.round((4 + ly * 1.4) * tuned * beacon), 3, 40);
 }
 
 // Dijkstra on fuel cost; returns path + total fuel. Falls back to hop BFS.

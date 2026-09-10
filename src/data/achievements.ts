@@ -31,6 +31,8 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "warVeteran", title: "WAR VETERAN", desc: "Fight for the winning side of a syndicate war", check: (w) => !!w.player.flags?.warVeteran },
   { id: "theLane", title: "THE LANE", desc: "Find the missing convoy", check: (w) => !!w.player.flags?.theLane },
   { id: "charter", title: "CHARTERED", desc: "Hold a faction charter", check: (w) => !!w.player.flags?.charter },
+  { id: "lighthouse", title: "LIGHTHOUSE KEEPER", desc: "Plant a beacon or a depot in a dead system", check: (w) => !!w.player.flags?.lighthouse },
+  { id: "tollman", title: "TOLLMAN", desc: "Collect 5,000 credits from your structures", check: (w) => (w.player.infraEarned ?? 0) >= 5000 },
   { id: "fiveStar", title: "FIVE STARS", desc: "Land a passenger in a perfect mood", check: (w) => !!w.player.flags?.fiveStar },
   { id: "liner", title: "LINER", desc: "Carry ten fares to their destination", check: (w) => (w.player.fares ?? 0) >= 10 },
   { id: "goodShip", title: "A GOOD SHIP", desc: "See a crew member home with a bonus after a full tour", check: (w) => !!w.player.flags?.goodShip },

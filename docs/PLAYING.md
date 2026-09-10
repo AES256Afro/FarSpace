@@ -101,6 +101,19 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   board: sample runs, outcrop runs, and a plant to fix on the spot. Jobs pay
   out when you walk back in.
 
+## The lighthouse
+
+- Any shipyard sells a BEACON KIT (2,500) and a FUEL DEPOT KIT (4,000). Fly
+  to a dead system (no station) and press E with nothing else in range to
+  plant it. Two structures per system at most.
+- A beacon pulls through-traffic and collects tolls into a till; jumps in or
+  out of a lit system cost a fifth less fuel for everyone. A depot sells the
+  fuel cells you stock it with at a premium, and you can draw on it yourself.
+- Fly within range and press E to tend it: empty the till, patch it with a
+  spare part, stock or draw fuel. Raiders in pirate space wear structures
+  down; below 30% they go dark and earn nothing until you bring parts.
+- The galaxy map shows lit and dark structures; the HUD shows a full till.
+
 ## The liner trade
 
 - Every station lounge (BAR) has two to four fares waiting: VIPs, tourists,

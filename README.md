@@ -51,6 +51,10 @@ charters and enforce embargoes, station profiles and bulletins, gate traffic,
 comms chatter, void drifters near gas giants, crew who talk to each other, a
 wall of record aboard your ship, and a second campaign about a missing convoy.
 
+**The lighthouse:** beacon and fuel depot kits planted in dead systems.
+Traffic reroutes through them and pays tolls, jumps get cheaper, raiders wear
+them down, and you fly back with spare parts to keep the light on.
+
 **The liner trade:** fares in every station lounge, a cabins module for three
 at once, passenger moods and demands, tips for the happiest, and sightseeing
 tours where every sight on the way pays more.
@@ -120,7 +124,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestones 1–19 are live (v0.19.0). See the [roadmap](docs/ROADMAP.md) for what's next.
+Milestones 1–20 are live (v0.20.0). See the [roadmap](docs/ROADMAP.md) for what's next.
 
 ```bash
 npm test         # vitest: world-gen, routing, economy, law, missions, save migrations

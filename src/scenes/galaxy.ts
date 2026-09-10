@@ -1,6 +1,7 @@
 // Galaxy map: systems, territories, wars, links with distances, fuel-aware
 // course plotting with refuel stops highlighted.
 
+import { infraAt, infraLit } from "../world";
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
@@ -143,6 +144,7 @@ export class GalaxyScene implements Scene {
         ctx.fillStyle = PAL.gold; ctx.fillRect(Math.round(x) + 4, Math.round(y) - 4, 2, 2);
       }
       if (w.player.bookmarks?.includes(sys.id)) { ctx.fillStyle = PAL.gold; ctx.fillRect(Math.round(x) - 6, Math.round(y) - 6, 2, 2); ctx.fillRect(Math.round(x) + 4, Math.round(y) - 6, 2, 2); }
+      { const inf = infraAt(w, sys.id); if (inf.length) { const lit = inf.some(infraLit); if (lit && Math.floor(w.time * 1.5) % 2 === 0) { ctx.fillStyle = "#ffe9a0"; ctx.fillRect(Math.round(x) - 1, Math.round(y) - 9, 3, 3); } else if (!lit) { ctx.fillStyle = PAL.danger; ctx.fillRect(Math.round(x), Math.round(y) - 9, 2, 2); } } }
       const here = this.rooms[sys.name.toLowerCase()];
       if (here) { ctx.fillStyle = PAL.info; ctx.fillRect(Math.round(x) + 4, Math.round(y) - 1, 2, 2); drawText(ctx, `${here}`, x + 7, y - 4, PAL.info); }
       if (sys.id === w.player.systemId) { ctx.strokeStyle = PAL.white; ctx.strokeRect(Math.round(x) - 4.5, Math.round(y) - 4.5, 9, 9); }
@@ -173,6 +175,8 @@ export class GalaxyScene implements Scene {
       drawText(ctx, lvl === 2 ? "LOGGED: DETAILED" : lvl === 1 ? "LOGGED: BASIC" : "UNLOGGED", px + 6, y, lvl ? PAL.grey : PAL.greyDark); y += 9;
       const homes = (w.player.homesteads ?? []).filter((h) => h.systemId === sys.id);
       if (homes.length) { drawText(ctx, `HOMESTEAD: ${homes.map((h) => sys.planets[h.planetIdx].name).join(", ")}`.slice(0, 27), px + 6, y, PAL.gold); y += 9; }
+      for (const inf of infraAt(w, sys.id)) { drawText(ctx, `${inf.kind.toUpperCase()}: ${infraLit(inf) ? `LIT, TILL ${Math.round(inf.till)}CR` : "DARK"}`.slice(0, 27), px + 6, y, infraLit(inf) ? PAL.gold : PAL.danger); y += 9; }
+      if (!sys.stations.length && !infraAt(w, sys.id).length && ((w.player.kits?.beacon ?? 0) > 0 || (w.player.kits?.depot ?? 0) > 0)) { drawText(ctx, "DEAD SYSTEM: KIT DEPLOYABLE", px + 6, y, PAL.gold); y += 9; }
       const first = w.player.firsts?.[sys.id];
       if (first) { drawText(ctx, `FIRST: ${first}`.slice(0, 27), px + 6, y, PAL.gold); y += 9; }
       if (w.player.bookmarks?.includes(sys.id)) { drawText(ctx, "BOOKMARKED (B)", px + 6, y, PAL.gold); y += 9; }

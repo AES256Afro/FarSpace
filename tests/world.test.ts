@@ -2,7 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
-  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight } from "../src/world";
+  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost } from "../src/world";
+import type { Infra } from "../src/world";
 import { migrateSave, SAVE_VERSION, saveKeyFor, SLOTS } from "../src/save";
 import { RNG } from "../src/core/rng";
 import { STARS, starDistance } from "../src/data/stars";
@@ -879,5 +880,67 @@ describe("the liner trade", () => {
     expect(t.sightSeen).toBe(true);
     expect(t.sights.length).toBe(3);
     expect(passengerPay({ ...t, mood: 60 })).toBe(Math.round(t.reward * (0.6 + 0.36 + 0.3)));
+  });
+});
+
+describe("the lighthouse", () => {
+  it("kits plant only in dead systems, beacons earn tolls and cut jump fuel, depots sell stock, raids darken and parts repair", () => {
+    const w = generateWorld(51, { realGalaxy: true });
+    const p = w.player;
+    const busy = Object.values(w.systems).find((s) => s.stations.length)!;
+    const dead = Object.values(w.systems).find((s) => s.id !== busy.id && s.links.some((l) => w.systems[l].stations.length && l !== s.id))!;
+    dead.stations = []; // a dead system for the test, whatever the seed drew
+    expect(canBuildInfra(w, busy.id)).toContain("ALREADY");
+    expect(canBuildInfra(w, dead.id)).toBeNull();
+    p.systemId = dead.id;
+    expect(buildInfra(w, "beacon", 0, 0, "ME")).toContain("NO BEACON KIT");
+    p.kits = { beacon: 1, depot: 1 };
+    const b = buildInfra(w, "beacon", 100, 50, "ME");
+    expect(typeof b).toBe("object");
+    expect(p.kits.beacon).toBe(0);
+    expect(infraAt(w, dead.id).length).toBe(1);
+    expect(buildInfra(w, "beacon", 0, 0, "ME")).toContain("ALREADY A BEACON");
+    const d = buildInfra(w, "depot", -100, 0, "ME") as Infra;
+    expect(d.kind).toBe("depot");
+    expect(canBuildInfra(w, dead.id)).toContain("TWO STRUCTURES");
+    // jump fuel: a fifth off in or out of a lit system
+    const link = dead.links[0];
+    const full = jumpFuelCost({ ...w, infra: [] } as typeof w, dead.id, link);
+    expect(jumpFuelCost(w, dead.id, link)).toBeLessThan(full);
+    // tolls accrue with time; nothing without traffic
+    expect(infraTraffic(w, dead.id)).toBeGreaterThan(0);
+    const beacon = b as Infra;
+    w.time += 600;
+    let news: string[] = [];
+    for (let i = 0; i < 30 && beacon.till === 0; i++) news = tickInfra(w, new RNG(1000 + i));
+    expect(beacon.till).toBeGreaterThan(0);
+    // depot: stock from the hold, sells over time, and draws for the owner
+    p.cargo = { fuel: 50 };
+    expect(stockDepot(d, p, 40)).toBe(40);
+    expect(p.cargo.fuel).toBe(10);
+    d.stock = 40; d.till = 0; w.time += 600; d.lastT = w.time - 600;
+    tickInfra(w, new RNG(7));
+    expect(d.stock).toBeLessThan(40);
+    expect(d.till).toBeGreaterThan(0);
+    p.fuel = 0; p.fuelMax = 30;
+    const drew = drawDepot(d, p);
+    expect(drew).toBeGreaterThan(0);
+    expect(p.fuel).toBe(drew);
+    const c = collectInfra(beacon, p);
+    expect(c).toBeGreaterThan(0);
+    expect(beacon.till).toBe(0);
+    // raids: run enough ticks and something gets hit; parts bring it back
+    let hit = false;
+    for (let i = 0; i < 80 && !hit; i++) { w.time += 60; const n = tickInfra(w, new RNG(i)); if (n.length) hit = true; }
+    expect(hit).toBe(true);
+    beacon.health = 20;
+    expect(infraLit(beacon)).toBe(false);
+    p.cargo = {};
+    expect(repairInfra(beacon, p)).toBe(false);
+    p.cargo = { parts: 1 };
+    expect(repairInfra(beacon, p)).toBe(true);
+    expect(beacon.health).toBe(55);
+    expect(infraLit(beacon)).toBe(true);
+    void news;
   });
 });

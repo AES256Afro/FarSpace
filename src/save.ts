@@ -5,7 +5,7 @@ import type { World, SystemDef } from "./world";
 import { assignRares, assignSyndicates } from "./world";
 import { RNG } from "./core/rng";
 
-export const SAVE_VERSION = 10;
+export const SAVE_VERSION = 11;
 export const SAVE_KEY = "farspace-save";
 export const SLOTS = 3;
 const SLOT_KEY = "farspace-slot";
@@ -135,6 +135,14 @@ MIGRATIONS[9] = (w) => {
   p.shoreCrew ??= [];
   p.alumni ??= [];
   for (const c of (p.crew as Record<string, unknown>[]) ?? []) { c.docks ??= 0; c.sick ??= null; }
+};
+
+MIGRATIONS[10] = (w) => {
+  // 10 → 11: the liner trade and the lighthouse
+  const p = w.player as Record<string, unknown>;
+  p.kits ??= {};
+  p.fares ??= 0;
+  w.infra ??= [];
 };
 
 export function migrateSave(raw: unknown): World | null {

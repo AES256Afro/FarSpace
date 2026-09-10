@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS } from "../data/crew";
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter,
+  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter,
 } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
@@ -817,6 +817,15 @@ export class StationScene implements Scene {
         if (m.shield) { p.shieldMax = Math.round(p.shieldMax * (1 + m.shield)); p.shield = p.shieldMax; }
         flag(g, "outfitted");
         g.toast(`${m.name.toUpperCase()} FITTED - ${m.desc.toUpperCase()}`);
+      } });
+    }
+    for (const k of ["beacon", "depot"] as const) {
+      const kit = INFRA_KITS[k];
+      opts.push({ label: `${kit.name.toUpperCase()} (ABOARD ${(p.kits ?? {})[k] ?? 0})`, sub: `${kit.price}CR`, action: () => {
+        if (p.credits < kit.price) return g.toast("NOT ENOUGH CREDITS");
+        p.credits -= kit.price; (p.kits ??= {})[k] = ((p.kits ?? {})[k] ?? 0) + 1;
+        g.toast(`${kit.name.toUpperCase()} CRATED. FLY TO A SYSTEM WITH NO STATION AND PRESS E TO PLANT IT.`);
+        g.showHint("lighthouse", "DEAD SYSTEMS ONLY: NO STATION. TRAFFIC PAYS TOLLS; FLY BACK TO EMPTY THE TILL");
       } });
     }
     opts.push({ label: `CARGO POD +10 (NOW ${p.cargoMax})`, sub: "500CR", action: () => {

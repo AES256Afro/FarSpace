@@ -4,6 +4,8 @@ import type { Game } from "../../game";
 import { VW, VH } from "../../game";
 import type { FlightScene } from "./index";
 import { drawText, textWidth } from "../../gfx/font";
+import { infraAt, infraLit } from "../../world";
+import * as wire from "../../core/wire";
 import { PAL } from "../../gfx/palette";
 import { clamp, TAU, angDiff, dist } from "../../core/mathx";
 import { SYSTEM_SIZE, navRoute, repLabel } from "../../world";
@@ -102,6 +104,23 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
     if (dist(p.x, p.y, d.x, d.y) < 260) drawText(ctx, d.logged ? "VOID DRIFTER" : "UNKNOWN LIFEFORM - HOLD V", dx - 40, dy - 16 * z - 8, PAL.info);
   }
 
+  // lighthouses: a beacon mast with a slow strobe, or a depot with tank lights
+  for (const inf of infraAt(g.world, sys.id)) {
+    const [sx, sy] = toScreen(inf.x, inf.y);
+    if (sx < -40 || sx > VW + 40 || sy < -40 || sy > VH + 40) continue;
+    const lit = infraLit(inf);
+    ctx.fillStyle = "#6a7a9c";
+    if (inf.kind === "beacon") { ctx.fillRect(Math.round(sx) - 1, Math.round(sy) - 8 * z, 2, 16 * z); ctx.fillRect(Math.round(sx) - 4 * z, Math.round(sy) + 6 * z, 8 * z, 2); }
+    else { ctx.fillRect(Math.round(sx) - 6 * z, Math.round(sy) - 4 * z, 12 * z, 8 * z); ctx.fillStyle = "#3a4a6c"; ctx.fillRect(Math.round(sx) - 4 * z, Math.round(sy) - 2 * z, 8 * z, 4 * z); }
+    if (lit && Math.floor(g.world.time * 2) % 2 === 0) { ctx.fillStyle = inf.kind === "beacon" ? "#ffe9a0" : "#63f2c8"; ctx.fillRect(Math.round(sx) - 1, Math.round(sy) - 9 * z, 3, 3); }
+    if (!lit && Math.floor(g.world.time * 4) % 4 === 0) { ctx.fillStyle = PAL.danger; ctx.fillRect(Math.round(sx) - 1, Math.round(sy) - 9 * z, 2, 2); }
+    const d = dist(p.x, p.y, inf.x, inf.y);
+    if (d < 260) {
+      const label = `${inf.kind.toUpperCase()} (${inf.owner === (wire.getCallsign() ?? "YOU") ? "YOURS" : inf.owner})${lit ? "" : " - DARK"}`;
+      drawText(ctx, label, sx - textWidth(label) / 2, sy - 14 * z - 8, lit ? PAL.gold : PAL.danger);
+      if (d < 90) drawText(ctx, `[E] TEND - TILL ${Math.round(inf.till)}CR${inf.kind === "depot" ? ` - STOCK ${inf.stock}` : ""} - ${inf.health}%`, sx - 60, sy + 10 * z + 3, PAL.gold);
+    }
+  }
   // stations
   for (const st of sys.stations) {
     const sx0 = Math.cos(st.angle) * st.orbit;
@@ -368,6 +387,9 @@ export function drawEdgeMarkers(fs: FlightScene, g: Game, ctx: CanvasRenderingCo
   for (const st of sys.stations) {
     mark(Math.cos(st.angle) * st.orbit, Math.sin(st.angle) * st.orbit, st.military ? PAL.danger : PAL.ui, st.military ? "BASE" : "STN");
   }
+  for (const inf of infraAt(g.world, sys.id)) {
+    mark(inf.x, inf.y, infraLit(inf) ? PAL.gold : PAL.danger, inf.kind === "beacon" ? "BEACON" : "DEPOT");
+  }
   let navGateTarget: string | null = null;
   if (p.navTarget && p.navTarget !== p.systemId) {
     const route = navRoute(g.world, p.systemId, p.navTarget);
@@ -477,6 +499,13 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
   }
   if (p.crew && p.crew.some((c) => c.morale < 30)) { drawText(ctx, "! CREW MORALE LOW", 4, wy, PAL.warn); wy += 8; }
   if (p.crew && p.crew.some((c) => c.sick)) { drawText(ctx, `! ${p.crew.filter((c) => c.sick).length} CREW LAID UP`, 4, wy, PAL.warn); wy += 8; }
+  {
+    const mine = (g.world.infra ?? []).filter((i) => i.owner === (wire.getCallsign() ?? "YOU"));
+    const till = mine.reduce((a, i) => a + i.till, 0);
+    const dark = mine.filter((i) => !infraLit(i)).length;
+    if (dark) { drawText(ctx, `! ${dark} STRUCTURE${dark > 1 ? "S" : ""} DARK - BRING PARTS`, 4, wy, PAL.danger); wy += 8; }
+    else if (till >= 200) { drawText(ctx, `LIGHTHOUSE TILL ${Math.round(till)}CR`, 4, wy, PAL.gold); wy += 8; }
+  }
   if ((p.wear ?? 0) >= 70) { drawText(ctx, `! WEAR ${Math.round(p.wear ?? 0)}% - YARD SERVICE DUE`, 4, wy, (p.wear ?? 0) >= 90 ? PAL.danger : PAL.warn); wy += 8; }
   drawText(ctx, `${(p.shipName ?? hull(p.hullId).name).toUpperCase()}  TORP ${p.torpedoes ?? 0}${p.seismic ? `  SEISMIC ${p.seismic}` : ""}`, 4, wy, PAL.greyDark);
   // heat: only shown when it matters
@@ -576,6 +605,12 @@ export function drawSystemMap(g: Game, ctx: CanvasRenderingContext2D): void {
     ctx.fillStyle = st.military ? PAL.danger : PAL.ui;
     ctx.fillRect(Math.round(sx) - 1, Math.round(sy) - 1, 3, 3);
     drawText(ctx, st.name, sx + 4, sy - 2, st.military ? PAL.danger : PAL.ui);
+  }
+  for (const inf of infraAt(g.world, sys.id)) {
+    const sx = cx + inf.x * sc, sy = cy + inf.y * sc;
+    ctx.fillStyle = infraLit(inf) ? PAL.gold : PAL.danger;
+    ctx.fillRect(Math.round(sx) - 1, Math.round(sy) - 1, 3, 3);
+    drawText(ctx, inf.kind.toUpperCase(), sx + 4, sy - 2, infraLit(inf) ? PAL.gold : PAL.danger);
   }
   for (const jp of sys.jumpPoints) {
     const gx = cx + jp.x * sc, gy = cy + jp.y * sc;

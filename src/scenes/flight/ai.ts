@@ -17,7 +17,7 @@ import { hasModule } from "../../data/modules";
 import { gainMaterials } from "../../core/materials";
 import { presence } from "../../core/presence";
 import { baseAt, fetchBases } from "../../core/wire";
-import { syndicateAt, synAllies, syndicateByTag, warContribute, adjustSynRep } from "../../world";
+import { syndicateAt, synAllies, syndicateByTag, warContribute, adjustSynRep, infraAt, infraLit, infraTraffic, Infra } from "../../world";
 
 // ---------- Population ----------
 
@@ -27,6 +27,12 @@ export function populate(fs: FlightScene, g: Game): void {
   const nPirates = Math.round(sys.pirateActivity * 5);
   for (let i = 0; i < nPirates; i++) spawnNpc(fs, g, "pirate", rng);
   for (let i = 0; i < sys.stations.length; i++) spawnTrader(fs, g, rng);
+  // a lit beacon or a stocked depot pulls through-traffic into a dead system
+  for (const inf of infraAt(g.world, sys.id)) {
+    if (!infraLit(inf) || (inf.kind === "depot" && inf.stock <= 0)) continue;
+    const n = Math.min(4, 1 + Math.floor(infraTraffic(g.world, sys.id) / 2));
+    for (let k = 0; k < n; k++) spawnTransit(fs, g, rng, inf);
+  }
   if (sys.factionId !== "vex") {
     spawnNpc(fs, g, "patrol", rng);
     sys.stations.forEach((st, i) => {
@@ -164,6 +170,23 @@ export function spawnTrader(fs: FlightScene, g: Game, rng: RNG): void {
     targetIdx: (sys.stations.indexOf(from) + 1) % Math.max(1, sys.stations.length),
     cargo: { id, qty: rng.int(2, 6) },
     originStationId: from.id,
+  });
+}
+
+// Through-traffic: a hauler comes in one gate, swings past the structure, and leaves by another.
+export function spawnTransit(fs: FlightScene, g: Game, rng: RNG, inf: Infra): void {
+  const sys = g.world.systems[g.world.player.systemId];
+  if (sys.jumpPoints.length < 1) return;
+  const from = rng.pick(sys.jumpPoints);
+  const to = sys.jumpPoints.length > 1 ? rng.pick(sys.jumpPoints.filter((j) => j !== from)) : from;
+  const t = rng.range(0, 1);
+  fs.npcs.push({
+    kind: "trader",
+    x: from.x + (inf.x - from.x) * t + rng.range(-80, 80), y: from.y + (inf.y - from.y) * t + rng.range(-80, 80),
+    vx: 0, vy: 0, angle: rng.range(0, TAU),
+    hull: 50, hullMax: 50, fireCd: 0, targetIdx: 0,
+    cargo: { id: rng.pick(["metals", "food", "parts", "lux"]), qty: rng.int(2, 5) },
+    transit: t < 0.5 ? { tx: inf.x + rng.range(-60, 60), ty: inf.y + rng.range(-60, 60) } : { tx: to.x, ty: to.y },
   });
 }
 
@@ -522,6 +545,16 @@ export function updateNpcs(fs: FlightScene, g: Game, dt: number): void {
       speed = 0; n.vx *= 0.9; n.vy *= 0.9; tx = n.x; ty = n.y;
     } else if (n.kind === "trader" && n.casualties) {
       speed = 0; n.vx *= 0.95; n.vy *= 0.95; tx = n.x; ty = n.y;
+    } else if (n.kind === "trader" && n.transit) {
+      tx = n.transit.tx; ty = n.transit.ty;
+      if (dist(n.x, n.y, tx, ty) < 50) {
+        const inf = infraAt(g.world, sys.id).find((i) => dist(i.x, i.y, tx, ty) < 90);
+        if (inf && sys.jumpPoints.length) { const to = sys.jumpPoints[Math.floor(Math.random() * sys.jumpPoints.length)]; n.transit = { tx: to.x, ty: to.y }; }
+        else { n.hull = 0; n.docked = true; }
+      }
+      for (const o of fs.npcs) {
+        if (o.kind === "pirate" && o.hull > 0 && dist(n.x, n.y, o.x, o.y) < 200) { tx = n.x - (o.x - n.x); ty = n.y - (o.y - n.y); speed = 110; }
+      }
     } else if (n.kind === "trader") {
       const st = sys.stations[n.targetIdx % Math.max(1, sys.stations.length)];
       if (st) {

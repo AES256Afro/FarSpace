@@ -24,6 +24,7 @@ export interface Npc {
   disabled?: boolean; // engines dead: drifting, waiting for help
   casualties?: boolean; // wounded aboard: a medic's job, not a wrench's
   docked?: boolean;   // slipped into a bay: removed quietly, not destroyed
+  transit?: { tx: number; ty: number }; // through-traffic in a lit system: gate to gate, then gone
 }
 
 export interface Torpedo {
