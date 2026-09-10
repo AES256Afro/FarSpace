@@ -84,6 +84,8 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - Or tow the freighter into any dock (slow, no cruise, no jumps, keep the line
   under 420m), or take its three survivors aboard and hand them over at your
   next dock.
+- A MEDICAL marker is a freighter with wounded aboard: send your medic across,
+  pass two med supplies, or take the wounded aboard (a medic keeps them alive).
 - Stations post engineering tenders (walk their plant and fix three systems,
   paid on the spot) and call crises: an outbreak, famine or blackout that pays
   2.5x for med supplies, provisions or fuel cells before the clock runs out,
