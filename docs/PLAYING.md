@@ -229,6 +229,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Company
+
+- Crew walk the deck now: their post, the galley, the bunks, the bridge. Talk
+  to them wherever they are. The sick stay in their bunks.
+- A tourist or a VIP who hears of a wonder in this system or the next may ask
+  for a detour, for 40% more. Say yes and the sight is on their bill.
+- Old shipmates write now and then, with a little something in the envelope.
+
 ## Places with detail
 
 - Aboard, the hold stacks crates for what you carry, crew keep one small

@@ -5,7 +5,7 @@ import { ask, confirmBox } from "../../core/dialog";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, crewXp, stormBlind, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra } from "../../world";
 import { COMMODITIES, commodity } from "../../data/data";
 import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
@@ -847,6 +847,24 @@ export class FlightScene implements Scene {
     const sys = g.world.systems[p.systemId];
     // comms chatter when the channel is quiet
     if (g.world.infraNews?.length) { for (const line of g.world.infraNews) g.toast(line); g.world.infraNews = []; }
+    // a passenger has heard about a wonder nearby and asks for a detour
+    if (g.sceneName === "flight" && !this.docking && !this.launching) {
+      const fare = passengersAboard(p).find((m) => !m.detourAsked && (m.passengerKind === "tourist" || m.passengerKind === "vip") && !m.sightSeen);
+      if (fare) {
+        const here = sys; const cand = [here, ...here.links.map((l) => g.world.systems[l]).filter(Boolean)].flatMap((s2) => wondersIn(g.world, s2.id).map((wd) => ({ s2, wd }))).filter((x) => !x.wd.seen)[0];
+        if (cand && Math.random() < 0.02) {
+          fare.detourAsked = true;
+          const name = (fare.passengerName ?? "YOUR PASSENGER").toUpperCase();
+          const bonus = Math.round(fare.reward * 0.4);
+          const enc: Encounter = { id: "detour", where: "space", title: `${name} - A REQUEST`, weight: 0, text: `${name} HAS BEEN TALKING TO THE CREW. 'THEY SAY THERE'S SOMETHING OUT IN ${cand.s2.name.toUpperCase()} CALLED ${cand.wd.name.toUpperCase()}. I'D PAY ${bonus}CR MORE TO SEE IT ON THE WAY. I MAY NEVER BE OUT HERE AGAIN.'`, options: [
+            { label: `DETOUR TO ${cand.wd.name.toUpperCase()} (+${bonus}CR)`, result: () => { fare.sightKind = "wonder"; fare.sightSystemId = cand.s2.id; fare.sightSeen = false; fare.reward += bonus; fare.mood = Math.min(100, (fare.mood ?? 60) + 10); return `${name} SITS DOWN AGAIN, PLEASED. THE CREW EXCHANGE A LOOK THAT MEANS 'WE'RE GOING TOO'.`; } },
+            { label: "STRAIGHT THERE, AS BOOKED", result: () => { fare.mood = Math.max(0, (fare.mood ?? 60) - 6); return `${name} NODS. 'ANOTHER TIME, THEN.' THERE PROBABLY WON'T BE.`; } },
+          ] };
+          (g.scenes["encounter"] as EncounterScene).open(g, enc, "flight", false);
+          return;
+        }
+      }
+    }
     // the regulars hail you when they pass close; friends have more to say
     for (const n of this.npcs) {
       if (n.kind !== "trader" || !n.name || n.hailed || n.hull <= 0 || dist(p.x, p.y, n.x, n.y) > 320) continue;

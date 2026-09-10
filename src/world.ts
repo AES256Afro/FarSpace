@@ -162,6 +162,8 @@ export interface Mission {
   sightKind?: SightKind;    // what the tourists booked to see
   sights?: string[];        // everything they saw on the way (pays extra)
   notable?: string;         // one of the galaxy's notables is aboard (id)
+  sightSystemId?: string;   // a detour: the sight is in this system rather than the destination
+  detourAsked?: boolean;
   mood?: number;            // 0..100: how the journey is going for them
   demand?: string | null;   // a commodity they'd like brought aboard
   patience?: number;        // dockings before they start to sour
@@ -720,7 +722,7 @@ export function logSight(p: PlayerState, kind: SightKind, label: string, systemI
     if (m.passengerKind !== "tourist") continue;
     m.sights ??= [];
     if (!m.sights.includes(label)) { m.sights.push(label); any = true; m.mood = Math.min(100, (m.mood ?? 60) + 8); }
-    if (!m.sightSeen && m.sightKind === kind && m.targetSystemId === systemId && (kind !== "planet" && kind !== "drifter" || m.sightPlanetIdx === planetIdx)) { m.sightSeen = true; any = true; }
+    if (!m.sightSeen && m.sightKind === kind && (m.sightSystemId ?? m.targetSystemId) === systemId && (kind !== "planet" && kind !== "drifter" || m.sightPlanetIdx === planetIdx)) { m.sightSeen = true; any = true; }
   }
   return any;
 }
@@ -921,6 +923,16 @@ export function rivalBeatsYouTo(w: World, wd: Wonder, rng: RNG): boolean {
 export function rivalryLine(w: World, c: NpcCaptain, rng: RNG): string {
   if (isRival(c)) return rng.pick(["SO YOU'RE THE ONE. STAY OUT OF MY LANES.", "I'VE HEARD ABOUT YOU. NONE OF IT GOOD, AND I MADE SURE OF THAT.", "THAT FARE WAS MINE. THE NEXT ONE WILL BE TOO."]);
   return "WE'RE SQUARE. FOR NOW.";
+}
+// Old shipmates write now and then: how's the ship, here's a little something
+export function tickAlumniMail(w: World, rng: RNG): void {
+  const p = w.player;
+  const al = p.alumni ?? [];
+  if (!al.length || !rng.chance(0.08)) return;
+  const a = rng.pick(al);
+  const home = findStation(w, a.stationId)?.st.name ?? "somewhere";
+  const text = a.role === "captain" ? rng.pick([`How's my ship? Don't tell me. Tell me the crew are eating.`, `The pension's fine. The quiet is worse. Fly her well.`]) : rng.pick([`${home} is quiet. I miss the reactor hum. Is the ${p.cat ? p.cat.name : "galley"} still on the console?`, `They asked me here who taught me. I said the ship did. Give my best to the wall.`, `Found this in my kit. It's yours by rights.`]);
+  (w.mailQueue ??= []).push({ dueT: w.time + rng.int(120, 600), from: `${a.name}, ${home}`, text, gift: rng.chance(0.5) ? { credits: rng.int(60, 200) } : rng.chance(0.5) ? { parts: 1 } : undefined });
 }
 export function friendsAt(w: World, stationId: string): NpcCaptain[] {
   return (w.captains ?? []).filter((c) => c.homeStationId === stationId && isFriend(c));

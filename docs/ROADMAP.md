@@ -535,4 +535,7 @@ Time passes for the people on the ship, and for the ship.
 - [x] Crates in the hold, crew belongings by their bunks, passengers' luggage
 - [x] Promenades dressed by station type
 
+## Milestone 44 — Company ✅ (Sep 2026)
+- [x] Crew wander the deck; passengers ask for detours to wonders; alumni write
+
 ## Later
