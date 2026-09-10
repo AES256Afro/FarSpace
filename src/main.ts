@@ -69,10 +69,16 @@ function frame(now: number): void {
   game.input.pollGamepad(game.touchMode());
   if (game.input.wasPressed("h")) game.toast(music.toggle() ? "MUSIC ON" : "MUSIC OFF");
   music.start();
-  game.scene.update(game, dt);
-  tutorialUpdate(game);
-  storyUpdate(game);
-  convoyUpdate(game);
+  // one bad frame must not kill the loop: log it, toast it, carry on
+  try {
+    game.scene.update(game, dt);
+    tutorialUpdate(game);
+    storyUpdate(game);
+    convoyUpdate(game);
+  } catch (err) {
+    console.error(err);
+    if (!game.toastMsg.startsWith("GLITCH")) game.toast("GLITCH LOGGED - CARRYING ON");
+  }
   checkAchievements(game);
   game.scene.draw(game, game.bctx);
   if (game.input.wasPressed("F7") && game.sceneName !== "title") game.postcard(game.postcardCaption());
