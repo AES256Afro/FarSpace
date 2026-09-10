@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.49 - MUSIC AND SLOTS", [
+    "THE HUM CHANGES FOR YOUR WAYSTATION, THE ARK AND THE WONDERS. SAVE SLOTS TELL THE STORY SO FAR.",
+  ]],
   ["0.48 - OTHER KEEPERS", [
     "IN THE REAL GALAXY, LIGHTS OTHER PILOTS HAVE PLANTED SHOW ON YOUR CHART. YOURS SHOW ON THEIRS.",
   ]],

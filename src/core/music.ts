@@ -19,6 +19,9 @@ const MOODS: Record<string, Mood> = {
   ground: { sub: 36, sub2: 48, cutoff: 700, noise: 0.22, air: 0.02, gain: 0.55 },   // wind over the plains
   storm:  { sub: 36, sub2: 48, cutoff: 1600, noise: 0.5, air: 0.05, gain: 0.8 },    // weather on the hull
   ship:   { sub: 55, sub2: 82.4, cutoff: 140, noise: 0.12, air: 0.004, gain: 0.85 },   // your own deck: close, warm, quiet
+  bar:    { sub: 49, sub2: 73.4, cutoff: 260, noise: 0.2, air: 0.012, gain: 0.8 },     // your waystation: a room with people in it
+  ark:    { sub: 27.5, sub2: 41.2, cutoff: 90, noise: 0.08, air: 0.03, gain: 0.7 },     // the sleeping ship: very low, very old
+  wonder: { sub: 41.2, sub2: 61.7, cutoff: 200, noise: 0.06, air: 0.02, gain: 0.95 },  // something vast in the viewport
   desert: { sub: 36, sub2: 48, cutoff: 1000, noise: 0.3, air: 0.03, gain: 0.6 },    // dry wind, sand on the hull
   ice:    { sub: 30, sub2: 40, cutoff: 1400, noise: 0.18, air: 0.06, gain: 0.5 },   // thin, high, whistling
   volcanic: { sub: 44, sub2: 58, cutoff: 500, noise: 0.28, air: 0.01, gain: 0.7 }, // low rumble from below

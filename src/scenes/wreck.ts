@@ -8,6 +8,7 @@ import { logEntry } from "../world";
 import { addCargo, WreckDef } from "../world";
 import { commodity } from "../data/data";
 import { sfx } from "../core/sfx";
+import { music } from "../core/music";
 import { flag } from "../core/achievements";
 import { gainMaterials } from "../core/materials";
 import { T, moveWalker, deckOrigin, drawTiles, drawPerson, nearestTile, tooltip, footer } from "./walkbase";
@@ -79,6 +80,7 @@ export class WreckScene implements Scene {
   update(g: Game, dt: number): void {
     const inp = g.input;
     const p = g.world.player;
+    if (this.wreck.id.startsWith("ark-")) music.setMood("ark", 0);
     if (inp.wasPressed("Escape")) { this.leave(g); return; }
     moveWalker(g, this, dt, (tx, ty) => this.solid(tx, ty));
     const ptx = Math.floor(this.px / T), pty = Math.floor(this.py / T);

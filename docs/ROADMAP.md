@@ -553,4 +553,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Lights planted in the real galaxy are shared through the wire and shown
       on every pilot's chart
 
+## Milestone 49 — Music and Slots ✅ (Sep 2026)
+- [x] Moods for the waystation, the Ark and the wonders
+- [x] The story so far on every save slot
+
 ## Later

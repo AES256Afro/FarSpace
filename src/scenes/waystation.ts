@@ -8,6 +8,7 @@ import { RNG, hashStr } from "../core/rng";
 import { Infra, collectInfra, repairInfra, stockDepot, drawDepot, DEPOT_CAP, isFriend, findStation, infraTraffic, infraLit } from "../world";
 import { genPersonName } from "../data/data";
 import { sfx } from "../core/sfx";
+import { music } from "../core/music";
 import * as wire from "../core/wire";
 import { T, moveWalker, deckOrigin, drawTiles, drawPerson, drawKiosk, nearestTile, tooltip, footer } from "./walkbase";
 
@@ -63,6 +64,7 @@ export class WaystationScene implements Scene {
   update(g: Game, dt: number): void {
     const inp = g.input;
     const p = g.world.player;
+    music.setMood("bar", 0);
     if (inp.wasPressed("Escape")) { g.scenes.flight && ((g.scenes.flight as unknown as { resumeNext: boolean }).resumeNext = true); g.setScene("flight"); return; }
     moveWalker(g, this, dt, (tx, ty) => this.solid(tx, ty));
     const near = nearestTile(DECK, this.px, this.py, "TRBA");

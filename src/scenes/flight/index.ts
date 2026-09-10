@@ -394,7 +394,8 @@ export class FlightScene implements Scene {
       let threat = 0;
       for (const n of this.npcs) if (n.kind === "pirate") { const d = dist(n.x, n.y, p.x, p.y); if (d < 600) threat = Math.max(threat, 1 - d / 600); }
       if (this.lawLevel(g) >= 1) threat = Math.max(threat, 0.6);
-      music.setMood(sys.factionId, threat);
+      const awe = wondersIn(g.world, sys.id).some((wd) => dist(p.x, p.y, wd.x, wd.y) < 1400);
+      music.setMood(awe ? "wonder" : sys.factionId, threat);
     }
 
     updateBullets(this, g, dt);

@@ -229,6 +229,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Music and slots
+
+- The hum changes for the places you go: a room with people in it at your
+  waystation, something very old aboard the Ark, something vast near a
+  wonder.
+- Save slots tell the story so far: the ship, the captain, hours under way,
+  crew, the line of captains, the cat.
+
 ## Other keepers
 
 - In the real-stars galaxy, a light you plant or upgrade is reported to the

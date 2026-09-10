@@ -20,15 +20,15 @@ export function setActiveSlot(n: number): void {
 export function saveKeyFor(slot: number): string {
   return slot === 0 ? SAVE_KEY : `${SAVE_KEY}-${slot}`;
 }
-export interface SlotSummary { slot: number; empty: boolean; credits?: number; hullId?: string; systemName?: string; savedAt?: number; hardcore?: boolean; discoveries?: number; bytes?: number }
+export interface SlotSummary { slot: number; empty: boolean; credits?: number; hullId?: string; systemName?: string; savedAt?: number; hardcore?: boolean; discoveries?: number; bytes?: number; shipName?: string; captain?: string; crew?: number; hours?: number; captains?: number; cat?: string }
 export function slotSummaries(): SlotSummary[] {
   const out: SlotSummary[] = [];
   for (let i = 0; i < SLOTS; i++) {
     try {
       const raw = localStorage.getItem(saveKeyFor(i));
       if (!raw) { out.push({ slot: i, empty: true }); continue; }
-      const w = JSON.parse(raw) as { player?: { credits?: number; hullId?: string; systemId?: string; discoveries?: number }; systems?: Record<string, { name?: string }>; savedAt?: number; hardcore?: boolean };
-      out.push({ slot: i, empty: false, credits: w.player?.credits, hullId: w.player?.hullId, systemName: w.systems?.[w.player?.systemId ?? ""]?.name, savedAt: w.savedAt, hardcore: w.hardcore, discoveries: w.player?.discoveries, bytes: raw.length });
+      const w = JSON.parse(raw) as { player?: { credits?: number; hullId?: string; systemId?: string; discoveries?: number; shipName?: string; captainName?: string; crew?: unknown[]; lineage?: unknown[]; cat?: { name: string } | null }; systems?: Record<string, { name?: string }>; savedAt?: number; hardcore?: boolean; time?: number };
+      out.push({ slot: i, empty: false, credits: w.player?.credits, hullId: w.player?.hullId, systemName: w.systems?.[w.player?.systemId ?? ""]?.name, savedAt: w.savedAt, hardcore: w.hardcore, discoveries: w.player?.discoveries, bytes: raw.length, shipName: w.player?.shipName, captain: w.player?.captainName, crew: w.player?.crew?.length ?? 0, hours: (w.time ?? 0) / 3600, captains: (w.player?.lineage?.length ?? 0) + 1, cat: w.player?.cat?.name });
     } catch { out.push({ slot: i, empty: true }); }
   }
   return out;
