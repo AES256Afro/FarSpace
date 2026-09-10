@@ -11,7 +11,7 @@ import { ROLE_INFO, CrewMember } from "../data/crew";
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal,
+  crewWages, genCrewCandidate, applyHull, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket,
 } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
@@ -141,9 +141,18 @@ export class StationScene implements Scene {
         }
         if (inp.wasPressed("s") || inp.wasPressed("Backspace")) {
           const rare = commodity(id).rare;
-          const price = rare ? rareSellPrice(g.world, st, id, rep) : sellPrice(st, id, rep);
+          const illegal = commodity(id).illegal;
+          const fence = illegal && blackMarket(g.world, st);
+          const price = rare ? rareSellPrice(g.world, st, id, rep) : Math.round(sellPrice(st, id, rep) * (fence ? 1.3 : 1));
           if (!removeCargo(p, id, 1)) g.toast("NONE IN CARGO");
-          else {
+          else if (illegal && !fence && Math.random() < 0.12) {
+            // customs sting: the crate is gone and so is some goodwill
+            adjustRep(g.world, st.factionId, -5);
+            p.wanted = Math.min(1, (p.wanted ?? 0) + 0.1);
+            g.toast(`CUSTOMS STING - ${commodity(id).name.toUpperCase()} SEIZED, NO PAYMENT`);
+            sfx.alarm();
+          } else {
+            if (fence) flag(g, "fence");
             const goalHit = id === this.goal.commodityId && st.type === this.goal.stationType;
             const paid = goalHit ? Math.round(price * (1 + this.goal.premium)) : price;
             if (goalHit) { this.goalPending++; p.goalContrib ??= {}; p.goalContrib[this.goal.id] = (p.goalContrib[this.goal.id] ?? 0) + 1; if ((p.goalContrib[this.goal.id] ?? 0) >= 20) flag(g, "communal"); }
@@ -588,6 +597,7 @@ export class StationScene implements Scene {
       drawText(ctx, listed ? `${st.stock[id] ?? 0}` : "-", 235, y, PAL.grey);
       drawText(ctx, `${p.cargo[id] ?? 0}`, 280, y, PAL.ui);
       if (c.rare) drawText(ctx, st.rare === id ? "ORIGIN" : "RARE", 320, y, st.rare === id ? PAL.info : PAL.gold);
+      else if (c.illegal) drawText(ctx, blackMarket(g.world, st) ? "FENCE +30%" : "CUSTOMS", 320, y, blackMarket(g.world, st) ? PAL.gold : PAL.danger);
       else {
         const ratio = buyPrice(st, id, 0) / (c.base || 1);
         drawText(ctx, ratio > 1.3 ? "HIGH" : ratio < 0.8 ? "LOW" : "-", 320, y, ratio > 1.3 ? PAL.danger : ratio < 0.8 ? PAL.good : PAL.greyDark);
@@ -603,7 +613,7 @@ export class StationScene implements Scene {
       if (r) drawText(ctx, `BEST KNOWN RUN: BUY ${commodity(r.id).name.toUpperCase()} ${r.buy} - SELL ${r.sell} AT ${r.station.toUpperCase()}, ${r.system.toUpperCase()} (+${r.sell - r.buy}/UNIT)`.slice(0, 90), 8, ny + 18, PAL.gold);
       if (this.goal.stationType === st.type) drawText(ctx, `COMMUNITY GOAL: ${commodity(this.goal.commodityId).name.toUpperCase()} SELLS HERE AT +${Math.round(this.goal.premium * 100)}% THIS WEEK`, 8, ny + 27, PAL.info);
     }
-    drawText(ctx, "* ILLEGAL - SEIZED AT GATE SCANS.  + RARE - WORTH MORE FAR FROM ITS ORIGIN.  GOOD STANDING = BETTER PRICES.", 8, ny, PAL.greyDark);
+    drawText(ctx, blackMarket(g.world, st) ? "* BLACK MARKET HERE: ILLEGAL GOODS FENCE AT +30%, NO QUESTIONS.  + RARE - WORTH MORE FAR FROM ORIGIN." : "* ILLEGAL - CUSTOMS MAY SEIZE A SALE HERE; FENCE IT AT VEIL OR PIRATE-HEAVY HUBS.  + RARE - WORTH MORE FAR FROM ORIGIN.", 8, ny, blackMarket(g.world, st) ? PAL.gold : PAL.greyDark);
   }
 
   drawShipyard(g: Game, ctx: CanvasRenderingContext2D, top: number): void {

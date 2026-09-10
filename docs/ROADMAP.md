@@ -213,6 +213,10 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
 - [x] Trade: fourteen rare goods with distance pricing, market memory with
       best-known-sell and best-run hints, bookmarks, ship naming
 - [x] Passengers: sightseeing charters that require an orbit before drop-off
+- [x] Fleet: park hulls at stations (K in SHIPS) and swap back later
+- [x] Permit space: one closed system per faction, ALLIED standing to enter
+- [x] Black markets in Veil and pirate-heavy hubs fence illegal goods at +30%;
+      customs may seize illegal sales elsewhere
 - [x] Community goal: one shared weekly target for the whole galaxy with a
       contributor board and a sales premium; daily contract; achievements for
       all of it

@@ -47,7 +47,8 @@ seven three-grade blueprints, exploration data sold at cartographics with
 first-discovery tags shared across all players, Explorer/Trader/Miner career
 ranks up to ELITE, fourteen rare goods that appreciate with distance, market
 memory with best-known-sell and best-run hints, bookmarks, ship naming,
-sightseeing charters, a weekly galaxy-wide community goal and a daily contract.
+sightseeing charters, a parked fleet of hulls, permit-locked systems, black
+markets with customs stings, a weekly galaxy-wide community goal and a daily contract.
 
 Five hulls, a dynamic economy with shocks and faction wars, reputation with five
 factions and a law ladder from routine scans to shoot-on-sight, escort and

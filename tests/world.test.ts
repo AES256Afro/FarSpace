@@ -13,7 +13,7 @@ import { MODULES } from "../src/data/modules";
 import { rareSellPrice, findStation } from "../src/world";
 import { RARES } from "../src/data/data";
 import { BLUEPRINTS, upgrade, addMaterials, nextCost, MATERIAL_CAP } from "../src/data/engineering";
-import { jumpFuelCost, communityGoal, weekKey, permitDenied, navRoute } from "../src/world";
+import { jumpFuelCost, communityGoal, weekKey, permitDenied, navRoute, blackMarket } from "../src/world";
 
 describe("world generation", () => {
   it("is deterministic per seed", () => {
@@ -395,5 +395,17 @@ describe("permits", () => {
       const r = navRoute(w, w.player.systemId, other.id);
       if (r) for (const id of r) expect(w.systems[id].permit ?? false).toBe(false);
     }
+  });
+});
+
+describe("black markets", () => {
+  it("exist at Veil stations and never at military ones", () => {
+    const w = generateWorld(12, { realGalaxy: true });
+    const all = Object.values(w.systems).flatMap((s) => s.stations);
+    const vex = all.filter((st) => st.factionId === "vex" && !st.military);
+    for (const st of vex) expect(blackMarket(w, st)).toBe(true);
+    for (const st of all.filter((s) => s.military)) expect(blackMarket(w, st)).toBe(false);
+    expect(all.some((st) => blackMarket(w, st))).toBe(true);
+    expect(all.some((st) => !blackMarket(w, st))).toBe(true);
   });
 });

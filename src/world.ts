@@ -423,6 +423,25 @@ export function lawLevelFor(w: World, systemId: string): number {
   return 0;
 }
 
+// Black markets: Veil stations and trade hubs in pirate-heavy systems fence
+// illegal goods at a premium and ask no questions. Everywhere else, customs
+// might be watching.
+const piracyThreshold = new WeakMap<World, number>();
+export function blackMarket(w: World, st: StationDef): boolean {
+  if (st.military) return false;
+  if (st.factionId === "vex") return true;
+  const sys = findStation(w, st.id)?.sys;
+  if (!sys) return false;
+  // the roughest fifth of the galaxy runs a fence in its civilian hubs
+  let thr = piracyThreshold.get(w);
+  if (thr === undefined) {
+    const sorted = Object.values(w.systems).map((s) => s.pirateActivity).sort((a, b) => b - a);
+    thr = sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.2))] ?? 1;
+    piracyThreshold.set(w, thr);
+  }
+  return sys.pirateActivity >= thr && (st.type === "trade" || st.type === "mining" || st.type === "refinery");
+}
+
 export function missionTier(rep: number): number {
   return rep >= 60 ? 2 : rep >= 25 ? 1 : 0;
 }
