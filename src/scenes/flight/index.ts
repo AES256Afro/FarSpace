@@ -255,7 +255,7 @@ export class FlightScene implements Scene {
     this.drainRoomEvents(g);
     while (presence.chat.length) {
       const c = presence.chat.shift()!;
-      this.comms.push({ from: c.from, text: c.text, life: 10, color: c.from === wire.getCallsign() ? PAL.ui : PAL.info });
+      this.comms.push({ from: c.squad ? `[${wire.getSquadron() ?? "SQ"}] ${c.from}` : c.from, text: c.text, life: 10, color: c.squad ? PAL.gold : c.from === wire.getCallsign() ? PAL.ui : PAL.info });
       if (this.comms.length > 5) this.comms.shift();
       if (c.from !== wire.getCallsign()) sfx.blip();
     }
@@ -263,9 +263,10 @@ export class FlightScene implements Scene {
       if (!wire.getCallsign()) g.toast("CHOOSE A CALL SIGN ON THE TITLE SCREEN TO USE THE SYSTEM CHANNEL");
       else if (presence.status !== "on") g.toast("SYSTEM CHANNEL OFFLINE" + (settings().presence ? "" : " - FLEET PRESENCE IS OFF IN SETTINGS"));
       else {
-        const raw = window.prompt(`System channel - ${sys.name} (${presence.ghosts.size} other pilot${presence.ghosts.size === 1 ? "" : "s"} here).\n/give <qty> <goods> <callsign>   /pay <credits> <callsign>   (within 300m)`, "");
+        const raw = window.prompt(`System channel - ${sys.name} (${presence.ghosts.size} other pilot${presence.ghosts.size === 1 ? "" : "s"} here).\n/give <qty> <goods> <callsign>   /pay <credits> <callsign>   (within 300m)${wire.getSquadron() ? `\n/s <message> to the [${wire.getSquadron()}] squadron channel` : ""}`, "");
         g.input.flush();
-        if (raw && raw.trim().startsWith("/")) this.roomCommand(g, raw.trim());
+        if (raw && /^\/s\s+/i.test(raw.trim())) { if (!presence.saySquad(raw.trim().slice(2))) g.toast("SQUADRON CHANNEL OFFLINE"); }
+        else if (raw && raw.trim().startsWith("/")) this.roomCommand(g, raw.trim());
         else if (raw && !presence.say(raw)) g.toast("CHANNEL DROPPED THE MESSAGE");
       }
     }

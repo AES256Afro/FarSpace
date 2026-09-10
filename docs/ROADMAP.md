@@ -286,5 +286,8 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
 - [x] Weekly squadron bounty: six corsair captains by any member pay the
       treasury
 
+- [x] Squadron channel (/s) across the galaxy; squadron board shows base and
+      treasury
+
 ## Later
-- [ ] Squadron leaderboards by base income; base-to-base trade
+- [ ] Base-to-base trade routes; NPC squadrons

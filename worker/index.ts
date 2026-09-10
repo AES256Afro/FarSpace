@@ -440,11 +440,17 @@ export default {
       const patrons: Record<string, string> = {};
       const best: Record<string, number> = {};
       for (const [tag, sum] of standing) for (const [f, v] of Object.entries(sum)) if (v >= 100 && v > (best[f] ?? 0)) { best[f] = v; patrons[f] = tag; }
-      const squadrons = [...acc.values()].map((sq) => ({
-        tag: sq.tag, members: sq.members.size, credits: sq.credits, discoveries: sq.discoveries, kills: sq.kills,
-        score: Math.round(sq.credits / 100 + sq.discoveries * 10 + sq.kills * 5),
-        standing: standing.get(sq.tag) ?? {},
-      })).sort((a, b) => b.score - a.score).slice(0, 20);
+      const squadrons = [];
+      for (const sq of [...acc.values()].sort((a, b) => (b.credits / 100 + b.discoveries * 10 + b.kills * 5) - (a.credits / 100 + a.discoveries * 10 + a.kills * 5)).slice(0, 20)) {
+        const b = JSON.parse((await env.SAVES.get(`base:${sq.tag}`, "text")) ?? "null") as BaseRec | null;
+        squadrons.push({
+          tag: sq.tag, members: sq.members.size, credits: sq.credits, discoveries: sq.discoveries, kills: sq.kills,
+          score: Math.round(sq.credits / 100 + sq.discoveries * 10 + sq.kills * 5 + (b?.treasury ?? 0) / 50),
+          standing: standing.get(sq.tag) ?? {},
+          base: b && b.stationId ? { stationName: b.stationName, systemName: b.systemName, treasury: b.treasury } : null,
+        });
+      }
+      squadrons.sort((a, b) => b.score - a.score);
       return json({ squadrons, patrons });
     }
 

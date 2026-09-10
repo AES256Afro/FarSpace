@@ -8,7 +8,7 @@ import { settings } from "./settings";
 import type { PlayerState } from "../world";
 
 export interface Ghost { callsign: string; x: number; y: number; angle: number; vx: number; vy: number; hull: string; name: string; tag: string; t: number }
-export interface ChatLine { from: string; text: string; t: number }
+export interface ChatLine { from: string; text: string; t: number; squad?: boolean }
 export interface RoomEvent { t: "xfer" | "wing"; from: string; to?: string; kind: string; id?: string; qty?: number; x?: number; y?: number; tag?: string; at: number }
 
 class Presence {
@@ -20,6 +20,9 @@ class Presence {
   lastSend = 0;
   retryAt = 0;
   status: "off" | "connecting" | "on" | "error" = "off";
+  squadWs: WebSocket | null = null;   // squadron channel, chat only
+  squadTag: string | null = null;
+  squadRetryAt = 0;
 
   enabled(): boolean {
     return settings().presence && !!getCallsign() && typeof WebSocket !== "undefined";
@@ -79,10 +82,40 @@ class Presence {
     }
   }
 
+  // Squadron channel: one room per tag, members only hear chat there
+  tickSquad(): void {
+    const tag = getSquadron();
+    const now = Date.now();
+    if (!this.enabled() || !tag) { if (this.squadWs) { try { this.squadWs.close(); } catch { /* fine */ } this.squadWs = null; this.squadTag = null; } return; }
+    if (this.squadWs && this.squadTag === tag) return;
+    if (this.squadWs) { try { this.squadWs.close(); } catch { /* fine */ } this.squadWs = null; }
+    if (now < this.squadRetryAt) return;
+    const base = cloudBase() || location.origin;
+    try {
+      const ws = new WebSocket(`${base.replace(/^http/, "ws")}/api/room/${encodeURIComponent(`squad-${tag}`)}`);
+      this.squadWs = ws; this.squadTag = tag;
+      ws.onmessage = (ev) => {
+        let m: Record<string, unknown>;
+        try { m = JSON.parse(String(ev.data)) as Record<string, unknown>; } catch { return; }
+        if (m.t === "chat") { this.chat.push({ from: String(m.callsign), text: String(m.text), t: Date.now(), squad: true }); if (this.chat.length > 20) this.chat.shift(); }
+      };
+      ws.onclose = () => { if (this.squadWs === ws) { this.squadWs = null; this.squadRetryAt = Date.now() + 8000; } };
+      ws.onerror = () => { /* onclose follows */ };
+    } catch { this.squadWs = null; this.squadRetryAt = now + 15000; }
+  }
+
+  saySquad(text: string): boolean {
+    if (!this.squadWs || this.squadWs.readyState !== 1) return false;
+    const t = text.trim().slice(0, 120);
+    if (!t) return false;
+    try { this.squadWs.send(JSON.stringify({ t: "chat", callsign: getCallsign(), text: t })); return true; } catch { return false; }
+  }
+
   // Called every flight frame: keeps the socket alive, sends position at 4 Hz,
   // ages ghosts out.
   tick(p: PlayerState, systemName: string): void {
     const now = Date.now();
+    this.tickSquad();
     if (!this.enabled()) { if (this.ws) this.leave(); return; }
     if (!this.ws && this.system === systemName && now > this.retryAt) { this.system = null; this.join(systemName); }
     if (this.system !== systemName) this.join(systemName);

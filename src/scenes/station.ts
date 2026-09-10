@@ -907,7 +907,7 @@ export class StationScene implements Scene {
       const x = 8 + (i % 3) * 158, yy = sy + 9 + Math.floor(i / 3) * 8;
       const top = Object.entries(sq.standing ?? {}).sort((a, b) => b[1] - a[1])[0];
       const patronOfs = Object.entries(this.patrons).filter(([, t]) => t === sq.tag).map(([f]) => f.toUpperCase());
-      drawText(ctx, `${i + 1}. [${sq.tag}] ${sq.members} PILOT${sq.members === 1 ? "" : "S"}  ${sq.score} PTS${patronOfs.length ? `  PATRON OF ${patronOfs.join("/")}` : top ? `  ${top[0].toUpperCase()} ${top[1] >= 0 ? "+" : ""}${top[1]}` : ""}`, x, yy, sq.tag === mine ? PAL.gold : PAL.grey);
+      drawText(ctx, `${i + 1}. [${sq.tag}] ${sq.members} PILOT${sq.members === 1 ? "" : "S"}  ${sq.score} PTS${sq.base ? `  BASE ${sq.base.stationName.toUpperCase().slice(0, 12)} ${sq.base.treasury}CR` : patronOfs.length ? `  PATRON OF ${patronOfs.join("/")}` : top ? `  ${top[0].toUpperCase()} ${top[1] >= 0 ? "+" : ""}${top[1]}` : ""}`.slice(0, 52), x, yy, sq.tag === mine ? PAL.gold : PAL.grey);
     });
   }
 

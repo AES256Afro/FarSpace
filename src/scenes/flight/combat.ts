@@ -154,7 +154,7 @@ export function captainDown(fs: FlightScene, g: Game, n: Npc): void {
   const sys = g.world.systems[p.systemId];
   p.credits += 400;
   flag(g, "captain");
-  if (wire.getSquadron()) void wire.baseAction("kill", {}); // counts toward the weekly squadron bounty if the squadron has a base
+  if (wire.mySquadronHasBase()) void wire.baseAction("kill", {}); // counts toward the weekly squadron bounty
   adjustRep(g.world, sys.factionId === "vex" ? "vex" : sys.factionId, sys.factionId === "vex" ? -10 : 8);
   fs.loot.push({ x: n.x, y: n.y, commodityId: "relics", qty: 1, life: 60 });
   fs.loot.push({ x: n.x + 10, y: n.y - 6, commodityId: "contra", qty: 2, life: 60 });

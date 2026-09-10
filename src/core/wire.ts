@@ -28,7 +28,7 @@ export function setSquadron(tag: string | null): void {
 export function validSquadron(t: string): boolean {
   return /^[A-Z0-9]{2,5}$/.test(t);
 }
-export interface Squadron { tag: string; members: number; credits: number; discoveries: number; kills: number; score: number; standing?: Record<string, number> }
+export interface Squadron { tag: string; members: number; credits: number; discoveries: number; kills: number; score: number; standing?: Record<string, number>; base?: { stationName: string; systemName: string; treasury: number } | null }
 let squadCache: { at: number; squadrons: Squadron[]; patrons: Record<string, string> } | null = null;
 export async function fetchSquadrons(force = false): Promise<Squadron[]> {
   return (await fetchSquadronData(force)).squadrons;
@@ -199,6 +199,10 @@ export async function fetchBases(force = false): Promise<BaseSummary[]> {
     basesCache = { at: Date.now(), bases: ((await r.json()) as { bases: BaseSummary[] }).bases };
     return basesCache.bases;
   } catch { return basesCache?.bases ?? []; }
+}
+export function mySquadronHasBase(): boolean {
+  const tag = getSquadron();
+  return !!tag && !!basesCache?.bases.some((b) => b.tag === tag);
 }
 export function baseAt(stationId: string): BaseSummary | null {
   return basesCache?.bases.find((b) => b.stationId === stationId) ?? null;
