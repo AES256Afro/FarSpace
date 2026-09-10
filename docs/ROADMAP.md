@@ -557,4 +557,7 @@ Time passes for the people on the ship, and for the ship.
 - [x] Moods for the waystation, the Ark and the wonders
 - [x] The story so far on every save slot
 
+## Milestone 50 — The Chronicle Room ✅ (Sep 2026)
+- [x] The chronicle as an in-game page: RECORD tab, title screen, pause menu
+
 ## Later

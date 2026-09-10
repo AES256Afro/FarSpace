@@ -610,6 +610,7 @@ export class StationScene implements Scene {
       case "RECORD":
         if (inp.wasPressed("l")) { this.recordView = this.recordView === "log" ? "achievements" : "log"; this.cursor = 0; sfx.blip(); }
         if (inp.wasPressed("b")) { this.recordView = this.recordView === "ledger" ? "achievements" : "ledger"; this.cursor = 0; sfx.blip(); }
+        if (inp.wasPressed("c")) { g.settingsReturn = "station"; g.setScene("chronicle"); return; }
         if (inp.wasPressed("x")) {
           try {
             const text = chronicleText(g.world, wire.getCallsign());
@@ -1670,7 +1671,7 @@ export class StationScene implements Scene {
     const p = g.world.player;
     const w = g.world;
     const have = new Set(p.achievements ?? []);
-    drawText(ctx, `SERVICE RECORD${w.hardcore ? " - HARDCORE" : ""} - L LOG - B LEDGER - X EXPORTS THE CHRONICLE`, 8, top, PAL.info);
+    drawText(ctx, `SERVICE RECORD${w.hardcore ? " - HARDCORE" : ""} - L LOG - B LEDGER - C READ THE CHRONICLE - X EXPORT`, 8, top, PAL.info);
     const stats = [
       `KILLS ${p.kills}`, `DISCOVERIES ${p.discoveries}`, `ARCS ${Object.values(p.arcs).reduce((a, b) => a + b, 0)}/15`,
       `CREDITS ${p.credits}`, `CREW ${p.crew.length}`, `HULL ${hull(p.hullId).name.toUpperCase()}`,

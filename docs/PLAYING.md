@@ -229,6 +229,11 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## The chronicle room
+
+- Read the whole chronicle in-game: C on the RECORD tab, THE CHRONICLE on
+  the title screen, or from the pause menu. X still saves it as a text file.
+
 ## Music and slots
 
 - The hum changes for the places you go: a room with people in it at your

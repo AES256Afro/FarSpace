@@ -48,6 +48,7 @@ export class TitleScene implements Scene {
     opts.push({ label: "SETTINGS", sub: "Aim mode, difficulty, key bindings, music, fullscreen, fleet presence", act: () => g.setScene("settings") });
     opts.push({ label: "CONTROLS", sub: "Every key, by where you are", act: () => g.setScene("help") });
     opts.push({ label: "HANDBOOK", sub: "Every system in the game, a few lines each", act: () => g.setScene("almanac") });
+    if (g.hasSave()) opts.push({ label: "THE CHRONICLE", sub: "Your career so far, as a page", act: () => { g.settingsReturn = "title"; g.setScene("chronicle"); } });
     opts.push({ label: "WHAT'S NEW", sub: "Changes since you last flew", act: () => g.setScene("whatsnew") });
     opts.push({ label: "EXPORT SAVE FILE", sub: "Download the current save as JSON", act: () => { cloud.exportFile(g.world); g.toast("SAVE FILE DOWNLOADED"); } });
     opts.push({ label: "IMPORT SAVE FILE", sub: "Load a save JSON from this device", act: () => { void this.importFile(g); } });
