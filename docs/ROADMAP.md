@@ -618,4 +618,8 @@ Time passes for the people on the ship, and for the ship.
       company
 - [x] Your ship and parked hulls visible in the promenade bays; shuttle traffic
 
+## Milestone 64 — The Post ✅ (Sep 2026)
+- [x] Mail bag missions at every civil station: no cargo, small pay, standing,
+      letters from strangers; THE POSTMAN achievement
+
 ## Later

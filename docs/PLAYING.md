@@ -229,6 +229,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## The post
+
+- Every civil station's board has a mail bag for a nearby station. It takes no
+  hold space, pays a little, and the post office remembers who carried it:
+  standing with the faction, and now and then a letter in the bag turns out to
+  be for you, with a small gift. Ten bags make you THE POSTMAN.
+
 ## The viewport and the bays
 
 - V aboard: look out of your own ship. The sun, the planets, the station, the

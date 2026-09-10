@@ -15,7 +15,7 @@ import { STARS, starDistance } from "../src/data/stars";
 import { ACHIEVEMENTS } from "../src/data/achievements";
 import { ARCS, dailyContract, dailyKey, rankOf, logSystem, applyHull } from "../src/world";
 import { MODULES } from "../src/data/modules";
-import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder } from "../src/world";
+import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable } from "../src/world";
 import { RARES } from "../src/data/data";
 import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
@@ -714,6 +714,29 @@ describe("watches and passengers aboard", () => {
     w.player.crew = [w.player.crew[0]]; expect(onWatch(w.player, 0, WATCH_LEN)).toBe(true);
     const m = { id: "m", kind: "passenger", passengerKind: "tourist", mood: 90 } as unknown as import("../src/world").Mission;
     for (const role of ["pilot", "engineer", "gunner", "medic"] as const) { const c = { ...genCrewCandidate(rng), role }; const q = passengerChatter(m, c, new RNG(1)); expect(q.ask.length).toBeGreaterThan(5); expect(q.reply.length).toBeGreaterThan(2); }
+  });
+});
+
+describe("the post", () => {
+  it("every civil station has a mail bag, deliverable at its target with no cargo, and sometimes a letter comes back", () => {
+    const w = generateWorld(27, { realGalaxy: true });
+    const civil = Object.values(w.systems).flatMap((s) => s.stations).filter((st) => !st.military);
+    const st = civil[0];
+    const board = genMissionsFor(w, st, new RNG(4));
+    const post = board.find((m) => m.kind === "post")!;
+    expect(post).toBeTruthy();
+    expect(post.commodityId).toBeUndefined();
+    post.accepted = true;
+    const target = findStation(w, post.targetStationId!)!.st;
+    expect(missionDeliverable(w, post, st)).toBe(target === st);
+    expect(missionDeliverable(w, post, target)).toBe(true);
+    let notes = 0;
+    for (let i = 0; i < 20; i++) if (postDelivered(w, new RNG(i))) notes++;
+    expect(w.player.postRuns).toBe(20);
+    expect(notes).toBeGreaterThan(2);
+    expect((w.mailQueue ?? []).length).toBe(notes);
+    const mil = Object.values(w.systems).flatMap((s) => s.stations).find((x) => x.military);
+    if (mil) expect(genMissionsFor(w, mil, new RNG(4)).some((m) => m.kind === "post")).toBe(false);
   });
 });
 

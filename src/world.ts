@@ -137,7 +137,7 @@ export interface SystemDef {
   permit?: boolean; // entry needs ALLIED standing with the owning faction
 }
 
-export type MissionKind = "delivery" | "bounty" | "mining" | "escort" | "passenger" | "research" | "arc" | "ground" | "repair";
+export type MissionKind = "delivery" | "bounty" | "mining" | "escort" | "passenger" | "research" | "arc" | "ground" | "repair" | "post";
 
 export interface Mission {
   id: string;
@@ -301,6 +301,7 @@ export interface PlayerState {
   raceBest?: Record<string, number>; // station id -> best time in seconds
   races?: number;                    // ring races finished
   raceBeaten?: Record<string, true>; // stations where you've beaten the local record
+  postRuns?: number;                 // mail bags delivered
   donations?: number;                // relics given to museums
   hullHistory?: { previous: string; quirk: string } | null; // who flew this hull before you, and what they left
   jumpStreak?: number;               // gates in a row without a dock (a pilot's arc counts them)
@@ -871,6 +872,21 @@ export function helpCaptain(w: World, name: string | undefined, kind: keyof type
   (w.mailQueue ??= []).push({ dueT: w.time + rng.int(300, 900), from: `${c.name}, ${c.ship}`, text: `${rng.pick(HELP_LINES[kind])} Look me up at ${home}.`, gift });
   if (c.disposition >= 2 && c.helped === 2) return `${c.name.toUpperCase()} OF THE ${c.ship.toUpperCase()} CALLS YOU A FRIEND NOW. THEIR HOME IS ${home.toUpperCase()}.`;
   return null;
+}
+// Carry the post and sometimes a letter in the bag is for you: a stranger who saw your name on the manifest
+export function postDelivered(w: World, rng: RNG): string | null {
+  const p = w.player;
+  p.postRuns = (p.postRuns ?? 0) + 1;
+  if (!rng.chance(0.3)) return null;
+  const from = genPersonName(rng);
+  const text = rng.pick([
+    "You don't know me. I saw your ship's name on the manifest and my grandmother flew one called that. Thank you for carrying this.",
+    "The last three bags came late or not at all. Yours came. There's a coffee waiting for you here whenever.",
+    "I write to every ship that carries the post. Most don't answer. You don't have to. Safe lanes.",
+    "My son is on a hauler out past the gate. If you ever pass the Long Patience, tell him his mother says eat.",
+  ]);
+  (w.mailQueue ??= []).push({ dueT: w.time + rng.int(60, 400), from, text, gift: rng.chance(0.4) ? { credits: rng.int(40, 120) } : undefined });
+  return `SOMEBODY AT THE POST OFFICE SLIPS A NOTE INTO YOUR HAND. IT'LL FIND YOU AT A DOCK.`;
 }
 export function tickMail(w: World): string[] {
   const p = w.player; const out: string[] = [];
@@ -2001,6 +2017,20 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
   if (tier >= 1) kinds.push("research", "research");
   if (station.type === "research") kinds.push("ground");
   if (station.military) kinds.push("bounty", "bounty");
+  // the mail bag: every civil station has one waiting for the next ship out. No hold space, small pay, good standing.
+  if (!station.military) {
+    const pool = [...linked.flatMap((s2) => s2.stations.filter((x) => !x.military).map((x) => ({ sys: s2, st: x, hops: 1 }))), ...sys.stations.filter((x) => x !== station && !x.military).map((x) => ({ sys, st: x, hops: 0 }))];
+    if (pool.length) {
+      const t = rng.pick(pool);
+      missions.push({
+        id: `post-${station.id}-${t.st.id}`, kind: "post", accepted: false, done: false, tier: 0,
+        title: `Mail bag for ${t.st.name}`,
+        desc: `${rng.int(30, 260)} letters and a parcel that rattles. The post office pays ${t.hops ? "a jump's worth" : "a short hop's worth"} and remembers who carried it.`,
+        fromStationId: station.id, targetSystemId: t.sys.id, targetStationId: t.st.id,
+        reward: (t.hops ? 180 : 90) + rng.int(0, 60), repReward: 2,
+      });
+    }
+  }
   for (let i = 0; i < n; i++) {
     const kind = rng.pick(kinds);
     const idn = `m${world.missionCounter++}`;
@@ -2789,6 +2819,7 @@ export function missionDeliverable(world: World, m: Mission, station: StationDef
   if (m.kind === "passenger") return m.targetStationId === station.id && (m.passengerKind !== "tourist" || !!m.sightSeen);
   if (m.kind === "ground") return m.targetStationId === station.id && (m.groundDone ?? 0) >= (m.groundNeed ?? 1);
   if (m.kind === "repair") return m.targetStationId === station.id && !!m.tenderDone;
+  if (m.kind === "post") return m.targetStationId === station.id;
   if (m.targetStationId !== station.id) return false;
   if (m.commodityId && m.qty) return (p.cargo[m.commodityId] ?? 0) >= m.qty;
   return false;
