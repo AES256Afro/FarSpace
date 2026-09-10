@@ -17,7 +17,7 @@ import { hasModule } from "../../data/modules";
 import { gainMaterials } from "../../core/materials";
 import { presence } from "../../core/presence";
 import { baseAt, fetchBases } from "../../core/wire";
-import { syndicateAt, synAllies } from "../../world";
+import { syndicateAt, synAllies, syndicateByTag, warContribute, adjustSynRep } from "../../world";
 
 // ---------- Population ----------
 
@@ -65,6 +65,14 @@ export function populate(fs: FlightScene, g: Game): void {
       const n = fs.npcs[fs.npcs.length - 1];
       n.tag = sy.tag; n.hullMax = n.hull = 80;
     }
+  }
+
+  // a syndicate war in this system: attacker raiders and defender convoys
+  const war = g.world.synWar;
+  if (war && war.systemId === sys.id) {
+    for (let k = 0; k < 3; k++) { const n = spawnNpc(fs, g, "pirate", rng); n.tag = war.attacker; n.variant = "raider"; }
+    const home = sys.stations.findIndex((st) => st.id === syndicateByTag(g.world, war.defender)?.stationId);
+    for (let k = 0; k < 2; k++) { spawnTrader(fs, g, rng); const n = fs.npcs[fs.npcs.length - 1]; n.tag = war.defender; if (home >= 0) n.targetIdx = home; n.hullMax = n.hull = 80; }
   }
 
   // squadron bases draw raiders unless a defense grid is up
@@ -375,6 +383,14 @@ export function npcKilled(fs: FlightScene, g: Game, n: Npc, byPlayer: boolean): 
   const facId = g.world.systems[p.systemId].factionId;
   boom(fs, n.x, n.y, 20, PAL.thrust);
   if (n.kind === "pirate") {
+    if (byPlayer && n.tag) {
+      const war = g.world.synWar;
+      if (war && war.systemId === p.systemId && n.tag === war.attacker) {
+        const w2 = warContribute(g.world, war.defender, 8);
+        adjustSynRep(g.world, war.defender, 2);
+        if (w2) g.toast(`WAR: RAIDER DOWN FOR [${war.defender}] - FRONT ${w2.score > 0 ? "+" : ""}${w2.score}`);
+      } else if (n.tag) adjustSynRep(g.world, n.tag, -2);
+    }
     if (byPlayer && n.variant === "captain") captainDown(fs, g, n);
     if (byPlayer) {
       p.kills++;

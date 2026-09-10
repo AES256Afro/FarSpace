@@ -255,6 +255,12 @@ export interface StoredShip { hullId: string; stationId: string; name?: string; 
 // NPC syndicates: AI squadrons with a home base, partners and rivals. Always
 // labelled (AI) in the UI and never mixed into the human boards.
 export type SyndicateStyle = "trade" | "salvage" | "mining" | "pirate";
+export interface SynWar {
+  attacker: string; defender: string; systemId: string; // fought in the defender's home system
+  score: number;      // -100 (defender wins) .. 100 (attacker wins)
+  until: number;      // world time when it resolves regardless
+  contrib: Record<string, number>; // player's contribution per side tag
+}
 export interface Syndicate {
   tag: string; name: string; color: string; style: SyndicateStyle;
   systemId: string; stationId: string;
@@ -271,6 +277,7 @@ export interface World {
   rareOrigin?: Record<string, string>; // rare commodity id → station id
   syndicates?: Syndicate[];
   synRelations?: Record<string, number>; // "A|B" (sorted tags) → -100..100; allies ≥ 50, feud ≤ -30
+  synWar?: SynWar | null;            // at most one syndicate war at a time
   seed: number;
   time: number;
   realGalaxy: boolean;
@@ -1362,10 +1369,62 @@ export function baseDemand(key: string, now = Date.now()): string[] {
 }
 export const ROUTE_PREMIUM = 0.3;
 
+// Player-facing war contributions: kills of a side's raiders, runs for a side
+export function warContribute(w: World, side: string, amount: number): SynWar | null {
+  const war = w.synWar;
+  if (!war || (side !== war.attacker && side !== war.defender)) return null;
+  war.contrib[side] = (war.contrib[side] ?? 0) + amount;
+  war.score += side === war.attacker ? amount : -amount;
+  war.score = Math.max(-100, Math.min(100, war.score));
+  return war;
+}
+
+function resolveSynWar(w: World, rng: RNG): void {
+  const war = w.synWar;
+  if (!war) return;
+  const atk = syndicateByTag(w, war.attacker), def = syndicateByTag(w, war.defender);
+  w.synWar = null;
+  if (!atk || !def) return;
+  const attackerWins = war.score > 0;
+  const winner = attackerWins ? atk : def, loser = attackerWins ? def : atk;
+  const take = Math.round(loser.treasury * 0.2);
+  loser.treasury -= take; winner.treasury += take;
+  const lost = loser.partners.find((pid) => !winner.partners.includes(pid));
+  if (lost) { loser.partners = loser.partners.filter((x) => x !== lost); winner.partners.push(lost); }
+  w.synRelations ??= {};
+  w.synRelations[relKey(atk.tag, def.tag)] = -25; // truce, still cool
+  atk.rivals = atk.rivals.filter((t) => t !== def.tag); def.rivals = def.rivals.filter((t) => t !== atk.tag);
+  const sys = w.systems[war.systemId];
+  pushEvent(w, { t: w.time, kind: "peace", systemId: sys.id, text: `Syndicate war over: [${winner.tag}] ${winner.name} beats [${loser.tag}] ${loser.name} in ${sys.name}${lost ? `, taking their ${findStation(w, lost)?.st.name ?? "partner"} lane` : ""}` });
+  // pilots who fought for the winner are remembered
+  const mine = war.contrib[winner.tag] ?? 0;
+  if (mine > 0) { adjustSynRep(w, winner.tag, 15); w.player.credits += Math.round(mine * 60); w.player.flags = { ...(w.player.flags ?? {}), warVeteran: true }; }
+  else if ((war.contrib[loser.tag] ?? 0) > 0) adjustSynRep(w, loser.tag, 8);
+  void rng;
+}
+
 // Syndicate rivalry: every so often raiders hit a convoy, treasuries move, the news says so
 export function tickSyndicates(w: World, rng: RNG): void {
   const list = w.syndicates ?? [];
   if (!list.length) return;
+  // wars: start on a deep feud, drift with treasuries, resolve on time or a decisive score
+  if (w.synWar) {
+    const war = w.synWar;
+    const atk = syndicateByTag(w, war.attacker), def = syndicateByTag(w, war.defender);
+    if (atk && def) war.score += Math.sign(atk.treasury - def.treasury) * rng.int(1, 4);
+    if (w.time >= war.until || Math.abs(war.score) >= 100) { resolveSynWar(w, rng); return; }
+  } else {
+    for (const a of list) for (const b of list) {
+      if (a === b || a.style === "pirate" && b.style === "pirate") continue;
+      if (synRelation(w, a.tag, b.tag) <= -60 && rng.chance(0.5)) {
+        w.synWar = { attacker: a.tag, defender: b.tag, systemId: b.systemId, score: 0, until: w.time + 900, contrib: {} };
+        const sys = w.systems[b.systemId];
+        sys.pirateActivity = Math.min(1, sys.pirateActivity + 0.2);
+        pushEvent(w, { t: w.time, kind: "war", systemId: sys.id, text: `Syndicate war: [${a.tag}] ${a.name} moves on [${b.tag}] ${b.name} at ${sys.name} - pilots can pick a side` });
+        return;
+      }
+    }
+  }
   const sy = rng.pick(list);
   // diplomacy drift: traders warm to each other, everyone cools toward pirates
   const other = rng.pick(list.filter((o) => o !== sy));

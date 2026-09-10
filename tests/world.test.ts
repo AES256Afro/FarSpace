@@ -13,7 +13,7 @@ import { MODULES } from "../src/data/modules";
 import { rareSellPrice, findStation } from "../src/world";
 import { RARES } from "../src/data/data";
 import { baseContract } from "../src/core/wire";
-import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding } from "../src/world";
+import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute } from "../src/world";
 import { genGround, groundKey, passable, GW, GH } from "../src/ground";
 import { BLUEPRINTS, upgrade, addMaterials, nextCost, MATERIAL_CAP } from "../src/data/engineering";
 import { jumpFuelCost, communityGoal, weekKey, permitDenied, navRoute, blackMarket, genMissionsFor, groundProgress, missionDeliverable } from "../src/world";
@@ -559,5 +559,28 @@ describe("syndicate diplomacy", () => {
     expect(a.rivals).toContain(b.tag);
     expect(b.rivals).toContain(a.tag);
     expect(w.events.some((e) => e.text.includes("feud"))).toBe(true);
+  });
+});
+
+describe("syndicate wars", () => {
+  it("a deep feud starts a war, contributions move the front, and resolution moves a lane", () => {
+    const w = generateWorld(19, { realGalaxy: true });
+    const [a, b] = w.syndicates!.filter((s) => s.style !== "pirate");
+    shiftRelation(w, a.tag, b.tag, -100);
+    let tries = 0;
+    while (!w.synWar && tries++ < 40) tickSyndicates(w, new RNG(500 + tries));
+    expect(w.synWar).toBeTruthy();
+    const war = w.synWar!;
+    const winnerSide = war.attacker;
+    warContribute(w, winnerSide, 100);
+    expect(war.score).toBe(100);
+    const partnersBefore = w.syndicates!.find((s) => s.tag === winnerSide)!.partners.length;
+    const credits = w.player.credits;
+    tickSyndicates(w, new RNG(9)); // resolves on decisive score
+    expect(w.synWar).toBeNull();
+    expect(w.syndicates!.find((s) => s.tag === winnerSide)!.partners.length).toBeGreaterThanOrEqual(partnersBefore);
+    expect(w.player.credits).toBeGreaterThan(credits);
+    expect(w.player.flags?.warVeteran).toBe(true);
+    expect(w.events.some((e) => e.text.includes("Syndicate war over"))).toBe(true);
   });
 });

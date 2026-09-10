@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember } from "../data/crew";
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation,
+  crewWages, genCrewCandidate, applyHull, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute,
 } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
@@ -404,6 +404,10 @@ export class StationScene implements Scene {
     if (m.syndicate) {
       const before = synStanding(g.world, m.syndicate);
       adjustSynRep(g.world, m.syndicate, 8);
+      if (m.kind === "delivery" && g.world.synWar && (g.world.synWar.attacker === m.syndicate || g.world.synWar.defender === m.syndicate)) {
+        const w2 = warContribute(g.world, m.syndicate, 10);
+        if (w2) g.toast(`WAR SUPPLY RUN FOR [${m.syndicate}] - FRONT ${w2.score > 0 ? "+" : ""}${w2.score}`);
+      }
       if (m.syndicateTarget) {
         adjustSynRep(g.world, m.syndicateTarget, -6);
         const r = shiftRelation(g.world, m.syndicate, m.syndicateTarget, -6);

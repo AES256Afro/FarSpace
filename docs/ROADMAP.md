@@ -313,5 +313,10 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
       move them; alliances share convoy lanes and perks (a partner of an ally
       counts as an affiliate), feuds spawn raiders; marked pilots get hunted
 
+- [x] Syndicate wars: a deep feud starts a war in the defender's system with
+      raiders and convoys; kills and supply runs move the front; the winner
+      takes a partner lane and a fifth of the treasury; veterans of the
+      winning side are paid and remembered
+
 ## Later
-- [ ] Syndicate wars over systems with player-facing campaigns
+- [ ] Syndicate territory: bases that can change hands

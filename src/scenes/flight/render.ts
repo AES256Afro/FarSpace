@@ -457,6 +457,11 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
     drawText(ctx, t, VW / 2 - textWidth(t) / 2, VH - 44, PAL.info);
   }
   if (fs.arrivalLog) drawText(ctx, fs.arrivalLog, VW / 2 - textWidth(fs.arrivalLog) / 2, 30, PAL.info);
+  if (g.world.synWar && g.world.synWar.systemId === p.systemId) {
+    const war = g.world.synWar;
+    const t = `SYNDICATE WAR: [${war.attacker}] RAIDERS VS [${war.defender}] CONVOYS - FRONT ${war.score > 0 ? "+" : ""}${war.score}`;
+    drawText(ctx, t, VW / 2 - textWidth(t) / 2, 60, PAL.warn);
+  }
   if (fs.raidBase && !fs.raidBase.repelled && Math.floor(g.world.time * 2) % 2 === 0) {
     const t = `RAIDERS AT THE [${fs.raidBase.tag}] BASE`;
     drawText(ctx, t, VW / 2 - textWidth(t) / 2, 50, PAL.danger);

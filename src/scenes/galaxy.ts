@@ -162,6 +162,7 @@ export class GalaxyScene implements Scene {
       drawText(ctx, `PIRACY: ${pir > 0.6 ? "SEVERE" : pir > 0.3 ? "MODERATE" : "LOW"}`, px + 6, y, pir > 0.6 ? PAL.danger : pir > 0.3 ? PAL.warn : PAL.good); y += 9;
       if (w.wars.some((ww) => ww.systemId === sys.id)) { drawText(ctx, "ACTIVE WAR ZONE", px + 6, y, PAL.danger); y += 9; }
       if (sys.permit) { drawText(ctx, permitDenied(w, sys.id) ? "PERMIT SPACE: ALLIED ONLY" : "PERMIT SPACE: YOU'RE CLEARED", px + 6, y, permitDenied(w, sys.id) ? PAL.warn : PAL.good); y += 9; }
+      if (w.synWar && w.synWar.systemId === sys.id) { drawText(ctx, `SYNDICATE WAR: [${w.synWar.attacker}] VS [${w.synWar.defender}]`, px + 6, y, PAL.danger); y += 9; }
       const lvl = w.player.expLog?.[sys.id] ?? 0;
       drawText(ctx, lvl === 2 ? "LOGGED: DETAILED" : lvl === 1 ? "LOGGED: BASIC" : "UNLOGGED", px + 6, y, lvl ? PAL.grey : PAL.greyDark); y += 9;
       const first = w.player.firsts?.[sys.id];
