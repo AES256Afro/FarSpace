@@ -15,6 +15,7 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 
 - At the MARKET, Enter (or a click) sells a unit of anything you hold and buys
   only when your hold has none of it. B and S always buy and sell explicitly.
+  Hold Shift to trade in bulk: ten at a time bought, the whole stack sold.
 - Buy where TREND says LOW, sell where it says HIGH. The market remembers every
   station you dock at and shows the best known sell price and the best known
   run from where you are.

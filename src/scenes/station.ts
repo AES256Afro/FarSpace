@@ -251,14 +251,22 @@ export class StationScene implements Scene {
         const holding = (p.cargo[id] ?? 0) > 0;
         const wantSell = inp.wasPressed("s") || inp.wasPressed("Backspace") || (enter && holding);
         const wantBuy = inp.wasPressed("b") || (enter && !holding);
-        if (wantBuy) {
+        // Shift trades in bulk: a stack of ten bought, or the whole hold of it sold. Prices move with every unit.
+        const bulk = inp.isDown("Shift");
+        const buyQty = wantBuy ? (bulk ? 10 : 1) : 0;
+        const sellQty = wantSell ? (bulk ? (p.cargo[id] ?? 0) : 1) : 0;
+        let bought = 0, spent = 0;
+        for (let k = 0; k < buyQty; k++) {
           const price = buyPrice(st, id, rep);
-          if ((st.stock[id] ?? 0) <= 0) g.toast("OUT OF STOCK");
-          else if (p.credits < price) g.toast("NOT ENOUGH CREDITS");
-          else if (!addCargo(p, id, 1)) g.toast("CARGO FULL");
-          else { p.credits -= price; st.stock[id]--; refreshPrices(st); g.showHint("trade", "PRICES MOVE: BUY WHERE STOCK IS HIGH, SELL WHERE IT'S LOW"); }
+          if ((st.stock[id] ?? 0) <= 0) { g.toast("OUT OF STOCK"); break; }
+          if (p.credits < price) { g.toast("NOT ENOUGH CREDITS"); break; }
+          if (!addCargo(p, id, 1)) { g.toast("CARGO FULL"); break; }
+          p.credits -= price; st.stock[id]--; spent += price; bought++; refreshPrices(st);
+          g.showHint("trade", "PRICES MOVE: BUY WHERE STOCK IS HIGH, SELL WHERE IT'S LOW");
         }
-        if (wantSell) {
+        if (bought > 1) g.toast(`BOUGHT ${bought} ${commodity(id).name.toUpperCase()} FOR ${spent}CR`);
+        let sold = 0, earned = 0;
+        for (let k = 0; k < sellQty; k++) {
           const rare = commodity(id).rare;
           const illegal = commodity(id).illegal;
           const fence = illegal && blackMarket(g.world, st);
@@ -297,11 +305,12 @@ export class StationScene implements Scene {
               if ((p.routes ?? []).length >= 10) flag(g, "routeRunner");
             }
             if (goalHit) { this.goalPending++; p.goalContrib ??= {}; p.goalContrib[this.goal.id] = (p.goalContrib[this.goal.id] ?? 0) + 1; if ((p.goalContrib[this.goal.id] ?? 0) >= 20) flag(g, "communal"); }
-            p.credits += paid; p.tradeRevenue = (p.tradeRevenue ?? 0) + paid;
+            p.credits += paid; p.tradeRevenue = (p.tradeRevenue ?? 0) + paid; sold++; earned += paid;
             if (!rare || st.rare === id) { st.stock[id] = (st.stock[id] ?? 0) + 1; refreshPrices(st); }
             if (rare && st.rare !== id) { p.rareRevenue = (p.rareRevenue ?? 0) + price; if (!p.flags?.rareRun) flag(g, "rareRun"); }
           }
         }
+        if (sold > 1) g.toast(`SOLD ${sold} ${commodity(id).name.toUpperCase()} FOR ${earned}CR`);
         break;
       }
       case "SHIPYARD": {
@@ -867,7 +876,7 @@ export class StationScene implements Scene {
     drawText(ctx, "STOCK", 235, top, PAL.greyDark);
     drawText(ctx, "HELD", 280, top, PAL.greyDark);
     drawText(ctx, "TREND", 320, top, PAL.greyDark);
-    drawText(ctx, "ENTER SELLS HELD - B/S", 366, top, PAL.greyDark);
+    drawText(ctx, "ENTER SELL  SHIFT BULK", 366, top, PAL.greyDark);
     const rows = this.marketRows(g);
     const rowH = rows.length > 12 ? 9 : 11;
     rows.forEach((id, i) => {
