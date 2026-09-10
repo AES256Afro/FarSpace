@@ -527,8 +527,9 @@ export function updateNpcs(fs: FlightScene, g: Game, dt: number): void {
       if (st) {
         tx = Math.cos(st.angle) * st.orbit; ty = Math.sin(st.angle) * st.orbit;
         if (dist(n.x, n.y, tx, ty) < 60) {
-          // deliver: stock the station, pick up its exports, move on
+          // deliver: stock the station, pick up its exports, move on (or dock for a while)
           if (n.cargo) { st.stock[n.cargo.id] = (st.stock[n.cargo.id] ?? 0) + n.cargo.qty; }
+          if (!n.tag && Math.random() < 0.3) { boom(fs, n.x, n.y, 6, PAL.info); n.hull = 0; n.docked = true; }
           const ex = stationExports(st);
           n.cargo = ex.length ? { id: ex[Math.floor(Math.random() * ex.length)], qty: 2 + Math.floor(Math.random() * 5) } : undefined;
           n.originStationId = st.id;

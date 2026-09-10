@@ -23,6 +23,7 @@ export interface Npc {
   tag?: string;       // syndicate convoy or raider
   disabled?: boolean; // engines dead: drifting, waiting for help
   casualties?: boolean; // wounded aboard: a medic's job, not a wrench's
+  docked?: boolean;   // slipped into a bay: removed quietly, not destroyed
 }
 
 export interface Torpedo {

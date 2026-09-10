@@ -24,6 +24,7 @@ import { music } from "../../core/music";
 import * as wire from "../../core/wire";
 import { presence } from "../../core/presence";
 import { pickEncounter } from "../../data/encounters";
+import { pickChatter } from "../../core/chatter";
 import type { EncounterScene } from "../encounter";
 import { RNG } from "../../core/rng";
 import type { Bullet, Npc, Particle, Platform, Loot, Sos, RepairJob } from "./types";
@@ -33,7 +34,7 @@ import type { StationDef } from "../../world";
 import { BULLET_SPEED } from "./types";
 import {
   populate, spawnPirateNearBelt, spawnDrones, exhaust, mine, updateBullets, updateNpcs,
-  updatePlatforms, updateParticles, updateLoot, updateSos, boom, spawnNpc,
+  updatePlatforms, updateParticles, updateLoot, updateSos, boom, spawnNpc, spawnTrader,
 } from "./ai";
 import { drawFlight } from "./render";
 import type { Torpedo, Floater, Comms } from "./types";
@@ -263,6 +264,7 @@ export class FlightScene implements Scene {
     this.updateEncounters(g, dt);
     this.updateRepairJob(g, dt);
     this.updateTow(g, dt);
+    this.updateAmbient(g, dt);
     // other pilots in this system
     presence.tick(p, sys.name);
     this.drainRoomEvents(g);
@@ -568,7 +570,7 @@ export class FlightScene implements Scene {
     }
     if (n.disabled) {
       opts.push({ label: "BOARD AND REPAIR IT YOURSELF", hint: "Three dead systems, a suit clock, maybe a fire", result: (g2) => { g2.repairTarget = n; setTimeout(() => g2.setScene("repair"), 0); return ""; } });
-      if (eng) opts.push({ label: `SEND ${eng.name.toUpperCase()} ACROSS (ENGINEER ${eng.skill})`, hint: "You stand guard; corsairs like a stationary target", result: () => { this.repairJob = { npc: n, crewName: eng.name, progress: 0, need: 45 / (0.6 + 0.4 * eng.skill), wave: 0, kind: "repair" }; return `${eng.name.toUpperCase()} SUITS UP AND CROSSES. KEEP THEM SAFE.`; } });
+      if (eng) opts.push({ label: `SEND ${eng.name.toUpperCase()} ACROSS (ENGINEER ${eng.skill})`, hint: g.world.systems[p.systemId].pirateActivity > 0.4 ? "You stand guard; corsairs work this system" : "You stand guard; it's usually quiet out here", result: () => { this.repairJob = { npc: n, crewName: eng.name, progress: 0, need: 45 / (0.6 + 0.4 * eng.skill), wave: 0, kind: "repair" }; return `${eng.name.toUpperCase()} SUITS UP AND CROSSES. KEEP THEM SAFE.`; } });
       else opts.push({ label: "NO ENGINEER ABOARD TO SEND", hint: "Hire one at a station bar", requires: () => false, result: () => "" });
       opts.push({ label: "TOW THEM TO A STATION", hint: "They follow you; top speed drops; dock anywhere", result: () => { this.towing = n; n.disabled = true; return "TOW LINE ATTACHED. TAKE IT SLOW - THE LINE WON'T SURVIVE A JUMP OR A FIREFIGHT AT SPEED."; } });
       if (!p.evacuees) opts.push({ label: "TAKE THEIR CREW ABOARD", hint: "Three survivors, paid out at your next dock", result: (g2) => { g2.world.player.evacuees = { n: 3, from: who.toLowerCase() }; this.npcs = this.npcs.filter((x) => x !== n); if (this.sos?.trader === n) this.sos = null; return "THREE OF THEM CROSS IN SUITS AND CRAM INTO THE GALLEY. THE FREIGHTER STAYS DARK BEHIND YOU."; } });
@@ -594,8 +596,10 @@ export class FlightScene implements Scene {
       return;
     }
     job.progress += dt / job.need;
-    if (job.wave === 0 && job.progress > 0.3) { job.wave = 1; this.spawnRaidersNearPlayer(g, 2); g.toast("CORSAIRS ON THE SCOPE - THEY WANT THE FREIGHTER"); }
-    if (job.wave === 1 && job.progress > 0.7) { job.wave = 2; this.spawnRaidersNearPlayer(g, 2); }
+    // corsairs are a risk of standing still in rough space, not a certainty
+    const piracy = g.world.systems[p.systemId].pirateActivity;
+    if (job.wave === 0 && job.progress > 0.3) { job.wave = 1; if (Math.random() < 0.15 + piracy * 0.5) { this.spawnRaidersNearPlayer(g, 2); g.toast("CORSAIRS ON THE SCOPE - THEY WANT THE FREIGHTER"); } }
+    if (job.wave === 1 && job.progress > 0.7) { job.wave = 2; if (Math.random() < 0.1 + piracy * 0.4) this.spawnRaidersNearPlayer(g, 2); }
     if (job.progress >= 1) {
       this.repairJob = null;
       const c = p.crew.find((x) => x.name === job.crewName);
@@ -657,6 +661,43 @@ export class FlightScene implements Scene {
     void wire.post("rescue", by === "you" ? "boarded a disabled freighter and brought its engines back" : `sent ${by} across to fix a disabled freighter`, sys.name);
     if (this.sos && this.sos.trader === n) this.sos = null;
     logEntry(g.world, `Brought a disabled freighter back to life (${by === "you" ? "by hand" : by}) in ${sys.name}`);
+  }
+
+  // ---------- Ambient life ----------
+  chatterTimer = 25;
+  trafficTimer = 40;
+  updateAmbient(g: Game, dt: number): void {
+    const p = g.world.player;
+    const sys = g.world.systems[p.systemId];
+    // comms chatter when the channel is quiet
+    this.chatterTimer -= dt;
+    if (this.chatterTimer <= 0) {
+      this.chatterTimer = 35 + Math.random() * 40;
+      if (this.comms.length < 2) {
+        const line = pickChatter(g, new RNG((g.world.seed ^ Math.floor(g.world.time * 3)) >>> 0));
+        if (line) { this.comms.push({ from: line.from, text: line.text, life: 9, color: PAL.greyDark }); }
+      }
+    }
+    // gate traffic: ships arrive with a flash and leave the same way
+    this.trafficTimer -= dt;
+    if (this.trafficTimer <= 0 && sys.jumpPoints.length) {
+      this.trafficTimer = 30 + Math.random() * 50;
+      const rng = new RNG((g.world.seed ^ Math.floor(g.world.time * 7)) >>> 0);
+      const jp = rng.pick(sys.jumpPoints);
+      if (rng.chance(0.6)) {
+        // arrival
+        spawnTrader(this, g, rng);
+        const n = this.npcs[this.npcs.length - 1];
+        n.x = jp.x + rng.range(-30, 30); n.y = jp.y + rng.range(-30, 30);
+        boom(this, jp.x, jp.y, 10, PAL.info);
+        if (dist(p.x, p.y, jp.x, jp.y) < 900) this.comms.push({ from: "GATE", text: `ARRIVAL FROM ${g.world.systems[jp.targetSystemId].name.toUpperCase()}`, life: 5, color: PAL.greyDark });
+      } else {
+        // departure: the trader nearest a gate lights out
+        const t = this.npcs.filter((n) => n.kind === "trader" && !n.tag && !n.disabled && !n.casualties && n !== this.towing && n !== this.sos?.trader).sort((a, b) => dist(a.x, a.y, jp.x, jp.y) - dist(b.x, b.y, jp.x, jp.y))[0];
+        if (t && dist(t.x, t.y, jp.x, jp.y) < 700) { boom(this, t.x, t.y, 10, PAL.info); this.npcs = this.npcs.filter((n) => n !== t); if (dist(p.x, p.y, t.x, t.y) < 900) this.comms.push({ from: "GATE", text: `DEPARTURE TO ${g.world.systems[jp.targetSystemId].name.toUpperCase()}`, life: 5, color: PAL.greyDark }); }
+      }
+      if (this.comms.length > 5) this.comms.shift();
+    }
   }
 
   // ---------- Encounters ----------

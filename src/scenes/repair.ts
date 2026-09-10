@@ -76,7 +76,7 @@ export class RepairScene implements Scene {
     g.repairTarget = null;
     fs.resumeNext = true;
     g.setScene("flight");
-    if (success && Math.random() < 0.35) { fs.spawnRaidersNearPlayer(g, 2); g.toast("CORSAIRS ARRIVED WHILE YOU WERE ABOARD"); }
+    if (success && Math.random() < 0.1 + g.world.systems[g.world.player.systemId].pirateActivity * 0.4) { fs.spawnRaidersNearPlayer(g, 2); g.toast("CORSAIRS ARRIVED WHILE YOU WERE ABOARD"); }
   }
 
   update(g: Game, dt: number): void {
