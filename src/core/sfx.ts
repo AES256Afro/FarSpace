@@ -194,4 +194,13 @@ export const sfx = {
     noise(0.06, 0.15, 5000);
     osc("square", 300 + Math.random() * 200, 0.05, 0.08);
   },
+  // the ship's cat, patted: a low warble that rises a little
+  purr(): void {
+    for (let i = 0; i < 5; i++) setTimeout(() => osc("triangle", 90 + i * 6, 0.12, 0.08, 120 + i * 6), i * 110);
+  },
+  // a letter delivered: two soft notes, like a door chime
+  letter(): void {
+    osc("sine", 880, 0.12, 0.12);
+    setTimeout(() => osc("sine", 1174, 0.18, 0.1), 130);
+  },
 };

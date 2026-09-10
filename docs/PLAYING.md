@@ -5,6 +5,10 @@ CONTROLS, and WHAT'S NEW lists recent changes.
 
 ## First hour
 
+Flight School (the card at the top of the screen, K dismisses it) walks you
+through ten lessons: flying, docking, buying, a mission, a jump, your own deck,
+a world and its rover, the lounge, the promenade, and a fare or a rescue.
+
 Flight School walks you through thrust, docking, the market, a mission, a
 jump, your ship's deck and dropping a rover. Pick a **call sign** on the title
 screen: it puts you on the Fleet Wire and the leaderboards, and lets other

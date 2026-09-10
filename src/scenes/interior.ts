@@ -298,6 +298,7 @@ export class InteriorScene implements Scene {
       this.talk = lines[Math.floor(Math.random() * lines.length)]; this.talkTimer = 4;
       for (const c of p.crew) c.morale = Math.min(100, c.morale + 1);
       this.cat.pause = 3;
+      sfx.purr();
     } else if (inp.wasPressed("e")) {
       if (crewNear) {
         const c = crewNear.c;

@@ -107,7 +107,7 @@ export class StationScene implements Scene {
     const title = isHome(p, this.station.id) ? "WELCOME HOME" : rankOf(p, "rescuer").idx >= 3 ? rankOf(p, "rescuer").title : hasCharter(g.world, this.station.factionId) ? "CHARTERED" : (p.lineage ?? []).length ? "OF THE LINE" : "";
     g.toast(`${this.station.name.toUpperCase()} CONTROL: ${p.shipName ? p.shipName + ", " : ""}${title ? title + ", " : ""}CLEARANCE GRANTED, BAY ${bay}`);
     { const c = collectCharters(p); for (const l of c.lines) g.toast(l); if (c.total !== 0) sfx.pickup(); }
-    { const m = tickMail(g.world); for (const l of m) g.toast(l); if (m.length) sfx.pickup(); }
+    { const m = tickMail(g.world); for (const l of m) g.toast(l); if (m.length) sfx.letter(); }
     { const fr = friendsAt(g.world, this.station.id); if (fr.length && Math.random() < 0.5) g.toast(`${fr[0].name.toUpperCase()} IS IN THE LOUNGE AND WAVING YOU OVER`); }
   }
 

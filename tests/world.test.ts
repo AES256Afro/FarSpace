@@ -4,6 +4,7 @@ import {
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
   missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn, captainByName, helpCaptain, isFriend, friendsAt, tickMail, pickCaptainFor, canUpgradeInfra, upgradeInfra, rivalOf, isRival, rivalTakesFare, rivalBeatsYouTo, askRideAlong, tickRideAlong, setHomePort, isHome, donateRelic, hullHistoryFor } from "../src/world";
 import { occasionFor, OCCASIONS } from "../src/data/occasions";
+import { STEPS } from "../src/core/tutorial";
 import type { Charter } from "../src/world";
 import type { Infra } from "../src/world";
 import { migrateSave, SAVE_VERSION, saveKeyFor, SLOTS } from "../src/save";
@@ -1304,5 +1305,12 @@ describe("rhythms", () => {
     for (let i = 0; i < 20 && !hist; i++) hist = hullHistoryFor(w, new RNG(i));
     expect(hist).not.toBeNull();
     expect(hist!.quirk.length).toBeGreaterThan(10);
+  });
+});
+
+describe("flight school", () => {
+  it("has ten lessons, each with a reward", () => {
+    expect(STEPS.length).toBe(10);
+    expect(STEPS.every((s) => s.reward > 0 && s.text.length < 92)).toBe(true);
   });
 });

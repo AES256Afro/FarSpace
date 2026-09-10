@@ -502,4 +502,9 @@ Time passes for the people on the ship, and for the ship.
 - [x] Seven weekly occasions keyed to the real calendar, shared by everyone
 - [x] Hulls with histories; beacons that pacify the lanes they light
 
+## Milestone 36 — Second Hour ✅ (Sep 2026)
+- [x] Flight School grows to ten lessons: the lounge, the promenade, a fare
+      or a rescue
+- [x] Sounds for the cat and the post
+
 ## Later

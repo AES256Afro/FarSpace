@@ -1,4 +1,4 @@
-// Flight School: a six-step objective card for first-time pilots. Each step
+// Flight School: a ten-step objective card for first-time pilots. Each step
 // completes off real game state (no scripted sequence), pays a little, and the
 // whole thing can be dismissed with K. Existing saves start with it off.
 
@@ -6,7 +6,7 @@ import type { Game } from "../game";
 import { VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { cargoUsed } from "../world";
+import { cargoUsed, passengersAboard } from "../world";
 import { sfx } from "../core/sfx";
 
 export const STEPS = [
@@ -17,6 +17,9 @@ export const STEPS = [
   { text: "UNDOCK (ESC) AND JUMP THROUGH A GATE (E)", reward: 150 },
   { text: "BOARD YOUR SHIP (I) AND LOOK AROUND", reward: 200 },
   { text: "ORBIT A WORLD (E NEAR IT) AND DROP THE ROVER (L)", reward: 300 },
+  { text: "IN A STATION LOUNGE (BAR TAB): HIRE CREW OR TAKE A FARE", reward: 200 },
+  { text: "WALK A STATION DECK (P WHEN DOCKED) AND FIND THE HARBOURMASTER", reward: 150 },
+  { text: "DELIVER A FARE, OR HELP A STRANDED SHIP (E BESIDE IT)", reward: 300 },
 ];
 
 // True while Flight School still has lessons to give (its skip key is K)
@@ -70,6 +73,9 @@ export function tutorialUpdate(g: Game): void {
     case 4: if (p.systemId !== systemBase) advance(g); break;
     case 5: if (scene === "interior") advance(g); break;
     case 6: if (Object.values(p.ground ?? {}).some((gs) => gs.charted)) advance(g); break;
+    case 7: if (p.crew.length > 0 || passengersAboard(p).length > 0) advance(g); break;
+    case 8: if (scene === "stationwalk") advance(g); break;
+    case 9: if ((p.fares ?? 0) > 0 || (p.repairs ?? 0) + (p.tows ?? 0) + (p.lives ?? 0) > 0) advance(g); break;
   }
 }
 
