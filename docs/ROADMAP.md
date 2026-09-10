@@ -168,6 +168,28 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
 - [x] Bigger neighbourhood: catalog extended to ~50 ly (76 systems) as a third
       new-game option; 20 ly stays the default
 
+## Milestone 10 — Depth ✅ (Sep 2026)
+**Goal:** reasons to come back, and a fight worth having.
+
+- [x] Better combat: pirate variants (cutters, raiders, named captains with
+      twin guns and a 400 CR bounty), homing torpedoes (R; restock at
+      shipyards), damage numbers and shield-hit floaters, hit flash, hull smoke,
+      pirates that break off and run at 30% hull, taunts and patrol hails on
+      GalNet, docking clearance hails
+- [x] Desktop-first controls: mouse turret aim with a reticle (left-click fire,
+      right-click mine; keyboard aim stays an option), F fullscreen, engine
+      rumble, a Settings screen with key rebinding
+- [x] The hum: brown-noise starship ambience with sub tones and a breathing
+      filter instead of the old sine pad; combat throb; per-faction moods
+- [x] Achievements: 18 deeds tracked in a station RECORD tab; unlocks are
+      announced on the Fleet Wire
+- [x] Daily contract: one date-seeded delivery every pilot sees on every board,
+      turned in at any station; completions hit the wire
+- [x] Hardcore mode ("Cold Void"): chosen in Settings for new games; enemies hit
+      1.5x and destruction erases the save, locally and in the cloud
+- [x] Two more faction arcs: Hexagon Combine "Ledger of Glass" and Outer Ring
+      Autonomy "Free Drift" (five arcs, fifteen stages)
+
 ## Later
 - [ ] Ground exploration beyond outposts and ruins (planet-scale maps)
 - [ ] Multiplayer proper

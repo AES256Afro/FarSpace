@@ -11,6 +11,7 @@ import { sfx } from "../../core/sfx";
 import { adjustRep, pushEvent } from "../../world";
 import { boom, npcKilled } from "./ai";
 import * as wire from "../../core/wire";
+import { flag } from "../../core/achievements";
 
 const CAPTAINS = ["Red Skua", "Vasquez the Hollow", "Ennis Grey", "Mother Cinder", "Tallow Marr", "The Quiet Knife", "Oskar Vane", "Sable Ruth"];
 const RAIDER_LINES = ["Nice hull. Shame about the pilot.", "Cargo or hull, your call.", "Another one for the belt.", "You're a long way from the gate, friend."];
@@ -120,7 +121,7 @@ export function updateTorpedoes(fs: FlightScene, g: Game, dt: number): void {
         boom(fs, t.x, t.y, 18, PAL.thrust);
         fs.floaters.push({ x: n.x, y: n.y - 10, text: "45", life: 1, color: PAL.gold });
         fs.camShake = Math.max(fs.camShake, 3);
-        if (n.hull <= 0) npcKilled(fs, g, n, true);
+        if (n.hull <= 0) { flag(g, "torpedoKill"); npcKilled(fs, g, n, true); }
         else if (n.kind !== "pirate") { g.world.player.wanted = Math.min(1, g.world.player.wanted + 0.2); }
         break;
       }
@@ -152,6 +153,7 @@ export function captainDown(fs: FlightScene, g: Game, n: Npc): void {
   const p = g.world.player;
   const sys = g.world.systems[p.systemId];
   p.credits += 400;
+  flag(g, "captain");
   adjustRep(g.world, sys.factionId === "vex" ? "vex" : sys.factionId, sys.factionId === "vex" ? -10 : 8);
   fs.loot.push({ x: n.x, y: n.y, commodityId: "relics", qty: 1, life: 60 });
   fs.loot.push({ x: n.x + 10, y: n.y - 6, commodityId: "contra", qty: 2, life: 60 });

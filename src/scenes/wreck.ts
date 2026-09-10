@@ -7,6 +7,7 @@ import { RNG, hashStr } from "../core/rng";
 import { addCargo, WreckDef } from "../world";
 import { commodity } from "../data/data";
 import { sfx } from "../core/sfx";
+import { flag } from "../core/achievements";
 import { T, moveWalker, deckOrigin, drawTiles, drawPerson, nearestTile, tooltip, footer } from "./walkbase";
 
 const BASE = [
@@ -68,7 +69,7 @@ export class WreckScene implements Scene {
   say(m: string): void { this.msg = m; this.msgTimer = 3; }
 
   leave(g: Game): void {
-    if (this.crates.every((c) => c.taken)) this.wreck.looted = true;
+    if (this.crates.every((c) => c.taken)) { this.wreck.looted = true; flag(g, "wreckLooted"); }
     g.setScene("flight");
   }
 

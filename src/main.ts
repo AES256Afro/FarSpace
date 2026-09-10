@@ -12,6 +12,8 @@ import { OrbitScene } from "./scenes/orbit";
 import { OutpostScene } from "./scenes/outpost";
 import { CityScene } from "./scenes/city";
 import { RuinScene } from "./scenes/ruin";
+import { SettingsScene } from "./scenes/settings";
+import { checkAchievements } from "./core/achievements";
 import { initAudioUnlock } from "./core/sfx";
 import { initTouch } from "./core/touch";
 import { music } from "./core/music";
@@ -31,6 +33,7 @@ game.scenes["orbit"] = new OrbitScene();
 game.scenes["outpost"] = new OutpostScene();
 game.scenes["city"] = new CityScene();
 game.scenes["ruin"] = new RuinScene();
+game.scenes["settings"] = new SettingsScene();
 
 game.setScene("title");
 initAudioUnlock();
@@ -53,6 +56,7 @@ function frame(now: number): void {
   music.start();
   game.scene.update(game, dt);
   tutorialUpdate(game);
+  checkAchievements(game);
   game.scene.draw(game, game.bctx);
   game.input.flush();
 

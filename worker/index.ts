@@ -24,7 +24,7 @@ const MAX_BYTES = 3 * 1024 * 1024;
 const TTL_SECONDS = 60 * 60 * 24 * 365; // a year of inactivity, then it expires
 
 const CALLSIGN = /^[A-Z0-9][A-Z0-9 _-]{1,15}$/;
-const WIRE_KINDS = new Set(["arc", "discovery", "rescue", "relics", "war", "bounty", "hull"]);
+const WIRE_KINDS = new Set(["arc", "discovery", "rescue", "relics", "war", "bounty", "hull", "achievement", "daily"]);
 const BOARDS = new Set(["discoveries", "arcs", "credits", "kills"]);
 const WIRE_MAX = 40;
 

@@ -7,6 +7,8 @@ import {
 import { migrateSave, SAVE_VERSION } from "../src/save";
 import { RNG } from "../src/core/rng";
 import { STARS, starDistance } from "../src/data/stars";
+import { ACHIEVEMENTS } from "../src/data/achievements";
+import { ARCS, dailyContract, dailyKey } from "../src/world";
 
 describe("world generation", () => {
   it("is deterministic per seed", () => {
@@ -247,5 +249,33 @@ describe("cloud save size", () => {
     expect(bytes).toBeLessThan(2_500_000);
     const small = JSON.stringify(generateWorld(77, { realGalaxy: true })).length;
     console.log(`20 ly save: ${(small / 1024).toFixed(0)} KB`);
+  });
+});
+
+describe("milestone 10 content", () => {
+  it("five faction arcs, three stages each", () => {
+    expect(Object.keys(ARCS).sort()).toEqual(["fdm", "hex", "ora", "tsc", "vex"]);
+    for (const a of Object.values(ARCS)) expect(a.stages.length).toBe(3);
+  });
+  it("daily contract is identical for everyone on the same day and changes tomorrow", () => {
+    const w = generateWorld(3);
+    const day = Date.UTC(2026, 8, 10, 12);
+    const a = dailyContract(w, day), b = dailyContract(w, day + 3600_000), c = dailyContract(w, day + 86400_000);
+    expect(a.id).toBe(b.id); expect(a.commodityId).toBe(b.commodityId); expect(a.qty).toBe(b.qty);
+    expect(c.id).not.toBe(a.id);
+    expect(dailyKey(day)).toBe("2026-09-10");
+  });
+  it("achievements check cleanly on a fresh world and unlock on state", () => {
+    const w = generateWorld(4);
+    for (const a of ACHIEVEMENTS) expect(typeof a.check(w)).toBe("boolean");
+    expect(ACHIEVEMENTS.find((a) => a.id === "first_blood")!.check(w)).toBe(false);
+    w.player.kills = 1;
+    expect(ACHIEVEMENTS.find((a) => a.id === "first_blood")!.check(w)).toBe(true);
+    w.player.flags = { captain: true };
+    expect(ACHIEVEMENTS.find((a) => a.id === "hunter")!.check(w)).toBe(true);
+  });
+  it("hardcore flag is carried by generation options", () => {
+    expect(generateWorld(5, { hardcore: true }).hardcore).toBe(true);
+    expect(generateWorld(5).hardcore).toBe(false);
   });
 });

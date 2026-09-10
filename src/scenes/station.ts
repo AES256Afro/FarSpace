@@ -11,14 +11,16 @@ import { ROLE_INFO, CrewMember } from "../data/crew";
 import {
   StationDef, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, pushEvent, ARCS,
+  crewWages, genCrewCandidate, applyHull, pushEvent, ARCS, dailyContract, dailyKey,
 } from "../world";
+import { ACHIEVEMENTS } from "../data/achievements";
+import { flag } from "../core/achievements";
 import { sfx } from "../core/sfx";
 import * as wire from "../core/wire";
 import { drawTutorial } from "../core/tutorial";
 import { music } from "../core/music";
 
-const TABS = ["MARKET", "SHIPYARD", "SHIPS", "MISSIONS", "BAR", "STORAGE", "NEWS", "WIRE"] as const;
+const TABS = ["MARKET", "SHIPYARD", "SHIPS", "MISSIONS", "BAR", "STORAGE", "NEWS", "WIRE", "RECORD"] as const;
 
 export class StationScene implements Scene {
   touchMode = "menu" as const;
@@ -45,6 +47,9 @@ export class StationScene implements Scene {
     const p = g.world.player;
     const rng = new RNG((g.world.seed ^ this.station.id.length * 2711 ^ Math.floor(g.world.time / 60)) >>> 0);
     this.boardMissions = genMissionsFor(g.world, this.station, rng);
+    // today's galaxy-wide contract, unless already done or already carried
+    const daily = dailyContract(g.world);
+    if (p.dailyDone !== dailyKey() && !p.missions.some((m) => m.id === daily.id)) this.boardMissions.unshift(daily);
     this.candidates = [];
     for (let i = 0; i < rng.int(1, 3); i++) this.candidates.push(genCrewCandidate(rng.fork(i + 1)));
     this.barLine = "";
@@ -197,6 +202,9 @@ export class StationScene implements Scene {
         if (!this.wireLoaded) { this.wireLoaded = true; void this.loadWire(); }
         if (inp.wasPressed("c")) { void this.chooseCallsign(g); }
         break;
+      case "RECORD":
+        this.cursor = 0;
+        break;
     }
   }
 
@@ -240,6 +248,7 @@ export class StationScene implements Scene {
     m.done = true;
     p.credits += m.reward;
     adjustRep(g.world, st.factionId, m.repReward ?? 3);
+    if (m.id.startsWith("daily-")) { p.dailyDone = dailyKey(); flag(g, "daily"); void wire.post("daily", `completed today's contract (${m.title.replace("Daily: ", "")})`, g.world.systems[p.systemId].name); }
     if (m.kind === "arc" && m.arcFaction !== undefined && m.arcStage !== undefined) {
       p.arcs[m.arcFaction] = m.arcStage + 1;
       const arc = ARCS[m.arcFaction];
@@ -394,6 +403,7 @@ export class StationScene implements Scene {
       case "STORAGE": this.drawStorage(g, ctx, top); break;
       case "NEWS": this.drawNews(g, ctx, top); break;
       case "WIRE": this.drawWire(g, ctx, top); break;
+      case "RECORD": this.drawRecord(g, ctx, top); break;
     }
     if (g.toastTimer > 0) drawText(ctx, g.toastMsg, VW / 2 - textWidth(g.toastMsg) / 2, VH - 10, PAL.ui);
     if (g.hint) drawText(ctx, g.hint, VW / 2 - textWidth(g.hint) / 2, VH - 20, PAL.gold);
@@ -591,6 +601,27 @@ export class StationScene implements Scene {
         drawText(ctx, `${r.score}`, x + 88, y + 9 + i * 8, PAL.greyDark);
       }
       if (!rows.length) drawText(ctx, "-", x, y + 9, PAL.greyDark);
+    });
+  }
+
+  drawRecord(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
+    const p = g.world.player;
+    const w = g.world;
+    const have = new Set(p.achievements ?? []);
+    drawText(ctx, `SERVICE RECORD${w.hardcore ? " - HARDCORE" : ""}`, 8, top, PAL.info);
+    const stats = [
+      `KILLS ${p.kills}`, `DISCOVERIES ${p.discoveries}`, `ARCS ${Object.values(p.arcs).reduce((a, b) => a + b, 0)}/15`,
+      `CREDITS ${p.credits}`, `CREW ${p.crew.length}`, `HULL ${hull(p.hullId).name.toUpperCase()}`,
+      `TIME ${Math.floor(w.time / 60)}M`, `ACHIEVEMENTS ${have.size}/${ACHIEVEMENTS.length}`,
+    ];
+    stats.forEach((t, i) => drawText(ctx, t, 8 + (i % 4) * 118, top + 12 + Math.floor(i / 4) * 9, PAL.grey));
+    let y = top + 36;
+    ACHIEVEMENTS.forEach((a, i) => {
+      const x = 8 + (i % 2) * 236;
+      if (i % 2 === 0 && i > 0) y += 10;
+      const got = have.has(a.id);
+      drawText(ctx, (got ? "* " : "- ") + a.title, x, y, got ? PAL.gold : PAL.greyDark);
+      drawText(ctx, a.desc, x + 86, y, got ? PAL.grey : PAL.greyDark);
     });
   }
 

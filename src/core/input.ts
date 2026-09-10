@@ -14,6 +14,7 @@ export class Input {
   wheel = 0;
   mouseRight = false;
   mouseRightPressed = false;
+  lastRawKey: string | null = null; // unmapped key of the most recent keydown (for rebinding)
   padConnected = false;
   private padHeld = new Set<string>();
 
@@ -22,7 +23,9 @@ export class Input {
       if (["Tab", "F5", "F9", " ", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
         e.preventDefault();
       }
-      const k = this.map(e.key.length === 1 ? e.key.toLowerCase() : e.key);
+      const raw = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+      this.lastRawKey = raw;
+      const k = this.map(raw);
       if (!this.down.has(k)) this.pressed.add(k);
       this.down.add(k);
     });

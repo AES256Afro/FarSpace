@@ -12,6 +12,7 @@ import { addCargo, stationExports, adjustRep } from "../../world";
 import { commodity } from "../../data/data";
 import * as wire from "../../core/wire";
 import { applyVariant, variantStats, fleeLine, captainDown } from "./combat";
+import { flag } from "../../core/achievements";
 
 // ---------- Population ----------
 
@@ -284,6 +285,7 @@ export function updateBullets(fs: FlightScene, g: Game, dt: number): void {
 }
 
 export function damagePlayer(fs: FlightScene, g: Game, dmg: number): void {
+  if (g.world.hardcore) dmg *= 1.5; // cold void: everything hits harder
   const p = g.world.player;
   fs.camShake = 4;
   let absorbedTotal = 0;
@@ -578,6 +580,7 @@ export function updateSos(fs: FlightScene, g: Game, dt: number): void {
       sfx.pickup();
       g.world.events.push({ t: g.world.time, kind: "rescue", systemId: p.systemId, text: "A freighter was rescued from corsairs by an independent pilot" });
       void wire.post("rescue", "answered a distress call and saved a freighter", sys.name);
+      flag(g, "rescue");
       fs.sos = null;
     } else if (s.ttl <= 0) {
       fs.sos = null;

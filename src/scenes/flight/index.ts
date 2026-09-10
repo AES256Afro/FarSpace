@@ -461,6 +461,15 @@ export class FlightScene implements Scene {
 
   destroyed(g: Game): void {
     const p = g.world.player;
+    if (g.world.hardcore) {
+      // cold void: no beacon, no second chance
+      boom(this, p.x, p.y, 40, PAL.thrust);
+      void wire.post("hull", `was lost with all hands in ${g.world.systems[p.systemId].name} (hardcore)`, g.world.systems[p.systemId].name);
+      g.eraseSave();
+      g.setScene("title");
+      g.toast("SHIP LOST WITH ALL HANDS. THE VOID KEEPS WHAT IT TAKES.");
+      return;
+    }
     g.toast("SHIP DESTROYED - EMERGENCY BEACON RECOVERED YOU");
     boom(this, p.x, p.y, 30, PAL.thrust);
     p.hull = Math.round(p.hullMax * 0.5);

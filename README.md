@@ -24,9 +24,9 @@ See [docs/GAME_DESIGN.md](docs/GAME_DESIGN.md) for the full design and
 | Flight | **W/S** thrust · **A/D** rotate · **mouse** aims the turret (left-click fire, right-click mine) or **Space** fire / **M** mine in keyboard mode · **R** torpedo · **X** brake assist · **V** (hold) deep scan · **E** dock / jump / orbit / board wreck · **Tab** system map · **G** galaxy map · **I** board ship · **F** fullscreen |
 | Ship / station / wreck / outpost | **WASD** walk · **E** interact · **E** (hold) repair, seal, extinguish |
 | Orbit | **↑/↓** or click to target a site · **V** (hold) survey scan · **E** land · **Esc** leave orbit |
-| Station menus | **↑/↓ / ←/→** or click · **Enter** select · **B/S** buy/sell · **P** walk the deck · **Esc** undock |
+| Station menus | **↑/↓ / ←/→** or click · **Enter** select · **B/S** buy/sell · **P** walk the deck · **Esc** undock · RECORD tab shows achievements |
 | Galaxy map | click a system for intel · click again (or **N**) to plot a course |
-| Global | **F5** save (local + cloud) · **F9** load · **H** music · touch: left stick + on-screen buttons · gamepad: sticks/D-pad, A use, X fire, Y mine, RB brake, LB scan, LT map, Start galaxy, Select ship |
+| Global | **F5** save (local + cloud) · **F9** load · **H** music · every flight key can be rebound in SETTINGS · touch: left stick + on-screen buttons · gamepad: sticks/D-pad, A use, X fire, Y mine, RB brake, LB scan, LT map, Start galaxy, Select ship |
 
 ## What's in the game
 
@@ -38,9 +38,11 @@ a call sign and your arc completions, rescues, surveys and relic hauls appear on
 every player's WIRE tab and the title ticker, with leaderboards for discoveries,
 arcs, credits and kills.
 
-Four hulls, a dynamic economy with shocks and faction wars, reputation with five
+Five hulls, a dynamic economy with shocks and faction wars, reputation with five
 factions and a law ladder from routine scans to shoot-on-sight, escort and
-passenger and research missions, three faction story arcs, recruitable crew who
+passenger and research missions, five faction story arcs, pirate captains and
+homing torpedoes, achievements and a galaxy-wide daily contract, a hardcore
+mode where destruction erases the save, recruitable crew who
 talk and quit, ship interiors with fires and breaches, derelicts to board,
 planets to orbit and survey with landable outposts, and a "Sol Neighbourhood"
 galaxy of real nearby stars (20 or 50 light-years) with fuel-range course
@@ -66,7 +68,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestones 1–9 are live (v0.9). See the [roadmap](docs/ROADMAP.md) for what's next.
+Milestones 1–10 are live (v0.10). See the [roadmap](docs/ROADMAP.md) for what's next.
 
 ```bash
 npm test         # vitest: world-gen, routing, economy, law, missions, save migrations

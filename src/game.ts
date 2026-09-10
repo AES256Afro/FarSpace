@@ -6,6 +6,7 @@ import { World, generateWorld, WreckDef } from "./world";
 import { loadSave, writeSave, SAVE_KEY } from "./save";
 import * as cloud from "./core/cloud";
 import { syncScores } from "./core/wire";
+import { settings } from "./core/settings";
 import { hull } from "./data/hulls";
 import {
   Sprite, genShip, genPlanet, genStation, genAsteroid, genGate, genSun, genPortrait,
@@ -80,6 +81,13 @@ export class Game {
     }
   }
 
+  // Hardcore death: the save is gone, locally and in the cloud if linked
+  eraseSave(): void {
+    try { localStorage.removeItem(SAVE_KEY); } catch { /* ignore */ }
+    this.world = generateWorld(0xfa25face);
+    if (cloud.getCode()) void cloud.push(this.world);
+  }
+
   // Adopt a world from the cloud or a file: persist locally and jump in
   adoptWorld(w: World): void {
     this.world = w;
@@ -114,7 +122,7 @@ export class Game {
   }
 
   newGame(realGalaxy: boolean, maxLy = 20): void {
-    this.world = generateWorld((Math.random() * 0xffffffff) >>> 0, { realGalaxy, maxLy });
+    this.world = generateWorld((Math.random() * 0xffffffff) >>> 0, { realGalaxy, maxLy, hardcore: settings().hardcore });
     this.spriteCache.clear();
   }
 

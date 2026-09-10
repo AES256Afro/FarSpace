@@ -208,12 +208,16 @@ export interface PlayerState {
   arcs: Record<string, number>; // faction id → completed stage count
   tutorial?: number; // flight school step; -1 = off/done
   torpedoes?: number; // homing torpedo ammo
+  flags?: Record<string, boolean>;   // one-off deeds for achievements
+  achievements?: string[];
+  dailyDone?: string;                // UTC date key of the last daily completed
 }
 
 export interface World {
   version: number;
   savedAt?: number;
   galaxyLy?: number;
+  hardcore?: boolean; // destruction erases the save
   seed: number;
   time: number;
   realGalaxy: boolean;
@@ -586,6 +590,7 @@ function genSystem(rng: RNG, id: string, gx: number, gy: number, factionId: stri
 export interface GenOptions {
   realGalaxy?: boolean;
   maxLy?: number; // real galaxy radius (default 20)
+  hardcore?: boolean;
 }
 
 function assignFactions(rng: RNG, positions: { x: number; y: number }[]): string[] {
@@ -733,10 +738,12 @@ export function generateWorld(seed: number, opts: GenOptions = {}): World {
     arcs: {},
     tutorial: 0,
     torpedoes: 2,
+    flags: {},
+    achievements: [],
   };
 
   const world: World = {
-    version: 0, seed, time: 0, realGalaxy: !!opts.realGalaxy, galaxyLy: opts.realGalaxy ? (opts.maxLy ?? 20) : undefined,
+    version: 0, seed, time: 0, realGalaxy: !!opts.realGalaxy, galaxyLy: opts.realGalaxy ? (opts.maxLy ?? 20) : undefined, hardcore: !!opts.hardcore,
     systems, player, news: [], events: [], wars: [],
     missionCounter: 0, econTick: 0, shockTick: 0, warTick: 0,
   };
@@ -772,6 +779,22 @@ export const ARCS: Record<string, { title: string; stages: { title: string; desc
       { title: "Guild: Ore Quota", desc: "The Guild needs ore and needs it quiet. Fill the quota.", kind: "mining", reward: 450 },
       { title: "Guild: Ride Shotgun", desc: "A Guild hauler is carrying something worth killing for. Get it home.", kind: "escort", reward: 900 },
       { title: "Guild: Belt Fever", desc: "Board the derelict the Guild lost in the belt. Bring back what the crew died for.", kind: "research", reward: 1600 },
+    ],
+  },
+  hex: {
+    title: "Ledger of Glass",
+    stages: [
+      { title: "Combine: Audit Run", desc: "Carry Combine ledgers to a partner station. They're encrypted. They're also very heavy for what they are.", kind: "delivery", reward: 550 },
+      { title: "Combine: Hostile Takeover", desc: "Someone is raiding Combine freighters with suspiciously good intel. Remove the raiders.", kind: "bounty", reward: 950 },
+      { title: "Combine: Ledger of Glass", desc: "The intel came from an anomaly the Combine seeded years ago. Find it before their rivals do.", kind: "research", reward: 1900 },
+    ],
+  },
+  ora: {
+    title: "Free Drift",
+    stages: [
+      { title: "Autonomy: Fill the Silos", desc: "The Ring feeds itself or it doesn't eat. Bring ore.", kind: "mining", reward: 480 },
+      { title: "Autonomy: Ride Along", desc: "A Ring hauler is running the blockade. Get it home.", kind: "escort", reward: 950 },
+      { title: "Autonomy: Free Drift", desc: "Deliver what the hauler was really carrying. Don't ask what it is. Don't get scanned.", kind: "delivery", reward: 2200 },
     ],
   },
   vex: {
@@ -895,7 +918,7 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
       const tStation = target.stations[0];
       if (tStation) {
         m.targetSystemId = target.id; m.targetStationId = tStation.id;
-        m.commodityId = station.factionId === "vex" ? "contra" : "data"; m.qty = 3;
+        m.commodityId = station.factionId === "vex" || station.factionId === "ora" ? "contra" : "data"; m.qty = 3;
         m.desc += ` Destination: ${tStation.name}, ${target.name}.`;
       }
     } else if (s.kind === "bounty") {
@@ -922,10 +945,35 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
   return missions;
 }
 
+// ---------- Daily contract ----------
+// One contract everyone in the galaxy sees today: same goods, same quantity, same pay.
+
+export function dailyKey(now = Date.now()): string {
+  return new Date(now).toISOString().slice(0, 10);
+}
+
+export function dailyContract(w: World, now = Date.now()): Mission {
+  const key = dailyKey(now);
+  const rng = new RNG(hashStr(`daily:${key}`));
+  const pool = COMMODITIES.filter((c) => !c.illegal && c.id !== "relics");
+  const com = rng.pick(pool);
+  const qty = rng.int(6, 16);
+  return {
+    id: `daily-${key}`, kind: "delivery", accepted: false, done: false, tier: 0,
+    title: `Daily: ${qty} ${com.name}`,
+    desc: `Today's galaxy-wide contract (${key}): hand in ${qty}x ${com.name} at any station. Every pilot sees the same one.`,
+    fromStationId: "daily", targetSystemId: w.player.systemId, targetStationId: "any",
+    commodityId: com.id, qty,
+    reward: Math.round(com.base * qty * 1.2 + 400),
+    repReward: 4,
+  };
+}
+
 // Whether an accepted mission can be turned in at this station
 export function missionDeliverable(world: World, m: Mission, station: StationDef): boolean {
   const p = world.player;
   if (!m.accepted || m.done) return false;
+  if (m.id.startsWith("daily-")) return !!m.commodityId && !!m.qty && (p.cargo[m.commodityId] ?? 0) >= m.qty;
   if (m.kind === "bounty" || (m.kind === "arc" && m.killsNeeded)) {
     return (m.kills ?? 0) >= (m.killsNeeded ?? 1) && m.fromStationId === station.id;
   }
