@@ -67,7 +67,8 @@ export class RepairScene implements Scene {
       g.tenderMission = null;
       if (m && success) { m.tenderDone = true; g.toast("PLANT BACK ONLINE - COLLECT THE TENDER ON THE MISSIONS TAB"); g.world.player.skills.engineering = Math.min(20, (g.world.player.skills.engineering ?? 0) + 1); }
       else g.toast("YOU LEAVE THE JOB HALF DONE. THE TENDER STAYS OPEN.");
-      g.setScene("station");
+      g.setScene(g.tenderReturn ?? "station");
+      g.tenderReturn = null;
       return;
     }
     const fs = g.scenes.flight as FlightScene;

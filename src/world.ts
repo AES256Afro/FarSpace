@@ -1638,6 +1638,16 @@ export function hasCharter(w: World, factionId: string): boolean {
   return (w.player.charters ?? []).includes(factionId);
 }
 
+// Settlement needs: two goods a settlement pays a premium for this week
+export const SETTLEMENT_PREMIUM = 0.4;
+export function settlementNeeds(w: World, poi: Poi, now = Date.now()): string[] {
+  const rng = new RNG(hashStr(`needs:${w.seed}:${poi.id}:${weekKey(now)}`));
+  const pool = COMMODITIES.filter((c) => !c.illegal && !c.rare && c.id !== "relics" && c.id !== "ore").map((c) => c.id);
+  const out: string[] = [];
+  while (out.length < 2 && pool.length) out.push(pool.splice(rng.int(0, pool.length - 1), 1)[0]);
+  return out;
+}
+
 // Settlement mood: a line for outposts and cities, seeded per site and day
 export function settlementLine(w: World, poi: Poi, region: Region, now = Date.now()): string {
   const rng = new RNG(hashStr(`settle:${w.seed}:${poi.id}:${dailyKey(now)}`));

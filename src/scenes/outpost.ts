@@ -4,7 +4,9 @@
 import { Game, Scene, VW } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { settlementLine } from "../world";
+import { settlementLine, settlementNeeds, SETTLEMENT_PREMIUM, missionDeliverable } from "../world";
+import type { Encounter } from "../data/encounters";
+import type { EncounterScene } from "./encounter";
 import { RNG, hashStr } from "../core/rng";
 import { addCargo, removeCargo, cargoUsed, adjustRep, Poi, Region } from "../world";
 import { commodity, faction, genPersonName } from "../data/data";
@@ -30,6 +32,7 @@ export class OutpostScene implements Scene {
   poi!: Poi; region!: Region;
   npcs: Npc[] = [];
   trade: { open: boolean; cursor: number; rows: { id: string; buy: number; sell: number }[] } = { open: false, cursor: 0, rows: [] };
+  needs: string[] = [];
   msg = ""; msgTimer = 0;
   rowBoxes: [number, number][] = [];
 
@@ -64,6 +67,24 @@ export class OutpostScene implements Scene {
       { id: "parts", buy: Math.round(commodity("parts").base * 1.4), sell: Math.round(commodity("parts").base * 1.2) },
     ];
     this.trade.rows = rows.filter((r, i, a) => a.findIndex((x) => x.id === r.id) === i);
+    {
+      // this week's needs: sell here at a premium, added to the desk if missing
+      const needs = settlementNeeds(g.world, poi);
+      for (const id of needs) {
+        const r = this.trade.rows.find((x) => x.id === id);
+        if (r) r.sell = Math.round(r.sell * (1 + SETTLEMENT_PREMIUM));
+        else this.trade.rows.push({ id, buy: 0, sell: Math.round(commodity(id).base * 0.92 * (1 + SETTLEMENT_PREMIUM)) });
+      }
+      this.needs = needs;
+    }
+    // jobs done for this settlement pay out on arrival
+    for (const m of [...p.missions]) {
+      if (!m.accepted || m.done || m.targetStationId !== poi.id) continue;
+      const ok = (m.kind === "ground" && (m.groundDone ?? 0) >= (m.groundNeed ?? 1)) || (m.kind === "repair" && m.tenderDone);
+      if (!ok) continue;
+      m.done = true; p.credits += m.reward; if (this.region.factionId) adjustRep(g.world, this.region.factionId, 3);
+      g.toast(`FOREMAN PAYS OUT: ${m.title.toUpperCase()} +${m.reward}CR`); sfx.pickup();
+    }
     this.trade.cursor = 0;
     this.msg = `LANDED: ${poi.name.toUpperCase()}`;
     this.msgTimer = 3;
@@ -74,6 +95,23 @@ export class OutpostScene implements Scene {
     if (ty < 0 || ty >= DECK.length || tx < 0 || tx >= DECK[0].length) return true;
     const ch = DECK[ty][tx];
     return ch !== "." && ch !== "D";
+  }
+
+  // The foreman's board: ground jobs for this settlement, a plant to fix
+  foreman(g: Game): void {
+    const p = g.world.player;
+    const poi = this.poi;
+    const has = (kind: string) => p.missions.some((m) => m.accepted && !m.done && m.targetStationId === poi.id && (m.kind === kind));
+    const opts: Encounter["options"] = [];
+    if (!has("ground")) {
+      opts.push({ label: "SAMPLE RUN: SCAN 2 FLORA ON THIS WORLD (300CR)", result: (g2) => { g2.world.player.missions.push({ id: `fore-${Date.now() % 1e7}`, kind: "ground", accepted: true, done: false, tier: 0, title: `Sample run for ${poi.name}`, desc: "Scan two flora anywhere on this world and come back.", fromStationId: poi.id, targetSystemId: g2.world.player.systemId, targetStationId: poi.id, groundPlanetIdx: g2.orbitPlanetIdx, groundGoal: "flora", groundNeed: 2, groundDone: 0, reward: 300, repReward: 3 }); return "'TWO GOOD SCANS. THE LAB'S BEEN WAITING A MONTH.'"; } });
+      opts.push({ label: "OUTCROP RUN: MINE 3 OUTCROPS ON THIS WORLD (350CR)", result: (g2) => { g2.world.player.missions.push({ id: `fore-${Date.now() % 1e7 + 1}`, kind: "ground", accepted: true, done: false, tier: 0, title: `Outcrop run for ${poi.name}`, desc: "Work three outcrops anywhere on this world and report back.", fromStationId: poi.id, targetSystemId: g2.world.player.systemId, targetStationId: poi.id, groundPlanetIdx: g2.orbitPlanetIdx, groundGoal: "outcrop", groundNeed: 3, groundDone: 0, reward: 350, repReward: 3 }); return "'THE RIGS ARE DOWN. YOUR ROVER ISN'T. GO ON.'"; } });
+    }
+    if (!has("repair")) opts.push({ label: "FIX THE PLANT (400CR, RIGHT NOW)", hint: "Three systems, your hands", result: (g2) => { const m = { id: `fore-${Date.now() % 1e7 + 2}`, kind: "repair" as const, accepted: true, done: false, tier: 0, title: `Plant repair at ${poi.name}`, desc: "Bring the settlement's plant back online.", fromStationId: poi.id, targetSystemId: g2.world.player.systemId, targetStationId: poi.id, reward: 400, repReward: 4 }; g2.world.player.missions.push(m); g2.tenderMission = m; g2.tenderReturn = "outpost"; setTimeout(() => g2.setScene("repair"), 0); return ""; } });
+    opts.push({ label: "NOT TODAY", result: () => "'SUIT YOURSELF. THE WORK'LL KEEP.'" });
+    const needs = this.needs.map((id) => commodity(id).name.toUpperCase()).join(" AND ");
+    const enc: Encounter = { id: "foreman", where: "ground", title: `${poi.name.toUpperCase()} - FOREMAN`, weight: 0, text: `THE FOREMAN LOOKS UP FROM A CLIPBOARD OLDER THAN THE OUTPOST. 'WE'RE SHORT ON ${needs || "EVERYTHING"} THIS WEEK, IF YOU'RE HAULING. AND THERE'S WORK, IF YOU'RE NOT.'`, options: opts };
+    (g.scenes["encounter"] as EncounterScene).open(g, enc, "outpost", true);
   }
 
   say(m: string): void { this.msg = m; this.msgTimer = 3; }
@@ -91,7 +129,8 @@ export class OutpostScene implements Scene {
       this.trade.cursor = ((this.trade.cursor % n) + n) % n;
       const r = this.trade.rows[this.trade.cursor];
       if (inp.wasPressed("Enter") || inp.wasPressed("b") || (inp.mousePressed && row >= 0)) {
-        if (p.credits < r.buy) g.toast("NOT ENOUGH CREDITS");
+        if (r.buy <= 0) g.toast("THEY'RE BUYING, NOT SELLING");
+        else if (p.credits < r.buy) g.toast("NOT ENOUGH CREDITS");
         else if (!addCargo(p, r.id, 1)) g.toast("CARGO FULL");
         else { p.credits -= r.buy; sfx.select(); }
       }
@@ -119,7 +158,7 @@ export class OutpostScene implements Scene {
           this.say(`SURVEY FILED +${pay}CR`);
           if (this.region.factionId) adjustRep(g.world, this.region.factionId, 4);
           sfx.pickup();
-        } else this.say("SURVEY OFFICE: NOTHING NEW TO FILE");
+        } else this.foreman(g);
       }
       else if (near?.ch === "B") { p.hull = Math.min(p.hullMax, p.hull + 15); p.shield = p.shieldMax; this.say("YOU REST UNDER A REAL SKY. +15 HULL"); }
       else if (near?.ch === "A") { g.setScene(g.surfaceReturn ? "surface" : "orbit"); return; }
@@ -151,7 +190,7 @@ export class OutpostScene implements Scene {
     drawPerson(ctx, Math.round(ox + this.px), Math.round(oy + this.py), "#e8b48c", "#3a6ea5");
     const near = nearestTile(DECK, this.px, this.py, "TSBA");
     if (near) {
-      const label = near.ch === "T" ? "TRADE DESK" : near.ch === "S" ? "SURVEY OFFICE" : near.ch === "B" ? "BUNKHOUSE" : "LANDING PAD";
+      const label = near.ch === "T" ? "TRADE DESK" : near.ch === "S" ? "SURVEY OFFICE / FOREMAN" : near.ch === "B" ? "BUNKHOUSE" : "LANDING PAD";
       tooltip(ctx, ox, oy, near.tx, near.ty, label, near.ch === "A" ? "[E] RETURN TO ORBIT" : "[E] USE");
     }
     const npc = this.npcs.find((n) => Math.hypot(n.x - this.px, n.y - this.py) < 16);
@@ -179,6 +218,7 @@ export class OutpostScene implements Scene {
         drawText(ctx, `${r.buy}`, 230, y, PAL.gold);
         drawText(ctx, `${r.sell}`, 270, y, PAL.gold);
         drawText(ctx, `${p.cargo[r.id] ?? 0}`, 320, y, PAL.ui);
+        if (this.needs.includes(r.id)) drawText(ctx, `WANTED +${Math.round(SETTLEMENT_PREMIUM * 100)}%`, 340, y, PAL.gold);
       });
     }
   }

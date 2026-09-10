@@ -376,5 +376,9 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
       trusts: find the wreck on the lane, read the black box, and decide what
       the truth is worth to the syndicate, the traitor, or their rivals
 
+- [x] Settlements with lives: weekly needs at the outpost trade desk (+40%),
+      a foreman at the survey office with sample runs, outcrop runs and a
+      plant to fix, paid on your return
+
 ## Later
 - [ ] Cross-squadron rivalries and treaties
