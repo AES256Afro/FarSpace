@@ -60,7 +60,7 @@ export class StationScene implements Scene {
     void wire.fetchSquadronData();
     this.base = null; this.baseLoaded = false;
     void wire.fetchBases().then(() => { this.baseOwner = wire.baseAt(this.station.id)?.tag ?? null; });
-    if (wire.getSquadron()) { void wire.fetchBase(wire.getSquadron()!).then((b) => { this.base = b; this.baseLoaded = true; }); } else this.baseLoaded = true;
+    if (wire.getSquadron()) { void wire.fetchBase(wire.getSquadron()!).then((b) => { this.base = b; this.baseLoaded = true; if (!b?.stationId && !this.station.military) g.showHint("base", "BASE TAB: POOL CREDITS WITH YOUR SQUADRON AND BUY A STATION AS YOUR BASE"); }); } else this.baseLoaded = true;
     {
       const rep0 = p.rep[this.station.factionId] ?? 0;
       const seen: Record<string, [number, number]> = {};
