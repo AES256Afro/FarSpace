@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember } from "../data/crew";
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar,
+  crewWages, genCrewCandidate, applyHull, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM,
 } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
@@ -64,6 +64,13 @@ export class StationScene implements Scene {
     refreshPrices(this.station);
     void wire.fetchSquadronData();
     if (p.ious?.length) { for (const iou of p.ious) { p.credits += iou.credits; g.toast(iou.text); } p.ious = []; sfx.pickup(); }
+    if (p.evacuees && p.evacuees.n > 0) { const pay = p.evacuees.n * 150; p.credits += pay; adjustRep(g.world, this.station.factionId, 4); g.toast(`${p.evacuees.n} SURVIVORS FROM THE ${p.evacuees.from.toUpperCase()} HANDED OVER +${pay}CR`); p.evacuees = null; flag(g, "lifeboat"); sfx.pickup(); }
+    if (g.scenes.flight && (g.scenes.flight as unknown as { towing: unknown }).towing) {
+      const fs = g.scenes.flight as unknown as { towing: { x: number; y: number; hull: number } | null };
+      const st = this.station; const sx = Math.cos(st.angle) * st.orbit, sy = Math.sin(st.angle) * st.orbit;
+      if (fs.towing && fs.towing.hull > 0 && Math.hypot(fs.towing.x - sx, fs.towing.y - sy) < 260) { p.credits += 550; adjustRep(g.world, st.factionId, 6); p.tows = (p.tows ?? 0) + 1; g.toast("TOW COMPLETE - THE YARD TAKES THE FREIGHTER +550CR"); flag(g, "tug"); void wire.post("rescue", "towed a disabled freighter into dock", g.world.systems[p.systemId].name); }
+      fs.towing = null;
+    }
     this.base = null; this.baseLoaded = false;
     if (p.warPayout && p.warPayout.value > 0) {
       const wp = p.warPayout; p.warPayout = null;
@@ -230,7 +237,18 @@ export class StationScene implements Scene {
             const sy = syndicateAt(g.world, st.id);
             const synBonus = sy ? (synStanding(g.world, sy.tag) >= 60 ? 0.1 : 0) : 0;
             const routeHit = !!dem && dem.goods.includes(id);
-            const paid = Math.round(price * (goalHit ? 1 + this.goal.premium : 1) * (this.baseHas("market") ? 1.08 : 1) * (routeHit ? 1 + ROUTE_PREMIUM + synBonus : 1));
+            const crisis = crisisAt(g.world, st.id);
+            const crisisHit = !!crisis && crisis.commodityId === id;
+            const paid = Math.round(price * (goalHit ? 1 + this.goal.premium : 1) * (this.baseHas("market") ? 1.08 : 1) * (routeHit ? 1 + ROUTE_PREMIUM + synBonus : 1) * (crisisHit ? CRISIS_PREMIUM : 1));
+            if (crisisHit && crisis) {
+              crisis.delivered++;
+              if (crisis.delivered >= crisis.need) {
+                p.credits += 800; adjustRep(g.world, st.factionId, 12); flag(g, "lifeline");
+                g.toast(`CRISIS OVER - ${st.name.toUpperCase()} THANKS YOU. +800CR, STANDING UP.`);
+                pushEvent(g.world, { t: g.world.time, kind: "rescue", systemId: p.systemId, text: `${st.name}'s ${crisis.kind} is over: an independent pilot brought the last of the ${commodity(id).name}` });
+                void wire.post("rescue", `broke the ${crisis.kind} at ${st.name} with ${crisis.need} ${commodity(id).name}`, g.world.systems[p.systemId].name);
+              }
+            }
             if (routeHit) {
               p.routes = [...(p.routes ?? []).slice(-29), { from: p.lastDockedAt ?? st.id, to: st.id, commodityId: id, t: Date.now() }];
               if (sy) { sy.treasury += Math.round(paid * 0.1); if (Math.random() < 0.34) adjustSynRep(g.world, sy.tag, 1); }
@@ -454,6 +472,7 @@ export class StationScene implements Scene {
     }
     m.accepted = true;
     p.missions.push(m);
+    if (m.kind === "repair") { g.tenderMission = m; g.toast("SUITING UP - THE PLANT IS THROUGH THE YARD DOOR"); sfx.repair(); g.setScene("repair"); return; }
     g.toast("MISSION ACCEPTED");
     if (m.kind === "escort") g.showHint("escort", "THE FREIGHTER LAUNCHES WHEN YOU UNDOCK - STAY CLOSE");
     if (m.kind === "research") g.showHint("research", "IN THE TARGET SYSTEM, HOLD V TO DEEP-SCAN FOR THE SIGNAL");
@@ -800,7 +819,9 @@ export class StationScene implements Scene {
       drawText(ctx, listed ? `${st.stock[id] ?? 0}` : "-", 235, y, PAL.grey);
       drawText(ctx, `${p.cargo[id] ?? 0}`, 280, y, PAL.ui);
       const demHere = this.demandHere(g);
-      if (demHere && demHere.goods.includes(id)) drawText(ctx, `WANTED +${Math.round(ROUTE_PREMIUM * 100)}%`, 320, y, PAL.gold);
+      const cr = crisisAt(g.world, st.id);
+      if (cr && cr.commodityId === id) drawText(ctx, `CRISIS x${CRISIS_PREMIUM}`, 320, y, PAL.danger);
+      else if (demHere && demHere.goods.includes(id)) drawText(ctx, `WANTED +${Math.round(ROUTE_PREMIUM * 100)}%`, 320, y, PAL.gold);
       else if (c.rare) drawText(ctx, st.rare === id ? "ORIGIN" : "RARE", 320, y, st.rare === id ? PAL.info : PAL.gold);
       else if (c.illegal) drawText(ctx, blackMarket(g.world, st) ? "FENCE +30%" : "CUSTOMS", 320, y, blackMarket(g.world, st) ? PAL.gold : PAL.danger);
       else {
@@ -902,6 +923,8 @@ export class StationScene implements Scene {
     {
       const so = storyObjective(g.world);
       if (so && (p.tutorial ?? -1) < 0) { drawText(ctx, `THE SIGNAL - ${so}`.slice(0, 100), 8, y, PAL.info); y += 10; }
+      const cr = g.world.crisis;
+      if (cr && cr.delivered < cr.need && g.world.time < cr.until) { const f = findStation(g.world, cr.stationId); drawText(ctx, `CRISIS: ${(f?.st.name ?? "?").toUpperCase()}, ${(f?.sys.name ?? "?").toUpperCase()} NEEDS ${cr.need - cr.delivered} ${commodity(cr.commodityId).name.toUpperCase()} - ${Math.max(0, Math.round((cr.until - g.world.time) / 60))}M LEFT, PAYS x${CRISIS_PREMIUM}`.slice(0, 104), 8, y, PAL.danger); y += 10; }
     }
     {
       const gl = this.goal;

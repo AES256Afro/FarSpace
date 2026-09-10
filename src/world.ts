@@ -129,7 +129,7 @@ export interface SystemDef {
   permit?: boolean; // entry needs ALLIED standing with the owning faction
 }
 
-export type MissionKind = "delivery" | "bounty" | "mining" | "escort" | "passenger" | "research" | "arc" | "ground";
+export type MissionKind = "delivery" | "bounty" | "mining" | "escort" | "passenger" | "research" | "arc" | "ground" | "repair";
 
 export interface Mission {
   id: string;
@@ -153,6 +153,7 @@ export interface Mission {
   sightSeen?: boolean;
   anomalyId?: string;
   syndicate?: string;                  // contract issued by an AI syndicate (tag)
+  tenderDone?: boolean;                // repair tenders: the work is done, collect at the station
   syndicateTarget?: string;            // bounty against this syndicate: they will remember
   groundPlanetIdx?: number;            // ground contracts: which world
   groundGoal?: "flora" | "probe" | "outcrop";
@@ -248,6 +249,8 @@ export interface PlayerState {
   encounters?: Record<string, number>; // encounter id → times seen
   homesteads?: Homestead[];                           // claims staked on charted regions
   repairs?: number;                                   // ships brought back to life
+  tows?: number;
+  evacuees?: { n: number; from: string } | null;      // survivors aboard, paid out at the next dock
   story?: number;                                     // The Signal: stage index; -1 = declined
   storyTarget?: { systemId: string; planetIdx: number; poiId: string } | null;
   storyVeil?: string | null;
@@ -274,6 +277,37 @@ export interface StoredShip { hullId: string; stationId: string; name?: string; 
 // NPC syndicates: AI squadrons with a home base, partners and rivals. Always
 // labelled (AI) in the UI and never mixed into the human boards.
 export type SyndicateStyle = "trade" | "salvage" | "mining" | "pirate";
+// Humanitarian crisis: a station needs a commodity before the clock runs out
+export interface Crisis { stationId: string; systemId: string; commodityId: string; need: number; delivered: number; until: number; kind: "outbreak" | "famine" | "blackout" }
+export const CRISIS_PREMIUM = 2.5;
+export function crisisAt(w: World, stationId: string): Crisis | null {
+  const c = w.crisis;
+  return c && c.stationId === stationId && c.delivered < c.need && w.time < c.until ? c : null;
+}
+export function tickCrisis(w: World, rng: RNG): void {
+  const c = w.crisis;
+  if (c) {
+    if (c.delivered >= c.need) return; // resolved; cleared when a new one starts
+    if (w.time >= c.until) {
+      const f = findStation(w, c.stationId);
+      pushEvent(w, { t: w.time, kind: "shock", systemId: c.systemId, text: `${f?.st.name ?? "A station"}'s ${c.kind} runs its course unanswered. ${c.need - c.delivered} units short.` });
+      adjustRep(w, f?.st.factionId ?? "tsc", -2);
+      w.crisis = null;
+    }
+    return;
+  }
+  if (!rng.chance(0.35)) return;
+  const all = Object.values(w.systems).flatMap((s) => s.stations.filter((st) => !st.military).map((st) => ({ sys: s, st })));
+  if (!all.length) return;
+  const { sys, st } = rng.pick(all);
+  const kind = rng.pick(["outbreak", "famine", "blackout"] as const);
+  const commodityId = kind === "outbreak" ? "med" : kind === "famine" ? "food" : "fuel";
+  const need = rng.int(6, 12);
+  w.crisis = { stationId: st.id, systemId: sys.id, commodityId, need, delivered: 0, until: w.time + 900, kind };
+  const what = kind === "outbreak" ? "an outbreak: med supplies" : kind === "famine" ? "a famine: provisions" : "a reactor blackout: fuel cells";
+  pushEvent(w, { t: w.time, kind: "shock", systemId: sys.id, text: `CRISIS: ${st.name} in ${sys.name} reports ${what} needed, ${need} units, paying ${CRISIS_PREMIUM}x` });
+}
+
 export interface SynWar {
   attacker: string; defender: string; systemId: string; // fought in the defender's home system
   score: number;      // -100 (defender wins) .. 100 (attacker wins)
@@ -300,6 +334,7 @@ export interface World {
   syndicates?: Syndicate[];
   synRelations?: Record<string, number>; // "A|B" (sorted tags) → -100..100; allies ≥ 50, feud ≤ -30
   synWar?: SynWar | null;            // at most one syndicate war at a time
+  crisis?: Crisis | null;            // a station in trouble: goods needed, fast
   seed: number;
   time: number;
   realGalaxy: boolean;
@@ -310,6 +345,7 @@ export interface World {
   wars: War[];
   missionCounter: number;
   synTick?: number;
+  crisisTick?: number;
   econTick: number;
   shockTick: number;
   warTick: number;
@@ -402,6 +438,8 @@ export function tickWorld(w: World, dt: number): void {
       }
     }
   }
+  w.crisisTick = (w.crisisTick ?? 0) + dt;
+  if (w.crisisTick >= 120) { w.crisisTick = 0; tickCrisis(w, new RNG((w.seed ^ Math.floor(w.time * 5)) >>> 0)); }
   w.synTick = (w.synTick ?? 0) + dt;
   if (w.synTick >= 150) {
     w.synTick = 0;
@@ -1082,6 +1120,18 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
       });
     }
   }
+  // engineering tenders: the station's own systems need hands
+  if (!station.military && rng.chance(0.3)) {
+    const what = rng.pick(["reactor coolant loop", "life support scrubbers", "docking bay actuators", "main engines"]);
+    missions.push({
+      id: `tender-${world.missionCounter++}`, kind: "repair", accepted: false, done: false, tier: 0,
+      title: `Engineering tender: ${what}`,
+      desc: `${station.name}'s ${what} are failing and the yard is short-handed. Suit up, walk the plant, and bring three systems back. Paid on completion, here.`,
+      fromStationId: station.id, targetSystemId: sys.id, targetStationId: station.id,
+      reward: Math.round((380 + rng.int(0, 220)) * (1 + tier * 0.35)), repReward: 5,
+    });
+  }
+
   // AI syndicate contracts at its base: convoy runs to partners, bounties on rivals
   const sy = syndicateAt(world, station.id);
   if (sy) {
@@ -1544,6 +1594,7 @@ export function missionDeliverable(world: World, m: Mission, station: StationDef
   }
   if (m.kind === "passenger") return m.targetStationId === station.id && (m.passengerKind !== "tourist" || !!m.sightSeen);
   if (m.kind === "ground") return m.targetStationId === station.id && (m.groundDone ?? 0) >= (m.groundNeed ?? 1);
+  if (m.kind === "repair") return m.targetStationId === station.id && !!m.tenderDone;
   if (m.targetStationId !== station.id) return false;
   if (m.commodityId && m.qty) return (p.cargo[m.commodityId] ?? 0) >= m.qty;
   return false;

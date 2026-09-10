@@ -38,8 +38,10 @@ export class RepairScene implements Scene {
   hurtCd = 0;
   rng = new RNG(1);
 
+  tender = false; // fixing a station's plant, not a ship
   enter(g: Game): void {
-    if (!g.repairTarget) { g.setScene("flight"); return; }
+    this.tender = !!g.tenderMission;
+    if (!g.repairTarget && !this.tender) { g.setScene("flight"); return; }
     this.deck = BASE.map((r) => r);
     this.rng = new RNG((g.world.seed ^ Math.floor(g.world.time)) >>> 0);
     this.px = 2 * T; this.py = T + 5;
@@ -47,7 +49,7 @@ export class RepairScene implements Scene {
     this.health = {};
     for (const s of SYSTEMS) this.health[s.ch] = this.rng.int(0, 25);
     this.fires = [];
-    this.say("ENGINES DEAD, AIR THIN, REACTOR TICKING. HOLD E AT EACH SYSTEM.");
+    this.say(this.tender ? "THE YARD CHIEF POINTS AT THREE RED PANELS AND LEAVES. HOLD E AT EACH." : "ENGINES DEAD, AIR THIN, REACTOR TICKING. HOLD E AT EACH SYSTEM.");
     sfx.alarm();
   }
 
@@ -60,6 +62,14 @@ export class RepairScene implements Scene {
   done(): boolean { return SYSTEMS.every((s) => this.health[s.ch] >= 100); }
 
   leave(g: Game, success: boolean): void {
+    if (this.tender) {
+      const m = g.tenderMission;
+      g.tenderMission = null;
+      if (m && success) { m.tenderDone = true; g.toast("PLANT BACK ONLINE - COLLECT THE TENDER ON THE MISSIONS TAB"); g.world.player.skills.engineering = Math.min(20, (g.world.player.skills.engineering ?? 0) + 1); }
+      else g.toast("YOU LEAVE THE JOB HALF DONE. THE TENDER STAYS OPEN.");
+      g.setScene("station");
+      return;
+    }
     const fs = g.scenes.flight as FlightScene;
     if (success && g.repairTarget) fs.finishRepair(g, g.repairTarget, "you");
     else if (g.repairTarget) g.toast("YOU LEAVE THE FREIGHTER STILL DARK. IT WILL WAIT, IF THE CORSAIRS DON'T FIND IT FIRST.");
@@ -127,7 +137,7 @@ export class RepairScene implements Scene {
     if (fire) tooltip(ctx, ox, oy, fire.tx, fire.ty, "FIRE", "[E] EXTINGUISH", PAL.danger);
     else if (sys) tooltip(ctx, ox, oy, sys.tx, sys.ty, `${sys.name} ${Math.round(this.health[sys.ch])}%`, this.health[sys.ch] >= 100 ? "ONLINE" : "[E] HOLD TO REPAIR", this.health[sys.ch] >= 100 ? PAL.good : PAL.warn);
     else { const air = nearestTile(this.deck, this.px, this.py, "A"); if (air) tooltip(ctx, ox, oy, air.tx, air.ty, "AIRLOCK", this.done() ? "[E] RETURN - REPAIRS DONE" : "[E] RETURN (UNFINISHED)", this.done() ? PAL.good : PAL.warn); }
-    drawText(ctx, `ABOARD THE DISABLED FREIGHTER`, 8, 6, PAL.white);
+    drawText(ctx, this.tender ? "STATION PLANT - ENGINEERING TENDER" : "ABOARD THE DISABLED FREIGHTER", 8, 6, PAL.white);
     drawText(ctx, `SUIT O2 ${Math.round(this.o2)}%   PARTS ${g.world.player.cargo.parts ?? 0}   ${SYSTEMS.map((s) => `${s.ch} ${Math.round(this.health[s.ch])}%`).join("  ")}`, 8, 15, this.o2 < 30 ? PAL.danger : PAL.grey);
     drawText(ctx, "ESC LEAVE", VW - textWidth("ESC LEAVE") - 6, 6, PAL.greyDark);
     footer(ctx, g, this.msg);

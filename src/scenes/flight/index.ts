@@ -134,7 +134,8 @@ export class FlightScene implements Scene {
     // cruise: the long-haul drive. Fast, blind, and it drops the moment anything big is near.
     if (g.input.wasPressed("j")) this.toggleCruise(g);
     if (this.cruise && this.massLocked(g)) { this.cruise = false; this.scanMsg = "MASS LOCK - DROPPED FROM CRUISE"; this.scanTimer = 2; sfx.alarm(); }
-    const cruiseMul = this.cruise ? 4.5 : 1;
+    if (this.towing && this.cruise) { this.cruise = false; g.toast("CAN'T CRUISE WITH A TOW LINE"); }
+    const cruiseMul = this.cruise ? 4.5 : this.towing ? 0.55 : 1;
     const ACCEL = h.accel * pilot * tuned * (this.cruise ? 3 : 1);
     const ROT = h.rotSpeed * pilot * (this.cruise ? 0.6 : 1);
     const MAXS = h.maxSpeed * tuned * cruiseMul;
@@ -261,6 +262,7 @@ export class FlightScene implements Scene {
     this.updateDockingComputer(g, dt);
     this.updateEncounters(g, dt);
     this.updateRepairJob(g, dt);
+    this.updateTow(g, dt);
     // other pilots in this system
     presence.tick(p, sys.name);
     this.drainRoomEvents(g);
@@ -530,6 +532,23 @@ export class FlightScene implements Scene {
 
   // ---------- Helping ships ----------
   repairJob: RepairJob | null = null;
+  towing: Npc | null = null;
+
+  updateTow(g: Game, dt: number): void {
+    const n = this.towing;
+    if (!n) return;
+    const p = g.world.player;
+    if (n.hull <= 0 || !this.npcs.includes(n)) { this.towing = null; g.toast("TOW LINE GOES SLACK - THE FREIGHTER IS GONE"); return; }
+    const d = dist(p.x, p.y, n.x, n.y);
+    if (d > 420) { this.towing = null; g.toast("TOW LINE SNAPPED - TOO FAST"); sfx.hit(); return; }
+    // the line: pull the freighter along behind you
+    const ang = Math.atan2(n.y - p.y, n.x - p.x);
+    const wantX = p.x + Math.cos(ang) * 70, wantY = p.y + Math.sin(ang) * 70;
+    n.vx = (wantX - n.x) * 3; n.vy = (wantY - n.y) * 3;
+    n.x += n.vx * dt; n.y += n.vy * dt;
+    n.angle = Math.atan2(p.y - n.y, p.x - n.x);
+    void d;
+  }
 
   offerHelp(g: Game, n: Npc): void {
     const p = g.world.player;
@@ -540,6 +559,8 @@ export class FlightScene implements Scene {
       opts.push({ label: "BOARD AND REPAIR IT YOURSELF", hint: "Three dead systems, a suit clock, maybe a fire", result: (g2) => { g2.repairTarget = n; setTimeout(() => g2.setScene("repair"), 0); return ""; } });
       if (eng) opts.push({ label: `SEND ${eng.name.toUpperCase()} ACROSS (ENGINEER ${eng.skill})`, hint: "You stand guard; corsairs like a stationary target", result: () => { this.repairJob = { npc: n, crewName: eng.name, progress: 0, need: 45 / (0.6 + 0.4 * eng.skill), wave: 0 }; return `${eng.name.toUpperCase()} SUITS UP AND CROSSES. KEEP THEM SAFE.`; } });
       else opts.push({ label: "NO ENGINEER ABOARD TO SEND", hint: "Hire one at a station bar", requires: () => false, result: () => "" });
+      opts.push({ label: "TOW THEM TO A STATION", hint: "They follow you; top speed drops; dock anywhere", result: () => { this.towing = n; n.disabled = true; return "TOW LINE ATTACHED. TAKE IT SLOW - THE LINE WON'T SURVIVE A JUMP OR A FIREFIGHT AT SPEED."; } });
+      if (!p.evacuees) opts.push({ label: "TAKE THEIR CREW ABOARD", hint: "Three survivors, paid out at your next dock", result: (g2) => { g2.world.player.evacuees = { n: 3, from: who.toLowerCase() }; this.npcs = this.npcs.filter((x) => x !== n); if (this.sos?.trader === n) this.sos = null; return "THREE OF THEM CROSS IN SUITS AND CRAM INTO THE GALLEY. THE FREIGHTER STAYS DARK BEHIND YOU."; } });
     } else {
       opts.push({ label: "PASS THEM A SPARE PART", hint: "Patches their hull; they remember", requires: (g2) => (g2.world.player.cargo.parts ?? 0) >= 1, result: (g2) => { g2.world.player.cargo.parts!--; if (!g2.world.player.cargo.parts) delete g2.world.player.cargo.parts; n.hull = n.hullMax; this.thankYou(g2, n, 120); return `THEY TAKE THE PART AND PATCH THE BREACH. '${who}, WE OWE YOU ONE.'`; } });
     }
@@ -892,6 +913,7 @@ export class FlightScene implements Scene {
     }
     p.fuel -= cost;
     sfx.jump();
+    if (this.towing) { this.towing = null; g.toast("THE TOW LINE DOESN'T SURVIVE THE JUMP"); }
     const fromId = p.systemId;
     p.systemId = targetId;
     const tsys = g.world.systems[targetId];

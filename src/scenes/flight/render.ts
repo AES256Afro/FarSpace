@@ -358,6 +358,7 @@ export function drawEdgeMarkers(fs: FlightScene, g: Game, ctx: CanvasRenderingCo
   }
   if (fs.sos && fs.sos.trader.hull > 0) mark(fs.sos.trader.x, fs.sos.trader.y, PAL.gold, fs.sos.kind === "disabled" ? "MAYDAY" : "SOS");
   if (fs.repairJob) mark(fs.repairJob.npc.x, fs.repairJob.npc.y, PAL.good, "REPAIR");
+  { const cr = g.world.crisis; if (cr && cr.systemId === p.systemId && cr.delivered < cr.need && g.world.time < cr.until) { const st = sys.stations.find((s) => s.id === cr.stationId); if (st) mark(Math.cos(st.angle) * st.orbit, Math.sin(st.angle) * st.orbit, PAL.danger, "CRISIS"); } }
   if (fs.escort && fs.escort.trader.hull > 0) mark(fs.escort.trader.x, fs.escort.trader.y, PAL.gold, "ESCORT");
   // active mission target station in this system
   for (const m of p.missions) {
@@ -464,6 +465,13 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
     const t = `${fs.repairJob.crewName.toUpperCase()} ABOARD THE FREIGHTER: ${Math.round(Math.min(1, fs.repairJob.progress) * 100)}% - HOLD THE CORSAIRS OFF`;
     drawText(ctx, t, VW / 2 - textWidth(t) / 2, 50, PAL.good);
   }
+  if (fs.towing) {
+    const z = fs.zoom; const ax = VW / 2, ay = VH / 2 - 11; const bx = ax + (fs.towing.x - p.x) * z, by = ay + (fs.towing.y - p.y) * z;
+    ctx.strokeStyle = PAL.warn; ctx.globalAlpha = 0.7; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke(); ctx.globalAlpha = 1;
+    const t = "TOWING - DOCK AT ANY STATION - NO CRUISE, NO JUMPS, KEEP IT UNDER 420M";
+    drawText(ctx, t, VW / 2 - textWidth(t) / 2, 50, PAL.warn);
+  }
+  if (p.evacuees) drawText(ctx, `${p.evacuees.n} SURVIVORS ABOARD - DOCK TO HAND THEM OVER`, 4, 40, PAL.good);
   if (fs.cruise || fs.autopilot) {
     const t = `${fs.cruise ? "CRUISE" : ""}${fs.cruise && fs.autopilot ? " - " : ""}${fs.autopilot ? `AUTOPILOT: ${fs.apLabel}` : ""}`;
     drawText(ctx, t, VW / 2 - textWidth(t) / 2, VH - 34, fs.cruise ? PAL.info : PAL.ui);

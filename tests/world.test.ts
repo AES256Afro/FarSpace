@@ -16,7 +16,7 @@ import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
 import { ENCOUNTERS, pickEncounter } from "../src/data/encounters";
 import { STORY, storyObjective } from "../src/core/story";
-import { homesteadYield, settleHomestead, HOMESTEAD_CAP } from "../src/world";
+import { homesteadYield, settleHomestead, HOMESTEAD_CAP, tickCrisis, crisisAt } from "../src/world";
 import { genGround, groundKey, passable, GW, GH } from "../src/ground";
 import { BLUEPRINTS, upgrade, addMaterials, nextCost, MATERIAL_CAP } from "../src/data/engineering";
 import { jumpFuelCost, communityGoal, weekKey, permitDenied, navRoute, blackMarket, genMissionsFor, groundProgress, missionDeliverable } from "../src/world";
@@ -666,5 +666,28 @@ describe("homesteads", () => {
     settleHomestead(h, 3000);
     expect(h.stock).toBeCloseTo(10, 5);
     expect(homesteadYield(h, 1e9)).toBe(HOMESTEAD_CAP);
+  });
+});
+
+describe("crises and tenders", () => {
+  it("a crisis starts, is visible at its station, and expires with a penalty", () => {
+    const w = generateWorld(23, { realGalaxy: true });
+    let tries = 0;
+    while (!w.crisis && tries++ < 50) tickCrisis(w, new RNG(40 + tries));
+    expect(w.crisis).toBeTruthy();
+    const c = w.crisis!;
+    expect(crisisAt(w, c.stationId)).toBe(c);
+    expect(["med", "food", "fuel"]).toContain(c.commodityId);
+    w.time = c.until + 1;
+    tickCrisis(w, new RNG(1));
+    expect(w.crisis).toBeNull();
+    expect(w.events.some((e) => e.text.includes("unanswered"))).toBe(true);
+    const st = w.systems[w.player.systemId].stations.find((s) => !s.military)!;
+    let tender = null as ReturnType<typeof genMissionsFor>[number] | null;
+    for (let i = 0; i < 30 && !tender; i++) tender = genMissionsFor(w, st, new RNG(2000 + i)).find((m) => m.kind === "repair") ?? null;
+    expect(tender).toBeTruthy();
+    expect(missionDeliverable(w, tender!, st)).toBe(false);
+    tender!.accepted = true; tender!.tenderDone = true;
+    expect(missionDeliverable(w, tender!, st)).toBe(true);
   });
 });

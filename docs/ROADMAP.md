@@ -347,5 +347,10 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
       and hold off the corsairs while they work; pass damaged ships a spare
       part; rewards, standing, sometimes a new crew member
 
+- [x] More ways to help: tow a disabled ship into dock, take survivors aboard,
+      engineering tenders at stations (walk the plant and fix three systems),
+      and station crises (outbreak, famine, blackout) that pay 2.5x for the
+      goods they need before the clock runs out
+
 ## Later
 - [ ] Cross-squadron rivalries and treaties

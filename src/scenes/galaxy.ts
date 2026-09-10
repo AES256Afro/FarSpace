@@ -135,6 +135,7 @@ export class GalaxyScene implements Scene {
       ctx.fillRect(Math.round(x) - 1, Math.round(y) + 3, 3, 1);
       drawText(ctx, sys.name, x - textWidth(sys.name) / 2, y + 6, sys.id === this.selected ? PAL.white : PAL.grey);
       if (war && Math.floor(w.time * 2) % 2 === 0) drawText(ctx, "WAR", x - 6, y - 12, PAL.danger);
+      if (w.crisis && w.crisis.systemId === sys.id && w.crisis.delivered < w.crisis.need && w.time < w.crisis.until && Math.floor(w.time * 2) % 2 === 1) drawText(ctx, "CRISIS", x - 12, y - 12, PAL.danger);
       if (sys.permit) { ctx.strokeStyle = permitDenied(w, sys.id) ? PAL.warn : PAL.good; ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI * 2); ctx.stroke(); }
       { const st = w.player.story ?? 0; const here = (st === 2 && w.player.storyTarget?.systemId === sys.id) || (st === 4 && w.player.storyVeil === sys.id) || (st === 5 && w.player.storyOrigin === sys.id); if (here && Math.floor(w.time * 2) % 2 === 0) drawText(ctx, "SIGNAL", x - 12, y - 12, PAL.info); }
       if (route && route.includes(sys.id) && sys.stations.length && sys.id !== w.player.systemId) {
@@ -164,6 +165,7 @@ export class GalaxyScene implements Scene {
       if (w.wars.some((ww) => ww.systemId === sys.id)) { drawText(ctx, "ACTIVE WAR ZONE", px + 6, y, PAL.danger); y += 9; }
       if (sys.permit) { drawText(ctx, permitDenied(w, sys.id) ? "PERMIT SPACE: ALLIED ONLY" : "PERMIT SPACE: YOU'RE CLEARED", px + 6, y, permitDenied(w, sys.id) ? PAL.warn : PAL.good); y += 9; }
       if (w.synWar && w.synWar.systemId === sys.id) { drawText(ctx, `SYNDICATE WAR: [${w.synWar.attacker}] VS [${w.synWar.defender}]`, px + 6, y, PAL.danger); y += 9; }
+      if (w.crisis && w.crisis.systemId === sys.id && w.crisis.delivered < w.crisis.need && w.time < w.crisis.until) { drawText(ctx, `CRISIS: ${w.crisis.need - w.crisis.delivered} ${commodity(w.crisis.commodityId).name.toUpperCase()} NEEDED`, px + 6, y, PAL.danger); y += 9; }
       { const st = w.player.story ?? 0; const t = w.player.storyTarget; if (st === 2 && t?.systemId === sys.id) { drawText(ctx, "THE SIGNAL: THE RUIN IS HERE", px + 6, y, PAL.info); y += 9; } if (st === 4 && w.player.storyVeil === sys.id) { drawText(ctx, "THE SIGNAL: THE VEIL LISTEN HERE", px + 6, y, PAL.info); y += 9; } if (st === 5 && w.player.storyOrigin === sys.id) { drawText(ctx, "THE SIGNAL: THE COUNT ENDS HERE", px + 6, y, PAL.info); y += 9; } }
       const lvl = w.player.expLog?.[sys.id] ?? 0;
       drawText(ctx, lvl === 2 ? "LOGGED: DETAILED" : lvl === 1 ? "LOGGED: BASIC" : "UNLOGGED", px + 6, y, lvl ? PAL.grey : PAL.greyDark); y += 9;
