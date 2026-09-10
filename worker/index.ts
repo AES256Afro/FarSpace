@@ -141,13 +141,14 @@ const WIRE_MAX = 40;
 interface WireEvent { t: number; callsign: string; kind: string; text: string; system: string; tag?: string }
 interface BoardEntry { callsign: string; score: number; t: number; tag?: string }
 const SQUAD = /^[A-Z0-9]{2,5}$/;
-interface BaseRec { stationId: string | null; stationName: string | null; systemName: string | null; treasury: number; vault: Record<string, number>; upgrades: string[]; founded: number; log: { t: number; callsign: string; text: string }[]; contractsPaid?: string[] }
+interface BaseRec { stationId: string | null; stationName: string | null; systemName: string | null; treasury: number; vault: Record<string, number>; upgrades: string[]; founded: number; log: { t: number; callsign: string; text: string }[]; contractsPaid?: string[]; bounty?: { week: string; kills: number; paid: boolean } }
 const BASE_UPGRADES: Record<string, number> = { defense: 8000, depot: 5000, market: 6000, vault: 4000 };
 // Weekly base contract: the base "needs" a commodity; filling the vault to the
 // target pays the treasury once per week. Same seed function as the client.
 const CONTRACT_GOODS = ["ore", "metals", "fuel", "food", "water", "med", "parts", "lux", "data"];
 function weekKey(now = Date.now()): string { const d = new Date(now); const day = (d.getUTCDay() + 6) % 7; d.setUTCDate(d.getUTCDate() - day); return d.toISOString().slice(0, 10); }
 function hash32(str: string): number { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+const BOUNTY_NEED = 6, BOUNTY_REWARD = 6000; // captain kills per week → treasury
 function baseContract(tag: string, now = Date.now()): { id: string; commodityId: string; need: number; reward: number } {
   const key = weekKey(now);
   const h = hash32(`basecontract:${tag}:${key}`);
@@ -364,6 +365,15 @@ export default {
             b.treasury += c.reward;
             logLine(`filled the weekly base contract (+${c.reward} CR to the treasury)`);
           }
+          return save();
+        }
+        if (action === "kill") {
+          // squadron bounty: members' captain kills this week
+          const week = weekKey();
+          if (!b.bounty || b.bounty.week !== week) b.bounty = { week, kills: 0, paid: false };
+          b.bounty.kills++;
+          if (!b.bounty.paid && b.bounty.kills >= BOUNTY_NEED) { b.bounty.paid = true; b.treasury += BOUNTY_REWARD; logLine(`filled the weekly squadron bounty (+${BOUNTY_REWARD} CR to the treasury)`); }
+          else logLine(`took a corsair captain (${b.bounty.kills}/${BOUNTY_NEED} this week)`);
           return save();
         }
         if (action === "upgrade") {

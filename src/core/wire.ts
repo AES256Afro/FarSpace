@@ -181,7 +181,8 @@ export async function fetchRooms(force = false): Promise<{ rooms: RoomCount[]; p
 }
 
 // ---------- Squadron bases ----------
-export interface BaseRec { stationId: string | null; stationName: string | null; systemName: string | null; treasury: number; vault: Record<string, number>; upgrades: string[]; founded: number; log: { t: number; callsign: string; text: string }[]; contractsPaid?: string[] }
+export interface BaseRec { stationId: string | null; stationName: string | null; systemName: string | null; treasury: number; vault: Record<string, number>; upgrades: string[]; founded: number; log: { t: number; callsign: string; text: string }[]; contractsPaid?: string[]; bounty?: { week: string; kills: number; paid: boolean } }
+export const SQUAD_BOUNTY = { need: 6, reward: 6000 };
 export interface BaseSummary { tag: string; stationId: string; stationName: string; systemName: string; upgrades: string[] }
 export const BASE_UPGRADES: { id: string; name: string; cost: number; desc: string }[] = [
   { id: "defense", name: "Defense Grid", cost: 8000, desc: "Three extra platforms guard the base, for everyone" },

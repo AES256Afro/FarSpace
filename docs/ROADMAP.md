@@ -283,5 +283,8 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
 - [x] Weekly base contract: the base needs a commodity; members filling the
       vault to the target pay the treasury once a week
 
+- [x] Weekly squadron bounty: six corsair captains by any member pay the
+      treasury
+
 ## Later
-- [ ] Squadron missions beyond the base contract
+- [ ] Squadron leaderboards by base income; base-to-base trade

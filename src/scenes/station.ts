@@ -979,7 +979,7 @@ export class StationScene implements Scene {
     drawText(ctx, b && b.stationId ? `TREASURY ${b.treasury}CR   VAULT ${Object.values(b.vault).reduce((a, v) => a + v, 0)}/${b.upgrades.includes("vault") ? 600 : 200}   HALF-PRICE SERVICES FOR MEMBERS` : `POOL CREDITS, THEN BUY A CIVILIAN STATION. THIS ONE: ${wire.basePrice(st.type, st.military) ? wire.basePrice(st.type, st.military) + "CR" : "MILITARY, NOT FOR SALE"}`, 8, top + 10, PAL.grey);
     rows.forEach((r, i) => {
       const y = top + 24 + i * 9;
-      if (y > VH - 60) return;
+      if (y > VH - 86) return;
       this.row(ctx, y, i === this.cursor);
       drawText(ctx, r.label, 8, y, r.kind === "upgrade" && r.label.startsWith("FITTED") ? PAL.good : PAL.white);
       drawText(ctx, r.sub, 200, y, PAL.grey);
@@ -990,6 +990,9 @@ export class StationScene implements Scene {
       const paid = b.contractsPaid?.includes(c.id);
       const line = paid ? `WEEKLY BASE CONTRACT FILLED: +${c.reward}CR WENT TO THE TREASURY. NEXT ONE MONDAY.` : `WEEKLY BASE CONTRACT: STOCK ${c.need} ${commodity(c.commodityId).name.toUpperCase()} IN THE VAULT (${have}/${c.need}) FOR +${c.reward}CR TO THE TREASURY`;
       drawText(ctx, line, 8, VH - 66, paid ? PAL.good : PAL.gold);
+      const bo = b.bounty && b.bounty.week === c.id.slice(3) ? b.bounty : null;
+      const bline = bo?.paid ? `WEEKLY SQUADRON BOUNTY FILLED: +${wire.SQUAD_BOUNTY.reward}CR TO THE TREASURY.` : `WEEKLY SQUADRON BOUNTY: ${bo?.kills ?? 0}/${wire.SQUAD_BOUNTY.need} CORSAIR CAPTAINS BY ANY MEMBER FOR +${wire.SQUAD_BOUNTY.reward}CR`;
+      drawText(ctx, bline, 8, VH - 75, bo?.paid ? PAL.good : PAL.gold);
     }
     if (b?.log.length) {
       const ly = VH - 56;
