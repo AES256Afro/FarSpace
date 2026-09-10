@@ -82,7 +82,12 @@ export class Input {
       if (btn(6)) want.add("Tab");          // LT: system map
       if (btn(9)) want.add("g");            // Start: galaxy map
       if (btn(8)) want.add("i");            // Select: board ship
-      if (btn(10)) want.add("h");           // L3: music
+      if (btn(10)) want.add("n");           // L3: autopilot
+      if (btn(11)) want.add("j");           // R3: cruise
+      if (btn(12)) want.add("r");           // D-up: torpedo
+      if (btn(13)) want.add("c");           // D-down: seismic charge
+      if (btn(14)) want.add("t");           // D-left: system channel
+      if (btn(15)) want.add("h");           // D-right: music
     }
     for (const k of want) {
       if (!this.padHeld.has(k)) { this.padHeld.add(k); if (!this.down.has(k)) this.pressed.add(k); this.down.add(k); }
