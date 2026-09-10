@@ -40,6 +40,7 @@ export const SICKNESS = [
 export const RETIRE_DOCKS = 30;   // a tour long enough to think about going home
 export const LEAVE_DOCKS = 8;     // dockings they'll wait for you before finding another ship
 
+export function roleLabel(role: CrewRole | "captain"): string { return role === "captain" ? "CAPTAIN" : ROLE_INFO[role].label; }
 export const ROLE_INFO: Record<CrewRole, { label: string; effect: string; baseWage: number }> = {
   engineer: { label: "ENGINEER", effect: "Faster repairs; patches systems mid-flight", baseWage: 40 },
   gunner:   { label: "GUNNER", effect: "Auto-turret on nearby corsairs; +20% damage", baseWage: 55 },

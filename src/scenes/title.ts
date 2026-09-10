@@ -116,7 +116,7 @@ export class TitleScene implements Scene {
       const h = Math.floor(w.time / 3600), m = Math.floor((w.time % 3600) / 60);
       const cs = wire.getCallsign();
       const best = (["trader", "explorer", "miner", "rescuer"] as const).map((k) => ({ k, r: rankOf(p, k) })).sort((a, b) => b.r.idx - a.r.idx)[0];
-      this.summary = `${cs ? cs + " - " : ""}${(p.shipName ?? hull(p.hullId).name).toUpperCase()} AT ${(sys?.name ?? "?").toUpperCase()} - ${p.credits}CR - ${h}H ${m}M - ${p.crew.length} CREW${best && best.r.idx > 1 ? ` - ${best.r.title.toUpperCase()}` : ""}${p.flags?.theSignal ? " - THE SIGNAL ANSWERED" : ""}`;
+      this.summary = `${p.captainName ? p.captainName.toUpperCase() + " - " : cs ? cs + " - " : ""}${(p.shipName ?? hull(p.hullId).name).toUpperCase()} AT ${(sys?.name ?? "?").toUpperCase()} - ${p.credits}CR - ${h}H ${m}M - ${p.crew.length} CREW${best && best.r.idx > 1 ? ` - ${best.r.title.toUpperCase()}` : ""}${p.flags?.theSignal ? " - THE SIGNAL ANSWERED" : ""}${p.lineage?.length ? ` - CAPTAIN ${p.lineage.length + 1} OF THE LINE` : ""}`;
     } catch { this.summary = null; }
   }
 

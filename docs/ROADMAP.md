@@ -420,4 +420,11 @@ Time passes for the people on the ship, and for the ship.
 - [x] The title screen tells the story so far above CONTINUE
 - [x] The SHIPS tab previews your hull with its paint
 
+## Milestone 21 — Legacy ✅ (Sep 2026)
+- [x] Retire the captain from the wall of record: a crew member takes the
+      chair (their skill becomes yours) or the yard finds a new name
+- [x] Pension, handed-back contracts, halved standings; the ship, structures,
+      alumni and the galaxy's memory carry on; the line of captains on the wall
+- [x] Retired captains walk the promenade where they stepped down
+
 ## Later

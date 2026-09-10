@@ -25,11 +25,12 @@ const PASSENGER_LINES: Record<string, { high: string[]; mid: string[]; low: stri
     low: ["The meeting is gone. You realise that.", "I'll be asking for a refund.", "Speed, Captain. It was the whole point."] },
 };
 import { hull, HullDef } from "../data/hulls";
-import { CREW_LINES, ROLE_INFO } from "../data/crew";
+import { CREW_LINES, ROLE_INFO, roleLabel } from "../data/crew";
 import { clamp, dist } from "../core/mathx";
 import { sfx } from "../core/sfx";
 import { music } from "../core/music";
-import { rankOf, rescuePoints, STORY_LEN, findStation } from "../world";
+import { rankOf, rescuePoints, STORY_LEN, findStation, canRetireCaptain, retireCaptain, RETIRE_AFTER } from "../world";
+import * as wire from "../core/wire";
 import type { Encounter } from "../data/encounters";
 import type { EncounterScene } from "./encounter";
 import { ACHIEVEMENTS } from "../data/achievements";
@@ -171,10 +172,33 @@ export class InteriorScene implements Scene {
       `FIRST DISCOVERIES ${Object.values(p.firsts ?? {}).filter((c) => c).length}   CODEX ${Object.keys(p.codex ?? {}).length}   CLAIMS ${(p.homesteads ?? []).length}   ACHIEVEMENTS ${(p.achievements ?? []).length}/${ACHIEVEMENTS.length}`,
       p.flags?.theSignal ? "THE SIGNAL: ANSWERED." : (p.story ?? 0) > 0 && (p.story ?? 0) < STORY_LEN ? `THE SIGNAL: STAGE ${(p.story ?? 0) + 1} OF ${STORY_LEN}` : "THE SIGNAL: NOT YET HEARD.",
       `WEAR ${Math.round(p.wear ?? 0)}%   YARD SERVICES ${(p.berthLog ?? []).length}${p.berthLog?.length ? `, LAST AT ${(findStation(g.world, p.berthLog[p.berthLog.length - 1].stationId)?.st.name ?? "A YARD").toUpperCase()}` : ""}`,
-      (p.alumni ?? []).length ? `SERVED AND WENT HOME: ${(p.alumni ?? []).slice(-4).map((a) => `${a.name.toUpperCase()} (${ROLE_INFO[a.role].label}, ${a.docks})`).join(", ")}` : "NOBODY HAS RETIRED FROM THIS SHIP YET.",
+      (p.alumni ?? []).length ? `SERVED AND WENT HOME: ${(p.alumni ?? []).slice(-4).map((a) => `${a.name.toUpperCase()} (${roleLabel(a.role)}, ${a.docks})`).join(", ")}` : "NOBODY HAS RETIRED FROM THIS SHIP YET.",
       p.log?.length ? `LAST ENTRY: ${p.log[p.log.length - 1].text.toUpperCase()}` : "THE LOG IS EMPTY.",
     ];
-    const enc: Encounter = { id: "wall", where: "space", title: "WALL OF RECORD", text: lines.join("\n"), weight: 0, options: [{ label: "CLOSE", result: () => "" }] };
+    if (p.lineage?.length) lines.push(`CAPTAINS BEFORE YOU: ${p.lineage.slice(-3).map((c) => c.name.toUpperCase()).join(", ")}${p.captainName ? `. NOW: ${p.captainName.toUpperCase()}` : ""}`);
+    const opts: Encounter["options"] = [{ label: "CLOSE", result: () => "" }];
+    const why = canRetireCaptain(g.world);
+    if (!why) opts.push({ label: "RETIRE THIS CAPTAIN...", hint: "Hand the ship on; the galaxy carries on", result: (g2) => { this.retireMenu(g2); return ""; } });
+    else if (g.world.time >= RETIRE_AFTER / 2) opts.push({ label: "RETIRE THIS CAPTAIN", hint: why, result: () => why });
+    const enc: Encounter = { id: "wall", where: "space", title: "WALL OF RECORD", text: lines.join("\n"), weight: 0, options: opts };
+    (g.scenes["encounter"] as EncounterScene).open(g, enc, "interior", true);
+  }
+
+  // Who takes the chair? A crew member, with their skill in your hands, or nobody in particular.
+  retireMenu(g: Game): void {
+    const p = g.world.player;
+    const st = findStation(g.world, p.dockedAt ?? "")?.st;
+    const me = (p.captainName ?? wire.getCallsign() ?? "THE CAPTAIN").toUpperCase();
+    const opts: Encounter["options"] = [];
+    for (const c of p.crew.slice(0, 3)) {
+      opts.push({ label: `HAND THE SHIP TO ${c.name.toUpperCase()} (${ROLE_INFO[c.role].label}, SKILL ${c.skill})`, hint: c.role === "pilot" ? "Their piloting becomes yours" : c.role === "engineer" ? "Their engineering becomes yours" : "A steady hand", result: (g2) => {
+        const cap = retireCaptain(g2.world, me, c);
+        return `${me} SIGNS THE SHIP OVER AT ${(st?.name ?? "THE DOCK").toUpperCase()} AND WALKS DOWN THE RAMP WITH ${cap.credits - g2.world.player.credits}CR OF PENSION. ${c.name.toUpperCase()} SITS IN THE CHAIR. IT CREAKS THE SAME WAY.`;
+      } });
+    }
+    opts.push({ label: "RETIRE AND LET THE YARD FIND A NEW CAPTAIN", hint: "You start over in the same ship, same galaxy", result: (g2) => { const cap = retireCaptain(g2.world, me, null); return `${me} LEAVES ${cap.credits - g2.world.player.credits}CR RICHER AND THE SHIP POORER. A NEW NAME GOES ON THE MANIFEST. THE GALAXY DOESN'T BLINK.`; } });
+    opts.push({ label: "NOT YET", result: () => "THE WALL WAITS. IT'S GOOD AT THAT." });
+    const enc: Encounter = { id: "retire", where: "space", title: "THE CHAIR", text: `RETIRING MEANS: SIXTY PERCENT OF THE CREDITS GO WITH YOU AS A PENSION. OPEN CONTRACTS ARE HANDED BACK. STANDINGS HALVE. THE SHIP, ITS MODULES, ITS WALL, ITS CREW, YOUR STRUCTURES AND EVERYONE YOU EVER FLEW WITH STAY IN THE GALAXY. YOUR NAME GOES ON THE WALL AND ${st ? st.name.toUpperCase() + "'S PROMENADE" : "A PROMENADE"}.`, weight: 0, options: opts };
     (g.scenes["encounter"] as EncounterScene).open(g, enc, "interior", true);
   }
 

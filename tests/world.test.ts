@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
-  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost } from "../src/world";
+  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain } from "../src/world";
 import type { Infra } from "../src/world";
 import { migrateSave, SAVE_VERSION, saveKeyFor, SLOTS } from "../src/save";
 import { RNG } from "../src/core/rng";
@@ -942,5 +942,38 @@ describe("the lighthouse", () => {
     expect(beacon.health).toBe(55);
     expect(infraLit(beacon)).toBe(true);
     void news;
+  });
+});
+
+describe("legacy", () => {
+  it("a captain retires at a dock after an hour, the successor takes the chair, and the galaxy keeps its history", () => {
+    const w = generateWorld(61, { realGalaxy: true });
+    const p = w.player;
+    const st = w.systems[p.systemId].stations[0];
+    expect(canRetireCaptain(w)).toContain("DOCK");
+    p.dockedAt = st.id;
+    expect(canRetireCaptain(w)).toContain("TOO SOON");
+    w.time = 4000;
+    expect(canRetireCaptain(w)).toBeNull();
+    const pilot = { name: "Ines Mbeki", role: "pilot" as const, skill: 3, morale: 80, wage: 150 };
+    const eng = { name: "Bo Rell", role: "engineer" as const, skill: 1, morale: 80, wage: 40 };
+    p.crew = [pilot, eng];
+    p.credits = 10000; p.rep = { tsc: 80 }; p.wanted = 0.2; p.charters = ["tsc"];
+    p.missions.push({ id: "m", kind: "delivery", title: "x", desc: "", fromStationId: st.id, targetSystemId: p.systemId, reward: 1, accepted: true, done: false });
+    w.infra = [{ id: "b", kind: "beacon", systemId: p.systemId, x: 0, y: 0, owner: "ME", builtAt: 0, health: 100, till: 50, stock: 0, earned: 0, lastT: 0 }];
+    const cap = retireCaptain(w, "OLD HAND", pilot);
+    expect(cap.credits).toBe(10000);
+    expect(p.credits).toBe(4000);
+    expect(p.captainName).toBe("Ines Mbeki");
+    expect(p.crew).toEqual([eng]);
+    expect(p.skills.piloting).toBe(4.5);
+    expect(p.rep.tsc).toBe(40);
+    expect(p.wanted).toBe(0);
+    expect(p.charters).toEqual([]);
+    expect(p.missions.filter((m) => !m.done).length).toBe(0);
+    expect(p.lineage!.length).toBe(1);
+    expect(p.alumni!.some((a) => a.role === "captain" && a.name === "OLD HAND" && a.stationId === st.id)).toBe(true);
+    expect(w.infra.length).toBe(1);
+    expect(p.log!.some((l) => l.text.includes("took the chair"))).toBe(true);
   });
 });

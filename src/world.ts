@@ -280,6 +280,8 @@ export interface PlayerState {
   shoreCrew?: ShoreLeave[];          // crew waiting for you at a station
   alumni?: Alumnus[];                // crew who served and went home
   infraEarned?: number;              // lifetime tolls and fuel sales collected
+  lineage?: Captain[];               // captains who sat in this chair before
+  captainName?: string;              // who sits in it now (a crew member who took over), if not you
   fares?: number;                    // passengers carried to their destination
   kits?: Record<string, number>;     // infrastructure kits aboard (beacon, depot)
 }
@@ -383,7 +385,50 @@ export function beaconDiscount(w: World, fromId: string, toId: string): number {
 }
 
 export interface ShoreLeave { member: CrewMember; stationId: string; docks: number }
-export interface Alumnus { name: string; role: CrewRole; docks: number; stationId: string; t: number }
+export interface Alumnus { name: string; role: CrewRole | "captain"; docks: number; stationId: string; t: number }
+export interface Captain { name: string; from: number; to: number; stationId: string; credits: number; deeds: number }
+
+// ---------- Legacy: a captain retires, a crew member takes the chair ----------
+// The galaxy carries on: systems, structures, alumni, syndicate memory. The
+// ship and its wall of record pass to the successor with a share of the
+// credits; the rest is the old captain's pension. Reputations soften.
+export const RETIRE_AFTER = 3600; // an hour under way before the chair can pass
+export function canRetireCaptain(w: World): string | null {
+  const p = w.player;
+  if (!p.dockedAt) return "RETIRE AT A DOCK, NOT UNDER WAY";
+  if (w.time < RETIRE_AFTER) return "TOO SOON. THE SHIP BARELY KNOWS YOU.";
+  if (p.wanted > 0.5) return "NOT WITH THAT RECORD. CLEAR IT FIRST.";
+  return null;
+}
+export function retireCaptain(w: World, name: string, successor: CrewMember | null): Captain {
+  const p = w.player;
+  const stationId = p.dockedAt ?? p.lastDockedAt ?? "";
+  const deeds = (p.repairs ?? 0) + (p.tows ?? 0) + (p.rescues ?? 0) + (p.fares ?? 0) + (p.achievements ?? []).length;
+  const cap: Captain = { name, from: (p.lineage ?? []).reduce((a, c) => Math.max(a, c.to), 0), to: w.time, stationId, credits: p.credits, deeds };
+  (p.lineage ??= []).push(cap);
+  (p.alumni ??= []).push({ name, role: "captain", docks: (p.lineage.length ? 0 : 0) + Math.max(1, Math.round(w.time / 400)), stationId, t: w.time });
+  // the successor leaves the crew list and takes the chair; their skill seeds the new captain's hand
+  if (successor) {
+    p.crew = p.crew.filter((c) => c !== successor);
+    if (successor.role === "pilot") p.skills.piloting = Math.max(p.skills.piloting ?? 0, successor.skill * 1.5);
+    if (successor.role === "engineer") p.skills.engineering = Math.max(p.skills.engineering ?? 0, successor.skill * 1.5);
+    p.captainName = successor.name;
+  } else p.captainName = undefined;
+  // pension: the old captain keeps sixty percent
+  p.credits = Math.round(p.credits * 0.4);
+  // open contracts and passengers are handed back; the rest of the crew stay, unsettled
+  p.missions = p.missions.filter((m) => m.done);
+  for (const c of p.crew) { c.morale = Math.max(20, c.morale - 15); c.loyalty = Math.max(0, (c.loyalty ?? 0) - 1); }
+  // reputations soften toward neutral; the galaxy remembers the ship, not the pilot
+  for (const k of Object.keys(p.rep)) p.rep[k] = Math.round(p.rep[k] * 0.5);
+  for (const k of Object.keys(p.synRep ?? {})) p.synRep![k] = Math.round(p.synRep![k] * 0.5);
+  p.wanted = 0;
+  p.charters = [];
+  p.tutorial = -1;
+  logEntry(w, `${name} retired at ${findStation(w, stationId)?.st.name ?? "a station"}${successor ? `; ${successor.name} took the chair` : ""}`);
+  pushEvent(w, { t: w.time, kind: "arc", systemId: p.systemId, text: `${name} has retired; ${successor ? successor.name : "a new captain"} now commands ${p.shipName ?? "the ship"}` });
+  return cap;
+}
 
 // ---------- Passengers: the liner trade ----------
 export type SightKind = "planet" | "drifter" | "comet" | "festival";

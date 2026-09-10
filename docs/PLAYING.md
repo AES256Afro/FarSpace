@@ -101,6 +101,17 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   board: sample runs, outcrop runs, and a plant to fix on the spot. Jobs pay
   out when you walk back in.
 
+## Legacy
+
+- After an hour under way, docked and with a clean record, the wall of record
+  (E by the airlock aboard) offers RETIRE THIS CAPTAIN. Hand the ship to a
+  crew member (a pilot's or engineer's skill becomes yours) or let the yard
+  find a new captain.
+- Sixty percent of the credits leave as a pension, open contracts are handed
+  back, standings halve. The ship, its modules, its wall, its crew, your
+  structures and everyone you ever flew with stay. The old captain retires to
+  the promenade of that station.
+
 ## Squadron treaties
 
 - On your own BASE tab, every other squadron with a base is listed. Offer a

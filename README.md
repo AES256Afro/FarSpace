@@ -51,6 +51,10 @@ charters and enforce embargoes, station profiles and bulletins, gate traffic,
 comms chatter, void drifters near gas giants, crew who talk to each other, a
 wall of record aboard your ship, and a second campaign about a missing convoy.
 
+**Legacy:** retire the captain at the wall of record and hand the ship to a
+crew member. The galaxy, the structures, the alumni and the wall carry on;
+the old captain walks the promenade where they stepped down.
+
 **The lighthouse:** beacon and fuel depot kits planted in dead systems.
 Traffic reroutes through them and pays tolls, jumps get cheaper, raiders wear
 them down, and you fly back with spare parts to keep the light on.
@@ -124,7 +128,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestones 1–20 are live (v0.20.0). See the [roadmap](docs/ROADMAP.md) for what's next.
+Milestones 1–21 are live (v0.21.0). See the [roadmap](docs/ROADMAP.md) for what's next.
 
 ```bash
 npm test         # vitest: world-gen, routing, economy, law, missions, save migrations

@@ -8,7 +8,7 @@ import { RNG } from "../core/rng";
 import { clamp } from "../core/mathx";
 import { commodity, faction } from "../data/data";
 import { HULLS, hull } from "../data/hulls";
-import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS } from "../data/crew";
+import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS, roleLabel } from "../data/crew";
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
@@ -153,7 +153,7 @@ export class StationScene implements Scene {
     for (const c of gone) { retireCrew(p, c, this.station.id, now); logEntry(g.world, `${c.name} took another berth after waiting ${LEAVE_DOCKS} dockings on leave`); g.toast(`WORD FROM THE WIRE: ${c.name.toUpperCase()} GAVE UP WAITING AND SIGNED ON ELSEWHERE.`); }
     // old shipmates
     const alum = (p.alumni ?? []).filter((a) => a.stationId === this.station.id);
-    if (alum.length && rng.chance(0.4)) { const a = rng.pick(alum); g.toast(`${a.name.toUpperCase()} WAVES FROM THE LOUNGE. ${ROLE_INFO[a.role].label}, RETIRED. ${a.docks} DOCKINGS WITH YOU.`); }
+    if (alum.length && rng.chance(0.4)) { const a = rng.pick(alum); g.toast(`${a.name.toUpperCase()} WAVES FROM THE LOUNGE. ${roleLabel(a.role)}, RETIRED. ${a.docks} DOCKINGS WITH YOU.`); }
     for (const line of settlePassengers(p)) g.toast(line);
     const evHere = galaxyEventAt(g.world, p.systemId);
     if (evHere?.kind === "festival" && evHere.stationId === this.station.id && logSight(p, "festival", `the festival at ${this.station.name}`, p.systemId)) g.toast("YOUR PASSENGERS ARE OFF INTO THE FESTIVAL CROWD. THEY'LL REMEMBER THIS ONE.");

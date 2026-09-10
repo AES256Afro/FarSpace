@@ -93,7 +93,7 @@ export class StationWalkScene implements Scene {
     for (const a of (p.alumni ?? []).filter((x) => x.stationId === this.station.id).slice(-2)) {
       const spot = this.randomFloor(rng);
       this.npcs.push({ x: spot.x, y: spot.y, tx: spot.x, ty: spot.y, name: a.name, skin: "#e8b48c", suit: "#5d6680", pause: 4, tag: "RETIRED",
-        line: rng.pick([`${a.name.toUpperCase()}: '${a.docks} dockings with you. I still count the gates in my sleep. How's the old ship?'`, `${a.name.toUpperCase()}: 'They let me run the ${a.role === "engineer" ? "yard" : a.role === "medic" ? "clinic" : a.role === "gunner" ? "range" : "tug"} here. Quieter. Good quiet.'`, `${a.name.toUpperCase()}: 'If you ever need a ${a.role} again... no. No, I'm done. But it was good.'`]) });
+        line: rng.pick([`${a.name.toUpperCase()}: '${a.docks} dockings with you. I still count the gates in my sleep. How's the old ship?'`, `${a.name.toUpperCase()}: 'They let me run the ${a.role === "engineer" ? "yard" : a.role === "medic" ? "clinic" : a.role === "gunner" ? "range" : a.role === "captain" ? "harbour office" : "tug"} here. Quieter. Good quiet.'`, a.role === "captain" ? `${a.name.toUpperCase()}: 'How's my ship? Don't answer that. She's yours now. Fly her like you stole her.'` : `${a.name.toUpperCase()}: 'If you ever need a ${a.role} again... no. No, I'm done. But it was good.'`]) });
     }
     this.msg = `${this.station.name.toUpperCase()} PROMENADE`;
     this.msgTimer = 3;
