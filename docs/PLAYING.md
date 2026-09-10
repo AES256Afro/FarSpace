@@ -101,6 +101,15 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   board: sample runs, outcrop runs, and a plant to fix on the spot. Jobs pay
   out when you walk back in.
 
+## Rivals and the harbourmaster
+
+- One of the regulars took against you before you ever met. They take the
+  best fare an hour before you dock, log a wonder first and leave a buoy with
+  their name on it, undercut your charters, and hail you with edges on.
+- Help them when they're in trouble, twice, and the rivalry ends.
+- The harbourmaster's office on the promenade (O) knows who's in the lanes,
+  what's on file about you, your berth log and your charters.
+
 ## The handbook, the voice, the greenhouse
 
 - HANDBOOK on the title screen: every system in the game, a few lines each.

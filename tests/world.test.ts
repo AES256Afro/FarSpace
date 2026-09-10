@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
-  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn, captainByName, helpCaptain, isFriend, friendsAt, tickMail, pickCaptainFor, canUpgradeInfra, upgradeInfra } from "../src/world";
+  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn, captainByName, helpCaptain, isFriend, friendsAt, tickMail, pickCaptainFor, canUpgradeInfra, upgradeInfra, rivalOf, isRival, rivalTakesFare, rivalBeatsYouTo } from "../src/world";
 import type { Charter } from "../src/world";
 import type { Infra } from "../src/world";
 import { migrateSave, SAVE_VERSION, saveKeyFor, SLOTS } from "../src/save";
@@ -1227,5 +1227,30 @@ describe("the greenhouse", () => {
     tickWorld(w, 2);
     expect(p.cargo.food ?? 0).toBe(1);
     expect(p.grown).toBe(1);
+  });
+});
+
+describe("rivals", () => {
+  it("every galaxy seeds one rival who takes fares, beats you to sights, and can be won round by helping", () => {
+    const w = generateWorld(161, { realGalaxy: true });
+    const r = rivalOf(w)!;
+    expect(r).not.toBeNull();
+    expect(isRival(r)).toBe(true);
+    const st = w.systems[w.player.systemId].stations[0];
+    const fares = genFares(w, st, new RNG(3));
+    const n = fares.length;
+    let taken: string | null = null;
+    for (let i = 0; i < 30 && !taken; i++) taken = rivalTakesFare(w, fares, new RNG(i));
+    if (n >= 2) { expect(taken).toContain(r.name.toUpperCase()); expect(fares.length).toBe(n - 1); }
+    const wd = w.wonders![0];
+    let beaten = false;
+    for (let i = 0; i < 40 && !beaten; i++) { wd.seen = false; wd.seenBy = undefined; beaten = rivalBeatsYouTo(w, wd, new RNG(i)); }
+    expect(beaten).toBe(true);
+    expect(wd.seenBy).toBe(r.name);
+    helpCaptain(w, r.name, "repair", new RNG(1));
+    expect(r.disposition).toBe(-1);
+    helpCaptain(w, r.name, "tow", new RNG(2));
+    expect(isRival(r)).toBe(false);
+    expect(rivalOf(w)).toBeNull();
   });
 });

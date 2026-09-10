@@ -51,6 +51,9 @@ charters and enforce embargoes, station profiles and bulletins, gate traffic,
 comms chatter, void drifters near gas giants, crew who talk to each other, a
 wall of record aboard your ship, and a second campaign about a missing convoy.
 
+**Rivals:** a regular captain who competes without shooting, takes fares
+and sights and routes, and can be won round; a harbourmaster's office.
+
 **Handbook and voice:** an in-game handbook for every system, a ship that
 speaks on the band about itself, and a greenhouse that grows provisions.
 
@@ -162,7 +165,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestones 1–32 are live (v0.32.0). See the [roadmap](docs/ROADMAP.md) for what's next.
+Milestones 1–33 are live (v0.33.0). See the [roadmap](docs/ROADMAP.md) for what's next.
 
 ```bash
 npm test         # vitest: world-gen, routing, economy, law, missions, save migrations

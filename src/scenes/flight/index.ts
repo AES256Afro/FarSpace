@@ -5,7 +5,7 @@ import { ask, confirmBox } from "../../core/dialog";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, crewXp, stormBlind, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, crewXp, stormBlind, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra } from "../../world";
 import { COMMODITIES, commodity } from "../../data/data";
 import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
@@ -805,15 +805,17 @@ export class FlightScene implements Scene {
       const cap = captainByName(g.world, n.name);
       if (!cap) continue;
       n.hailed = true;
-      const line = isFriend(cap) ? (["GOOD TO SEE THAT HULL. STILL OWE YOU.", "IF YOU'RE HEADING MY WAY, THERE'S A DRINK WITH YOUR NAME ON IT.", "KEEP FLYING LIKE THAT AND I'LL HAVE TO START PAYING YOU."][cap.met % 3])
+      const line = isRival(cap) ? rivalryLine(g.world, cap, new RNG((g.world.seed ^ Math.floor(g.world.time * 61)) >>> 0))
+        : isFriend(cap) ? (["GOOD TO SEE THAT HULL. STILL OWE YOU.", "IF YOU'RE HEADING MY WAY, THERE'S A DRINK WITH YOUR NAME ON IT.", "KEEP FLYING LIKE THAT AND I'LL HAVE TO START PAYING YOU."][cap.met % 3])
         : cap.helped > 0 ? "THAT YOU? I HAVEN'T FORGOTTEN." : cap.met > 3 ? "WE KEEP CROSSING PATHS. SMALL GALAXY." : "CLEAR SKIES, STRANGER.";
-      this.comms.push({ from: `${cap.name.toUpperCase()}, ${cap.ship.toUpperCase()}`, text: line, life: 7, color: isFriend(cap) ? PAL.gold : PAL.info });
+      this.comms.push({ from: `${cap.name.toUpperCase()}, ${cap.ship.toUpperCase()}`, text: line, life: 7, color: isRival(cap) ? PAL.danger : isFriend(cap) ? PAL.gold : PAL.info });
     }
     // a wonder within sight: the codex, the data, the tourists
     for (const wd of wondersIn(g.world, sys.id)) {
       if (dist(p.x, p.y, wd.x, wd.y) > WONDER_RANGE) continue;
       if (this.wonderSeen.has(wd.id)) continue;
       this.wonderSeen.add(wd.id);
+      if (rivalBeatsYouTo(g.world, wd, new RNG((g.world.seed ^ Math.floor(g.world.time * 67)) >>> 0))) g.toast(`${(wd.seenBy ?? "SOMEONE").toUpperCase()} LOGGED ${wd.name.toUpperCase()} FIRST AND LEFT A MARKER BUOY WITH THEIR NAME ON IT.`);
       const r = seeWonder(g.world, wd, wire.getCallsign() ?? p.captainName ?? "an independent pilot");
       g.toast(r.first ? `${wd.name.toUpperCase()}. ${wd.desc.toUpperCase()} +${r.data} DATA` : `${wd.name.toUpperCase()} AGAIN. IT DOESN'T GET SMALLER. +${r.data} DATA`);
       if (r.first) { flag(g, "wonder"); void wire.post("discover", `saw ${wd.name} in ${sys.name}`, sys.name); sfx.pickup(); }

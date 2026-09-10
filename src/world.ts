@@ -540,6 +540,7 @@ export function runCharterTrip(w: World, c: Charter, rng: RNG): string | null {
   }
   const qty = Math.min(c.qty, from.st.stock[c.commodityId] ?? 0);
   if (qty <= 0) return null; // nothing to carry this trip; the hauler waits
+  { const r = rivalOf(w); if (r && rng.chance(0.12)) return `${r.name.toUpperCase()} UNDERCUT THE ${from.st.name.toUpperCase()} RUN THIS TRIP. ${c.name.toUpperCase()} CAME BACK EMPTY.`; }
   const buy = stationPrice(from.st, c.commodityId), sell = stationPrice(to.st, c.commodityId);
   from.st.stock[c.commodityId] = (from.st.stock[c.commodityId] ?? 0) - qty; refreshPrices(from.st);
   to.st.stock[c.commodityId] = (to.st.stock[c.commodityId] ?? 0) + qty; refreshPrices(to.st);
@@ -776,6 +777,43 @@ export function tickMail(w: World): string[] {
     out.push(`LETTER FROM ${m.from.toUpperCase()}${giftText} - READ IT ON THE NEWS TAB`);
   }
   return out;
+}
+// A rival: a regular who took against you (one starts that way). They grab fares,
+// beat you to sights, undercut your routes and talk on the wire. Helping them
+// when they're in trouble is the way back; disposition is one number for both.
+export function rivalOf(w: World): NpcCaptain | null {
+  const caps = (w.captains ?? []).filter((c) => c.disposition <= -1);
+  if (!caps.length) return null;
+  return caps.sort((a, b) => a.disposition - b.disposition)[0];
+}
+export function isRival(c: NpcCaptain): boolean { return c.disposition <= -1; }
+export function seedRival(w: World, rng: RNG): NpcCaptain | null {
+  const caps = w.captains ?? [];
+  if (!caps.length || caps.some(isRival)) return null;
+  const c = rng.pick(caps);
+  c.disposition = -2;
+  return c;
+}
+// At a dock: the rival may have been through first and taken the best fare
+export function rivalTakesFare(w: World, fares: Mission[], rng: RNG): string | null {
+  const r = rivalOf(w);
+  if (!r || fares.length < 2 || !rng.chance(0.3)) return null;
+  const best = [...fares].sort((a, b) => b.reward - a.reward)[0];
+  fares.splice(fares.indexOf(best), 1);
+  return `${r.name.toUpperCase()} OF THE ${r.ship.toUpperCase()} TOOK THE ${best.title.toUpperCase()} AN HOUR BEFORE YOU DOCKED. THEY LEFT A NOTE: 'TOO SLOW.'`;
+}
+// On a first sighting: the rival may have logged it already, and the wire knows
+export function rivalBeatsYouTo(w: World, wd: Wonder, rng: RNG): boolean {
+  const r = rivalOf(w);
+  if (!r || wd.seen || !rng.chance(0.25)) return false;
+  wd.seen = true; wd.seenBy = r.name;
+  pushEvent(w, { t: w.time, kind: "discovery", systemId: wd.systemId, text: `${r.name} logged ${wd.name} first, and made sure everyone heard` });
+  return true;
+}
+// Rivalry ends the day you help them; a run of good deeds makes a friend of an enemy
+export function rivalryLine(w: World, c: NpcCaptain, rng: RNG): string {
+  if (isRival(c)) return rng.pick(["SO YOU'RE THE ONE. STAY OUT OF MY LANES.", "I'VE HEARD ABOUT YOU. NONE OF IT GOOD, AND I MADE SURE OF THAT.", "THAT FARE WAS MINE. THE NEXT ONE WILL BE TOO."]);
+  return "WE'RE SQUARE. FOR NOW.";
 }
 export function friendsAt(w: World, stationId: string): NpcCaptain[] {
   return (w.captains ?? []).filter((c) => c.homeStationId === stationId && isFriend(c));
@@ -1627,7 +1665,7 @@ export function generateWorld(seed: number, opts: GenOptions = {}): World {
     rareOrigin: assignRares(systems, new RNG((seed ^ 0x5a5e) >>> 0)),
     syndicates: assignSyndicates(systems, startId, new RNG((seed ^ 0x51d1) >>> 0)),
     wonders: assignWonders(systems, startId, new RNG((seed ^ 0x77d3) >>> 0)),
-    captains: assignCaptains(systems, new RNG((seed ^ 0xc4b7) >>> 0)),
+    captains: (() => { const caps = assignCaptains(systems, new RNG((seed ^ 0xc4b7) >>> 0)); const r = new RNG((seed ^ 0x71a1) >>> 0); const rv = caps.length ? r.pick(caps) : null; if (rv) rv.disposition = -2; return caps; })(),
     ...(assignPermits(systems, startId, new RNG((seed ^ 0x9e3d) >>> 0)), {}),
     systems, player, news: [], events: [], wars: [],
     missionCounter: 0, econTick: 0, shockTick: 0, warTick: 0,

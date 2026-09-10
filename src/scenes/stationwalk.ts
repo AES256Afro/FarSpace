@@ -6,7 +6,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 import { RNG, hashStr } from "../core/rng";
 import { dist } from "../core/mathx";
-import { StationDef, findStation } from "../world";
+import { StationDef, findStation, isFriend, isRival, rivalOf } from "../world";
+import type { Encounter } from "../data/encounters";
+import type { EncounterScene } from "./encounter";
 import { faction, genPersonName } from "../data/data";
 import { StationScene } from "./station";
 
@@ -17,7 +19,7 @@ const T = 10;
 const DECK = [
   "########################################",
   "#~~~~#............................#~~~~#",
-  "#....#..M.......................Y.#....#",
+  "#....#..M...........O...........Y.#....#",
   "#....D............................D...A#",
   "#....#............................#....#",
   "######..........########..........######",
@@ -42,6 +44,7 @@ const KIOSKS: Kiosk[] = [
   { ch: "N", label: "GALNET TERMINAL", tab: 6 },
   { ch: "A", label: "AIRLOCK - YOUR SHIP", tab: null },
   { ch: "H", label: "STATION CLINIC", tab: -1 },
+  { ch: "O", label: "HARBOURMASTER", tab: -2 },
 ];
 
 interface WalkerNpc {
@@ -105,6 +108,24 @@ export class StationWalkScene implements Scene {
     }
     this.msg = `${this.station.name.toUpperCase()} PROMENADE`;
     this.msgTimer = 3;
+  }
+
+  // The harbourmaster's office: who's in, who's due, your berth log, your charters, the rival if any
+  harbourmaster(g: Game): void {
+    const w = g.world; const p = w.player;
+    const sys = w.systems[p.systemId];
+    const here = (w.captains ?? []).filter((c) => w.time - c.lastSeen < 900).slice(0, 4);
+    const lines: string[] = [];
+    lines.push(`${this.station.name.toUpperCase()} HARBOUR OFFICE - TRAFFIC THIS HOUR: ${Math.max(2, sys.stations.length * 3 + Math.floor((w.time / 60) % 7))} MOVEMENTS`);
+    lines.push(here.length ? `IN THE LANES LATELY: ${here.map((c) => `${c.name.toUpperCase()} (${c.ship.toUpperCase()}${isFriend(c) ? ", FRIEND" : isRival(c) ? ", RIVAL" : ""})`).join("; ")}`.slice(0, 118) : "IN THE LANES LATELY: NOBODY YOU'D KNOW.");
+    const r = rivalOf(w);
+    if (r) lines.push(`ON FILE: ${r.name.toUpperCase()} OF THE ${r.ship.toUpperCase()} HAS LODGED ${2 + Math.abs(r.disposition)} COMPLAINTS ABOUT YOU. NONE UPHELD.`);
+    const bl = (p.berthLog ?? []).slice(-3).reverse();
+    lines.push(bl.length ? `YOUR BERTH LOG: ${bl.map((b) => `${(findStation(w, b.stationId)?.st.name ?? "?").toUpperCase()} ${b.cost}CR`).join("; ")}` : "YOUR BERTH LOG: NO YARD SERVICES ON FILE. THE HARBOURMASTER RAISES AN EYEBROW.");
+    for (const c of p.haulers ?? []) lines.push(`CHARTER ${c.name.toUpperCase()}: ${c.trips} TRIPS, ${c.earned}CR, HULL ${c.health}%`);
+    lines.push(`WEAR ${Math.round(p.wear ?? 0)}%   FARES CARRIED ${p.fares ?? 0}   DOCKINGS BY YOUR CREW ${p.crew.reduce((a, c) => Math.max(a, c.docks ?? 0), 0)}`);
+    const enc: Encounter = { id: "harbour", where: "space", title: "HARBOURMASTER'S OFFICE", text: lines.join("\n"), weight: 0, options: [{ label: "THANK THEM AND GO", result: () => "" }] };
+    (g.scenes["encounter"] as EncounterScene).open(g, enc, "stationwalk", true);
   }
 
   randomFloor(rng: RNG): { x: number; y: number } {
@@ -182,6 +203,7 @@ export class StationWalkScene implements Scene {
       if (who) { this.msg = who.line!; this.msgTimer = 6; }
     }
     if (near && inp.wasPressed("e")) {
+      if (near.def.tab === -2) { this.harbourmaster(g); return; }
       if (near.def.tab === -1) {
         // the clinic: sick crew back on their feet, for a fee
         const p = g.world.player;
@@ -315,7 +337,7 @@ export class StationWalkScene implements Scene {
     if (near) {
       const kx = ox + near.tx * T + T / 2;
       drawText(ctx, near.def.label, kx - textWidth(near.def.label) / 2, oy + near.ty * T - 9, PAL.ui);
-      const hint = near.def.tab === null ? "[E] BOARD SHIP + UNDOCK" : near.def.tab === -1 ? "[E] TREAT SICK CREW (120CR EACH)" : "[E] USE";
+      const hint = near.def.tab === null ? "[E] BOARD SHIP + UNDOCK" : near.def.tab === -1 ? "[E] TREAT SICK CREW (120CR EACH)" : near.def.tab === -2 ? "[E] ASK" : "[E] USE";
       drawText(ctx, hint, kx - textWidth(hint) / 2, oy + near.ty * T + T + 3, PAL.gold);
     }
 

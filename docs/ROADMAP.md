@@ -488,4 +488,9 @@ Time passes for the people on the ship, and for the ship.
 - [x] The ship's own voice on the comms band
 - [x] A greenhouse module that grows provisions under way
 
+## Milestone 33 — Rivals and the Harbourmaster ✅ (Sep 2026)
+- [x] A rival captain who competes without shooting: fares, sights, routes,
+      hostile hails; won round by helping them
+- [x] The harbourmaster's office on the promenade
+
 ## Later
