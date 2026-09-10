@@ -95,6 +95,13 @@ export class StationWalkScene implements Scene {
       this.npcs.push({ x: spot.x, y: spot.y, tx: spot.x, ty: spot.y, name: a.name, skin: "#e8b48c", suit: "#5d6680", pause: 4, tag: "RETIRED",
         line: rng.pick([`${a.name.toUpperCase()}: '${a.docks} dockings with you. I still count the gates in my sleep. How's the old ship?'`, `${a.name.toUpperCase()}: 'They let me run the ${a.role === "engineer" ? "yard" : a.role === "medic" ? "clinic" : a.role === "gunner" ? "range" : a.role === "captain" ? "harbour office" : "tug"} here. Quieter. Good quiet.'`, a.role === "captain" ? `${a.name.toUpperCase()}: 'How's my ship? Don't answer that. She's yours now. Fly her like you stole her.'` : `${a.name.toUpperCase()}: 'If you ever need a ${a.role} again... no. No, I'm done. But it was good.'`]) });
     }
+    // fares waiting for a ship, luggage at their feet
+    const stScene = (g.scenes["station"] as StationScene | undefined);
+    for (const f of (stScene?.fares ?? []).slice(0, 3)) {
+      const spot = this.randomFloor(rng);
+      this.npcs.push({ x: spot.x, y: spot.y, tx: spot.x, ty: spot.y, name: f.passengerName ?? "A FARE", skin: rng.pick(["#e8b48c", "#c78a5a", "#f0d0b0"]), suit: f.passengerKind === "vip" ? "#c7a54a" : f.passengerKind === "tourist" ? "#5ab3ff" : "#7a5aa5", pause: 6, tag: "WAITING FOR A SHIP",
+        line: `${(f.passengerName ?? "").toUpperCase()}: '${f.desc.split(". ")[0]}. Ask at the lounge if you've a cabin.'` });
+    }
     this.msg = `${this.station.name.toUpperCase()} PROMENADE`;
     this.msgTimer = 3;
   }

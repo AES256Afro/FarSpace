@@ -4,7 +4,7 @@
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard } from "../world";
+import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp } from "../world";
 import { commodity } from "../data/data";
 
 const PASSENGER_LINES: Record<string, { high: string[]; mid: string[]; low: string[] }> = {
@@ -135,6 +135,7 @@ export class InteriorScene implements Scene {
   talkTimer = 0;
   banterTimer = 20;
   talkIdx = 0;
+  cat = { x: 0, y: 0, tx: 0, ty: 0, pause: 1, sat: false };
 
   enter(g: Game): void {
     const p = g.world.player;
@@ -277,6 +278,7 @@ export class InteriorScene implements Scene {
             if (sys.health < 60 && !removeCargo(p, "parts", 1)) { this.say("NEED SPARE PARTS"); this.repairing = null; return; }
             sys.health = Math.min(100, sys.health + 20);
             p.skills.engineering = Math.min(10, (p.skills.engineering ?? 0) + 0.1);
+            { const up = crewXp(p, "engineer"); if (up) g.toast(up); }
             sfx.repair();
             this.say(`${sys.name.toUpperCase()} AT ${Math.round(sys.health)}%`);
           }
@@ -287,7 +289,13 @@ export class InteriorScene implements Scene {
 
     // ---- tap E: verbs
     if (inp.wasPressed("e") && dist(1 * T + T / 2, 1 * T + T / 2, this.px, this.py) < 14) { this.readWall(g); return; }
-    if (inp.wasPressed("e")) {
+    const catNear = !!p.cat && dist(this.cat.x, this.cat.y, this.px, this.py) < 14;
+    if (inp.wasPressed("e") && catNear && !crewNear && !fire && !breach) {
+      const lines = [`${p.cat!.name.toUpperCase()} PURRS LIKE A SMALL REACTOR.`, `${p.cat!.name.toUpperCase()} ALLOWS ONE PAT. EXACTLY ONE.`, `${p.cat!.name.toUpperCase()} LOOKS AT YOU, THEN AT THE GALLEY, THEN AT YOU.`, `${p.cat!.name.toUpperCase()} IS ASLEEP ON THE WARM BIT. THE WARM BIT IS THE REACTOR HOUSING.`];
+      this.talk = lines[Math.floor(Math.random() * lines.length)]; this.talkTimer = 4;
+      for (const c of p.crew) c.morale = Math.min(100, c.morale + 1);
+      this.cat.pause = 3;
+    } else if (inp.wasPressed("e")) {
       if (crewNear) {
         const c = crewNear.c;
         const pool = c.morale >= 65 ? CREW_LINES[c.role].high : c.morale >= 30 ? CREW_LINES[c.role].mid : CREW_LINES[c.role].low;
@@ -341,6 +349,22 @@ export class InteriorScene implements Scene {
     }
     if (this.msgTimer > 0) { this.msgTimer -= dt; if (this.msgTimer <= 0) this.msg = ""; }
     if (this.talkTimer > 0) { this.talkTimer -= dt; if (this.talkTimer <= 0) this.talk = ""; }
+    // the cat goes where it likes, mostly the console and the galley
+    if (p.cat) {
+      const c = this.cat;
+      if (c.x === 0 && c.y === 0) { const k = nearestTile(this.deck, 0, 0, "K", 1e9); c.x = c.tx = (k ? k.tx : 2) * T + T / 2; c.y = c.ty = (k ? k.ty : 2) * T + T / 2; }
+      if (c.pause > 0) c.pause -= dt;
+      else {
+        const d = Math.hypot(c.tx - c.x, c.ty - c.y);
+        if (d < 1.5) {
+          c.pause = 4 + Math.random() * 10;
+          const favourite = Math.random() < 0.5 ? nearestTile(this.deck, this.px, this.py, "CKRB", 1e9) : null;
+          const spot = favourite ?? { tx: 1 + Math.floor(Math.random() * (this.deck[0].length - 2)), ty: 1 + Math.floor(Math.random() * (this.deck.length - 2)) };
+          const ch = this.tileAt(spot.tx, spot.ty);
+          if (ch === "." || ch === "c" || ch === "p" || favourite) { c.tx = spot.tx * T + T / 2; c.ty = spot.ty * T + T / 2 + (favourite ? 6 : 0); }
+        } else { const step = 18 * dt; const nx = c.x + ((c.tx - c.x) / d) * step, ny = c.y + ((c.ty - c.y) / d) * step; if (!this.solid(Math.floor(nx / T), Math.floor(ny / T))) { c.x = nx; c.y = ny; } else { c.tx = c.x; c.ty = c.y; } }
+      }
+    }
     // crew talk to each other when you're not talking to them
     this.banterTimer -= dt;
     if (this.banterTimer <= 0 && !this.talk && p.crew.length >= 2) {
@@ -359,6 +383,7 @@ export class InteriorScene implements Scene {
         [`${a.name}: Galley's stocked. Real coffee.`, `${b.name}: Then this is the best ship in the sector.`],
         [`${a.name}: Did you see the drifters off the gas giant?`, `${b.name}: I saw them. They saw us. Nobody blinked.`],
         [`${a.name}: The reactor's humming in tune again.`, `${b.name}: I retuned it. You're welcome. Again.`],
+        ...(p.cat ? [[`${a.name}: ${p.cat.name}'s asleep on the comms panel again.`, `${b.name}: Leave it. Best signal we've had all week.`], [`${a.name}: Who's feeding ${p.cat.name}?`, `${b.name}: Everyone. That's the problem.`]] : []),
       ];
       const pick = lines[Math.floor(Math.random() * lines.length)];
       this.talk = `${pick[0].toUpperCase()}   ${pick[1].toUpperCase()}`;
@@ -414,6 +439,12 @@ export class InteriorScene implements Scene {
       if (c.sick) { ctx.fillStyle = "#9fd8a0"; ctx.fillRect(ox + s.tx * T + T / 2 + 3, oy + s.ty * T, 2, 2); }
       else if (c.morale < 30 && Math.floor(g.world.time * 2) % 2 === 0) { ctx.fillStyle = PAL.warn; ctx.fillRect(ox + s.tx * T + T / 2 + 3, oy + s.ty * T, 2, 2); }
     });
+    if (p.cat && (this.cat.x || this.cat.y)) {
+      const cx = Math.round(ox + this.cat.x), cy = Math.round(oy + this.cat.y);
+      ctx.fillStyle = "#e0b070"; ctx.fillRect(cx - 2, cy - 1, 4, 2); ctx.fillRect(cx + 1, cy - 3, 2, 2); // body, head
+      ctx.fillStyle = "#3a2a1a"; ctx.fillRect(cx - 3, cy - 2, 1, 1); // tail tip
+      if (Math.floor(g.world.time * 2) % 4 === 0) { ctx.fillStyle = "#63f2c8"; ctx.fillRect(cx + 2, cy - 3, 1, 1); } // an eye
+    }
     const passenger = p.missions.find((m) => m.kind === "passenger" && m.accepted && !m.done);
     const pSpot = nearestTile(this.deck, 0, 0, "p", 1e9);
     if (passenger && pSpot) {
@@ -454,6 +485,7 @@ export class InteriorScene implements Scene {
     const crewNear = p.crew.map((c, i) => ({ c, spot: spots[i] })).find((x) => x.spot && dist(x.spot.tx * T + T / 2, x.spot.ty * T + T / 2, this.px, this.py) < 16);
     const atWall = dist(1 * T + T / 2, 1 * T + T / 2, this.px, this.py) < 14;
     if (atWall && !fire && !breach) tooltip(ctx, ox, oy, 1, 0, "WALL OF RECORD", "[E] READ", "#c7a54a");
+    else if (p.cat && dist(this.cat.x, this.cat.y, this.px, this.py) < 14 && !crewNear) tooltip(ctx, ox, oy, Math.floor(this.cat.x / T), Math.floor(this.cat.y / T), p.cat.name.toUpperCase(), "[E] PAT", "#e0b070");
     else if (fire) tooltip(ctx, ox, oy, fire.tx, fire.ty, "FIRE", "[HOLD E] EXTINGUISH", PAL.danger);
     else if (breach) tooltip(ctx, ox, oy, breach.tx, breach.ty, "HULL BREACH", "[HOLD E] SEAL (1 PART)", PAL.danger);
     else if (crewNear) tooltip(ctx, ox, oy, crewNear.spot.tx, crewNear.spot.ty, `${crewNear.c.name} - ${ROLE_INFO[crewNear.c.role].label}`, "[E] TALK", PAL.ui);

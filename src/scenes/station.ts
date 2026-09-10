@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS, roleLabel } from "../
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter,
+  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter,
 } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
@@ -114,6 +114,7 @@ export class StationScene implements Scene {
     for (const c of p.crew) {
       if ((p.cargo.food ?? 0) > 0) { removeCargo(p, "food", 1); c.morale = Math.min(100, c.morale + 8); }
       else c.morale = Math.max(0, c.morale - 15);
+      if (p.cat) c.morale = Math.min(100, c.morale + 2);
     }
     const quitters = p.crew.filter((c) => c.morale <= 5 && (c.loyalty ?? 0) < 3);
     for (const q of quitters) g.toast(`${q.name.toUpperCase()} WALKED OFF THE SHIP`);
@@ -820,6 +821,19 @@ export class StationScene implements Scene {
         if (m.shield) { p.shieldMax = Math.round(p.shieldMax * (1 + m.shield)); p.shield = p.shieldMax; }
         flag(g, "outfitted");
         g.toast(`${m.name.toUpperCase()} FITTED - ${m.desc.toUpperCase()}`);
+      } });
+    }
+    opts.push({ label: "REST A WHILE (TEN MINUTES OF SHIP TIME)", sub: "MARKETS BREATHE, TILLS FILL, THE SICK MEND, CREW SETTLE", action: () => {
+      const lines = restAtDock(g.world);
+      g.toast(lines[0] ?? "TEN MINUTES PASS. THE DECK HUMS. NOTHING BROKE."); for (const l of lines.slice(1)) g.toast(l);
+      refreshPrices(st); g.autosave();
+    } });
+    if (!p.cat && st.type === "agri") {
+      opts.push({ label: "ADOPT THE YARD CAT", sub: "150CR - CREW MORALE, AND SOMEONE TO TALK TO ABOARD", action: () => {
+        if (p.credits < 150) return g.toast("NOT ENOUGH CREDITS");
+        p.credits -= 150; const name = CAT_NAMES[(g.world.seed + st.id.length) % CAT_NAMES.length]; adoptCat(p, name, g.world.time);
+        logEntry(g.world, `${name} came aboard at ${st.name}`); flag(g, "shipsCat");
+        g.toast(`${name.toUpperCase()} WALKS UP THE RAMP AS IF IT WERE THEIRS. IT IS NOW.`); sfx.pickup();
       } });
     }
     for (const k of ["beacon", "depot"] as const) {

@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
-  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain } from "../src/world";
+  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind } from "../src/world";
 import type { Infra } from "../src/world";
 import { migrateSave, SAVE_VERSION, saveKeyFor, SLOTS } from "../src/save";
 import { RNG } from "../src/core/rng";
@@ -975,5 +975,33 @@ describe("legacy", () => {
     expect(p.alumni!.some((a) => a.role === "captain" && a.name === "OLD HAND" && a.stationId === st.id)).toBe(true);
     expect(w.infra.length).toBe(1);
     expect(p.log!.some((l) => l.text.includes("took the chair"))).toBe(true);
+  });
+});
+
+describe("life on the deck", () => {
+  it("crew learn by doing, rest passes ship time, cats lift morale, storms blind unless a beacon is lit", () => {
+    const w = generateWorld(71, { realGalaxy: true });
+    const p = w.player;
+    const g = { name: "G", role: "gunner" as const, skill: 1, morale: 50, wage: 55 };
+    p.crew = [g];
+    let up: string | null = null;
+    for (let i = 0; i < 12; i++) up = crewXp(p, "gunner") ?? up;
+    expect(g.skill).toBe(2);
+    expect(g.wage).toBe(110);
+    expect(up).toContain("SKILL 2");
+    expect(crewXp(p, "pilot")).toBeNull();
+    const t0 = w.time;
+    restAtDock(w, 600);
+    expect(w.time - t0).toBe(600);
+    expect(g.morale).toBeGreaterThan(50);
+    adoptCat(p, "Biscuit", w.time);
+    expect(p.cat!.name).toBe("Biscuit");
+    const sysId = p.systemId;
+    w.galaxyEvent = { kind: "storm", systemId: sysId, until: w.time + 500 };
+    expect(stormBlind(w, sysId)).toBe(true);
+    w.infra = [{ id: "b", kind: "beacon", systemId: sysId, x: 0, y: 0, owner: "ME", builtAt: 0, health: 100, till: 0, stock: 0, earned: 0, lastT: 0 }];
+    expect(stormBlind(w, sysId)).toBe(false);
+    w.infra[0].health = 10;
+    expect(stormBlind(w, sysId)).toBe(true);
   });
 });

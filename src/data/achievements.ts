@@ -31,6 +31,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "warVeteran", title: "WAR VETERAN", desc: "Fight for the winning side of a syndicate war", check: (w) => !!w.player.flags?.warVeteran },
   { id: "theLane", title: "THE LANE", desc: "Find the missing convoy", check: (w) => !!w.player.flags?.theLane },
   { id: "charter", title: "CHARTERED", desc: "Hold a faction charter", check: (w) => !!w.player.flags?.charter },
+  { id: "shipsCat", title: "SHIP'S CAT", desc: "A cat decides your ship is its ship", check: (w) => !!w.player.flags?.shipsCat },
   { id: "lineage", title: "THE CHAIR PASSES", desc: "Retire a captain and hand the ship on", check: (w) => (w.player.lineage ?? []).length >= 1 },
   { id: "lighthouse", title: "LIGHTHOUSE KEEPER", desc: "Plant a beacon or a depot in a dead system", check: (w) => !!w.player.flags?.lighthouse },
   { id: "tollman", title: "TOLLMAN", desc: "Collect 5,000 credits from your structures", check: (w) => (w.player.infraEarned ?? 0) >= 5000 },

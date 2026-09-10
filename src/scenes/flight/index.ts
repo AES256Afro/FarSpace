@@ -5,7 +5,7 @@ import { ask, confirmBox } from "../../core/dialog";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, crewXp, stormBlind, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra } from "../../world";
 import { COMMODITIES, commodity } from "../../data/data";
 import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
@@ -87,6 +87,7 @@ export class FlightScene implements Scene {
     {
       const p = g.world.player;
       const ev = galaxyEventAt(g.world, p.systemId);
+      if (ev?.kind === "storm") { this.scanMsg = stormBlind(g.world, p.systemId) ? "ION STORM - RADAR AND CHARTS BLIND. FLY BY EYE." : "ION STORM - THE BEACON HOLDS THE PICTURE"; this.scanTimer = 5; sfx.alarm(); }
       if (ev?.kind === "comet" && logSight(p, "comet", `the comet over ${g.world.systems[p.systemId].name}`, p.systemId)) g.toast("THE COMET FILLS THE VIEWPORT. YOUR PASSENGERS WON'T FORGET THIS ONE.");
     }
   }
@@ -270,7 +271,7 @@ export class FlightScene implements Scene {
         for (const d of this.drifters) if (!d.logged && dist(p.x, p.y, d.x, d.y) < 400) this.scanDrifter(g, d);
         let found = 0;
         for (const an of sys.anomalies) {
-          if (!an.discovered && dist(an.x, an.y, p.x, p.y) < (galaxyEventAt(g.world, sys.id)?.kind === "flare" ? 450 : 900)) { an.discovered = true; found++; }
+          if (!an.discovered && dist(an.x, an.y, p.x, p.y) < (galaxyEventAt(g.world, sys.id)?.kind === "flare" ? 450 : stormBlind(g.world, sys.id) ? 300 : 900)) { an.discovered = true; found++; }
         }
         const logged = logSystem(p, sys, 2);
         g.toast(found ? `SCAN: ${found} ANOMALY SIGNAL${found > 1 ? "S" : ""} LOCATED${logged ? ` - SYSTEM LOGGED +${logged} DATA` : ""}` : logged ? `SCAN: SYSTEM LOGGED +${logged} EXPLORATION DATA` : "SCAN: NOTHING WITHIN RANGE");
@@ -652,6 +653,7 @@ export class FlightScene implements Scene {
     const reward = (this.sos && this.sos.trader === n ? this.sos.reward : 250) + Math.floor(Math.random() * 150);
     this.thankYou(g, n, reward);
     p.lives = (p.lives ?? 0) + 3;
+    { const up = crewXp(p, "medic", 4); if (up) g.toast(up); }
     flag(g, "fieldMedic");
     if ((p.lives ?? 0) >= 12) flag(g, "surgeon");
     const sys = g.world.systems[p.systemId];
@@ -670,6 +672,7 @@ export class FlightScene implements Scene {
     const reward = (this.sos && this.sos.trader === n ? this.sos.reward : 300) + Math.floor(Math.random() * 200);
     this.thankYou(g, n, reward);
     p.repairs = (p.repairs ?? 0) + 1;
+    if (by !== "you") { const up = crewXp(p, "engineer", 4); if (up) g.toast(up); }
     flag(g, "shipwright1");
     if ((p.repairs ?? 0) >= 5) flag(g, "shipwright5");
     const sys = g.world.systems[p.systemId];
@@ -1087,6 +1090,7 @@ export class FlightScene implements Scene {
     }
     p.fuel -= cost;
     jumpWear(p);
+    { const up = crewXp(p, "pilot"); if (up) g.toast(up); }
     sfx.jump();
     if (this.towing) { this.towing = null; g.toast("THE TOW LINE DOESN'T SURVIVE THE JUMP"); }
     const fromId = p.systemId;

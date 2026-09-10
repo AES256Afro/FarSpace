@@ -280,6 +280,7 @@ export interface PlayerState {
   shoreCrew?: ShoreLeave[];          // crew waiting for you at a station
   alumni?: Alumnus[];                // crew who served and went home
   infraEarned?: number;              // lifetime tolls and fuel sales collected
+  cat?: { name: string; since: number } | null; // the ship's cat, if one has adopted you
   lineage?: Captain[];               // captains who sat in this chair before
   captainName?: string;              // who sits in it now (a crew member who took over), if not you
   fares?: number;                    // passengers carried to their destination
@@ -387,6 +388,41 @@ export function beaconDiscount(w: World, fromId: string, toId: string): number {
 export interface ShoreLeave { member: CrewMember; stationId: string; docks: number }
 export interface Alumnus { name: string; role: CrewRole | "captain"; docks: number; stationId: string; t: number }
 export interface Captain { name: string; from: number; to: number; stationId: string; credits: number; deeds: number }
+
+// ---------- Crew learn by doing ----------
+// A repair, a kill, a jump, a patient: each is a mark toward the next skill.
+export const XP_STEPS = [0, 12, 34];
+export function crewXp(p: PlayerState, role: CrewRole, n = 1): string | null {
+  let line: string | null = null;
+  for (const c of p.crew) {
+    if (c.role !== role || c.sick) continue;
+    c.xp = (c.xp ?? 0) + n;
+    if (c.skill < 3 && c.xp >= XP_STEPS[c.skill]) {
+      c.skill++; c.xp = 0; c.wage += ROLE_INFO[role].baseWage; c.morale = Math.min(100, c.morale + 10);
+      line = `${c.name.toUpperCase()} HAS GOT BETTER AT THIS. ${ROLE_INFO[role].label} SKILL ${c.skill}, WAGE ${c.wage}CR.`;
+    }
+  }
+  return line;
+}
+
+// ---------- Resting at a dock ----------
+// Ten minutes of ship time pass in a moment: markets breathe, tills fill, the sick mend.
+export function restAtDock(w: World, seconds = 600): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < seconds; i += 10) { w.time += 10; tickWorld(w, 10); }
+  const p = w.player;
+  for (const c of p.crew) c.morale = Math.min(100, c.morale + 3);
+  p.oxygen = p.oxygenMax; p.shield = p.shieldMax;
+  if (w.infraNews?.length) { out.push(...w.infraNews); w.infraNews = []; }
+  return out;
+}
+
+// ---------- The ship's cat ----------
+export const CAT_NAMES = ["Biscuit", "Ferrule", "Moth", "Sprocket", "Halyard", "Nebula", "Ratchet", "Comet", "Pixel", "Grommet", "Ballast", "Ember"];
+export function adoptCat(p: PlayerState, name: string, now: number): void {
+  p.cat = { name, since: now };
+  for (const c of p.crew) c.morale = Math.min(100, c.morale + 8);
+}
 
 // ---------- Legacy: a captain retires, a crew member takes the chair ----------
 // The galaxy carries on: systems, structures, alumni, syndicate memory. The
@@ -2024,7 +2060,11 @@ export function logEntry(w: World, text: string): void {
 }
 
 // ---------- Galaxy events (not wars): comets, flares, festivals, strikes ----------
-export type GalaxyEventKind = "comet" | "flare" | "festival" | "strike";
+export type GalaxyEventKind = "comet" | "flare" | "festival" | "strike" | "storm";
+// An ion storm blinds radar and the system map unless a lit beacon holds the picture.
+export function stormBlind(w: World, systemId: string): boolean {
+  return galaxyEventAt(w, systemId)?.kind === "storm" && !infraAt(w, systemId).some((i) => i.kind === "beacon" && infraLit(i));
+}
 export interface GalaxyEvent { kind: GalaxyEventKind; systemId: string; stationId?: string; until: number }
 export function galaxyEventAt(w: World, systemId: string): GalaxyEvent | null {
   const e = w.galaxyEvent;
@@ -2036,12 +2076,12 @@ export function tickGalaxyEvents(w: World, rng: RNG): void {
     const sys = w.systems[e.systemId];
     if (e.kind === "comet") for (const a of sys.asteroids) { a.rich = a.rich && rng.chance(0.4); }
     if (e.kind === "strike" && e.stationId) { const f = findStation(w, e.stationId); if (f) { f.st.fuelPrice = Math.max(1, Math.round(f.st.fuelPrice / 2)); f.st.repairPrice = Math.max(1, Math.round(f.st.repairPrice / 2)); } }
-    pushEvent(w, { t: w.time, kind: "peace", systemId: sys.id, text: e.kind === "comet" ? `The comet has passed ${sys.name}; the belt settles` : e.kind === "flare" ? `${sys.name}'s star quietens` : e.kind === "festival" ? `The festival at ${findStation(w, e.stationId ?? "")?.st.name ?? sys.name} winds down` : `The strike at ${findStation(w, e.stationId ?? "")?.st.name ?? sys.name} ends` });
+    pushEvent(w, { t: w.time, kind: "peace", systemId: sys.id, text: e.kind === "comet" ? `The comet has passed ${sys.name}; the belt settles` : e.kind === "flare" ? `${sys.name}'s star quietens` : e.kind === "storm" ? `The ion storm over ${sys.name} has blown through` : e.kind === "festival" ? `The festival at ${findStation(w, e.stationId ?? "")?.st.name ?? sys.name} winds down` : `The strike at ${findStation(w, e.stationId ?? "")?.st.name ?? sys.name} ends` });
     return;
   }
   if (w.galaxyEvent || !rng.chance(0.3)) return;
   const sys = rng.pick(Object.values(w.systems));
-  const kind = rng.pick(["comet", "flare", "festival", "strike"] as GalaxyEventKind[]);
+  const kind = rng.pick(["comet", "flare", "festival", "strike", "storm"] as GalaxyEventKind[]);
   const st = sys.stations.length ? rng.pick(sys.stations) : null;
   if ((kind === "festival" || kind === "strike") && !st) return;
   w.galaxyEvent = { kind, systemId: sys.id, stationId: st?.id, until: w.time + 720 };
@@ -2049,6 +2089,7 @@ export function tickGalaxyEvents(w: World, rng: RNG): void {
   if (kind === "flare") pushEvent(w, { t: w.time, kind: "shock", systemId: sys.id, text: `Solar flare warning for ${sys.name}: hulls run hot, scanners struggle` });
   if (kind === "festival" && st) { for (const id of ["lux", "food"]) st.stock[id] = Math.max(0, Math.round((st.stock[id] ?? 0) * 0.3)); refreshPrices(st); pushEvent(w, { t: w.time, kind: "discovery", systemId: sys.id, text: `Festival week at ${st.name}: luxuries and provisions sell dear, tourists pay double` }); }
   if (kind === "strike" && st) { st.fuelPrice *= 2; st.repairPrice *= 2; pushEvent(w, { t: w.time, kind: "shock", systemId: sys.id, text: `Dock workers strike at ${st.name}: fuel and repairs cost double` }); }
+  if (kind === "storm") pushEvent(w, { t: w.time, kind: "shock", systemId: sys.id, text: `Ion storm over ${sys.name}: radar and charts are blind there unless a beacon holds the picture` });
 }
 
 // ---------- Daily contract ----------

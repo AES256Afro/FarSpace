@@ -4,7 +4,7 @@ import type { Game } from "../../game";
 import { VW, VH } from "../../game";
 import type { FlightScene } from "./index";
 import { drawText, textWidth } from "../../gfx/font";
-import { infraAt, infraLit } from "../../world";
+import { infraAt, infraLit, stormBlind } from "../../world";
 import * as wire from "../../core/wire";
 import { PAL } from "../../gfx/palette";
 import { clamp, TAU, angDiff, dist } from "../../core/mathx";
@@ -384,6 +384,11 @@ export function drawEdgeMarkers(fs: FlightScene, g: Game, ctx: CanvasRenderingCo
       drawText(ctx, txt, tx, ty, color);
     }
   };
+  if (stormBlind(g.world, sys.id)) {
+    // the storm eats the radar: only what's close, and only the beacon if there is one
+    if (Math.floor(g.world.time * 3) % 2 === 0) drawText(ctx, "RADAR: STORM", VW - textWidth("RADAR: STORM") - 4, 34, PAL.warn);
+    return;
+  }
   for (const st of sys.stations) {
     mark(Math.cos(st.angle) * st.orbit, Math.sin(st.angle) * st.orbit, st.military ? PAL.danger : PAL.ui, st.military ? "BASE" : "STN");
   }
@@ -586,6 +591,12 @@ export function drawSystemMap(g: Game, ctx: CanvasRenderingContext2D): void {
   const cx = VW / 2, cy = VH / 2;
   const sc = (VH / 2 - 20) / SYSTEM_SIZE;
   drawText(ctx, `SYSTEM MAP: ${sys.name.toUpperCase()}`, cx - textWidth(`SYSTEM MAP: ${sys.name.toUpperCase()}`) / 2, 6, PAL.ui);
+  if (stormBlind(g.world, sys.id)) {
+    const t = "ION STORM: THE CHART IS STATIC. A LIT BEACON WOULD HOLD IT.";
+    drawText(ctx, t, cx - textWidth(t) / 2, cy, PAL.warn);
+    for (let i = 0; i < 300; i++) { ctx.fillStyle = i % 3 ? PAL.greyDark : PAL.grey; ctx.fillRect((Math.imul(i + Math.floor(g.world.time * 8), 2654435761) >>> 0) % VW, (Math.imul(i + 7, 1597334677) >>> 0) % VH, 1, 1); }
+    return;
+  }
   ctx.fillStyle = sys.sunColor;
   ctx.fillRect(cx - 2, cy - 2, 4, 4);
   ctx.strokeStyle = PAL.uiBorder;

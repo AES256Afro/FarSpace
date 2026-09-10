@@ -2,7 +2,7 @@
 // applies real effects and returns the line the player reads afterwards.
 
 import type { Game } from "../game";
-import { addCargo, removeCargo, adjustRep, hasIllegalCargo, cargoUsed, genCrewCandidate, adjustSynRep, passengersAboard, berthsUsed } from "../world";
+import { addCargo, removeCargo, adjustRep, hasIllegalCargo, cargoUsed, genCrewCandidate, adjustSynRep, passengersAboard, berthsUsed, adoptCat, CAT_NAMES } from "../world";
 import { hull } from "./hulls";
 import { RNG } from "../core/rng";
 import { addMaterials } from "./engineering";
@@ -155,6 +155,15 @@ export const ENCOUNTERS: Encounter[] = [
       { label: "GIVE THEM SPARE PARTS", requires: (g) => (p(g).cargo.parts ?? 0) >= 1, result: (g) => { removeCargo(p(g), "parts", 1); p(g).credits += 350; adjustRep(g.world, sys(g).factionId, 4); (p(g).flags ??= {}).samaritan = true; return "THEY PATCH THE REGULATOR AND WIRE YOU 350CR ON THE SPOT. 'THE CLAIM'S MINE. THE THANKS ARE YOURS.'"; } },
       { label: "OFFER A LIFT TO THE LANDER", result: (g) => { p(g).expData = (p(g).expData ?? 0) + 40; return "ON THE WAY THEY TALK. YOU LEARN MORE ABOUT THIS ROCK THAN THE SURVEY EVER SAID. +40 DATA."; } },
       { label: "DRIVE ON", result: (g) => { adjustRep(g.world, sys(g).factionId, -3); return "YOU DRIVE ON. THE WAVING STOPS BEFORE YOU'RE OUT OF SIGHT."; } },
+    ],
+  },
+  {
+    id: "cat", where: "space", weight: 2, title: "SOMETHING IN THE HOLD", when: (g) => !p(g).cat,
+    text: "A crate shifts that shouldn't. Behind it, wedged between the parts bins: a cat. Thin, unimpressed, and entirely certain this is its ship now.",
+    options: [
+      { label: "FEED IT", requires: (g) => (p(g).cargo.food ?? 0) >= 1, result: (g, rng) => { removeCargo(p(g), "food", 1); const name = rng.pick(CAT_NAMES); adoptCat(p(g), name, g.world.time); (p(g).flags ??= {}).shipsCat = true; return `IT EATS, THEN INSPECTS THE BRIDGE. THE CREW HAVE ALREADY NAMED IT ${name.toUpperCase()}. THIS IS NOT UP FOR DISCUSSION.`; } },
+      { label: "LET IT BE", result: (g, rng) => { const name = rng.pick(CAT_NAMES); adoptCat(p(g), name, g.world.time); (p(g).flags ??= {}).shipsCat = true; return `YOU LEAVE IT TO ITS OWN DEVICES. BY THE NEXT DOCK IT IS CALLED ${name.toUpperCase()} AND SLEEPS ON THE CONSOLE.`; } },
+      { label: "PUT IT OFF AT THE NEXT STATION", result: (g) => { for (const c of p(g).crew) c.morale = Math.max(0, c.morale - 4); return "THE CREW SAY NOTHING. THE CAT SAYS LESS. THE STATION TAKES IT IN. MORALE, OBSCURELY, DOWN."; } },
     ],
   },
   {

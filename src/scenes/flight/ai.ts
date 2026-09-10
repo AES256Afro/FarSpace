@@ -17,7 +17,7 @@ import { hasModule } from "../../data/modules";
 import { gainMaterials } from "../../core/materials";
 import { presence } from "../../core/presence";
 import { baseAt, fetchBases } from "../../core/wire";
-import { syndicateAt, synAllies, syndicateByTag, warContribute, adjustSynRep, infraAt, infraLit, infraTraffic, Infra } from "../../world";
+import { syndicateAt, synAllies, syndicateByTag, warContribute, adjustSynRep, infraAt, infraLit, infraTraffic, Infra, crewXp } from "../../world";
 
 // ---------- Population ----------
 
@@ -422,6 +422,7 @@ export function npcKilled(fs: FlightScene, g: Game, n: Npc, byPlayer: boolean): 
     else if (byPlayer && n.variant === "captain") captainDown(fs, g, n);
     if (byPlayer) {
       p.kills++;
+      { const up = crewXp(p, "gunner"); if (up) g.toast(up); }
       if (presence.ghosts.size) presence.send({ t: "wing", kind: "kill", x: n.x, y: n.y, tag: n.variant ?? "pirate" });
       if (fs.raidBase && !fs.raidBase.repelled) {
         const st = g.world.systems[p.systemId].stations[fs.raidBase.stationIdx];

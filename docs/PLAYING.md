@@ -101,6 +101,18 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   board: sample runs, outcrop runs, and a plant to fix on the spot. Jobs pay
   out when you walk back in.
 
+## Life on the deck
+
+- Crew learn by doing: an engineer's repairs, a gunner's kills, a pilot's
+  jumps, a medic's patients all count toward the next skill (and a raise).
+- REST A WHILE at any shipyard passes ten minutes of ship time: markets
+  breathe, tills fill, the sick mend, crew settle.
+- A cat may turn up in the hold, or agri stations will part with the yard cat
+  for 150 credits. It wanders the deck, sleeps on the console, and the crew
+  are happier for it. E to pat.
+- Ion storms blind radar and the system map in a system, and halve scan range,
+  unless a lit beacon there holds the picture.
+
 ## Legacy
 
 - After an hour under way, docked and with a clean record, the wall of record

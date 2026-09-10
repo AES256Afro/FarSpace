@@ -15,6 +15,7 @@ export interface CrewMember {
   docks?: number;   // dockings served aboard this ship
   sick?: { kind: string; until: number } | null; // laid up until world time; no bonus while sick
   retireAsked?: boolean; // the retirement talk has happened
+  xp?: number;      // marks toward the next skill, earned by doing the job
 }
 
 // What crew ask for, and how long they wait. Each is honoured at a docking.

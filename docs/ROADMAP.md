@@ -427,4 +427,12 @@ Time passes for the people on the ship, and for the ship.
       alumni and the galaxy's memory carry on; the line of captains on the wall
 - [x] Retired captains walk the promenade where they stepped down
 
+## Milestone 22 — Life on the Deck ✅ (Sep 2026)
+- [x] Crew skills grow from the work they do
+- [x] Rest at a dock: ten minutes of ship time in a moment
+- [x] A ship's cat: found in the hold or adopted at agri stations; wanders the
+      deck, lifts morale, gets talked about
+- [x] Ion storms: radar and charts blind unless a lit beacon holds the picture
+- [x] Fares wait on the promenade with their luggage
+
 ## Later
