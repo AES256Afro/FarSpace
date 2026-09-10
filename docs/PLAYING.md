@@ -229,6 +229,16 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Station hours and the tannoy
+
+- Every station keeps its own clock, offset from the real one, so somewhere it
+  is always the night shift. The promenade and the news page show station
+  time. At night the deck lights are down, the crowd is thin, and the gossip
+  changes.
+- The tannoy speaks on the promenade now and then: bay calls, last calls for
+  the liner, lost cats, the crisis, the festival, and once you've a name on the
+  lanes, the odd kindness from control.
+
 ## Cards after watch
 
 - C beside any crew member aboard: a hand of cards on an upturned crate, for

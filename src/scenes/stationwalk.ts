@@ -13,6 +13,7 @@ import type { EncounterScene } from "./encounter";
 import { faction, genPersonName } from "../data/data";
 import { StationScene } from "./station";
 import { concourseGossip } from "../data/gossip";
+import { stationHour, clockText, tannoyLines } from "../data/tannoy";
 import { hull } from "../data/hulls";
 import * as spriteMod from "../gfx/sprites";
 
@@ -67,6 +68,7 @@ export class StationWalkScene implements Scene {
   py = 3 * T + 5;
   npcs: WalkerNpc[] = [];
   bubbles: { n: WalkerNpc; text: string; life: number }[] = [];
+  tannoy = ""; tannoyT = 0;
   gossipCd = 1;
   station!: StationDef;
   msg = "";
@@ -82,7 +84,8 @@ export class StationWalkScene implements Scene {
     // NPC walkers seeded per station
     const rng = new RNG(hashStr(this.station.id) ^ 0x9a7b);
     this.npcs = [];
-    const n = this.station.military ? 4 : 6;
+    const night = stationHour(this.station).night;
+    const n = (this.station.military ? 4 : 6) - (night ? 2 : 0);
     for (let i = 0; i < n; i++) {
       const spot = this.randomFloor(rng);
       this.npcs.push({
@@ -126,6 +129,15 @@ export class StationWalkScene implements Scene {
     this.msg = `${this.station.name.toUpperCase()} PROMENADE`;
     this.msgTimer = 3;
     this.bubbles = []; this.gossipCd = 1;
+    this.tannoy = ""; this.tannoyT = 2;
+  }
+  tickTannoy(g: Game, dt: number): void {
+    this.tannoyT -= dt;
+    if (this.tannoyT > 0) return;
+    if (this.tannoy) { this.tannoy = ""; this.tannoyT = 14 + Math.random() * 16; return; }
+    const rng = new RNG((Math.random() * 1e9) >>> 0);
+    this.tannoy = rng.pick(tannoyLines(g.world, this.station, rng));
+    this.tannoyT = 7;
   }
   // overheard: two walkers stop near each other and near you, and one of them says something
   tickGossip(g: Game, dt: number): void {
@@ -228,6 +240,7 @@ export class StationWalkScene implements Scene {
     }
 
     this.tickGossip(g, dt);
+    this.tickTannoy(g, dt);
     // kiosk interaction
     const near = this.nearestKiosk();
     if (inp.wasPressed("e") && !near) {
@@ -367,6 +380,8 @@ export class StationWalkScene implements Scene {
       const sx = ox + 28 * T + ((g.world.time * 9) % (11 * T)); const sy = oy + 9 * T + 4;
       ctx.fillStyle = "#9aa5bd"; ctx.fillRect(Math.round(sx), sy, 3, 2); ctx.fillStyle = Math.floor(g.world.time * 3) % 2 ? "#ff5a5a" : "#3aa55e"; ctx.fillRect(Math.round(sx) + 3, sy, 1, 1);
     }
+    // the night shift: the deck lights are down
+    if (stationHour(this.station).night) { ctx.fillStyle = "rgba(4,6,14,0.38)"; ctx.fillRect(ox, oy, DECK[0].length * T, DECK.length * T); }
     // NPCs
     for (const n of this.npcs) {
       const x = Math.round(ox + n.x), y = Math.round(oy + n.y);
@@ -417,7 +432,8 @@ export class StationWalkScene implements Scene {
     }
 
     // header
-    drawText(ctx, `${this.station.name.toUpperCase()} - PROMENADE`, 8, 6, PAL.white);
+    { const t = stationHour(this.station); drawText(ctx, `${this.station.name.toUpperCase()} - PROMENADE - ${clockText(t)} STATION TIME, ${t.label}`, 8, 6, PAL.white); }
+    if (this.tannoy) { const tl = `TANNOY: ${this.tannoy}`.slice(0, 96); drawText(ctx, tl, VW / 2 - textWidth(tl) / 2, 26, PAL.gold); }
     drawText(ctx, `${fac.name}${this.station.military ? " - MILITARY" : ""}`, 8, 15, fac.color);
     drawText(ctx, "WASD WALK - E USE - ESC SERVICES MENU", VW - textWidth("WASD WALK - E USE - ESC SERVICES MENU") - 6, 6, PAL.greyDark);
     if (this.station.military) {

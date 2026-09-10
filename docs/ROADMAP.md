@@ -635,4 +635,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] C beside crew: a hand of cards for matchsticks or a round; the cook's
       meal
 
+## Milestone 68 — Station Hours ✅ (Sep 2026)
+- [x] Per-station clocks from real UTC; night shift dims the promenade and
+      thins the crowd; the tannoy ticker
+
 ## Later

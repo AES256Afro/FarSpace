@@ -27,6 +27,7 @@ import { serialMissionFor, serialRecruitFor, serialPremium, serialLines } from "
 import { isOccasion, occasionFor } from "../data/occasions";
 import { sfx } from "../core/sfx";
 import * as wire from "../core/wire";
+import { stationHour, clockText } from "../data/tannoy";
 import { drawTutorial } from "../core/tutorial";
 import { music } from "../core/music";
 
@@ -1723,7 +1724,7 @@ export class StationScene implements Scene {
   drawNews(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
     {
       const pr = stationProfile(g.world, this.station);
-      drawText(ctx, `${this.station.name.toUpperCase()} - POP. ${pr.population.toLocaleString()} - FOUNDED ${pr.founded}`, 8, top, PAL.grey);
+      { const t = stationHour(this.station); drawText(ctx, `${this.station.name.toUpperCase()} - POP. ${pr.population.toLocaleString()} - FOUNDED ${pr.founded} - ${clockText(t)} STATION TIME, ${t.label}`, 8, top, PAL.grey); }
       drawText(ctx, `KNOWN FOR ${pr.knownFor.toUpperCase()}. ALSO: ${pr.quirk.toUpperCase()}.`.slice(0, 112), 8, top + 9, PAL.greyDark);
       const bl = stationBulletin(g.world, this.station);
       drawText(ctx, "LOCAL BULLETIN", 8, top + 20, PAL.greyDark);

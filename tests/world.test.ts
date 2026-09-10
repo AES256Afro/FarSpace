@@ -22,6 +22,7 @@ import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shi
 import { ENCOUNTERS, pickEncounter } from "../src/data/encounters";
 import { crewChatter, soloChatter, passengerChatter } from "../src/data/chatter";
 import { concourseGossip } from "../src/data/gossip";
+import { stationHour, tannoyLines } from "../src/data/tannoy";
 import { STORY, storyObjective, CONVOY, convoyObjective } from "../src/core/story";
 import { homesteadYield, settleHomestead, HOMESTEAD_CAP, tickCrisis, crisisAt, tickGalaxyEvents, galaxyEventAt, rescuePoints, logEntry, embargoed, hasCharter } from "../src/world";
 import { genGround, groundKey, passable, GW, GH } from "../src/ground";
@@ -747,6 +748,19 @@ describe("a name on the lanes", () => {
     w.player.postRuns = 10; expect(captainNickname(w)).toBe("THE POSTMAN");
     w.player.rescues = 5; expect(captainNickname(w)).toBe("THE LIFEBOAT");
     w.player.rescues = 0; w.player.postRuns = 0; w.player.races = 3; w.player.raceBeaten = { x: true }; expect(captainNickname(w)).toBe("RING RUNNER");
+  });
+});
+
+describe("station hours and the tannoy", () => {
+  it("every station keeps its own clock and always has something to announce", () => {
+    const w = generateWorld(29, { realGalaxy: true });
+    const sts = Object.values(w.systems).flatMap((s) => s.stations);
+    const at = Date.UTC(2026, 8, 10, 3, 30);
+    const hours = new Set(sts.map((st) => stationHour(st, at).h));
+    expect(hours.size).toBeGreaterThan(3);
+    expect(stationHour(sts[0], at)).toEqual(stationHour(sts[0], at));
+    for (const st of sts.slice(0, 5)) { const lines = tannoyLines(w, st, new RNG(1), at); expect(lines.length).toBeGreaterThan(5); for (const l of lines) expect(l.length).toBeLessThanOrEqual(130); }
+    w.player.postRuns = 10; expect(tannoyLines(w, sts[0], new RNG(2), at).some((l) => l.includes("THE POSTMAN"))).toBe(true);
   });
 });
 

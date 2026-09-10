@@ -6,6 +6,7 @@ import type { World, StationDef } from "../world";
 import { crisisAt, galaxyEventAt, wondersIn, dockingsAt, friendsAt, rivalOf, isHome, infraAt, findStation, captainNickname } from "../world";
 import { commodity, faction } from "./data";
 import { RNG } from "../core/rng";
+import { stationHour } from "./tannoy";
 
 const STATION_LIFE: Record<string, string[]> = {
   trade: ["'BERTH FEES UP AGAIN. THEY'LL CHARGE FOR AIR NEXT.'", "'THE THIRD RING SMELLS OF FISH. NOBODY SELLS FISH.'", "'MY COUSIN GOT A JOB ON A HAULER. GOOD MONEY. NEVER HOME.'"],
@@ -56,6 +57,9 @@ export function concourseGossip(w: World, st: StationDef, rng: RNG): string[] {
   if (shore) pool.push(`'${shore.member.name.toUpperCase()} FROM THAT SHIP IS ON LEAVE HERE. GOOD COMPANY. TERRIBLE AT CARDS.'`);
   const home = p.homePort && p.homePort !== st.id ? findStation(w, p.homePort)?.st.name : null;
   if (home) pool.push(`'THAT CAPTAIN'S FROM ${home.toUpperCase()}, THEY SAY. LONG WAY FROM HOME.'`);
+  const hr = stationHour(st);
+  if (hr.night) pool.push("'NIGHT SHIFT. YOU GET THE GOOD SILENCE AND THE BAD COFFEE.'", "'WHO DOCKS AT THIS HOUR? SOMEBODY WHO DOESN'T WANT TO BE SEEN DOCKING.'");
+  else if (hr.h < 11) pool.push("'MORNING. DON'T TALK TO ME UNTIL THE SECOND CUP.'");
   const line = rng.pick(pool);
   return [line, ...pool.filter((l) => l !== line)];
 }
