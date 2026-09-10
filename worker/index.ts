@@ -152,7 +152,7 @@ const WIRE_MAX = 40;
 interface WireEvent { t: number; callsign: string; kind: string; text: string; system: string; tag?: string }
 interface BoardEntry { callsign: string; score: number; t: number; tag?: string }
 const SQUAD = /^[A-Z0-9]{2,5}$/;
-interface BaseRec { stationId: string | null; stationName: string | null; systemName: string | null; treasury: number; vault: Record<string, number>; upgrades: string[]; founded: number; log: { t: number; callsign: string; text: string }[]; contractsPaid?: string[]; bounty?: { week: string; kills: number; paid: boolean } }
+interface BaseRec { stationId: string | null; stationName: string | null; systemName: string | null; treasury: number; vault: Record<string, number>; upgrades: string[]; founded: number; log: { t: number; callsign: string; text: string }[]; contractsPaid?: string[]; bounty?: { week: string; kills: number; paid: boolean }; treaties?: Record<string, "pact" | "rivalry"> }
 const BASE_UPGRADES: Record<string, number> = { defense: 8000, depot: 5000, market: 6000, vault: 4000 };
 // Weekly base contract: the base "needs" a commodity; filling the vault to the
 // target pays the treasury once per week. Same seed function as the client.
@@ -315,7 +315,7 @@ export default {
       const bases: unknown[] = [];
       for (const k of keys) {
         const b = JSON.parse((await env.SAVES.get(k.name, "text")) ?? "null") as BaseRec | null;
-        if (b) bases.push({ tag: k.name.slice(5), stationId: b.stationId, stationName: b.stationName, systemName: b.systemName, upgrades: b.upgrades });
+        if (b) bases.push({ tag: k.name.slice(5), stationId: b.stationId, stationName: b.stationName, systemName: b.systemName, upgrades: b.upgrades, treaties: b.treaties ?? {} });
       }
       return json({ bases });
     }
@@ -401,6 +401,21 @@ export default {
           b.bounty.kills++;
           if (!b.bounty.paid && b.bounty.kills >= BOUNTY_NEED) { b.bounty.paid = true; b.treasury += BOUNTY_REWARD; logLine(`filled the weekly squadron bounty (+${BOUNTY_REWARD} CR to the treasury)`); await wirePost(env, callsign, "base", `closed the [${tag}] squadron bounty: ${BOUNTY_NEED} captains this week (+${BOUNTY_REWARD} CR)`, b.systemName ?? ""); }
           else logLine(`took a corsair captain (${b.bounty.kills}/${BOUNTY_NEED} this week)`);
+          return save();
+        }
+        if (action === "treaty") {
+          // cross-squadron pacts and rivalries: one line per other squadron, stated from this side
+          const withTag = clean(body.with, 5).toUpperCase();
+          const kind = clean(body.kind, 8);
+          if (!SQUAD.test(withTag) || withTag === tag) return json({ error: "bad squadron" }, 400);
+          if (kind !== "pact" && kind !== "rivalry" && kind !== "none") return json({ error: "bad treaty" }, 400);
+          const other = JSON.parse((await env.SAVES.get(`base:${withTag}`, "text")) ?? "null") as BaseRec | null;
+          if (!other || !other.stationId) return json({ error: "no such base" }, 404);
+          b.treaties ??= {};
+          if (kind === "none") delete b.treaties[withTag]; else b.treaties[withTag] = kind;
+          if (Object.keys(b.treaties).length > 12) return json({ error: "too many treaties" }, 409);
+          logLine(kind === "none" ? `ended the treaty with [${withTag}]` : kind === "pact" ? `offered a pact to [${withTag}]` : `declared a rivalry with [${withTag}]`);
+          await wirePost(env, callsign, "base", kind === "none" ? `[${tag}] ended its treaty with [${withTag}]` : kind === "pact" ? `[${tag}] offered [${withTag}] a pact` : `[${tag}] declared [${withTag}] a rival`, b.systemName ?? "");
           return save();
         }
         if (action === "upgrade") {

@@ -320,7 +320,8 @@ export class StationScene implements Scene {
     const st = this.station;
     const patron = wire.patronOf(st.factionId);
     const synHere = syndicateAt(g.world, st.id);
-    const rep = (p.rep[st.factionId] ?? 0) + (patron && patron === wire.getSquadron() ? 25 : 0) + (synHere && effectiveSynStanding(g.world, synHere.tag) >= 30 ? 25 : 0); // patrons and affiliates (or partners of allies) trade like allies
+    const treaty = this.baseOwner && wire.getSquadron() && this.baseOwner !== wire.getSquadron() ? wire.treatyBetween(wire.getSquadron()!, this.baseOwner) : null;
+    const rep = (p.rep[st.factionId] ?? 0) + (patron && patron === wire.getSquadron() ? 25 : 0) + (synHere && effectiveSynStanding(g.world, synHere.tag) >= 30 ? 25 : 0) - (treaty === "rivalry" ? 50 : 0); // patrons and affiliates (or partners of allies) trade like allies; rivals pay more
     const enter = inp.wasPressed("Enter") || inp.wasPressed(" ") || clickedRow;
     if (enter) sfx.select();
 
@@ -370,7 +371,7 @@ export class StationScene implements Scene {
             const routeHit = !!dem && dem.goods.includes(id);
             const crisis = crisisAt(g.world, st.id);
             const crisisHit = !!crisis && crisis.commodityId === id;
-            const paid = Math.round(price * (goalHit ? 1 + this.goal.premium : 1) * (this.baseHas("market") ? 1.08 : 1) * (routeHit ? 1 + ROUTE_PREMIUM + synBonus : 1) * (crisisHit ? CRISIS_PREMIUM : 1));
+            const paid = Math.round(price * (goalHit ? 1 + this.goal.premium : 1) * (this.baseHas("market") ? 1.08 : 1) * (treaty === "pact" ? 1.05 : 1) * (routeHit ? 1 + ROUTE_PREMIUM + synBonus : 1) * (crisisHit ? CRISIS_PREMIUM : 1));
             if (crisisHit && crisis) {
               crisis.delivered++;
               if (crisis.delivered >= crisis.need) {
@@ -518,6 +519,8 @@ export class StationScene implements Scene {
               sfx.alarm();
               void wire.post("base", `squadron [${tag}] declared for [${row.id}] in the syndicate war at ${g.world.systems[g.world.synWar!.systemId].name}`, g.world.systems[p2.systemId].name);
             } else g.toast("THE WAR IS OVER OR A SIDE IS ALREADY BACKED");
+          } else if (row.kind === "treaty") {
+            void this.baseDo(g, "treaty", { with: row.id, kind: row.treaty }, () => { g.toast(row.treaty === "none" ? `TREATY WITH [${row.id}] ENDED` : row.treaty === "pact" ? `PACT OFFERED TO [${row.id}] - IT COUNTS WHEN THEY SIGN TOO` : `[${row.id}] IS NOW A RIVAL OF [${tag}]`); sfx.select(); void wire.fetchBases(true); });
           } else if (row.kind === "upgrade") {
             void this.baseDo(g, "upgrade", { upgrade: row.id }, () => { g.toast(`${row.label.toUpperCase()} FITTED`); sfx.repair(); });
           } else if (row.kind === "deposit") {
@@ -1067,6 +1070,7 @@ export class StationScene implements Scene {
     const p = g.world.player;
     const nameLine = `${p.shipName ? `"${p.shipName}" - N RENAME` : "N NAME YOUR SHIP"} - O PAINT`;
     drawText(ctx, nameLine, VW - textWidth(nameLine) - 8, top, PAL.greyDark);
+    { const spr = g.playerShip(); ctx.drawImage(spr, VW - 8 - spr.width, top + 9); } // the hull as she'll look, trim and all
     const tradeIn = Math.round(hull(p.hullId).price * 0.6);
     drawText(ctx, `HULL MARKET - ENTER BUYS WITH TRADE-IN (${tradeIn}CR) - K BUYS AND PARKS YOUR ${hull(p.hullId).name.toUpperCase()} HERE`, 8, top, PAL.greyDark);
     const stored = (p.fleet ?? []).filter((f) => f.stationId === this.station.id);
@@ -1284,11 +1288,11 @@ export class StationScene implements Scene {
     if (paid >= 1000) void wire.post("discovery", `sold exploration data worth ${paid} CR`, g.world.systems[p.systemId].name);
   }
 
-  baseRows(g: Game): { kind: "fund" | "buy" | "upgrade" | "deposit" | "withdraw" | "info" | "back"; id?: string; label: string; sub: string }[] {
+  baseRows(g: Game): { kind: "fund" | "buy" | "upgrade" | "deposit" | "withdraw" | "info" | "back" | "treaty"; id?: string; treaty?: "pact" | "rivalry" | "none"; label: string; sub: string }[] {
     const p = g.world.player;
     const st = this.station;
     const tag = wire.getSquadron();
-    const rows: { kind: "fund" | "buy" | "upgrade" | "deposit" | "withdraw" | "info" | "back"; id?: string; label: string; sub: string }[] = [];
+    const rows: { kind: "fund" | "buy" | "upgrade" | "deposit" | "withdraw" | "info" | "back" | "treaty"; id?: string; treaty?: "pact" | "rivalry" | "none"; label: string; sub: string }[] = [];
     if (!tag) return rows;
     const b = this.base;
     const war = g.world.synWar;
@@ -1302,6 +1306,18 @@ export class StationScene implements Scene {
         rows.push({ kind: "upgrade", id: u.id, label: `${have ? "FITTED: " : "FIT "}${u.name.toUpperCase()}`, sub: have ? u.desc.toUpperCase() : `${u.cost}CR - ${u.desc.toUpperCase()}` });
       }
       rows.push({ kind: "fund", label: "FUND THE TREASURY", sub: `NOW ${b.treasury}CR` });
+      // treaties with the other squadrons that hold a base
+      for (const o of wire.allBases()) {
+        if (o.tag === tag) continue;
+        const mine = b.treaties?.[o.tag];
+        const between = wire.treatyBetween(tag, o.tag);
+        const state = between === "pact" ? "PACT" : between === "rivalry" ? "RIVALRY" : between === "offered" ? (mine === "pact" ? "PACT OFFERED" : "THEY OFFER A PACT") : "NO TREATY";
+        if (mine) rows.push({ kind: "treaty", id: o.tag, treaty: "none", label: `END ${mine.toUpperCase()} WITH [${o.tag}]`, sub: `${state} - ${o.stationName.toUpperCase()}, ${o.systemName.toUpperCase()}` });
+        else {
+          rows.push({ kind: "treaty", id: o.tag, treaty: "pact", label: `OFFER [${o.tag}] A PACT`, sub: `${state} - BOTH SIDES SIGN: SELL AT +5% AT EACH OTHER'S BASE, THEIR WANTED GOODS PAY YOU TOO` });
+          rows.push({ kind: "treaty", id: o.tag, treaty: "rivalry", label: `DECLARE [${o.tag}] A RIVAL`, sub: `${state} - THEIR BASE CHARGES YOUR MEMBERS +10%; EVERY WIRE HEARS IT` });
+        }
+      }
       for (const [id, q] of Object.entries(p.cargo)) if (q > 0) rows.push({ kind: "deposit", id, label: `DEPOSIT 1 ${commodity(id).name.toUpperCase()}`, sub: `HOLD ${q}` });
       for (const [id, q] of Object.entries(b.vault)) if (q > 0) rows.push({ kind: "withdraw", id, label: `WITHDRAW 1 ${commodity(id).name.toUpperCase()}`, sub: `VAULT ${q}` });
       return rows;
@@ -1340,6 +1356,7 @@ export class StationScene implements Scene {
     if (this.baseOwner && this.baseOwner !== tag) {
       drawText(ctx, `${st.name.toUpperCase()} IS THE [${this.baseOwner}] SQUADRON BASE`, 8, top, PAL.info);
       drawText(ctx, "SQUADRON BASES BELONG TO THE PILOTS WHO POOLED THE CREDITS. FIND YOUR OWN, OR JOIN THEIRS.", 8, top + 12, PAL.greyDark);
+      { const t = tag ? wire.treatyBetween(tag, this.baseOwner!) : null; if (t) drawText(ctx, t === "pact" ? `[${tag}] AND [${this.baseOwner}] HOLD A PACT: YOU SELL HERE AT +5%` : t === "rivalry" ? `[${tag}] AND [${this.baseOwner}] ARE RIVALS: THEY CHARGE YOU MORE HERE` : `A PACT IS ON THE TABLE BETWEEN [${tag}] AND [${this.baseOwner}]`, 8, top + 24, t === "pact" ? PAL.good : t === "rivalry" ? PAL.danger : PAL.gold); }
       return;
     }
     if (!tag) {
@@ -1354,7 +1371,8 @@ export class StationScene implements Scene {
     if (b && b.stationId && b.stationId !== st.id) {
       drawText(ctx, `[${tag}] BASE: ${(b.stationName ?? "?").toUpperCase()}, ${(b.systemName ?? "?").toUpperCase()}`, 8, top, PAL.gold);
       drawText(ctx, `TREASURY ${b.treasury}CR   VAULT ${Object.values(b.vault).reduce((a, v) => a + v, 0)} UNITS   UPGRADES: ${b.upgrades.length ? b.upgrades.join(", ").toUpperCase() : "NONE"}`, 8, top + 12, PAL.grey);
-      drawText(ctx, "DOCK THERE TO USE THE VAULT AND FIT UPGRADES.", 8, top + 21, PAL.greyDark);
+      { const tr = Object.entries(b.treaties ?? {}); const incoming = wire.allBases().filter((o) => o.tag !== tag && o.treaties?.[tag] && !b.treaties?.[o.tag]).map((o) => `[${o.tag}] ${o.treaties![tag] === "pact" ? "OFFERS A PACT" : "CALLS YOU RIVALS"}`); if (tr.length || incoming.length) drawText(ctx, `TREATIES: ${tr.map(([t, k]) => `[${t}] ${k.toUpperCase()}${wire.treatyBetween(tag, t) === "pact" ? " (SIGNED)" : k === "pact" ? " (OFFERED)" : ""}`).join("  ")}${incoming.length ? "   " + incoming.join("  ") : ""}`.slice(0, 118), 8, top + 21, PAL.gold); }
+      drawText(ctx, "DOCK THERE TO USE THE VAULT AND FIT UPGRADES.", 8, top + 30, PAL.greyDark);
       const war = g.world.synWar;
       if (war) {
         drawText(ctx, war.backed ? `WAR AT ${g.world.systems[war.systemId].name.toUpperCase()}: [${war.backedBy}] BACKS [${war.backed}] - FRONT ${war.score > 0 ? "+" : ""}${war.score}` : `SYNDICATE WAR AT ${g.world.systems[war.systemId].name.toUpperCase()} - DECLARE A SIDE BELOW`, 8, top + 33, PAL.warn);

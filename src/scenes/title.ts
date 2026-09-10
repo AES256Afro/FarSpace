@@ -10,7 +10,9 @@ import { sfx } from "../core/sfx";
 import * as cloud from "../core/cloud";
 import * as wire from "../core/wire";
 import { settings, toggleFullscreen } from "../core/settings";
-import { activeSlot } from "../save";
+import { activeSlot, loadSave } from "../save";
+import { rankOf } from "../world";
+import { hull } from "../data/hulls";
 import { music } from "../core/music";
 
 export class TitleScene implements Scene {
@@ -25,7 +27,7 @@ export class TitleScene implements Scene {
   options(g: Game): { label: string; sub: string; act: () => void }[] {
     const opts: { label: string; sub: string; act: () => void }[] = [];
     const code = cloud.getCode();
-    if (g.hasSave()) opts.push({ label: "CONTINUE", sub: code ? "Loads whichever of local / cloud is newer" : "Pick up where you left off", act: () => { void g.continueGame(); } });
+    if (g.hasSave()) opts.push({ label: "CONTINUE", sub: this.summary ?? (code ? "Loads whichever of local / cloud is newer" : "Pick up where you left off"), act: () => { void g.continueGame(); } });
     const hc = settings().hardcore ? " (HARDCORE)" : "";
     opts.push({ label: `NEW GAME - SOL NEIGHBOURHOOD${hc}`, sub: "The real stars within 20 light-years", act: () => { g.newGame(true); g.setScene("flight"); } });
     opts.push({ label: `NEW GAME - SOL 50 LY${hc}`, sub: "A bigger neighbourhood: every catalogued star out to 50 light-years", act: () => { g.newGame(true, 50); g.setScene("flight"); } });
@@ -97,8 +99,30 @@ export class TitleScene implements Scene {
     g.adoptWorld(w);
   }
 
+  // The story so far: one line about the save, read once when the title comes up
+  summary: string | null = null;
+  summaryFor: string | null = null;
+  refreshSummary(g: Game): void {
+    const key = `${activeSlot()}:${g.hasSave()}`;
+    if (this.summaryFor === key) return;
+    this.summaryFor = key;
+    this.summary = null;
+    if (!g.hasSave()) return;
+    try {
+      const w = loadSave();
+      if (!w) return;
+      const p = w.player;
+      const sys = w.systems[p.systemId];
+      const h = Math.floor(w.time / 3600), m = Math.floor((w.time % 3600) / 60);
+      const cs = wire.getCallsign();
+      const best = (["trader", "explorer", "miner", "rescuer"] as const).map((k) => ({ k, r: rankOf(p, k) })).sort((a, b) => b.r.idx - a.r.idx)[0];
+      this.summary = `${cs ? cs + " - " : ""}${(p.shipName ?? hull(p.hullId).name).toUpperCase()} AT ${(sys?.name ?? "?").toUpperCase()} - ${p.credits}CR - ${h}H ${m}M - ${p.crew.length} CREW${best && best.r.idx > 1 ? ` - ${best.r.title.toUpperCase()}` : ""}${p.flags?.theSignal ? " - THE SIGNAL ANSWERED" : ""}`;
+    } catch { this.summary = null; }
+  }
+
   update(g: Game, dt: number): void {
     this.t += dt;
+    this.refreshSummary(g);
     music.setMood("title", 0);
     if (!this.tickerLoaded) { this.tickerLoaded = true; void wire.fetchWire().then((e) => { this.ticker = e; }); }
     const opts = this.options(g);

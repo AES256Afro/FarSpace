@@ -101,6 +101,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   board: sample runs, outcrop runs, and a plant to fix on the spot. Jobs pay
   out when you walk back in.
 
+## Squadron treaties
+
+- On your own BASE tab, every other squadron with a base is listed. Offer a
+  pact (it counts once both sides sign: you sell at +5% at each other's base)
+  or declare a rivalry (their base charges your members more, and the wire
+  hears it). End either the same way.
+
 ## The lighthouse
 
 - Any shipyard sells a BEACON KIT (2,500) and a FUEL DEPOT KIT (4,000). Fly

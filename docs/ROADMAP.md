@@ -411,5 +411,13 @@ Time passes for the people on the ship, and for the ship.
       bring spare parts; galaxy map and HUD show lit, dark and a full till
 - [x] Owned by call sign, so a shared galaxy can carry them later
 
+## Increments after Milestone 20
+- [x] Cross-squadron pacts and rivalries from the BASE tab: a pact signed by
+      both sides sells at +5% at each other's base, a rivalry charges the
+      other squadron's members more; every wire hears the declaration
+- [x] Six more encounter cards: a stowaway, an old shipmate, a light in the
+      dark, pilgrims, a claim jumper, the wall of dust
+- [x] The title screen tells the story so far above CONTINUE
+- [x] The SHIPS tab previews your hull with its paint
+
 ## Later
-- [ ] Cross-squadron rivalries and treaties

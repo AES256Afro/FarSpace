@@ -65,7 +65,7 @@ recover, and retire after a full tour. The ship wears with hours and jumps;
 yard service at any shipyard signs the berth log.
 
 **The Signal:** a seven-stage campaign that starts once you've logged a few
-systems and ends beside a star with a warship that has no faction. Fourteen
+systems and ends beside a star with a warship that has no faction. Twenty
 encounter cards interrupt flight and rover drives with choices that matter.
 
 **Other pilots:** with a call sign set, everyone in the same star system sees
