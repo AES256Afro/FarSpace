@@ -6,7 +6,7 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 import { faction, commodity } from "../data/data";
 import { dist } from "../core/mathx";
-import { navRoute, routeFuel, jumpFuelCost, repLabel } from "../world";
+import { navRoute, routeFuel, jumpFuelCost, repLabel, permitDenied } from "../world";
 import { sfx } from "../core/sfx";
 
 const OX = 90;
@@ -111,6 +111,7 @@ export class GalaxyScene implements Scene {
       ctx.fillRect(Math.round(x) - 1, Math.round(y) + 3, 3, 1);
       drawText(ctx, sys.name, x - textWidth(sys.name) / 2, y + 6, sys.id === this.selected ? PAL.white : PAL.grey);
       if (war && Math.floor(w.time * 2) % 2 === 0) drawText(ctx, "WAR", x - 6, y - 12, PAL.danger);
+      if (sys.permit) { ctx.strokeStyle = permitDenied(w, sys.id) ? PAL.warn : PAL.good; ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI * 2); ctx.stroke(); }
       if (route && route.includes(sys.id) && sys.stations.length && sys.id !== w.player.systemId) {
         ctx.fillStyle = PAL.gold; ctx.fillRect(Math.round(x) + 4, Math.round(y) - 4, 2, 2);
       }
@@ -134,6 +135,7 @@ export class GalaxyScene implements Scene {
       const pir = sys.pirateActivity;
       drawText(ctx, `PIRACY: ${pir > 0.6 ? "SEVERE" : pir > 0.3 ? "MODERATE" : "LOW"}`, px + 6, y, pir > 0.6 ? PAL.danger : pir > 0.3 ? PAL.warn : PAL.good); y += 9;
       if (w.wars.some((ww) => ww.systemId === sys.id)) { drawText(ctx, "ACTIVE WAR ZONE", px + 6, y, PAL.danger); y += 9; }
+      if (sys.permit) { drawText(ctx, permitDenied(w, sys.id) ? "PERMIT SPACE: ALLIED ONLY" : "PERMIT SPACE: YOU'RE CLEARED", px + 6, y, permitDenied(w, sys.id) ? PAL.warn : PAL.good); y += 9; }
       const lvl = w.player.expLog?.[sys.id] ?? 0;
       drawText(ctx, lvl === 2 ? "LOGGED: DETAILED" : lvl === 1 ? "LOGGED: BASIC" : "UNLOGGED", px + 6, y, lvl ? PAL.grey : PAL.greyDark); y += 9;
       const first = w.player.firsts?.[sys.id];

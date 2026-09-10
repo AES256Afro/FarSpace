@@ -9,7 +9,7 @@ import { commodity, faction } from "../data/data";
 import { HULLS, hull } from "../data/hulls";
 import { ROLE_INFO, CrewMember } from "../data/crew";
 import {
-  StationDef, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
+  StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
   crewWages, genCrewCandidate, applyHull, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal,
 } from "../world";
@@ -161,8 +161,13 @@ export class StationScene implements Scene {
         break;
       }
       case "SHIPS": {
-        this.cursor = clamp(this.cursor, 0, HULLS.length - 1);
-        if (enter) this.buyHull(g, HULLS[this.cursor].id);
+        const stored = (p.fleet ?? []).filter((f) => f.stationId === st.id);
+        this.cursor = clamp(this.cursor, 0, HULLS.length + stored.length - 1);
+        if (enter) {
+          if (this.cursor < HULLS.length) this.buyHull(g, HULLS[this.cursor].id, false);
+          else this.swapShip(g, stored[this.cursor - HULLS.length]);
+        }
+        if (inp.wasPressed("k") && this.cursor < HULLS.length) this.buyHull(g, HULLS[this.cursor].id, true);
         if (inp.wasPressed("n")) {
           const raw = window.prompt("Name your ship (2-18 characters):", p.shipName ?? "");
           if (raw !== null) {
@@ -256,7 +261,7 @@ export class StationScene implements Scene {
 
   async loadWire(): Promise<void> {
     this.wireEvents = await wire.fetchWire(true);
-    for (const b of ["discoveries", "arcs", "credits", "kills"]) this.boards[b] = await wire.fetchBoard(b);
+    for (const b of ["discoveries", "arcs", "credits", "kills", "explorers", "traders"]) this.boards[b] = await wire.fetchBoard(b);
   }
 
   async chooseCallsign(g: Game): Promise<void> {
@@ -329,19 +334,46 @@ export class StationScene implements Scene {
     g.showHint("crew", "CREW LIVE ABOARD - VISIT THEM WITH I - KEEP FOOD IN CARGO");
   }
 
-  buyHull(g: Game, id: string): void {
+  // Park the current hull here and take another one out of storage
+  swapShip(g: Game, ship: StoredShip | undefined): void {
+    if (!ship) return;
+    const p = g.world.player;
+    const h = hull(ship.hullId);
+    if (cargoUsed(p) > h.cargoMax + 25 * ((p.modules ?? []).includes("rack") ? 1 : 0) + 5 * (p.engineering?.cargo ?? 0)) { g.toast(`CARGO WON'T FIT IN THE ${h.name.toUpperCase()} - STORE OR SELL FIRST`); return; }
+    if (p.crew.length > h.crewSlots) { g.toast(`TOO MUCH CREW FOR ${h.crewSlots} BERTHS`); return; }
+    const parked: StoredShip = { hullId: p.hullId, stationId: this.station.id, name: p.shipName, hull: p.hull, torpedoes: p.torpedoes ?? 0 };
+    p.fleet = (p.fleet ?? []).filter((f) => f !== ship);
+    p.fleet.push(parked);
+    const fuel = p.fuel;
+    applyHull(p, ship.hullId);
+    p.hull = Math.min(p.hullMax, ship.hull);
+    p.fuel = Math.min(p.fuelMax, fuel);
+    p.torpedoes = ship.torpedoes;
+    p.shipName = ship.name;
+    g.spriteCache.delete(`player-ship-${p.hullId}`);
+    g.toast(`SWAPPED TO THE ${(ship.name ?? h.name).toUpperCase()} - ${(parked.name ?? hull(parked.hullId).name).toUpperCase()} PARKED HERE`);
+    sfx.dock();
+  }
+
+  buyHull(g: Game, id: string, keepOld: boolean): void {
     const p = g.world.player;
     const h = hull(id);
     if (p.hullId === id) { g.toast("THIS IS YOUR CURRENT HULL"); return; }
-    const tradeIn = Math.round(hull(p.hullId).price * 0.6);
+    const tradeIn = keepOld ? 0 : Math.round(hull(p.hullId).price * 0.6);
     const cost = Math.max(0, h.price - tradeIn);
-    if (p.credits < cost) { g.toast(`NEED ${cost}CR AFTER TRADE-IN`); return; }
+    if (p.credits < cost) { g.toast(keepOld ? `NEED ${cost}CR TO BUY WITHOUT TRADE-IN` : `NEED ${cost}CR AFTER TRADE-IN`); return; }
     if (cargoUsed(p) > h.cargoMax) { g.toast(`CARGO WON'T FIT: ${cargoUsed(p)}/${h.cargoMax} - STORE OR SELL FIRST`); return; }
     if (p.crew.length > h.crewSlots) { g.toast(`TOO MUCH CREW FOR ${h.crewSlots} BERTHS`); return; }
     p.credits -= cost;
+    if (keepOld) {
+      (p.fleet ??= []).push({ hullId: p.hullId, stationId: this.station.id, name: p.shipName, hull: p.hull, torpedoes: p.torpedoes ?? 0 });
+      p.shipName = undefined;
+      p.torpedoes = 0;
+      flag(g, "fleet");
+    }
     applyHull(p, id);
     g.spriteCache.delete(`player-ship-${p.hullId}`);
-    g.toast(`WELCOME ABOARD THE ${h.name.toUpperCase()}`);
+    g.toast(keepOld ? `WELCOME ABOARD THE ${h.name.toUpperCase()} - YOUR OLD HULL IS PARKED HERE` : `WELCOME ABOARD THE ${h.name.toUpperCase()}`);
     sfx.dock();
     void wire.post("hull", `took delivery of a ${h.name}`, g.world.systems[p.systemId].name);
   }
@@ -608,23 +640,38 @@ export class StationScene implements Scene {
     const p = g.world.player;
     drawText(ctx, p.shipName ? `REGISTERED AS "${p.shipName}" - N TO RENAME` : "N TO NAME YOUR SHIP", VW - textWidth(p.shipName ? `REGISTERED AS "${p.shipName}" - N TO RENAME` : "N TO NAME YOUR SHIP") - 8, top, PAL.greyDark);
     const tradeIn = Math.round(hull(p.hullId).price * 0.6);
-    drawText(ctx, `HULL MARKET - TRADE-IN VALUE OF YOUR ${hull(p.hullId).name.toUpperCase()}: ${tradeIn}CR`, 8, top, PAL.greyDark);
+    drawText(ctx, `HULL MARKET - ENTER BUYS WITH TRADE-IN (${tradeIn}CR) - K BUYS AND PARKS YOUR ${hull(p.hullId).name.toUpperCase()} HERE`, 8, top, PAL.greyDark);
+    const stored = (p.fleet ?? []).filter((f) => f.stationId === this.station.id);
+    const elsewhere = (p.fleet ?? []).filter((f) => f.stationId !== this.station.id);
+    const rowH = stored.length ? 26 : 34;
     HULLS.forEach((h, i) => {
-      const y = top + 12 + i * 34;
+      const y = top + 12 + i * rowH;
       this.row(ctx, y, i === this.cursor);
       const own = h.id === p.hullId;
       drawText(ctx, h.name.toUpperCase() + (own ? "  (YOURS)" : ""), 8, y, own ? PAL.ui : PAL.white);
       const cost = Math.max(0, h.price - tradeIn);
       drawText(ctx, own ? "-" : `${cost}CR`, VW - textWidth(`${cost}CR`) - 8, y, PAL.gold);
       drawText(ctx, `HULL ${h.hullMax}  SHLD ${h.shieldMax}  CARGO ${h.cargoMax}  FUEL ${h.fuelMax}  THRUST ${h.accel}  TOP ${h.maxSpeed}  MINE x${h.miningRate}  GUNS ${h.weaponDmg}  CREW ${h.crewSlots}`, 8, y + 9, PAL.grey);
-      drawText(ctx, h.desc, 8, y + 18, PAL.greyDark);
+      if (!stored.length) drawText(ctx, h.desc, 8, y + 18, PAL.greyDark);
       // preview sprite
       const spr = g.sprite(`hull-preview-${h.id}`, () => {
         const { genShip } = spriteMod;
         return genShip(new RNG(g.world.seed ^ 0x51e9 ^ h.id.length), h.spriteSize, h.color, h.accent);
       });
-      ctx.drawImage(spr, VW - 60, y + 6);
+      ctx.drawImage(spr, VW - 60, y + 6 - (stored.length ? 6 : 0));
     });
+    let y = top + 12 + HULLS.length * rowH;
+    if (stored.length) {
+      drawText(ctx, "PARKED HERE - ENTER TO SWAP:", 8, y, PAL.greyDark); y += 10;
+      stored.forEach((f, i) => {
+        this.row(ctx, y, this.cursor === HULLS.length + i);
+        drawText(ctx, `${(f.name ?? hull(f.hullId).name).toUpperCase()} (${hull(f.hullId).name.toUpperCase()})  HULL ${Math.round(f.hull)}/${hull(f.hullId).hullMax}`, 8, y, PAL.ui);
+        y += 10;
+      });
+    }
+    if (elsewhere.length) {
+      drawText(ctx, `FLEET ELSEWHERE: ${elsewhere.map((f) => `${(f.name ?? hull(f.hullId).name).toUpperCase()} AT ${findStation(g.world, f.stationId)?.st.name.toUpperCase() ?? "?"}`).join("; ")}`.slice(0, 110), 8, y, PAL.greyDark);
+    }
   }
 
   drawMissions(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
@@ -746,15 +793,15 @@ export class StationScene implements Scene {
     }
     y = top + 12 + 9 * 9 + 6;
     drawText(ctx, "LEADERBOARDS", 8, y, PAL.greyDark); y += 9;
-    const cols = [["discoveries", "DISCOVERIES"], ["arcs", "ARCS"], ["credits", "CREDITS"], ["kills", "KILLS"]];
+    const cols = [["discoveries", "DISCOVERIES"], ["arcs", "ARCS"], ["credits", "CREDITS"], ["kills", "KILLS"], ["explorers", "EXPLORERS"], ["traders", "TRADERS"]];
     cols.forEach(([id, label], ci) => {
-      const x = 8 + ci * 118;
+      const x = 8 + ci * 79;
       drawText(ctx, label, x, y, PAL.ui);
       const rows = this.boards[id] ?? [];
       for (let i = 0; i < Math.min(5, rows.length); i++) {
         const r = rows[i];
-        drawText(ctx, `${i + 1}. ${r.callsign.slice(0, 10)}`, x, y + 9 + i * 8, r.callsign === cs ? PAL.gold : PAL.grey);
-        drawText(ctx, `${r.score}`, x + 88, y + 9 + i * 8, PAL.greyDark);
+        drawText(ctx, `${i + 1}. ${r.callsign.slice(0, 8)}`, x, y + 9 + i * 8, r.callsign === cs ? PAL.gold : PAL.grey);
+        drawText(ctx, `${r.score >= 100000 ? Math.round(r.score / 1000) + "K" : r.score}`, x + 52, y + 9 + i * 8, PAL.greyDark);
       }
       if (!rows.length) drawText(ctx, "-", x, y + 9, PAL.greyDark);
     });

@@ -9,6 +9,7 @@ import { clamp, TAU, angDiff, dist } from "../../core/mathx";
 import { SYSTEM_SIZE, navRoute, repLabel } from "../../world";
 import { faction } from "../../data/data";
 import { hull } from "../../data/hulls";
+import { permitDenied } from "../../world";
 import { hasModule } from "../../data/modules";
 import { inSafeZone } from "./ai";
 import { drawTouchControls } from "../../core/touch";
@@ -113,7 +114,9 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
     if (sx > -s && sx < VW + s && sy > -s && sy < VH + s) {
       ctx.drawImage(gateSpr, sx - s / 2, sy - s / 2, s, s);
       const tname = g.world.systems[jp.targetSystemId].name;
-      drawText(ctx, `GATE: ${tname}`, sx - textWidth(`GATE: ${tname}`) / 2, sy - s / 2 - 8, PAL.info);
+      const closed = permitDenied(g.world, jp.targetSystemId);
+      const gl = `GATE: ${tname}${closed ? " (PERMIT)" : ""}`;
+      drawText(ctx, gl, sx - textWidth(gl) / 2, sy - s / 2 - 8, closed ? PAL.warn : PAL.info);
       if (dist(p.x, p.y, jp.x, jp.y) < 70) {
         const cost = fs.jumpCost(g, jp.targetSystemId);
         drawText(ctx, `[E] JUMP (${cost} FUEL)`, sx - 36, sy + s / 2 + 3, PAL.gold);

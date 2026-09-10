@@ -13,7 +13,7 @@ import { MODULES } from "../src/data/modules";
 import { rareSellPrice, findStation } from "../src/world";
 import { RARES } from "../src/data/data";
 import { BLUEPRINTS, upgrade, addMaterials, nextCost, MATERIAL_CAP } from "../src/data/engineering";
-import { jumpFuelCost, communityGoal, weekKey } from "../src/world";
+import { jumpFuelCost, communityGoal, weekKey, permitDenied, navRoute } from "../src/world";
 
 describe("world generation", () => {
   it("is deterministic per seed", () => {
@@ -375,5 +375,25 @@ describe("community goal", () => {
     expect(c.id).not.toBe(a.id);
     expect(a.target).toBeGreaterThanOrEqual(300);
     expect(/^cg-\d{4}-\d{2}-\d{2}$/.test(a.id)).toBe(true);
+  });
+});
+
+describe("permits", () => {
+  it("closes one system per faction to non-allies and routes around it", () => {
+    const w = generateWorld(11, { realGalaxy: true });
+    const closed = Object.values(w.systems).filter((s) => s.permit);
+    expect(closed.length).toBeGreaterThan(0);
+    expect(closed.some((s) => s.id === w.player.systemId)).toBe(false);
+    const sys = closed[0];
+    expect(permitDenied(w, sys.id)).toBe(sys.factionId);
+    w.player.rep[sys.factionId] = 60;
+    expect(permitDenied(w, sys.id)).toBeNull();
+    w.player.rep[sys.factionId] = 0;
+    // no route to anywhere else passes through closed space
+    for (const other of Object.values(w.systems)) {
+      if (other.permit || other.id === w.player.systemId) continue;
+      const r = navRoute(w, w.player.systemId, other.id);
+      if (r) for (const id of r) expect(w.systems[id].permit ?? false).toBe(false);
+    }
   });
 });

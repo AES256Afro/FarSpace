@@ -25,7 +25,7 @@ const TTL_SECONDS = 60 * 60 * 24 * 365; // a year of inactivity, then it expires
 
 const CALLSIGN = /^[A-Z0-9][A-Z0-9 _-]{1,15}$/;
 const WIRE_KINDS = new Set(["arc", "discovery", "rescue", "relics", "war", "bounty", "hull", "achievement", "daily"]);
-const BOARDS = new Set(["discoveries", "arcs", "credits", "kills"]);
+const BOARDS = new Set(["discoveries", "arcs", "credits", "kills", "explorers", "traders"]);
 const WIRE_MAX = 40;
 
 interface WireEvent { t: number; callsign: string; kind: string; text: string; system: string }

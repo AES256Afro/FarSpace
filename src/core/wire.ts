@@ -76,6 +76,8 @@ export function syncScores(w: World): void {
   void postScore("arcs", Object.values(p.arcs).reduce((a, b) => a + b, 0));
   void postScore("credits", p.credits);
   void postScore("kills", p.kills);
+  void postScore("explorers", Math.round(p.expSold ?? 0));
+  void postScore("traders", Math.round(p.tradeRevenue ?? 0));
 }
 
 export function ageLabel(t: number): string {

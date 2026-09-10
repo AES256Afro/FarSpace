@@ -126,6 +126,7 @@ export interface SystemDef {
   pirateActivity: number;
   links: string[];
   ly: Record<string, number>; // distance to each linked system, light-years
+  permit?: boolean; // entry needs ALLIED standing with the owning faction
 }
 
 export type MissionKind = "delivery" | "bounty" | "mining" | "escort" | "passenger" | "research" | "arc";
@@ -232,7 +233,10 @@ export interface PlayerState {
   materials?: Record<string, number>;
   engineering?: Record<string, number>; // blueprint id → grade
   goalContrib?: Record<string, number>; // community goal id → units contributed
+  fleet?: StoredShip[];              // hulls parked at stations
 }
+
+export interface StoredShip { hullId: string; stationId: string; name?: string; hull: number; torpedoes: number }
 
 export interface World {
   version: number;
@@ -461,6 +465,14 @@ export function jumpFuelCost(w: World, fromId: string, toId: string): number {
 }
 
 // Dijkstra on fuel cost; returns path + total fuel. Falls back to hop BFS.
+// Permit systems: a faction's inner sanctum, open only to allies.
+export function permitDenied(w: World, sysId: string): string | null {
+  const sys = w.systems[sysId];
+  if (!sys?.permit) return null;
+  const rep = w.player.rep?.[sys.factionId] ?? 0;
+  return rep >= 50 ? null : sys.factionId;
+}
+
 export function navRoute(w: World, fromId: string, toId: string): string[] | null {
   if (fromId === toId) return [fromId];
   const cost = new Map<string, number>([[fromId, 0]]);
@@ -476,6 +488,7 @@ export function navRoute(w: World, fromId: string, toId: string): string[] | nul
     if (cur === toId) break;
     for (const l of w.systems[cur].links) {
       if (done.has(l)) continue;
+      if (l !== toId && permitDenied(w, l)) continue; // route around closed space
       const nc = best + jumpFuelCost(w, cur, l);
       if (nc < (cost.get(l) ?? Infinity)) { cost.set(l, nc); prev.set(l, cur); open.add(l); }
     }
@@ -795,6 +808,7 @@ export function generateWorld(seed: number, opts: GenOptions = {}): World {
   const world: World = {
     version: 0, seed, time: 0, realGalaxy: !!opts.realGalaxy, galaxyLy: opts.realGalaxy ? (opts.maxLy ?? 20) : undefined, hardcore: !!opts.hardcore,
     rareOrigin: assignRares(systems, new RNG((seed ^ 0x5a5e) >>> 0)),
+    ...(assignPermits(systems, startId, new RNG((seed ^ 0x9e3d) >>> 0)), {}),
     systems, player, news: [], events: [], wars: [],
     missionCounter: 0, econTick: 0, shockTick: 0, warTick: 0,
   };
@@ -997,6 +1011,42 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
     missions.unshift(m);
   }
   return missions;
+}
+
+// Permits: one closed system per faction (never the start, never a dead end that
+// would strand a route), holding a military station and richer pickings.
+export function assignPermits(systems: Record<string, SystemDef>, startId: string, rng: RNG): void {
+  const byFaction = new Map<string, SystemDef[]>();
+  for (const sys of Object.values(systems)) {
+    if (sys.id === startId || sys.links.length < 2 || !sys.stations.some((st) => st.military)) continue;
+    if (sys.links.includes(startId)) continue;
+    const arr = byFaction.get(sys.factionId) ?? [];
+    arr.push(sys); byFaction.set(sys.factionId, arr);
+  }
+  // Closing a system must not cut anyone off: every other system stays reachable
+  // through open space, and the closed one still borders open space.
+  const chosen = new Set<string>();
+  const keepsConnected = (cand: string): boolean => {
+    const blocked = new Set([...chosen, cand]);
+    const seen = new Set<string>([startId]);
+    const stack = [startId];
+    while (stack.length) {
+      const cur = stack.pop()!;
+      for (const l of systems[cur].links) if (!blocked.has(l) && !seen.has(l)) { seen.add(l); stack.push(l); }
+    }
+    for (const id of Object.keys(systems)) if (!blocked.has(id) && !seen.has(id)) return false;
+    return systems[cand].links.some((l) => seen.has(l));
+  };
+  for (const [, arr] of byFaction) {
+    const ok = arr.filter((s) => keepsConnected(s.id));
+    if (!ok.length) continue;
+    const sys = rng.pick(ok);
+    chosen.add(sys.id);
+    sys.permit = true;
+    // worth the standing: better stock and a fatter belt
+    for (const st of sys.stations) for (const id of Object.keys(st.stock)) st.stock[id] = Math.round(st.stock[id] * 1.5);
+    for (const a of sys.asteroids) { a.rich = a.rich || rng.chance(0.4); a.ore += 3; }
+  }
 }
 
 // Rare goods: spread the pool over civilian stations, one origin each.

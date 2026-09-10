@@ -4,7 +4,8 @@
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied } from "../../world";
+import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
 import { engGrade } from "../../data/engineering";
 import { gainMaterials } from "../../core/materials";
@@ -625,6 +626,8 @@ export class FlightScene implements Scene {
     const p = g.world.player;
     const cost = this.jumpCost(g, targetId);
     if (p.fuel < cost) { g.toast(`NEED ${cost} FUEL TO JUMP`); return; }
+    const denied = permitDenied(g.world, targetId);
+    if (denied) { g.toast(`${g.world.systems[targetId].name.toUpperCase()} IS PERMIT SPACE - ALLIED STANDING WITH ${factionDef(denied).name.toUpperCase()} REQUIRED`); sfx.alarm(); return; }
     const facId = g.world.systems[p.systemId].factionId;
     if (guarded) {
       const fac = faction(facId);
@@ -660,6 +663,7 @@ export class FlightScene implements Scene {
     p.systemId = targetId;
     const tsys = g.world.systems[targetId];
     this.dockTimer = 0;
+    if (tsys.permit) flag(g, "permit");
     {
       const fss = hasModule(p, "fss");
       const gained = logSystem(p, tsys, fss ? 2 : 1);
