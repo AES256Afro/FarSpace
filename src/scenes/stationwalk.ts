@@ -315,6 +315,20 @@ export class StationWalkScene implements Scene {
       }
     }
 
+    // the deck dressed for what the station does: planters, ore carts, lab benches, pipework, crates, racks
+    {
+      const type = this.station.type;
+      const spots: [number, number][] = [[9, 3], [12, 3], [26, 3], [29, 3], [9, 8], [30, 8]];
+      spots.forEach(([tx, ty], i) => {
+        const x = ox + tx * T, y = oy + ty * T;
+        if (type === "agri") { ctx.fillStyle = "#6a4a2a"; ctx.fillRect(x + 1, y + 6, 8, 3); ctx.fillStyle = i % 2 ? "#3aa55e" : "#63c26e"; ctx.fillRect(x + 2, y + 2, 2, 4); ctx.fillRect(x + 5, y + 1, 2, 5); }
+        else if (type === "mining") { ctx.fillStyle = "#5d6680"; ctx.fillRect(x + 1, y + 4, 8, 4); ctx.fillStyle = "#9aa5bd"; ctx.fillRect(x + 2, y + 2, 6, 2); ctx.fillStyle = "#c7a54a"; ctx.fillRect(x + 3 + (i % 3), y + 3, 1, 1); }
+        else if (type === "research") { ctx.fillStyle = "#2c3550"; ctx.fillRect(x + 1, y + 3, 8, 5); ctx.fillStyle = Math.floor(g.world.time * 2 + i) % 2 ? "#63f2c8" : "#5ab3ff"; ctx.fillRect(x + 2 + (i % 2) * 3, y + 4, 2, 1); }
+        else if (type === "refinery") { ctx.fillStyle = "#6a7a9c"; ctx.fillRect(x, y + 4, 10, 2); ctx.fillRect(x + 4, y + 1, 2, 3); ctx.fillStyle = "#ff9a3a"; if (Math.floor(g.world.time * 3 + i) % 4 === 0) ctx.fillRect(x + 4, y, 2, 1); }
+        else if (type === "trade") { ctx.fillStyle = i % 2 ? "#6a4a2a" : "#7a5a3a"; ctx.fillRect(x + 1, y + 3, 4, 4); ctx.fillRect(x + 5, y + 5, 4, 3); ctx.fillStyle = "#c7a54a"; ctx.fillRect(x + 2, y + 3, 1, 1); }
+        else if (type === "military") { ctx.fillStyle = "#5d6680"; ctx.fillRect(x + 1, y + 2, 8, 6); ctx.fillStyle = "#ff5a5a"; ctx.fillRect(x + 3, y + 4, 1, 1); ctx.fillRect(x + 6, y + 4, 1, 1); }
+      });
+    }
     // NPCs
     for (const n of this.npcs) {
       const x = Math.round(ox + n.x), y = Math.round(oy + n.y);

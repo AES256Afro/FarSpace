@@ -229,6 +229,12 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Places with detail
+
+- Aboard, the hold stacks crates for what you carry, crew keep one small
+  thing by their bunks that says who they are, and passengers' luggage waits
+  by the seat. Station promenades are dressed for what the station does.
+
 ## Town projects
 
 - Once an outpost is a town, its foreman takes funding: a school (metals), a

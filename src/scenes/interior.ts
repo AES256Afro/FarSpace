@@ -455,6 +455,22 @@ export class InteriorScene implements Scene {
       if (c.sick) { ctx.fillStyle = "#9fd8a0"; ctx.fillRect(ox + s.tx * T + T / 2 + 3, oy + s.ty * T, 2, 2); }
       else if (c.morale < 30 && Math.floor(g.world.time * 2) % 2 === 0) { ctx.fillStyle = PAL.warn; ctx.fillRect(ox + s.tx * T + T / 2 + 3, oy + s.ty * T, 2, 2); }
     });
+    // the hold: crates for what you carry, a stack per ten units
+    { const gt = nearestTile(this.deck, 0, 0, "G", 1e9); if (gt) { const n = Math.min(6, Math.ceil(cargoUsed(p) / 10)); for (let i = 0; i < n; i++) { const cx = ox + gt.tx * T + (i % 3) * 3 + 1 + (this.tileAt(gt.tx + 1, gt.ty) === "." ? T : 0), cy = oy + gt.ty * T + Math.floor(i / 3) * 4 + 2; ctx.fillStyle = i % 2 ? "#6a4a2a" : "#7a5a3a"; ctx.fillRect(cx, cy, 3, 3); ctx.fillStyle = "#c7a54a"; ctx.fillRect(cx + 1, cy, 1, 1); } } }
+    // crew belongings by their bunks: what they do off duty, in one small object each
+    this.crewSpots().forEach((sp, i) => {
+      const c = p.crew[i]; if (!c || !c.trait) return;
+      const x = ox + sp.tx * T, y = oy + sp.ty * T;
+      const t = c.trait;
+      if (t.includes("plant")) { ctx.fillStyle = "#3aa55e"; ctx.fillRect(x + 8, y + 1, 1, 2); ctx.fillRect(x + 7, y + 2, 3, 1); }
+      else if (t.includes("reads") || t.includes("letters") || t.includes("sketches")) { ctx.fillStyle = "#f2f4ff"; ctx.fillRect(x + 7, y + 1, 2, 3); ctx.fillStyle = "#c7a54a"; ctx.fillRect(x + 7, y + 1, 2, 1); }
+      else if (t.includes("cards") || t.includes("tally") || t.includes("stamps")) { ctx.fillStyle = "#e8e8e8"; ctx.fillRect(x + 7, y + 1, 2, 2); ctx.fillStyle = "#a53a3a"; ctx.fillRect(x + 8, y + 2, 1, 1); }
+      else if (t.includes("hymns") || t.includes("song") || t.includes("talks")) { ctx.fillStyle = "#ffd75a"; ctx.fillRect(x + 8, y + 1, 1, 3); ctx.fillRect(x + 7, y + 3, 2, 1); }
+      else if (t.includes("cooks")) { ctx.fillStyle = "#9aa5bd"; ctx.fillRect(x + 7, y + 1, 3, 2); ctx.fillStyle = "#ff9a3a"; ctx.fillRect(x + 8, y + 1, 1, 1); }
+      else { ctx.fillStyle = "#5d6680"; ctx.fillRect(x + 7, y + 1, 3, 2); }
+    });
+    // passengers' luggage by the seat
+    { const ps = nearestTile(this.deck, 0, 0, "p", 1e9); if (ps) passengersAboard(p).forEach((m, i) => { ctx.fillStyle = m.passengerKind === "vip" ? "#c7a54a" : "#6a4a2a"; ctx.fillRect(ox + ps.tx * T + 1 + i * 3, oy + ps.ty * T + T - 3, 2, 2); }); }
     for (const id of p.furnishings ?? []) {
       const f = FURNISHINGS.find((x) => x.id === id); if (!f) continue;
       const t = nearestTile(this.deck, 0, 0, f.tile, 1e9); if (!t) continue;

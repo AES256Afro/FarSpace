@@ -531,4 +531,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Fund a school, a clinic, a second pad or a chapel at a town: growth,
       effects on the deck and on your crew, a building to see
 
+## Milestone 43 — Places with Detail ✅ (Sep 2026)
+- [x] Crates in the hold, crew belongings by their bunks, passengers' luggage
+- [x] Promenades dressed by station type
+
 ## Later
