@@ -160,7 +160,7 @@ export class FlightScene implements Scene {
     if (thrusting) {
       p.vx += Math.cos(p.angle) * ACCEL * engineFactor * dt;
       p.vy += Math.sin(p.angle) * ACCEL * engineFactor * dt;
-      p.fuel = Math.max(0, p.fuel - dt * 0.55);
+      p.fuel = Math.max(0, p.fuel - dt * 0.55 * (h.fuelEff ?? 1));
       exhaust(this, p.x, p.y, p.angle + Math.PI, PAL.thrust);
     }
     if (retro) {
@@ -177,7 +177,7 @@ export class FlightScene implements Scene {
         if (Math.abs(d) < 0.4) {
           p.vx += Math.cos(p.angle) * ACCEL * engineFactor * dt;
           p.vy += Math.sin(p.angle) * ACCEL * engineFactor * dt;
-          p.fuel = Math.max(0, p.fuel - dt * 0.55);
+          p.fuel = Math.max(0, p.fuel - dt * 0.55 * (h.fuelEff ?? 1));
           exhaust(this, p.x, p.y, p.angle + Math.PI, PAL.thrust);
         }
       } else { p.vx = 0; p.vy = 0; }
@@ -748,7 +748,7 @@ export class FlightScene implements Scene {
     this.dockTimer = 0;
     if (tsys.permit) flag(g, "permit");
     {
-      const fss = hasModule(p, "fss");
+      const fss = hasModule(p, "fss") || !!hull(p.hullId).scanner;
       const gained = logSystem(p, tsys, fss ? 2 : 1);
       if (fss) for (const an of tsys.anomalies) an.discovered = true;
       if (gained) { this.arrivalLog = `${fss ? "DISCOVERY SCANNER" : "NAV LOG"}: ${tsys.name.toUpperCase()} LOGGED +${gained} EXPLORATION DATA`; this.arrivalTimer = 6; }

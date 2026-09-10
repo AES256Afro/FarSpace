@@ -735,7 +735,7 @@ export class StationScene implements Scene {
     drawText(ctx, `HULL MARKET - ENTER BUYS WITH TRADE-IN (${tradeIn}CR) - K BUYS AND PARKS YOUR ${hull(p.hullId).name.toUpperCase()} HERE`, 8, top, PAL.greyDark);
     const stored = (p.fleet ?? []).filter((f) => f.stationId === this.station.id);
     const elsewhere = (p.fleet ?? []).filter((f) => f.stationId !== this.station.id);
-    const rowH = stored.length ? 26 : 34;
+    const rowH = 26; // seven hulls have to fit above the parked list
     HULLS.forEach((h, i) => {
       const y = top + 12 + i * rowH;
       this.row(ctx, y, i === this.cursor);
@@ -744,13 +744,13 @@ export class StationScene implements Scene {
       const cost = Math.max(0, h.price - tradeIn);
       drawText(ctx, own ? "-" : `${cost}CR`, VW - textWidth(`${cost}CR`) - 8, y, PAL.gold);
       drawText(ctx, `HULL ${h.hullMax}  SHLD ${h.shieldMax}  CARGO ${h.cargoMax}  FUEL ${h.fuelMax}  THRUST ${h.accel}  TOP ${h.maxSpeed}  MINE x${h.miningRate}  GUNS ${h.weaponDmg}  CREW ${h.crewSlots}`, 8, y + 9, PAL.grey);
-      if (!stored.length) drawText(ctx, h.desc, 8, y + 18, PAL.greyDark);
+      if (!stored.length) drawText(ctx, h.desc.slice(0, 104), 8, y + 18, PAL.greyDark);
       // preview sprite
       const spr = g.sprite(`hull-preview-${h.id}`, () => {
         const { genShip } = spriteMod;
         return genShip(new RNG(g.world.seed ^ 0x51e9 ^ h.id.length), h.spriteSize, h.color, h.accent);
       });
-      ctx.drawImage(spr, VW - 60, y + 6 - (stored.length ? 6 : 0));
+      ctx.drawImage(spr, VW - 60, y);
     });
     let y = top + 12 + HULLS.length * rowH;
     if (stored.length) {

@@ -353,7 +353,7 @@ export function drawEdgeMarkers(fs: FlightScene, g: Game, ctx: CanvasRenderingCo
     if (st) mark(Math.cos(st.angle) * st.orbit, Math.sin(st.angle) * st.orbit, PAL.gold, "MISSION");
   }
   for (const gh of presence.ghosts.values()) { const pos = presence.at(gh); mark(pos.x, pos.y, PAL.info, gh.callsign); }
-  const wreckRange = hasModule(p, "fss") ? 1e9 : 1500;
+  const wreckRange = hasModule(p, "fss") || hull(p.hullId).scanner ? 1e9 : 1500;
   for (const w of sys.wrecks) if (!w.looted && dist(w.x, w.y, p.x, p.y) < wreckRange) mark(w.x, w.y, PAL.grey, "WRECK");
 }
 

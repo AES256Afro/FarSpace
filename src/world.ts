@@ -376,6 +376,16 @@ export function tickWorld(w: World, dt: number): void {
       if (w.time < war.until) return true;
       const sys = w.systems[war.systemId];
       sys.pirateActivity = Math.max(0.05, sys.pirateActivity - 0.3);
+      // sometimes the raiders win: the system changes hands, stations and all
+      if (rng.chance(0.3) && war.b !== "vex" && sys.id !== w.player.systemId) {
+        const from = sys.factionId;
+        sys.factionId = war.b;
+        sys.permit = false;
+        for (const st of sys.stations) st.factionId = war.b;
+        for (const pl of sys.planets) for (const r of pl.surface?.regions ?? []) if (r.factionId === from) r.factionId = war.b;
+        pushEvent(w, { t: w.time, kind: "war", systemId: sys.id, text: `${facName(war.b)} annexes ${sys.name}: ${facName(from)} withdraws, stations change flags` });
+        return false;
+      }
       pushEvent(w, { t: w.time, kind: "peace", systemId: sys.id, text: `Ceasefire in ${sys.name}: ${facName(war.a)} and ${facName(war.b)} stand down` });
       return false;
     });
@@ -486,7 +496,7 @@ export function genCrewCandidate(rng: RNG): CrewMember {
 
 export function jumpFuelCost(w: World, fromId: string, toId: string): number {
   const ly = w.systems[fromId]?.ly?.[toId];
-  const tuned = 1 - 0.08 * (w.player?.engineering?.fsd ?? 0);
+  const tuned = (1 - 0.08 * (w.player?.engineering?.fsd ?? 0)) * (hull(w.player?.hullId).fuelEff ?? 1);
   if (ly === undefined) return Math.max(4, Math.round(10 * tuned));
   return clamp(Math.round((4 + ly * 1.4) * tuned), 4, 40);
 }

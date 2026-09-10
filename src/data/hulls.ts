@@ -21,6 +21,8 @@ export interface HullDef {
   deck: "scout" | "prospector" | "freighter" | "interceptor" | "carrier";
   crewSlots: number;
   drones?: number; // escort drones launched from a hangar
+  scanner?: boolean; // built-in discovery scanner
+  fuelEff?: number;  // fuel burn multiplier for thrust and jumps (1 = normal)
 }
 
 export const HULLS: HullDef[] = [
@@ -51,6 +53,20 @@ export const HULLS: HullDef[] = [
     hullMax: 110, shieldMax: 90, cargoMax: 25, fuelMax: 90,
     accel: 140, maxSpeed: 340, rotSpeed: 4.6, miningRate: 1, weaponDmg: 16, fireRate: 0.16,
     spriteSize: 22, color: "#6a7a9c", accent: "#ff5a5a", deck: "interceptor", crewSlots: 2,
+  },
+  {
+    id: "explorer", name: "Albatross Explorer", price: 7800,
+    desc: "Long legs and a cold hull: the biggest tank in the catalogue, sips fuel, and its sensors log a system on arrival like a discovery scanner.",
+    hullMax: 120, shieldMax: 60, cargoMax: 45, fuelMax: 260,
+    accel: 100, maxSpeed: 290, rotSpeed: 3.6, miningRate: 1.5, weaponDmg: 8, fireRate: 0.26,
+    spriteSize: 28, color: "#b8c2d6", accent: "#63f2c8", deck: "scout", crewSlots: 2, scanner: true, fuelEff: 0.6,
+  },
+  {
+    id: "barge", name: "Ox Mining Barge", price: 9200,
+    desc: "Four mining heads and a refinery-grade hold. Cracks rocks twice as fast as a Magpie and carries what it cracks. Handles like the rock.",
+    hullMax: 200, shieldMax: 50, cargoMax: 160, fuelMax: 140,
+    accel: 50, maxSpeed: 180, rotSpeed: 1.8, miningRate: 10, weaponDmg: 6, fireRate: 0.4,
+    spriteSize: 34, color: "#c7a54a", accent: "#ff9a3a", deck: "prospector", crewSlots: 3,
   },
   {
     id: "carrier", name: "Aegis Carrier", price: 14000,

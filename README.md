@@ -61,7 +61,8 @@ memory with best-known-sell and best-run hints, bookmarks, ship naming,
 sightseeing charters, a parked fleet of hulls, permit-locked systems, black
 markets with customs stings, a weekly galaxy-wide community goal and a daily contract.
 
-Five hulls, a dynamic economy with shocks and faction wars, reputation with five
+Seven hulls, a dynamic economy with shocks and faction wars that can change a
+system's flag, reputation with five
 factions and a law ladder from routine scans to shoot-on-sight, escort and
 passenger and research missions, five faction story arcs, pirate captains and
 homing torpedoes, achievements, a hardcore

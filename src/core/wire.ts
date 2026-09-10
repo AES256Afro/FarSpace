@@ -184,7 +184,7 @@ export async function fetchRooms(force = false): Promise<{ rooms: RoomCount[]; p
 export interface BaseRec { stationId: string | null; stationName: string | null; systemName: string | null; treasury: number; vault: Record<string, number>; upgrades: string[]; founded: number; log: { t: number; callsign: string; text: string }[] }
 export interface BaseSummary { tag: string; stationId: string; stationName: string; systemName: string; upgrades: string[] }
 export const BASE_UPGRADES: { id: string; name: string; cost: number; desc: string }[] = [
-  { id: "defense", name: "Defense Grid", cost: 8000, desc: "Three extra platforms and fighters guard the base for everyone" },
+  { id: "defense", name: "Defense Grid", cost: 8000, desc: "Three extra platforms guard the base, for everyone" },
   { id: "depot", name: "Fuel Depot", cost: 5000, desc: "Members refuel and repair here for free" },
   { id: "market", name: "Market Stake", cost: 6000, desc: "Members sell here at +8%" },
   { id: "vault", name: "Deep Vault", cost: 4000, desc: "Shared vault holds 600 instead of 200" },

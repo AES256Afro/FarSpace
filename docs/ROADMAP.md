@@ -272,5 +272,10 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
 - [x] Upgrades from the treasury: Defense Grid (extra platforms for everyone),
       Fuel Depot (free services), Market Stake (+8% sales), Deep Vault (600)
 
+- [x] Two more hulls: Albatross Explorer (260 fuel, sips it, built-in
+      discovery scanner) and Ox Mining Barge (four mining heads, 160 cargo)
+- [x] Living galaxy: a lost war can hand a system to the raiders; stations and
+      regions change flags and the news says so
+
 ## Later
 - [ ] Base raids and defence events; squadron missions

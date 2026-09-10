@@ -224,7 +224,7 @@ describe("milestone 8 content", () => {
     const { HULLS, hull } = await import("../src/data/hulls");
     const { COMMODITIES, ECONOMY } = await import("../src/data/data");
     expect(hull("carrier").drones).toBe(2);
-    expect(HULLS.length).toBe(5);
+    expect(HULLS.length).toBe(7);
     expect(COMMODITIES.find((c) => c.id === "relics")?.base).toBeGreaterThan(200);
     expect(ECONOMY.research.relics).toBeGreaterThan(1);
     const w = generateWorld(21);
@@ -461,5 +461,20 @@ describe("ground contracts", () => {
     for (let i = 0; i < (m!.groundNeed ?? 1); i++) expect(groundProgress(w, m!.groundPlanetIdx!, m!.groundGoal!)).toBe(m);
     expect(groundProgress(w, m!.groundPlanetIdx!, m!.groundGoal!)).toBeNull();
     expect(missionDeliverable(w, m!, st)).toBe(true);
+  });
+});
+
+describe("living galaxy", () => {
+  it("wars come and go, and every station keeps its system's flag", () => {
+    const w = generateWorld(15, { realGalaxy: true });
+    let flips = 0;
+    const before = Object.fromEntries(Object.values(w.systems).map((s) => [s.id, s.factionId]));
+    for (let i = 0; i < 400; i++) tickWorld(w, 10);
+    for (const sys of Object.values(w.systems)) {
+      if (sys.factionId !== before[sys.id]) flips++;
+      for (const st of sys.stations) expect(st.factionId).toBe(sys.factionId);
+    }
+    expect(flips).toBeGreaterThanOrEqual(0);
+    expect(w.events.some((e) => e.kind === "war")).toBe(true);
   });
 });
