@@ -455,6 +455,10 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
     drawText(ctx, t, VW / 2 - textWidth(t) / 2, VH - 44, PAL.info);
   }
   if (fs.arrivalLog) drawText(ctx, fs.arrivalLog, VW / 2 - textWidth(fs.arrivalLog) / 2, 30, PAL.info);
+  if (fs.raidBase && !fs.raidBase.repelled && Math.floor(g.world.time * 2) % 2 === 0) {
+    const t = `RAIDERS AT THE [${fs.raidBase.tag}] BASE`;
+    drawText(ctx, t, VW / 2 - textWidth(t) / 2, 50, PAL.danger);
+  }
   wy += 10;
   for (const c of fs.comms) {
     ctx.globalAlpha = Math.min(1, c.life);

@@ -277,5 +277,8 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
 - [x] Living galaxy: a lost war can hand a system to the raiders; stations and
       regions change flags and the news says so
 
+- [x] Base raids: without a defense grid, corsairs probe a base whenever piracy
+      is up; clearing them posts to the wire and earns DEFENDER
+
 ## Later
-- [ ] Base raids and defence events; squadron missions
+- [ ] Squadron missions and shared contracts

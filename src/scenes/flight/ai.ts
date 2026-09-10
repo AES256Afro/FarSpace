@@ -46,6 +46,20 @@ export function populate(fs: FlightScene, g: Game): void {
     });
   }
 
+  // squadron bases draw raiders unless a defense grid is up
+  fs.raidBase = null;
+  sys.stations.forEach((st, i) => {
+    const b = baseAt(st.id);
+    if (!b || b.upgrades.includes("defense") || sys.pirateActivity < 0.2) return;
+    const sx = Math.cos(st.angle) * st.orbit, sy = Math.sin(st.angle) * st.orbit;
+    for (let k = 0; k < 2; k++) {
+      const n = spawnNpc(fs, g, "pirate", rng);
+      const a = rng.range(0, TAU);
+      n.x = sx + Math.cos(a) * 320; n.y = sy + Math.sin(a) * 320;
+    }
+    fs.raidBase = { tag: b.tag, stationIdx: i, repelled: false };
+  });
+
   fs.platforms = [];
   const hostile = sys.factionId === "vex";
   void fetchBases();
@@ -344,6 +358,15 @@ export function npcKilled(fs: FlightScene, g: Game, n: Npc, byPlayer: boolean): 
     if (byPlayer) {
       p.kills++;
       if (presence.ghosts.size) presence.send({ t: "wing", kind: "kill", x: n.x, y: n.y, tag: n.variant ?? "pirate" });
+      if (fs.raidBase && !fs.raidBase.repelled) {
+        const st = g.world.systems[p.systemId].stations[fs.raidBase.stationIdx];
+        if (st && dist(n.x, n.y, Math.cos(st.angle) * st.orbit, Math.sin(st.angle) * st.orbit) < 600 && !fs.npcs.some((o) => o !== n && o.kind === "pirate" && o.hull > 0 && dist(o.x, o.y, Math.cos(st.angle) * st.orbit, Math.sin(st.angle) * st.orbit) < 600)) {
+          fs.raidBase.repelled = true;
+          g.toast(`RAID REPELLED - THE [${fs.raidBase.tag}] BASE IS CLEAR`);
+          void wire.post("base", `drove raiders off the [${fs.raidBase.tag}] base at ${st.name}`, g.world.systems[p.systemId].name);
+          flag(g, "defender");
+        }
+      }
       if (facId !== "vex") adjustRep(g.world, facId, 2);
       else adjustRep(g.world, "vex", -4);
       for (const m of p.missions) {

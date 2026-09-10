@@ -426,6 +426,7 @@ export class FlightScene implements Scene {
 
   arrivalLog = "";
   arrivalTimer = 0;
+  raidBase: { tag: string; stationIdx: number; repelled: boolean } | null = null;
   // First discovery: the wire remembers who logged a system first.
   async claimFirst(g: Game, sys: { id: string; name: string }): Promise<void> {
     const p = g.world.player;

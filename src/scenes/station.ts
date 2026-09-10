@@ -744,7 +744,7 @@ export class StationScene implements Scene {
       const cost = Math.max(0, h.price - tradeIn);
       drawText(ctx, own ? "-" : `${cost}CR`, VW - textWidth(`${cost}CR`) - 8, y, PAL.gold);
       drawText(ctx, `HULL ${h.hullMax}  SHLD ${h.shieldMax}  CARGO ${h.cargoMax}  FUEL ${h.fuelMax}  THRUST ${h.accel}  TOP ${h.maxSpeed}  MINE x${h.miningRate}  GUNS ${h.weaponDmg}  CREW ${h.crewSlots}`, 8, y + 9, PAL.grey);
-      if (!stored.length) drawText(ctx, h.desc.slice(0, 104), 8, y + 18, PAL.greyDark);
+      if (!stored.length) drawText(ctx, h.desc.slice(0, 94), 8, y + 18, PAL.greyDark);
       // preview sprite
       const spr = g.sprite(`hull-preview-${h.id}`, () => {
         const { genShip } = spriteMod;
