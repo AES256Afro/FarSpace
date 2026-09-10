@@ -275,6 +275,7 @@ export class InteriorScene implements Scene {
     const inp = g.input;
     const p = g.world.player;
     if (inp.wasPressed("Escape") || inp.wasPressed("i")) { g.setScene("flight"); return; }
+    if (inp.wasPressed("r")) { g.settingsReturn = "interior"; g.setScene("roster"); return; }
     if (inp.wasPressed("F5")) g.save();
     const moved = moveWalker(g, this, dt, (tx, ty) => this.solid(tx, ty));
     if (moved) this.repairing = null;

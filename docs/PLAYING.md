@@ -229,6 +229,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## The roster
+
+- R aboard your ship, R in a station lounge, or THE ROSTER from the pause
+  menu: everyone aboard, their morale and loyalty, progress to the next skill,
+  who they get on with, what they've asked for, where their story stands.
+  Enter pays a 100-credit bonus.
+
 ## Regulars
 
 - Stations count your dockings. At five you're a regular and the bulletin

@@ -578,4 +578,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Hull personalities for the ship's voice; retirement posted to the wire;
       a legend on the galaxy map; deeds counted on the title line
 
+## Milestone 56 — The Roster ✅ (Sep 2026)
+- [x] A crew roster screen with morale, loyalty, skill progress, bonds, asks
+      and stories, and a bonus on Enter
+
 ## Later

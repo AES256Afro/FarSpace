@@ -497,6 +497,7 @@ export class StationScene implements Scene {
         break;
       }
       case "BAR": {
+        if (inp.wasPressed("r")) { g.settingsReturn = "station"; g.setScene("roster"); return; }
         const rows = st.barPatrons.length + this.candidates.length + this.fares.length;
         this.cursor = clamp(this.cursor, 0, Math.max(0, rows - 1));
         if (enter) {
@@ -1298,7 +1299,7 @@ export class StationScene implements Scene {
   drawBar(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
     const st = this.station;
     const p = g.world.player;
-    drawText(ctx, "THE LOUNGE - TALK (ENTER) OR HIRE", 8, top, PAL.greyDark);
+    drawText(ctx, "THE LOUNGE - TALK (ENTER) OR HIRE - R ROSTER", 8, top, PAL.greyDark);
     const leaveHere = (p.shoreCrew ?? []).filter((s) => s.stationId === st.id);
     if (leaveHere.length) drawText(ctx, `ON LEAVE HERE: ${leaveHere.map((s) => s.member.name.toUpperCase()).join(", ")} (BACK ABOARD WHEN BERTHS ALLOW)`, 200, top, PAL.gold);
     let y = top + 12;

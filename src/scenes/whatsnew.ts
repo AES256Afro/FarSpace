@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.56 - THE ROSTER", [
+    "R ABOARD OR IN THE LOUNGE: THE WHOLE CREW ON ONE PAGE, WITH MORALE, LOYALTY, SKILL PROGRESS AND A BONUS ON ENTER.",
+  ]],
   ["0.55 - ODDS AND ENDS", [
     "EACH HULL CLASS HAS ITS OWN VOICE. RETIREMENTS REACH THE WIRE. THE GALAXY MAP HAS A LEGEND.",
   ]],

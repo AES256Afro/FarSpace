@@ -42,6 +42,7 @@ export const SICKNESS = [
   { kind: "a cracked rib", days: 480 }, { kind: "the grey flu", days: 420 },
 ];
 
+export const XP_STEPS_LABEL = "NEXT SKILL";
 export const RETIRE_DOCKS = 30;   // a tour long enough to think about going home
 export const LEAVE_DOCKS = 8;     // dockings they'll wait for you before finding another ship
 

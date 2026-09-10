@@ -123,6 +123,7 @@ export class FlightScene implements Scene {
       { label: "SETTINGS", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("settings"); } },
       { label: "HANDBOOK", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("almanac"); } },
       { label: "THE CHRONICLE", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("chronicle"); } },
+      { label: "THE ROSTER", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("roster"); } },
       { label: "SAVE AND QUIT TO TITLE", act: () => { g.save(); this.paused = false; g.setScene("title"); } },
     ];
   }
