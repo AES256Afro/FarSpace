@@ -124,6 +124,17 @@ export class SystemRoom {
   }
 }
 
+// Append a Fleet Wire event from inside the worker (base milestones)
+async function wirePost(env: Env, callsign: string, kind: string, text: string, system: string): Promise<void> {
+  try {
+    const raw = await env.SAVES.get("wire", "text");
+    const events: WireEvent[] = raw ? JSON.parse(raw) : [];
+    events.push({ t: Date.now(), callsign, kind, text: text.slice(0, 140), system: system.slice(0, 32) });
+    while (events.length > WIRE_MAX) events.shift();
+    await env.SAVES.put("wire", JSON.stringify(events));
+  } catch { /* best effort */ }
+}
+
 function num(v: unknown): number {
   const n = Number(v);
   return Number.isFinite(n) ? Math.round(n * 100) / 100 : 0;
@@ -364,6 +375,7 @@ export default {
             b.contractsPaid = b.contractsPaid.slice(-8);
             b.treasury += c.reward;
             logLine(`filled the weekly base contract (+${c.reward} CR to the treasury)`);
+            await wirePost(env, callsign, "base", `filled the [${tag}] base contract at ${b.stationName} (+${c.reward} CR)`, b.systemName ?? "");
           }
           return save();
         }
@@ -372,7 +384,7 @@ export default {
           const week = weekKey();
           if (!b.bounty || b.bounty.week !== week) b.bounty = { week, kills: 0, paid: false };
           b.bounty.kills++;
-          if (!b.bounty.paid && b.bounty.kills >= BOUNTY_NEED) { b.bounty.paid = true; b.treasury += BOUNTY_REWARD; logLine(`filled the weekly squadron bounty (+${BOUNTY_REWARD} CR to the treasury)`); }
+          if (!b.bounty.paid && b.bounty.kills >= BOUNTY_NEED) { b.bounty.paid = true; b.treasury += BOUNTY_REWARD; logLine(`filled the weekly squadron bounty (+${BOUNTY_REWARD} CR to the treasury)`); await wirePost(env, callsign, "base", `closed the [${tag}] squadron bounty: ${BOUNTY_NEED} captains this week (+${BOUNTY_REWARD} CR)`, b.systemName ?? ""); }
           else logLine(`took a corsair captain (${b.bounty.kills}/${BOUNTY_NEED} this week)`);
           return save();
         }

@@ -36,6 +36,10 @@ export const BLUEPRINTS: Blueprint[] = [
     grades: [{ nickel: 5, carbon: 3 }, { germanium: 4, iron: 4 }, { polonium: 1, vanadium: 4 }] },
   { id: "vents", name: "Heat Vents", desc: "+25% heat dissipation per grade",
     grades: [{ carbon: 5, iron: 3 }, { vanadium: 3, nickel: 4 }, { polonium: 1, germanium: 4 }] },
+  { id: "rover", name: "Rover Suspension", desc: "+12% rover speed per grade",
+    grades: [{ iron: 4, carbon: 3 }, { nickel: 5, germanium: 1 }, { vanadium: 3, germanium: 2 }] },
+  { id: "battery", name: "Rover Battery", desc: "-20% rover power drain per grade",
+    grades: [{ carbon: 5, nickel: 2 }, { germanium: 3, carbon: 4 }, { polonium: 1, vanadium: 3 }] },
 ];
 
 export function engGrade(p: PlayerState, id: string): number {

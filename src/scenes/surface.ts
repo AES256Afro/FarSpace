@@ -13,6 +13,7 @@ import { flag } from "../core/achievements";
 import { gainMaterials } from "../core/materials";
 import { GW, GH, GT, WATER, PLAIN, HILLS, MOUNTAIN, HAZARD, SAND, BIOMES, genGround, groundKey, passable, GroundMap, GroundNode } from "../ground";
 import { adjustRep, addCargo, groundProgress, GroundState } from "../world";
+import { engGrade } from "../data/engineering";
 import { faction } from "../data/data";
 
 const COLORS: Record<number, { water: string; plain: string; plain2: string; hills: string; mountain: string; hazard: string; sand: string }> = {
@@ -120,14 +121,14 @@ export class SurfaceScene implements Scene {
     if (inp.isDown("a")) ax -= 1;
     if (inp.isDown("d")) ax += 1;
     const powered = this.power > 0;
-    const top = (here === HILLS ? 50 : here === SAND ? 70 : 95) * (powered ? 1 : 0.35) * (this.storm > 0 ? 0.7 : 1);
+    const top = (here === HILLS ? 50 : here === SAND ? 70 : 95) * (powered ? 1 : 0.35) * (this.storm > 0 ? 0.7 : 1) * (1 + 0.12 * engGrade(p, "rover"));
     sfx.rover(!!(ax || ay) && powered);
     music.setMood(this.storm > 0 ? "storm" : "ground", 0);
     if (ax || ay) {
       const l = Math.hypot(ax, ay); ax /= l; ay /= l;
       this.vx += ax * 320 * dt; this.vy += ay * 320 * dt;
       this.facing = Math.atan2(ay, ax);
-      this.power = Math.max(0, this.power - dt * (this.storm > 0 ? 0.7 : 0.35));
+      this.power = Math.max(0, this.power - dt * (this.storm > 0 ? 0.7 : 0.35) * (1 - 0.2 * engGrade(p, "battery")));
     } else { this.vx *= Math.pow(0.02, dt); this.vy *= Math.pow(0.02, dt); }
     const spd = Math.hypot(this.vx, this.vy);
     if (spd > top) { this.vx *= top / spd; this.vy *= top / spd; }

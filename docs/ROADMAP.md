@@ -290,6 +290,8 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
       treasury
 
 - [x] Three save slots with their own cloud codes (title screen)
+- [x] Rover engineering: suspension and battery blueprints; base milestones
+      post to the Fleet Wire
 
 ## Later
 - [ ] Base-to-base trade routes; NPC squadrons
