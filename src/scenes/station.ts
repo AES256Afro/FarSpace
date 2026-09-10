@@ -10,7 +10,7 @@ import { HULLS, hull } from "../data/hulls";
 import { ROLE_INFO, CrewMember } from "../data/crew";
 import {
   StationDef, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
-  buyPrice, sellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
+  buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
   crewWages, genCrewCandidate, applyHull, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES,
 } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
@@ -55,6 +55,12 @@ export class StationScene implements Scene {
     for (let i = 0; i < rng.int(1, 3); i++) this.candidates.push(genCrewCandidate(rng.fork(i + 1)));
     this.barLine = "";
     refreshPrices(this.station);
+    {
+      const rep0 = p.rep[this.station.factionId] ?? 0;
+      const seen: Record<string, [number, number]> = {};
+      for (const id of Object.keys(this.station.prices)) seen[id] = [buyPrice(this.station, id, rep0), sellPrice(this.station, id, rep0)];
+      (p.marketMemory ??= {})[this.station.id] = { t: g.world.time, systemId: p.systemId, prices: seen };
+    }
     p.oxygen = p.oxygenMax;
     // docking is where the crew gets paid and fed — once per docking event
     const dockKey = `${this.station.id}:${Math.floor(g.world.time)}`;
@@ -65,7 +71,7 @@ export class StationScene implements Scene {
     g.showHint("station", "ARROWS/CLICK TO BROWSE - ENTER TO ACT - ESC UNDOCKS - P WALKS THE DECK");
     g.autosave();
     const bay = 1 + (this.station.id.length * 7 + Math.floor(g.world.time)) % 6;
-    g.toast(`${this.station.name.toUpperCase()} CONTROL: CLEARANCE GRANTED, BAY ${bay}`);
+    g.toast(`${this.station.name.toUpperCase()} CONTROL: ${p.shipName ? p.shipName + ", " : ""}CLEARANCE GRANTED, BAY ${bay}`);
   }
 
   settleCrew(g: Game): void {
@@ -121,7 +127,7 @@ export class StationScene implements Scene {
 
     switch (TABS[this.tab]) {
       case "MARKET": {
-        const rows = Object.keys(st.prices);
+        const rows = this.marketRows(g);
         this.cursor = clamp(this.cursor, 0, rows.length - 1);
         const id = rows[this.cursor];
         if (enter || inp.wasPressed("b")) {
@@ -132,9 +138,14 @@ export class StationScene implements Scene {
           else { p.credits -= price; st.stock[id]--; refreshPrices(st); g.showHint("trade", "PRICES MOVE: BUY WHERE STOCK IS HIGH, SELL WHERE IT'S LOW"); }
         }
         if (inp.wasPressed("s") || inp.wasPressed("Backspace")) {
-          const price = sellPrice(st, id, rep);
+          const rare = commodity(id).rare;
+          const price = rare ? rareSellPrice(g.world, st, id, rep) : sellPrice(st, id, rep);
           if (!removeCargo(p, id, 1)) g.toast("NONE IN CARGO");
-          else { p.credits += price; p.tradeRevenue = (p.tradeRevenue ?? 0) + price; st.stock[id] = (st.stock[id] ?? 0) + 1; refreshPrices(st); }
+          else {
+            p.credits += price; p.tradeRevenue = (p.tradeRevenue ?? 0) + price;
+            if (!rare || st.rare === id) { st.stock[id] = (st.stock[id] ?? 0) + 1; refreshPrices(st); }
+            if (rare && st.rare !== id) { p.rareRevenue = (p.rareRevenue ?? 0) + price; if (!p.flags?.rareRun) flag(g, "rareRun"); }
+          }
         }
         break;
       }
@@ -147,6 +158,13 @@ export class StationScene implements Scene {
       case "SHIPS": {
         this.cursor = clamp(this.cursor, 0, HULLS.length - 1);
         if (enter) this.buyHull(g, HULLS[this.cursor].id);
+        if (inp.wasPressed("n")) {
+          const raw = window.prompt("Name your ship (2-18 characters):", p.shipName ?? "");
+          if (raw !== null) {
+            const n = raw.trim().toUpperCase().replace(/[^A-Z0-9 '\-]/g, "").slice(0, 18);
+            if (n.length >= 2) { p.shipName = n; g.toast(`REGISTERED: ${n}`); sfx.select(); } else g.toast("NAME NOT ACCEPTED");
+          }
+        }
         break;
       }
       case "MISSIONS": {
@@ -253,6 +271,7 @@ export class StationScene implements Scene {
     m.done = true;
     p.credits += m.reward;
     adjustRep(g.world, st.factionId, m.repReward ?? 3);
+    if (m.kind === "passenger" && m.passengerKind === "tourist") flag(g, "tourist");
     if (m.id.startsWith("daily-")) { p.dailyDone = dailyKey(); flag(g, "daily"); void wire.post("daily", `completed today's contract (${m.title.replace("Daily: ", "")})`, g.world.systems[p.systemId].name); }
     if (m.kind === "arc" && m.arcFaction !== undefined && m.arcStage !== undefined) {
       p.arcs[m.arcFaction] = m.arcStage + 1;
@@ -434,6 +453,30 @@ export class StationScene implements Scene {
     if (selected) { ctx.fillStyle = "#13203a"; ctx.fillRect(4, y - 2, VW - 8, 10); }
   }
 
+  // Everything the station lists, plus any rare goods in the hold (sellable anywhere)
+  marketRows(g: Game): string[] {
+    const p = g.world.player;
+    const rows = Object.keys(this.station.prices);
+    for (const [id, q] of Object.entries(p.cargo)) if (q > 0 && commodity(id).rare && !rows.includes(id)) rows.push(id);
+    return rows;
+  }
+
+  // Best price for this commodity among stations we've actually visited
+  bestKnownSell(g: Game, id: string): { price: number; station: string; system: string; ago: number } | null {
+    const p = g.world.player;
+    let best: { price: number; station: string; system: string; ago: number } | null = null;
+    for (const [stId, mem] of Object.entries(p.marketMemory ?? {})) {
+      if (stId === this.station.id) continue;
+      const pr = mem.prices[id];
+      if (!pr) continue;
+      if (!best || pr[1] > best.price) {
+        const f = findStation(g.world, stId);
+        best = { price: pr[1], station: f?.st.name ?? stId, system: g.world.systems[mem.systemId]?.name ?? "?", ago: g.world.time - mem.t };
+      }
+    }
+    return best;
+  }
+
   drawMarket(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
     const p = g.world.player;
     const st = this.station;
@@ -445,20 +488,33 @@ export class StationScene implements Scene {
     drawText(ctx, "HELD", 280, top, PAL.greyDark);
     drawText(ctx, "TREND", 320, top, PAL.greyDark);
     drawText(ctx, "ENTER/B BUY - S SELL", 370, top, PAL.greyDark);
-    const rows = Object.keys(st.prices);
+    const rows = this.marketRows(g);
+    const rowH = rows.length > 14 ? 9 : 11;
     rows.forEach((id, i) => {
-      const y = top + 12 + i * 11;
+      const y = top + 12 + i * rowH;
       const c = commodity(id);
+      const listed = id in st.prices;
       this.row(ctx, y, i === this.cursor);
-      drawText(ctx, c.name + (c.illegal ? " *" : ""), 8, y, c.illegal ? PAL.danger : PAL.white);
-      drawText(ctx, `${buyPrice(st, id, rep)}`, 150, y, PAL.gold);
-      drawText(ctx, `${sellPrice(st, id, rep)}`, 190, y, PAL.grey);
-      drawText(ctx, `${st.stock[id] ?? 0}`, 235, y, PAL.grey);
+      drawText(ctx, c.name + (c.illegal ? " *" : c.rare ? " +" : ""), 8, y, c.illegal ? PAL.danger : c.rare ? PAL.gold : PAL.white);
+      drawText(ctx, listed ? `${buyPrice(st, id, rep)}` : "-", 150, y, listed ? PAL.gold : PAL.greyDark);
+      drawText(ctx, `${c.rare ? rareSellPrice(g.world, st, id, rep) : sellPrice(st, id, rep)}`, 190, y, c.rare && st.rare !== id ? PAL.gold : PAL.grey);
+      drawText(ctx, listed ? `${st.stock[id] ?? 0}` : "-", 235, y, PAL.grey);
       drawText(ctx, `${p.cargo[id] ?? 0}`, 280, y, PAL.ui);
-      const ratio = buyPrice(st, id, 0) / (c.base || 1);
-      drawText(ctx, ratio > 1.3 ? "HIGH" : ratio < 0.8 ? "LOW" : "-", 320, y, ratio > 1.3 ? PAL.danger : ratio < 0.8 ? PAL.good : PAL.greyDark);
+      if (c.rare) drawText(ctx, st.rare === id ? "ORIGIN" : "RARE", 320, y, st.rare === id ? PAL.info : PAL.gold);
+      else {
+        const ratio = buyPrice(st, id, 0) / (c.base || 1);
+        drawText(ctx, ratio > 1.3 ? "HIGH" : ratio < 0.8 ? "LOW" : "-", 320, y, ratio > 1.3 ? PAL.danger : ratio < 0.8 ? PAL.good : PAL.greyDark);
+      }
     });
-    drawText(ctx, "* ILLEGAL - GATE SCANS WILL SEIZE IT.  GOOD STANDING EARNS BETTER PRICES.", 8, top + 12 + rows.length * 11 + 6, PAL.greyDark);
+    const ny = top + 12 + rows.length * rowH + 6;
+    {
+      const id = rows[this.cursor];
+      const best = id ? this.bestKnownSell(g, id) : null;
+      const line = best ? `${commodity(id).name.toUpperCase()} - BEST KNOWN SELL: ${best.price}CR AT ${best.station.toUpperCase()}, ${best.system.toUpperCase()} (${Math.floor(best.ago / 60)}M AGO)` : id ? `${commodity(id).name.toUpperCase()} - NO OTHER MARKET SEEN YET; PRICES ARE REMEMBERED WHEREVER YOU DOCK` : "";
+      drawText(ctx, line, 8, ny + 18, PAL.info);
+    }
+    drawText(ctx, "* ILLEGAL - SEIZED AT GATE SCANS.  + RARE - WORTH MORE FAR FROM ITS ORIGIN.  GOOD STANDING = BETTER PRICES.", 8, ny, PAL.greyDark);
+    if (st.rare) drawText(ctx, `THIS STATION IS THE ONLY SOURCE OF ${commodity(st.rare).name.toUpperCase()}. STOCK TRICKLES IN.`, 8, ny + 9, PAL.gold);
   }
 
   drawShipyard(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
@@ -493,6 +549,7 @@ export class StationScene implements Scene {
 
   drawShips(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
     const p = g.world.player;
+    drawText(ctx, p.shipName ? `REGISTERED AS "${p.shipName}" - N TO RENAME` : "N TO NAME YOUR SHIP", VW - textWidth(p.shipName ? `REGISTERED AS "${p.shipName}" - N TO RENAME` : "N TO NAME YOUR SHIP") - 8, top, PAL.greyDark);
     const tradeIn = Math.round(hull(p.hullId).price * 0.6);
     drawText(ctx, `HULL MARKET - TRADE-IN VALUE OF YOUR ${hull(p.hullId).name.toUpperCase()}: ${tradeIn}CR`, 8, top, PAL.greyDark);
     HULLS.forEach((h, i) => {

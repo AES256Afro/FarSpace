@@ -10,6 +10,8 @@ import { STARS, starDistance } from "../src/data/stars";
 import { ACHIEVEMENTS } from "../src/data/achievements";
 import { ARCS, dailyContract, dailyKey, rankOf, logSystem, applyHull } from "../src/world";
 import { MODULES } from "../src/data/modules";
+import { rareSellPrice, findStation } from "../src/world";
+import { RARES } from "../src/data/data";
 
 describe("world generation", () => {
   it("is deterministic per seed", () => {
@@ -311,5 +313,25 @@ describe("careers, modules, exploration", () => {
     expect(p.cargoMax).toBe(140 + 25);
     expect(p.shieldMax).toBe(Math.round(70 * 1.3));
     expect(MODULES.every((m) => m.price > 0 && m.desc.length > 10)).toBe(true);
+  });
+});
+
+describe("rare goods", () => {
+  it("every world assigns rares to distinct civilian stations, and they appreciate with distance", () => {
+    const w = generateWorld(8);
+    const origins = Object.entries(w.rareOrigin ?? {});
+    expect(origins.length).toBeGreaterThanOrEqual(3);
+    expect(new Set(origins.map(([, st]) => st)).size).toBe(origins.length);
+    const [id, stId] = origins[0];
+    const o = findStation(w, stId)!;
+    expect(o.st.rare).toBe(id);
+    expect(o.st.stock[id]).toBeGreaterThan(0);
+    const home = rareSellPrice(w, o.st, id, 0);
+    let far = 0;
+    for (const sys of Object.values(w.systems)) for (const st of sys.stations) far = Math.max(far, rareSellPrice(w, st, id, 0));
+    expect(far).toBeGreaterThan(home);
+    expect(RARES.length).toBe(14);
+    // rares never appear in ordinary stock lists
+    for (const sys of Object.values(w.systems)) for (const st of sys.stations) for (const r of RARES) if (st.rare !== r.id) expect(st.prices[r.id]).toBeUndefined();
   });
 });

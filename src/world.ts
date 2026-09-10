@@ -4,7 +4,7 @@
 import { RNG, hashStr } from "./core/rng";
 import { clamp } from "./core/mathx";
 import {
-  FACTIONS, ECONOMY, COMMODITIES, StationType,
+  FACTIONS, ECONOMY, COMMODITIES, RARES, StationType,
   genSystemName, genStationName, genPersonName, planetName,
 } from "./data/data";
 import { STARS, starXYZ, starDistance } from "./data/stars";
@@ -68,6 +68,7 @@ export interface StationDef {
   fuelPrice: number;
   repairPrice: number;
   barPatrons: string[];
+  rare?: string; // commodity id produced only here
 }
 
 export interface AsteroidDef {
@@ -145,7 +146,9 @@ export interface Mission {
   done: boolean;
   escortDone?: boolean;
   passengerName?: string;
-  passengerKind?: "vip" | "refugee" | "fugitive";
+  passengerKind?: "vip" | "refugee" | "fugitive" | "tourist";
+  sightPlanetIdx?: number;  // tourists want to orbit this planet in the target system first
+  sightSeen?: boolean;
   anomalyId?: string;
   arcFaction?: string;
   arcStage?: number;
@@ -220,6 +223,10 @@ export interface PlayerState {
   tradeRevenue?: number;             // lifetime market sales (trader rank)
   mined?: number;                    // lifetime ore units cracked (miner rank)
   firsts?: Record<string, string>;   // system id → call sign of the first discoverer (learned)
+  marketMemory?: Record<string, { t: number; systemId: string; prices: Record<string, [number, number]> }>; // station id → last seen buy/sell
+  bookmarks?: string[];              // system ids
+  shipName?: string;
+  rareRevenue?: number;              // credits from rares sold away from origin
 }
 
 export interface World {
@@ -227,6 +234,7 @@ export interface World {
   savedAt?: number;
   galaxyLy?: number;
   hardcore?: boolean; // destruction erases the save
+  rareOrigin?: Record<string, string>; // rare commodity id → station id
   seed: number;
   time: number;
   realGalaxy: boolean;
@@ -255,6 +263,7 @@ function baselineStock(type: StationType, id: string): number {
 export function stationPrice(st: StationDef, id: string): number {
   const c = COMMODITIES.find((x) => x.id === id);
   if (!c) return 0;
+  if (c.rare) return st.rare === id ? Math.round(c.base * 0.8) : 0;
   const mult = ECONOMY[st.type][id] ?? 1;
   if (mult === 0) return 0;
   const base = c.base * mult;
@@ -264,7 +273,10 @@ export function stationPrice(st: StationDef, id: string): number {
 }
 
 export function refreshPrices(st: StationDef): void {
-  for (const id of Object.keys(st.prices)) st.prices[id] = stationPrice(st, id);
+  for (const id of Object.keys(st.prices)) {
+    if (id === st.rare) continue; // rares hold their origin price
+    st.prices[id] = stationPrice(st, id);
+  }
 }
 
 export function buyPrice(st: StationDef, id: string, rep: number): number {
@@ -275,6 +287,19 @@ export function sellPrice(st: StationDef, id: string, rep: number): number {
   return Math.max(1, Math.round(stationPrice(st, id) * 0.92 * (1 + clamp(rep, -100, 100) * 0.001)));
 }
 
+// Rare goods appreciate with distance from their origin: carry them far.
+export function rareSellPrice(w: World, st: StationDef, id: string, rep: number): number {
+  const c = COMMODITIES.find((x) => x.id === id);
+  if (!c?.rare) return sellPrice(st, id, rep);
+  const originId = w.rareOrigin?.[id];
+  const origin = originId ? findStation(w, originId) : null;
+  if (!origin || origin.st.id === st.id) return Math.max(1, Math.round(c.base * 0.7));
+  const here = findStation(w, st.id);
+  const d = here ? Math.hypot(here.sys.gx - origin.sys.gx, here.sys.gy - origin.sys.gy) : 0;
+  const factor = 1 + clamp(d / 45, 0, 2.2);
+  return Math.max(1, Math.round(c.base * factor * (1 + clamp(rep, -100, 100) * 0.001)));
+}
+
 export function stationExports(st: StationDef): string[] {
   return Object.keys(st.prices).filter((id) => (ECONOMY[st.type][id] ?? 1) < 1);
 }
@@ -283,6 +308,7 @@ function genStock(rng: RNG, type: StationType): { prices: Record<string, number>
   const prices: Record<string, number> = {};
   const stock: Record<string, number> = {};
   for (const c of COMMODITIES) {
+    if (c.rare) continue;
     const mult = ECONOMY[type][c.id] ?? 1;
     if (mult === 0) continue;
     const base = baselineStock(type, c.id);
@@ -301,6 +327,7 @@ export function tickWorld(w: World, dt: number): void {
       const atWar = w.wars.some((x) => x.systemId === sys.id);
       for (const st of sys.stations) {
         for (const id of Object.keys(st.prices)) {
+          if (id === st.rare) { st.stock[id] = Math.min(8, (st.stock[id] ?? 0) + 1); continue; }
           const base = baselineStock(st.type, id) * (atWar ? 0.6 : 1);
           const cur = st.stock[id] ?? 0;
           st.stock[id] = Math.max(0, Math.round(cur + (base - cur) * 0.08));
@@ -316,7 +343,7 @@ export function tickWorld(w: World, dt: number): void {
     const all = Object.values(w.systems).flatMap((s) => s.stations.map((st) => ({ sys: s, st })));
     if (all.length && rng.chance(0.7)) {
       const { sys, st } = rng.pick(all);
-      const ids = Object.keys(st.prices);
+      const ids = Object.keys(st.prices).filter((x) => !x.startsWith("r_"));
       const id = rng.pick(ids);
       const c = COMMODITIES.find((x) => x.id === id)!;
       st.stock[id] = Math.max(0, Math.round((st.stock[id] ?? 0) * 0.15));
@@ -760,6 +787,7 @@ export function generateWorld(seed: number, opts: GenOptions = {}): World {
 
   const world: World = {
     version: 0, seed, time: 0, realGalaxy: !!opts.realGalaxy, galaxyLy: opts.realGalaxy ? (opts.maxLy ?? 20) : undefined, hardcore: !!opts.hardcore,
+    rareOrigin: assignRares(systems, new RNG((seed ^ 0x5a5e) >>> 0)),
     systems, player, news: [], events: [], wars: [],
     missionCounter: 0, econTick: 0, shockTick: 0, warTick: 0,
   };
@@ -841,7 +869,7 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
       const target = rng.pick(linked);
       const tStation = target.stations.length ? rng.pick(target.stations) : null;
       if (!tStation) continue;
-      const com = rng.pick(COMMODITIES.filter((c) => !c.illegal || rng.chance(0.15)));
+      const com = rng.pick(COMMODITIES.filter((c) => !c.rare && (!c.illegal || rng.chance(0.15))));
       const qty = rng.int(3, 10);
       missions.push({
         id: idn, kind, accepted: false, done: false, tier,
@@ -889,18 +917,21 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
       const target = rng.pick(linked);
       const tStation = target.stations.length ? rng.pick(target.stations) : null;
       if (!tStation) continue;
-      const pk = rng.pick(["vip", "refugee", "fugitive"] as const);
+      const pk = rng.pick(["vip", "refugee", "fugitive", "tourist", "tourist"] as const);
       const name = genPersonName(rng);
+      const sightIdx = pk === "tourist" && target.planets.length ? rng.int(0, target.planets.length - 1) : undefined;
+      const sight = sightIdx !== undefined ? target.planets[sightIdx] : null;
       missions.push({
         id: idn, kind, accepted: false, done: false, tier,
-        title: `${pk === "vip" ? "VIP" : pk === "refugee" ? "Refugee" : "Discreet"} transport: ${name}`,
+        title: `${pk === "vip" ? "VIP" : pk === "refugee" ? "Refugee" : pk === "tourist" ? "Sightseeing" : "Discreet"} transport: ${name}`,
         desc: pk === "vip" ? `${name} wants ${tStation.name} in ${target.name}, in comfort. Expects to arrive alive.`
           : pk === "refugee" ? `${name} needs passage to ${tStation.name}. Can't pay much. Won't say why.`
+          : pk === "tourist" ? `${name} and party want to see ${sight?.name ?? target.name} up close: enter orbit there, then drop them at ${tStation.name}, ${target.name}.`
           : `${name} needs to reach ${tStation.name} without a gate scan finding them aboard.`,
         fromStationId: station.id, targetSystemId: target.id, targetStationId: tStation.id,
-        passengerName: name, passengerKind: pk,
-        reward: pk === "vip" ? 600 + rng.int(0, 300) : pk === "refugee" ? 120 + rng.int(0, 80) : 500 + rng.int(0, 400),
-        repReward: pk === "refugee" ? 6 : 3,
+        passengerName: name, passengerKind: pk, sightPlanetIdx: sightIdx, sightSeen: false,
+        reward: pk === "vip" ? 600 + rng.int(0, 300) : pk === "refugee" ? 120 + rng.int(0, 80) : pk === "tourist" ? 700 + rng.int(0, 400) : 500 + rng.int(0, 400),
+        repReward: pk === "refugee" ? 6 : pk === "tourist" ? 4 : 3,
       });
     } else if (kind === "research") {
       const pool = Object.values(world.systems).filter((s) => s === sys || sys.links.includes(s.id));
@@ -961,6 +992,23 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
   return missions;
 }
 
+// Rare goods: spread the pool over civilian stations, one origin each.
+export function assignRares(systems: Record<string, SystemDef>, rng: RNG): Record<string, string> {
+  const out: Record<string, string> = {};
+  const civ = Object.values(systems).flatMap((s) => s.stations).filter((st) => !st.military);
+  const pool = [...RARES];
+  const picks = Math.min(pool.length, Math.max(3, Math.round(civ.length * 0.4)));
+  for (let i = 0; i < picks && civ.length; i++) {
+    const st = civ.splice(rng.int(0, civ.length - 1), 1)[0];
+    const c = pool.splice(rng.int(0, pool.length - 1), 1)[0];
+    st.rare = c.id;
+    st.stock[c.id] = rng.int(3, 7);
+    st.prices[c.id] = Math.round(c.base * 0.8);
+    out[c.id] = st.id;
+  }
+  return out;
+}
+
 // ---------- Ranks & exploration ----------
 // Three non-combat careers, nine grades each, Elite at the top.
 
@@ -1009,7 +1057,7 @@ export function dailyKey(now = Date.now()): string {
 export function dailyContract(w: World, now = Date.now()): Mission {
   const key = dailyKey(now);
   const rng = new RNG(hashStr(`daily:${key}`));
-  const pool = COMMODITIES.filter((c) => !c.illegal && c.id !== "relics");
+  const pool = COMMODITIES.filter((c) => !c.illegal && !c.rare && c.id !== "relics");
   const com = rng.pick(pool);
   const qty = rng.int(6, 16);
   return {
@@ -1039,7 +1087,7 @@ export function missionDeliverable(world: World, m: Mission, station: StationDef
     const an = Object.values(world.systems).flatMap((s) => s.anomalies).find((a) => a.id === m.anomalyId);
     return !!an && an.claimed;
   }
-  if (m.kind === "passenger") return m.targetStationId === station.id;
+  if (m.kind === "passenger") return m.targetStationId === station.id && (m.passengerKind !== "tourist" || !!m.sightSeen);
   if (m.targetStationId !== station.id) return false;
   if (m.commodityId && m.qty) return (p.cargo[m.commodityId] ?? 0) >= m.qty;
   return false;

@@ -394,7 +394,7 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
     }
   }
   if (p.crew && p.crew.some((c) => c.morale < 30)) { drawText(ctx, "! CREW MORALE LOW", 4, wy, PAL.warn); wy += 8; }
-  drawText(ctx, `${hull(p.hullId).name.toUpperCase()}  TORP ${p.torpedoes ?? 0}`, 4, wy, PAL.greyDark);
+  drawText(ctx, `${(p.shipName ?? hull(p.hullId).name).toUpperCase()}  TORP ${p.torpedoes ?? 0}`, 4, wy, PAL.greyDark);
   // heat: only shown when it matters
   const heat = p.heat ?? 0;
   if (heat > 4 || fs.scooping) {

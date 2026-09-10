@@ -29,6 +29,7 @@ export interface Commodity {
   name: string;
   base: number; // base price
   illegal?: boolean;
+  rare?: boolean; // produced at one station only; worth more the further you carry it
 }
 
 export const COMMODITIES: Commodity[] = [
@@ -44,7 +45,24 @@ export const COMMODITIES: Commodity[] = [
   { id: "bio", name: "Bio Samples", base: 150, illegal: true },
   { id: "contra", name: "Contraband", base: 200, illegal: true },
   { id: "relics", name: "Relics", base: 260 },
+  // rares: one origin station each (assigned per world), stock trickles in
+  { id: "r_silk", name: "Cygni Silk", base: 210, rare: true },
+  { id: "r_wine", name: "Amber Wine", base: 180, rare: true },
+  { id: "r_beads", name: "Glass Beads", base: 150, rare: true },
+  { id: "r_spice", name: "Ker Spice", base: 240, rare: true },
+  { id: "r_orchid", name: "Ice Orchids", base: 260, rare: true },
+  { id: "r_resin", name: "Lyr Resin", base: 170, rare: true },
+  { id: "r_bone", name: "Bone Carvings", base: 200, rare: true },
+  { id: "r_lattice", name: "Crystal Lattice", base: 300, rare: true },
+  { id: "r_mead", name: "Ara Mead", base: 160, rare: true },
+  { id: "r_tea", name: "Cas Tea", base: 190, rare: true },
+  { id: "r_coral", name: "Eri Coral", base: 230, rare: true },
+  { id: "r_thread", name: "Silver Thread", base: 250, rare: true },
+  { id: "r_pearl", name: "Sand Pearls", base: 280, rare: true },
+  { id: "r_root", name: "Thal Root", base: 140, rare: true },
 ];
+
+export const RARES = COMMODITIES.filter((c) => c.rare);
 
 export function commodity(id: string): Commodity {
   return COMMODITIES.find((c) => c.id === id)!;

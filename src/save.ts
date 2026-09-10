@@ -1,9 +1,11 @@
 // Save schema versioning. Every model change bumps SAVE_VERSION and adds a
 // migration step so no player loses a game to an update.
 
-import type { World } from "./world";
+import type { World, SystemDef } from "./world";
+import { assignRares } from "./world";
+import { RNG } from "./core/rng";
 
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 export const SAVE_KEY = "farspace-save";
 
 type Migration = (w: Record<string, unknown>) => void;
@@ -62,6 +64,16 @@ const MIGRATIONS: Record<number, Migration> = {
     p.expSold ??= 0;
     p.tradeRevenue ??= 0;
     p.mined ??= 0;
+  },
+  // 6 → 7: rare goods get origins in existing galaxies; market memory, bookmarks
+  6: (w) => {
+    const p = w.player as Record<string, unknown>;
+    p.marketMemory ??= {};
+    p.bookmarks ??= [];
+    if (!w.rareOrigin) {
+      const seed = typeof w.seed === "number" ? w.seed : 1;
+      w.rareOrigin = assignRares(w.systems as Record<string, SystemDef>, new RNG((seed ^ 0x5a5e) >>> 0));
+    }
   },
 };
 

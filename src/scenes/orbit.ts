@@ -28,6 +28,14 @@ export class OrbitScene implements Scene {
     const pl = sys.planets[g.orbitPlanetIdx];
     this.msg = `ORBIT ESTABLISHED: ${pl.name.toUpperCase()}`;
     this.msgTimer = 3;
+    for (const m of g.world.player.missions) {
+      if (m.kind === "passenger" && m.passengerKind === "tourist" && m.accepted && !m.done && !m.sightSeen
+        && m.targetSystemId === sys.id && m.sightPlanetIdx === g.orbitPlanetIdx) {
+        m.sightSeen = true;
+        g.toast(`${(m.passengerName ?? "THE TOURISTS").toUpperCase()}: "WORTH EVERY CREDIT." - NOW TAKE THEM TO THEIR STATION`);
+        sfx.pickup();
+      }
+    }
     g.showHint("orbit", "ARROWS/CLICK TO TARGET A POI - E LANDS AT OUTPOSTS - HOLD V TO SCAN");
   }
 

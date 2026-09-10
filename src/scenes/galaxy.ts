@@ -4,7 +4,7 @@
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { faction } from "../data/data";
+import { faction, commodity } from "../data/data";
 import { dist } from "../core/mathx";
 import { navRoute, routeFuel, jumpFuelCost, repLabel } from "../world";
 import { sfx } from "../core/sfx";
@@ -40,6 +40,13 @@ export class GalaxyScene implements Scene {
         }
         this.selected = best;
       }
+    }
+    if (inp.wasPressed("b") && this.selected) {
+      const p = g.world.player;
+      p.bookmarks ??= [];
+      const i = p.bookmarks.indexOf(this.selected);
+      if (i >= 0) p.bookmarks.splice(i, 1); else p.bookmarks.push(this.selected);
+      sfx.blip();
     }
     if (inp.wasPressed("n") && this.selected) {
       const p = g.world.player;
@@ -107,6 +114,7 @@ export class GalaxyScene implements Scene {
       if (route && route.includes(sys.id) && sys.stations.length && sys.id !== w.player.systemId) {
         ctx.fillStyle = PAL.gold; ctx.fillRect(Math.round(x) + 4, Math.round(y) - 4, 2, 2);
       }
+      if (w.player.bookmarks?.includes(sys.id)) { ctx.fillStyle = PAL.gold; ctx.fillRect(Math.round(x) - 6, Math.round(y) - 6, 2, 2); ctx.fillRect(Math.round(x) + 4, Math.round(y) - 6, 2, 2); }
       if (sys.id === w.player.systemId) { ctx.strokeStyle = PAL.white; ctx.strokeRect(Math.round(x) - 4.5, Math.round(y) - 4.5, 9, 9); }
       if (sys.id === this.selected) { ctx.strokeStyle = PAL.ui; ctx.strokeRect(Math.round(x) - 6.5, Math.round(y) - 6.5, 13, 13); }
     }
@@ -130,6 +138,9 @@ export class GalaxyScene implements Scene {
       drawText(ctx, lvl === 2 ? "LOGGED: DETAILED" : lvl === 1 ? "LOGGED: BASIC" : "UNLOGGED", px + 6, y, lvl ? PAL.grey : PAL.greyDark); y += 9;
       const first = w.player.firsts?.[sys.id];
       if (first) { drawText(ctx, `FIRST: ${first}`.slice(0, 27), px + 6, y, PAL.gold); y += 9; }
+      if (w.player.bookmarks?.includes(sys.id)) { drawText(ctx, "BOOKMARKED (B)", px + 6, y, PAL.gold); y += 9; }
+      const rares = sys.stations.filter((st) => st.rare && (w.player.marketMemory?.[st.id])).map((st) => commodity(st.rare!).name);
+      if (rares.length) { drawText(ctx, `RARE: ${rares.join(", ")}`.slice(0, 27), px + 6, y, PAL.gold); y += 9; }
       y += 3;
       drawText(ctx, "STATIONS:", px + 6, y, PAL.greyDark); y += 9;
       for (const st of sys.stations) { drawText(ctx, `${st.military ? "*" : "-"} ${st.name}`.slice(0, 27), px + 6, y, st.military ? PAL.danger : PAL.ui); y += 8; }
@@ -144,6 +155,7 @@ export class GalaxyScene implements Scene {
       drawText(ctx, `COURSE: ${dst.name} - ${route.length - 1} JUMPS - ${fuel} FUEL (${Math.round(w.player.fuel)} ABOARD)`, OX, VH - 30, ok ? PAL.gold : PAL.warn);
       if (!ok) drawText(ctx, "NOT ENOUGH FUEL: REFUEL AT THE MARKED STATIONS ALONG THE ROUTE", OX, VH - 21, PAL.warn);
     }
-    drawText(ctx, "CLICK: INTEL - CLICK AGAIN/N: PLOT COURSE - ESC BACK", VW / 2 - textWidth("CLICK: INTEL - CLICK AGAIN/N: PLOT COURSE - ESC BACK") / 2, VH - 10, PAL.greyDark);
+    const help = "CLICK: INTEL - CLICK AGAIN/N: PLOT COURSE - B: BOOKMARK - ESC BACK";
+    drawText(ctx, help, VW / 2 - textWidth(help) / 2, VH - 10, PAL.greyDark);
   }
 }

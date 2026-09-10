@@ -25,6 +25,8 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "outlaw", title: "OUTLAW", desc: "Reach OUTLAW standing with a faction", check: (w) => Object.values(w.player.rep).some((v) => v <= -75) },
   { id: "daily", title: "REGULAR", desc: "Complete a daily contract", check: (w) => !!w.player.flags?.daily },
   { id: "hardcore", title: "COLD VOID", desc: "Reach 5,000 credits in hardcore", check: (w) => !!w.hardcore && w.player.credits >= 5000 },
+  { id: "rareRun", title: "RARE RUN", desc: "Sell a rare good far from home", check: (w) => !!w.player.flags?.rareRun },
+  { id: "tourist", title: "TOUR GUIDE", desc: "Complete a sightseeing charter", check: (w) => !!w.player.flags?.tourist },
   { id: "outfitted", title: "OUTFITTED", desc: "Fit a module", check: (w) => !!w.player.flags?.outfitted },
   { id: "scooped", title: "SUN DIVER", desc: "Refuel from a star", check: (w) => !!w.player.flags?.scooped },
   { id: "first", title: "FIRST FOOTFALL", desc: "Be first to log a system", check: (w) => !!w.player.flags?.first },
