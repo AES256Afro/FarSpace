@@ -382,6 +382,16 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
   drawTutorial(g, ctx, 68);
   drawTouchControls(g, ctx);
   if (fs.mapOpen) drawSystemMap(g, ctx);
+  if (fs.logOpen) {
+    ctx.fillStyle = "rgba(5,6,10,0.92)"; ctx.fillRect(0, 0, VW, VH);
+    drawText(ctx, "COMMS LOG - L OR ESC TO CLOSE", VW / 2 - textWidth("COMMS LOG - L OR ESC TO CLOSE") / 2, 6, PAL.ui);
+    const rows = fs.commsLog.slice(-26);
+    if (!rows.length) drawText(ctx, "NOTHING ON THE BAND YET.", 12, 24, PAL.greyDark);
+    rows.forEach((c, i) => {
+      const h = Math.floor(c.t / 3600), m = Math.floor((c.t % 3600) / 60);
+      drawText(ctx, `${h}H${String(m).padStart(2, "0")} ${c.from}: ${c.text}`.slice(0, 92), 12, 22 + i * 9, c.from === (g.world.player.shipName ?? "SHIP").toUpperCase() ? PAL.uiDim : PAL.grey);
+    });
+  }
 }
 
 export function drawEdgeMarkers(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D, camX: number, camY: number, z: number): void {

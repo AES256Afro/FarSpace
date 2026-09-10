@@ -105,6 +105,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   board: sample runs, outcrop runs, and a plant to fix on the spot. Jobs pay
   out when you walk back in.
 
+## The shared sky and the log
+
+- In the real-stars galaxy a wonder can be first-logged by any pilot with a
+  call sign, once. The first name goes on everyone's chart, with 200 data for
+  the pilot who earned it; latecomers see who beat them.
+- L in flight opens the comms log: everything said on the band this session,
+  with ship-time stamps.
+
 ## Rhythms
 
 - The week has a shape, the same for everyone: Founders' Day (fares +50%,

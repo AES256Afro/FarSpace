@@ -170,6 +170,9 @@ export class FlightScene implements Scene {
       if (this.launching <= 0) { this.comms.push({ from: "CONTROL", text: "YOU'RE CLEAR. SAFE FLYING.", life: 5, color: PAL.ui }); }
       return;
     }
+    this.recordComms(w.time);
+    if (g.input.wasPressed("l")) { this.logOpen = !this.logOpen; sfx.blip(); }
+    if (this.logOpen) { if (g.input.wasPressed("Escape")) this.logOpen = false; this.updateAmbient(g, dt); return; }
     if (g.input.wasPressed("Tab")) this.mapOpen = !this.mapOpen;
     if (g.input.wasPressed("g")) { g.setScene("galaxy"); return; }
     if (g.input.wasPressed("i")) { g.setScene("interior"); return; }
@@ -798,6 +801,13 @@ export class FlightScene implements Scene {
   wonderSeen = new Set<string>();
   docking: { st: StationDef; t: number; x0: number; y0: number; bay: number } | null = null;
   launching = 0;
+  // the comms log: everything said on the band this session, L to read back
+  commsLog: { from: string; text: string; t: number }[] = [];
+  logged = new WeakSet<object>();
+  logOpen = false;
+  recordComms(now: number): void {
+    for (const c of this.comms) { if (this.logged.has(c)) continue; this.logged.add(c); this.commsLog.push({ from: c.from, text: c.text, t: now }); if (this.commsLog.length > 60) this.commsLog.shift(); }
+  }
   chatterTimer = 25;
   trafficTimer = 40;
   updateAmbient(g: Game, dt: number): void {
@@ -824,7 +834,11 @@ export class FlightScene implements Scene {
       if (rivalBeatsYouTo(g.world, wd, new RNG((g.world.seed ^ Math.floor(g.world.time * 67)) >>> 0))) g.toast(`${(wd.seenBy ?? "SOMEONE").toUpperCase()} LOGGED ${wd.name.toUpperCase()} FIRST AND LEFT A MARKER BUOY WITH THEIR NAME ON IT.`);
       const r = seeWonder(g.world, wd, wire.getCallsign() ?? p.captainName ?? "an independent pilot");
       g.toast(r.first ? `${wd.name.toUpperCase()}. ${wd.desc.toUpperCase()} +${r.data} DATA` : `${wd.name.toUpperCase()} AGAIN. IT DOESN'T GET SMALLER. +${r.data} DATA`);
-      if (r.first) { flag(g, "wonder"); void wire.post("discover", `saw ${wd.name} in ${sys.name}`, sys.name); sfx.pickup(); }
+      if (r.first) {
+        flag(g, "wonder"); void wire.post("discover", `saw ${wd.name} in ${sys.name}`, sys.name); sfx.pickup();
+        // the shared sky: in the real galaxy the same wonder can be first-seen by any pilot, once
+        if (g.world.realGalaxy && wire.getCallsign()) void wire.discover(`wonder:${wd.name}@${sys.name}`).then((d) => { if (!d) return; (p.firsts ??= {})[`wonder:${wd.id}`] = d.by; if (d.first) { g.toast(`FIRST PILOT TO LOG ${wd.name.toUpperCase()}: ${d.by}. THE CHART CARRIES YOUR NAME.`); p.expData = (p.expData ?? 0) + 200; } else if (d.by !== wire.getCallsign()) g.toast(`${d.by} LOGGED ${wd.name.toUpperCase()} BEFORE YOU. THEIR NAME IS ON THE CHART.`); });
+      }
       if (logSight(p, "wonder", wd.name, sys.id)) g.toast("YOUR PASSENGERS ARE SILENT AT THE VIEWPORT. THAT'S THE ONE THEY CAME FOR.");
     }
     // a worn ship throws faults now and then; the engineer keeps the interval long

@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.37 - SHARED SKY", [
+    "IN THE REAL GALAXY, THE FIRST PILOT TO LOG A WONDER PUTS THEIR NAME ON EVERYONE'S CHART. L OPENS THE COMMS LOG.",
+  ]],
   ["0.36 - SECOND HOUR", [
     "FLIGHT SCHOOL HAS THREE MORE LESSONS: THE LOUNGE, THE PROMENADE, A FARE OR A RESCUE. THE CAT PURRS. LETTERS CHIME.",
   ]],

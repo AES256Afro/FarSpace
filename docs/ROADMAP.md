@@ -507,4 +507,8 @@ Time passes for the people on the ship, and for the ship.
       or a rescue
 - [x] Sounds for the cat and the post
 
+## Milestone 37 — Shared Sky and the Log ✅ (Sep 2026)
+- [x] Wonder first-sightings shared through the wire in the real galaxy
+- [x] A comms log overlay in flight (L)
+
 ## Later

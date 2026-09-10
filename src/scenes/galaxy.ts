@@ -183,7 +183,7 @@ export class GalaxyScene implements Scene {
       drawText(ctx, lvl === 2 ? "LOGGED: DETAILED" : lvl === 1 ? "LOGGED: BASIC" : "UNLOGGED", px + 6, y, lvl ? PAL.grey : PAL.greyDark); y += 9;
       const homes = (w.player.homesteads ?? []).filter((h) => h.systemId === sys.id);
       if (homes.length) { drawText(ctx, `HOMESTEAD: ${homes.map((h) => sys.planets[h.planetIdx].name).join(", ")}`.slice(0, 27), px + 6, y, PAL.gold); y += 9; }
-      for (const wd of wondersIn(w, sys.id)) { if (wd.seen || w.player.flags?.[`rumour:${wd.id}`]) { drawText(ctx, `${wd.seen ? "WONDER" : "RUMOURED"}: ${wd.name.toUpperCase()}`.slice(0, 27), px + 6, y, PAL.gold); y += 9; } }
+      for (const wd of wondersIn(w, sys.id)) { if (wd.seen || w.player.flags?.[`rumour:${wd.id}`]) { drawText(ctx, `${wd.seen ? "WONDER" : "RUMOURED"}: ${wd.name.toUpperCase()}`.slice(0, 27), px + 6, y, PAL.gold); y += 9; const fb = w.player.firsts?.[`wonder:${wd.id}`]; if (fb) { drawText(ctx, `FIRST LOGGED BY ${fb}`.slice(0, 27), px + 6, y, PAL.gold); y += 9; } } }
       for (const inf of infraAt(w, sys.id)) { drawText(ctx, `${inf.kind.toUpperCase()}: ${infraLit(inf) ? `LIT, TILL ${Math.round(inf.till)}CR` : "DARK"}`.slice(0, 27), px + 6, y, infraLit(inf) ? PAL.gold : PAL.danger); y += 9; }
       if (!sys.stations.length && !infraAt(w, sys.id).length && ((w.player.kits?.beacon ?? 0) > 0 || (w.player.kits?.depot ?? 0) > 0)) { drawText(ctx, "DEAD SYSTEM: KIT DEPLOYABLE", px + 6, y, PAL.gold); y += 9; }
       const first = w.player.firsts?.[sys.id];
