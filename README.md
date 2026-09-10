@@ -26,7 +26,7 @@ See [docs/PLAYING.md](docs/PLAYING.md) for a guide by career,
 | Ship / station / wreck / outpost | **WASD** walk · **E** interact · **E** (hold) repair, seal, extinguish |
 | Orbit | **↑/↓** or click to target a site · **V** (hold) survey scan · **E** land at the site · **L** drop the rover in its region · **Esc** leave orbit |
 | Groundside (rover) | **WASD** drive · **E** mine / salvage / enter a site / lift off at the lander · **V** (hold) scan flora · **R** patch the rover at the lander |
-| Station menus | **↑/↓ / ←/→** or click · **Enter** select · **B/S** buy/sell · **P** walk the deck · **Esc** undock · SURVEY sells exploration data · ENGINEER (research/refinery) spends materials · RECORD shows achievements and ranks · **N** in SHIPS names your ship |
+| Station menus | **↑/↓ / ←/→** or click · **Enter** select (at the MARKET it sells what you hold, else buys) · **B/S** buy/sell explicitly · **P** walk the deck · **Esc** undock · SURVEY sells exploration data · ENGINEER (research/refinery) spends materials · RECORD shows achievements and ranks · **N** in SHIPS names your ship |
 | Galaxy map | click a system for intel · click again (or **N**) to plot a course · **B** bookmark |
 | Global | **F5** save (local + cloud) · **F9** load · **H** music (off by default) · every flight key can be rebound in SETTINGS · touch: left stick + on-screen buttons · gamepad: sticks, A use, X fire, Y mine, RB brake, LB scan, LT map, Start galaxy, Select ship, L3 autopilot, R3 cruise, D-pad torpedo / charge / hail / music |
 
