@@ -523,4 +523,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] A pause menu in flight (ESC): resume, save, settings, handbook, quit
 - [x] Sounds for the wonders
 
+## Milestone 41 — The Keeper ✅ (Sep 2026)
+- [x] A third campaign: a dying lighthouse, its keeper's log, what the light
+      saw, and whose light it is
+
 ## Later

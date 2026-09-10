@@ -1227,7 +1227,7 @@ export class StationScene implements Scene {
     let idx = 0;
     {
       const so = storyObjective(g.world);
-      if (so && (p.tutorial ?? -1) < 0) { drawText(ctx, `${(p.story ?? 0) < 7 ? "THE SIGNAL" : "THE MISSING CONVOY"} - ${so}`.slice(0, 100), 8, y, PAL.info); y += 10; }
+      if (so && (p.tutorial ?? -1) < 0) { drawText(ctx, `${so.startsWith("THE KEEPER") ? "" : (p.story ?? 0) < 7 ? "THE SIGNAL - " : "THE MISSING CONVOY - "}${so}`.slice(0, 100), 8, y, PAL.info); y += 10; }
       const cr = g.world.crisis;
       if (cr && cr.delivered < cr.need && g.world.time < cr.until) { const f = findStation(g.world, cr.stationId); drawText(ctx, `CRISIS: ${(f?.st.name ?? "?").toUpperCase()}, ${(f?.sys.name ?? "?").toUpperCase()} NEEDS ${cr.need - cr.delivered} ${commodity(cr.commodityId).name.toUpperCase()} - ${Math.max(0, Math.round((cr.until - g.world.time) / 60))}M LEFT, PAYS x${CRISIS_PREMIUM}`.slice(0, 104), 8, y, PAL.danger); y += 10; }
     }

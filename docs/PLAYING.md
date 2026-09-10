@@ -105,6 +105,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   board: sample runs, outcrop runs, and a plant to fix on the spot. Jobs pay
   out when you walk back in.
 
+## The Keeper
+
+- A third campaign. Once you've kept a light of your own for a while (or
+  flown three hours), the wire reports that the old keeper of a dead system's
+  beacon has died. Relight it with spare parts, walk the wreck of their ship
+  for the log, deep-scan beside the beacon for what the light saw, and decide
+  whose light it is: yours, a faction's, or nobody's.
+
 ## Quiet moments
 
 - ESC in flight pauses the galaxy: resume, save, settings, the handbook, or

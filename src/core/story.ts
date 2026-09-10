@@ -7,6 +7,7 @@ import type { Game } from "../game";
 import type { World, SystemDef } from "../world";
 import { adjustRep, findStation, adjustSynRep, shiftRelation, logEntry } from "../world";
 import { RNG, hashStr } from "./rng";
+import { keeperObjective } from "./keeper";
 import type { EncounterScene } from "../scenes/encounter";
 import type { Encounter } from "../data/encounters";
 import * as wire from "./wire";
@@ -139,7 +140,7 @@ export function storyActive(g: Game): boolean { const s = storyStage(g); return 
 export function storyObjective(w: World): string | null {
   const s = w.player.story ?? 0;
   if (s >= 0 && s < STORY.length) return `${STORY[s].title}: ${STORY[s].objective(w)}`;
-  return convoyObjective(w);
+  return convoyObjective(w) ?? keeperObjective(w);
 }
 
 function showCard(g: Game, title: string, text: string, returnTo: string, options?: Encounter["options"]): void {

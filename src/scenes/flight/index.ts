@@ -26,6 +26,7 @@ import { presence } from "../../core/presence";
 import { pickEncounter } from "../../data/encounters";
 import { pickChatter } from "../../core/chatter";
 import { pickShipLine } from "../../core/shipvoice";
+import { keeperScan, KEEPER_OWNER } from "../../core/keeper";
 import { isOccasion } from "../../data/occasions";
 import type { EncounterScene } from "../encounter";
 import { RNG } from "../../core/rng";
@@ -127,6 +128,12 @@ export class FlightScene implements Scene {
   // Collect the till, patch the structure, stock or draw on a depot.
   tendInfra(g: Game, inf: Infra): void {
     const p = g.world.player;
+    if (inf.owner === KEEPER_OWNER) {
+      // not yours: patch it, nothing more; the campaign takes it from there
+      if (inf.health < 100) { if (repairInfra(inf, p)) { g.toast(`THE KEEPER'S BEACON: PATCHED TO ${inf.health}%${inf.health >= 30 ? " - IT'S LIT" : " - STILL DARK, MORE PARTS"}`); sfx.repair(); } else g.toast(`THE KEEPER'S BEACON: ${inf.health}% - BRING SPARE PARTS`); }
+      else g.toast("THE KEEPER'S BEACON BURNS STEADY. IT ISN'T YOURS TO EMPTY.");
+      return;
+    }
     if (inf.upgraded) { p.vx = 0; p.vy = 0; g.infraTarget = inf; g.setScene("waystation"); return; }
     if (!canUpgradeInfra(inf, p) && confirmBox(`Build a waystation here? ${WAYSTATION_CREDITS}cr and ${WAYSTATION_PARTS} spare parts: a deck, a bar, a bunk. Tolls rise, the bar earns, and the regulars stop by.`)) {
       if (upgradeInfra(inf, p)) { g.toast("THE WAYSTATION GOES UP OVER A LONG SHIFT. THERE'S A BAR. THERE'S A BUNK. IT'S YOURS."); logEntry(g.world, `Built a waystation in ${g.world.systems[p.systemId].name}`); flag(g, "waystation"); sfx.dock(); void wire.post("discover", `opened a waystation in ${g.world.systems[p.systemId].name}`, g.world.systems[p.systemId].name); return; }
@@ -332,6 +339,7 @@ export class FlightScene implements Scene {
         for (const an of sys.anomalies) {
           if (!an.discovered && dist(an.x, an.y, p.x, p.y) < (galaxyEventAt(g.world, sys.id)?.kind === "flare" ? 450 : stormBlind(g.world, sys.id) ? 300 : 900)) { an.discovered = true; found++; }
         }
+        keeperScan(g);
         const logged = logSystem(p, sys, 2);
         g.toast(found ? `SCAN: ${found} ANOMALY SIGNAL${found > 1 ? "S" : ""} LOCATED${logged ? ` - SYSTEM LOGGED +${logged} DATA` : ""}` : logged ? `SCAN: SYSTEM LOGGED +${logged} EXPLORATION DATA` : "SCAN: NOTHING WITHIN RANGE");
         sfx.select();

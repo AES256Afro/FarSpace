@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.41 - THE KEEPER", [
+    "A THIRD CAMPAIGN: A DYING LIGHTHOUSE, ITS KEEPER'S LOG, WHAT THE LIGHT SAW, AND WHOSE LIGHT IT IS.",
+  ]],
   ["0.40 - QUIET MOMENTS", [
     "ESC IN FLIGHT PAUSES THE GALAXY: SAVE, SETTINGS, THE HANDBOOK, OR HOME. PULSARS TICK; THE CATHEDRAL HUMS.",
   ]],

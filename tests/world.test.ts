@@ -6,6 +6,7 @@ import {
 import { occasionFor, OCCASIONS } from "../src/data/occasions";
 import { STEPS } from "../src/core/tutorial";
 import { CREW_ARCS, arcObjective } from "../src/core/crewarcs";
+import { KEEPER, keeperReady, startKeeper, keeperObjective, keeperScan, KEEPER_OWNER } from "../src/core/keeper";
 import type { Charter } from "../src/world";
 import type { Infra } from "../src/world";
 import { migrateSave, SAVE_VERSION, saveKeyFor, SLOTS } from "../src/save";
@@ -1352,5 +1353,35 @@ describe("faces", () => {
     expect(n.carried).toBe(2);
     const raw = JSON.parse(JSON.stringify({ ...w, version: 13, notables: undefined }));
     expect(migrateSave(raw)!.notables!.length).toBe(3);
+  });
+});
+
+describe("the keeper", () => {
+  it("starts in a dead system with a failing beacon and a wreck, and its stages check the right state", () => {
+    const w = generateWorld(211, { realGalaxy: true });
+    const g = { world: w, scenes: {}, sceneName: "flight", toast: () => undefined } as unknown as import("../src/game").Game;
+    expect(keeperReady(w)).toBe(false);
+    w.time = 11000;
+    expect(keeperReady(w)).toBe(true);
+    const t = startKeeper(w)!;
+    expect(t).not.toBeNull();
+    const k = w.infra!.find((i) => i.owner === KEEPER_OWNER)!;
+    expect(k.systemId).toBe(t.systemId);
+    expect(k.health).toBeLessThan(30);
+    expect(w.systems[t.wreckSystemId].wrecks.some((x) => x.id === t.wreckId)).toBe(true);
+    expect(keeperObjective(w)).toContain("RELIGHT");
+    expect(KEEPER[0].check(g)).toBe(false);
+    k.health = 60; (w.player.flags ??= {}).keeperRelit = true;
+    expect(KEEPER[0].check(g)).toBe(true);
+    expect(KEEPER[0].card(g)).toContain("KEEPER'S LANTERN");
+    w.systems[t.wreckSystemId].wrecks.find((x) => x.id === t.wreckId)!.looted = true;
+    expect(KEEPER[1].check(g)).toBe(true);
+    w.player.story3 = 2; w.player.systemId = t.systemId; w.player.x = k.x + 10; w.player.y = k.y;
+    expect(keeperScan(g)).toBe(true);
+    const an = w.systems[t.systemId].anomalies.find((a) => a.id === t.contactId)!;
+    expect(an).toBeDefined();
+    an.claimed = true;
+    expect(KEEPER[2].check(g)).toBe(true);
+    expect(KEEPER.length).toBe(4);
   });
 });

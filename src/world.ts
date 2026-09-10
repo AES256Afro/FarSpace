@@ -297,6 +297,8 @@ export interface PlayerState {
   donations?: number;                // relics given to museums
   hullHistory?: { previous: string; quirk: string } | null; // who flew this hull before you, and what they left
   jumpStreak?: number;               // gates in a row without a dock (a pilot's arc counts them)
+  story3?: number;                   // The Keeper: stage index; -1 = not started
+  keeper?: { systemId: string; wreckSystemId: string; wreckId: string; contactId: string } | null;
   lastOrbit?: { systemId: string; planetIdx: number } | null;
   grown?: number;                    // crates of provisions the greenhouse has grown
   postcards?: number;                // pictures taken

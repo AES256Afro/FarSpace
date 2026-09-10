@@ -51,6 +51,9 @@ charters and enforce embargoes, station profiles and bulletins, gate traffic,
 comms chatter, void drifters near gas giants, crew who talk to each other, a
 wall of record aboard your ship, and a second campaign about a missing convoy.
 
+**The Keeper:** a third campaign about a dying lighthouse, its keeper's
+log, what the light saw, and whose light it is.
+
 **Faces:** three notables per galaxy who turn up as fares with consequences,
 and promenade crowds that match the day.
 
@@ -180,7 +183,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestones 1–40 are live (v0.40.0). See the [roadmap](docs/ROADMAP.md) for what's next.
+Milestones 1–41 are live (v0.41.0). See the [roadmap](docs/ROADMAP.md) for what's next.
 
 ```bash
 npm test         # vitest: world-gen, routing, economy, law, missions, save migrations

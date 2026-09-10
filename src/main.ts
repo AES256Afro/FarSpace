@@ -11,6 +11,7 @@ import { WreckScene } from "./scenes/wreck";
 import { OrbitScene } from "./scenes/orbit";
 import { OutpostScene } from "./scenes/outpost";
 import { crewArcUpdate } from "./core/crewarcs";
+import { keeperUpdate } from "./core/keeper";
 import { WaystationScene } from "./scenes/waystation";
 import { AlmanacScene } from "./scenes/almanac";
 import { CityScene } from "./scenes/city";
@@ -81,6 +82,7 @@ function frame(now: number): void {
     storyUpdate(game);
     convoyUpdate(game);
     crewArcUpdate(game);
+    keeperUpdate(game);
   } catch (err) {
     console.error(err);
     if (!game.toastMsg.startsWith("GLITCH")) game.toast("GLITCH LOGGED - CARRYING ON");
