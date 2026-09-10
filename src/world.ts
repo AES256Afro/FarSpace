@@ -1625,6 +1625,8 @@ export function stationBulletin(w: World, st: StationDef, now = Date.now()): str
   return lines;
 }
 
+export const STORY_LEN = 7;
+
 // ---------- Faction politics ----------
 export function embargoed(w: World, factionId: string): boolean {
   const rep = w.player.rep[factionId] ?? 0;

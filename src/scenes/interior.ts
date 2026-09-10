@@ -9,6 +9,10 @@ import { hull, HullDef } from "../data/hulls";
 import { CREW_LINES, ROLE_INFO } from "../data/crew";
 import { clamp, dist } from "../core/mathx";
 import { sfx } from "../core/sfx";
+import { rankOf, rescuePoints, STORY_LEN } from "../world";
+import type { Encounter } from "../data/encounters";
+import type { EncounterScene } from "./encounter";
+import { ACHIEVEMENTS } from "../data/achievements";
 import { T, moveWalker, deckOrigin, drawTiles, drawPerson, nearestTile, tooltip, footer, computeRooms } from "./walkbase";
 
 // Deck layouts per hull. # wall . floor D door C cockpit E engines L scrubbers
@@ -133,6 +137,21 @@ export class InteriorScene implements Scene {
     const ch = this.tileAt(tx, ty);
     if (ch === "#") return true;
     return ch !== "." && ch !== "D" && ch !== "c" && ch !== "p" && PANELS.some((p) => p.ch === ch);
+  }
+
+  readWall(g: Game): void {
+    const p = g.world.player;
+    const hours = Math.floor(g.world.time / 3600), mins = Math.floor((g.world.time % 3600) / 60);
+    const lines = [
+      `${(p.shipName ?? hull(p.hullId).name).toUpperCase()} - ${hours}H ${mins}M UNDER WAY`,
+      `RESCUES ${p.rescues ?? 0}   REPAIRS ${p.repairs ?? 0}   TOWS ${p.tows ?? 0}   LIVES SAVED ${p.lives ?? 0}   RESCUER: ${rankOf(p, "rescuer").title} (${rescuePoints(p)})`,
+      `EXPLORER ${rankOf(p, "explorer").title}   TRADER ${rankOf(p, "trader").title}   MINER ${rankOf(p, "miner").title}`,
+      `FIRST DISCOVERIES ${Object.values(p.firsts ?? {}).filter((c) => c).length}   CODEX ${Object.keys(p.codex ?? {}).length}   CLAIMS ${(p.homesteads ?? []).length}   ACHIEVEMENTS ${(p.achievements ?? []).length}/${ACHIEVEMENTS.length}`,
+      p.flags?.theSignal ? "THE SIGNAL: ANSWERED." : (p.story ?? 0) > 0 && (p.story ?? 0) < STORY_LEN ? `THE SIGNAL: STAGE ${(p.story ?? 0) + 1} OF ${STORY_LEN}` : "THE SIGNAL: NOT YET HEARD.",
+      p.log?.length ? `LAST ENTRY: ${p.log[p.log.length - 1].text.toUpperCase()}` : "THE LOG IS EMPTY.",
+    ];
+    const enc: Encounter = { id: "wall", where: "space", title: "WALL OF RECORD", text: lines.join("\n"), weight: 0, options: [{ label: "CLOSE", result: () => "" }] };
+    (g.scenes["encounter"] as EncounterScene).open(g, enc, "interior", true);
   }
 
   say(m: string): void { this.msg = m; this.msgTimer = 3; }
@@ -323,12 +342,33 @@ export class InteriorScene implements Scene {
 
     drawPerson(ctx, Math.round(ox + this.px), Math.round(oy + this.py), "#e8b48c", "#3a6ea5");
 
+    // the wall of record: plaques for what this ship has done, scorch where it's been hurt
+    {
+      const px0 = ox + 1 * T, py0 = oy + 0 * T;
+      const p2 = g.world.player;
+      const deeds = (p2.repairs ?? 0) + (p2.tows ?? 0) + (p2.rescues ?? 0) + Math.floor((p2.lives ?? 0) / 3);
+      const plaques = Math.min(6, deeds + (p2.flags?.theSignal ? 1 : 0) + Object.values(p2.firsts ?? {}).filter((c) => c).length);
+      for (let i = 0; i < 6; i++) {
+        ctx.fillStyle = i < plaques ? "#c7a54a" : "#2a3146";
+        ctx.fillRect(px0 + 2 + i * 4, py0 + 3, 3, 4);
+      }
+      if ((p2.cargo.relics ?? 0) > 0 || (p2.codex && Object.keys(p2.codex).length)) { ctx.fillStyle = "#e060ff"; ctx.fillRect(px0 + T + 4, py0 + 5, 2, 2); ctx.fillStyle = "#63f2c8"; ctx.fillRect(px0 + T + 8, py0 + 5, 2, 2); }
+      if (p2.hull < p2.hullMax * 0.6) {
+        // scorch: a few dark blotches on the deck, seeded so they stay put until the yard fixes the hull
+        ctx.globalAlpha = 0.35; ctx.fillStyle = "#000";
+        for (let i = 0; i < 5; i++) { const tx = 2 + ((i * 7 + g.world.seed) % (this.deck[0].length - 4)), ty = 1 + ((i * 3 + (g.world.seed >> 3)) % (this.deck.length - 2)); if (this.deck[ty][tx] === ".") ctx.fillRect(ox + tx * T + 1, oy + ty * T + 2, T - 2, T - 3); }
+        ctx.globalAlpha = 1;
+      }
+    }
+
     // tooltips
     const near = nearestTile(this.deck, this.px, this.py, "CELRWGMBKSH");
     const fire = p.fires.find((f) => dist(f.tx * T + T / 2, f.ty * T + T / 2, this.px, this.py) < 16);
     const breach = p.breaches.find((b) => dist(b.tx * T + T / 2, b.ty * T + T / 2, this.px, this.py) < 16);
     const crewNear = p.crew.map((c, i) => ({ c, spot: spots[i] })).find((x) => x.spot && dist(x.spot.tx * T + T / 2, x.spot.ty * T + T / 2, this.px, this.py) < 16);
-    if (fire) tooltip(ctx, ox, oy, fire.tx, fire.ty, "FIRE", "[HOLD E] EXTINGUISH", PAL.danger);
+    const atWall = dist(1 * T + T / 2, 1 * T + T / 2, this.px, this.py) < 14;
+    if (atWall && !fire && !breach) tooltip(ctx, ox, oy, 1, 0, "WALL OF RECORD", "[E] READ", "#c7a54a");
+    else if (fire) tooltip(ctx, ox, oy, fire.tx, fire.ty, "FIRE", "[HOLD E] EXTINGUISH", PAL.danger);
     else if (breach) tooltip(ctx, ox, oy, breach.tx, breach.ty, "HULL BREACH", "[HOLD E] SEAL (1 PART)", PAL.danger);
     else if (crewNear) tooltip(ctx, ox, oy, crewNear.spot.tx, crewNear.spot.ty, `${crewNear.c.name} - ${ROLE_INFO[crewNear.c.role].label}`, "[E] TALK", PAL.ui);
     else if (passenger && pSpot && dist(pSpot.tx * T + T / 2, pSpot.ty * T + T / 2, this.px, this.py) < 16) tooltip(ctx, ox, oy, pSpot.tx, pSpot.ty, passenger.passengerName!, "[E] TALK", "#b28fe0");
