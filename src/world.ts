@@ -288,6 +288,7 @@ export interface PlayerState {
   furnishings?: string[];            // things bought for the deck (FURNISHINGS)
   haulers?: Charter[];               // haulers you pay to run your routes while you fly
   mail?: Letter[];                   // letters received (last 20)
+  grown?: number;                    // crates of provisions the greenhouse has grown
   postcards?: number;                // pictures taken
   lineage?: Captain[];               // captains who sat in this chair before
   captainName?: string;              // who sits in it now (a crew member who took over), if not you
@@ -999,6 +1000,7 @@ export interface World {
   mailQueue?: Letter[];              // letters on their way, delivered at a dock after dueT
   serialsSeen?: string[];
   serialTick?: number;
+  greenTick?: number;
   seed: number;
   time: number;
   realGalaxy: boolean;
@@ -1104,6 +1106,10 @@ export function tickWorld(w: World, dt: number): void {
     }
   }
   tickWear(w.player, dt);
+  if ((w.player.modules ?? []).includes("greenhouse")) {
+    w.greenTick = (w.greenTick ?? 0) + dt;
+    if (w.greenTick >= 300) { w.greenTick = 0; if (addCargo(w.player, "food", 1)) w.player.grown = (w.player.grown ?? 0) + 1; }
+  }
   w.serialTick = (w.serialTick ?? 0) + dt;
   if (w.serialTick >= 60) { w.serialTick = 0; tickSerial(w, new RNG((w.seed ^ Math.floor(w.time * 19)) >>> 0)); }
   w.infraTick = (w.infraTick ?? 0) + dt;

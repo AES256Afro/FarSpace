@@ -1216,3 +1216,16 @@ describe("the waystation", () => {
     expect(inf.till).toBeGreaterThan(plain.till);
   });
 });
+
+describe("the greenhouse", () => {
+  it("grows a crate of provisions every five minutes under way", () => {
+    const w = generateWorld(151, { realGalaxy: true });
+    const p = w.player;
+    p.cargo = {}; p.modules = ["greenhouse"];
+    tickWorld(w, 299);
+    expect(p.cargo.food ?? 0).toBe(0);
+    tickWorld(w, 2);
+    expect(p.cargo.food ?? 0).toBe(1);
+    expect(p.grown).toBe(1);
+  });
+});

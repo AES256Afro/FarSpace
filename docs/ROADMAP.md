@@ -483,4 +483,9 @@ Time passes for the people on the ship, and for the ship.
 - [x] The regular captains drink there, friends first
 - [x] What's New scrolls
 
+## Milestone 32 — Handbook and Voice ✅ (Sep 2026)
+- [x] An in-game handbook on the title screen, one section per system
+- [x] The ship's own voice on the comms band
+- [x] A greenhouse module that grows provisions under way
+
 ## Later

@@ -25,6 +25,7 @@ import * as wire from "../../core/wire";
 import { presence } from "../../core/presence";
 import { pickEncounter } from "../../data/encounters";
 import { pickChatter } from "../../core/chatter";
+import { pickShipLine } from "../../core/shipvoice";
 import type { EncounterScene } from "../encounter";
 import { RNG } from "../../core/rng";
 import type { Bullet, Npc, Particle, Platform, Loot, Sos, RepairJob } from "./types";
@@ -829,6 +830,9 @@ export class FlightScene implements Scene {
     if (this.chatterTimer <= 0) {
       this.chatterTimer = 35 + Math.random() * 40;
       if (this.comms.length < 2) {
+        const vrng = new RNG((g.world.seed ^ Math.floor(g.world.time * 5)) >>> 0);
+        const shipLine = vrng.chance(0.18) ? pickShipLine(g, vrng) : null;
+        if (shipLine) { this.comms.push({ from: (p.shipName ?? "SHIP").toUpperCase(), text: shipLine, life: 9, color: PAL.uiDim }); return; }
         const line = pickChatter(g, new RNG((g.world.seed ^ Math.floor(g.world.time * 3)) >>> 0));
         if (line) { this.comms.push({ from: line.from, text: line.text, life: 9, color: PAL.greyDark }); }
       }

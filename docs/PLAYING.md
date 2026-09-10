@@ -101,6 +101,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   board: sample runs, outcrop runs, and a plant to fix on the spot. Jobs pay
   out when you walk back in.
 
+## The handbook, the voice, the greenhouse
+
+- HANDBOOK on the title screen: every system in the game, a few lines each.
+- The ship has a voice on the band now. Not often, and only about itself.
+- A Greenhouse module grows a crate of provisions every five minutes under
+  way; crew eat better and know it.
+
 ## The waystation
 
 - A lit beacon or depot can become a waystation: press E beside it with 5,000
