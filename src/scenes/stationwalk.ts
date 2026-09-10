@@ -22,7 +22,7 @@ const DECK = [
   "#....#............................#....#",
   "######..........########..........######",
   "#...............#......#...............#",
-  "#.....B.........#..RR..#.........N.....#",
+  "#.....B.........#..RR..#....H....N.....#",
   "#...............#......#...............#",
   "#~~~~~~~....................~~~~~~~~~~~#",
   "########################################",
@@ -41,6 +41,7 @@ const KIOSKS: Kiosk[] = [
   { ch: "R", label: "THE LOUNGE BAR", tab: 4 },
   { ch: "N", label: "GALNET TERMINAL", tab: 6 },
   { ch: "A", label: "AIRLOCK - YOUR SHIP", tab: null },
+  { ch: "H", label: "STATION CLINIC", tab: -1 },
 ];
 
 interface WalkerNpc {
@@ -181,6 +182,17 @@ export class StationWalkScene implements Scene {
       if (who) { this.msg = who.line!; this.msgTimer = 6; }
     }
     if (near && inp.wasPressed("e")) {
+      if (near.def.tab === -1) {
+        // the clinic: sick crew back on their feet, for a fee
+        const p = g.world.player;
+        const sick = p.crew.filter((c) => c.sick);
+        if (!sick.length) { this.msg = "CLINIC: 'EVERYONE'S FINE. TRY THE BAR.'"; this.msgTimer = 4; return; }
+        const fee = 120 * sick.length;
+        if (p.credits < fee) { this.msg = `CLINIC: ${fee}CR FOR ${sick.length} PATIENT${sick.length > 1 ? "S" : ""}. YOU'RE SHORT.`; this.msgTimer = 4; return; }
+        p.credits -= fee; for (const c of sick) { c.sick = null; c.morale = Math.min(100, c.morale + 5); }
+        this.msg = `CLINIC: ${sick.map((c) => c.name.toUpperCase()).join(" AND ")} TREATED, -${fee}CR. 'REST. REAL REST. I KNOW YOU WON'T.'`; this.msgTimer = 6;
+        return;
+      }
       if (near.def.tab === null) {
         g.world.player.dockedAt = null;
         g.setScene("flight");
@@ -302,7 +314,7 @@ export class StationWalkScene implements Scene {
     if (near) {
       const kx = ox + near.tx * T + T / 2;
       drawText(ctx, near.def.label, kx - textWidth(near.def.label) / 2, oy + near.ty * T - 9, PAL.ui);
-      const hint = near.def.tab === null ? "[E] BOARD SHIP + UNDOCK" : "[E] USE";
+      const hint = near.def.tab === null ? "[E] BOARD SHIP + UNDOCK" : near.def.tab === -1 ? "[E] TREAT SICK CREW (120CR EACH)" : "[E] USE";
       drawText(ctx, hint, kx - textWidth(hint) / 2, oy + near.ty * T + T + 3, PAL.gold);
     }
 

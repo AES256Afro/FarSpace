@@ -408,6 +408,61 @@ export function crewXp(p: PlayerState, role: CrewRole, n = 1): string | null {
   return line;
 }
 
+// ---------- Crew get on, or don't ----------
+// Every dock, one pair drifts: toward each other on a good ship, apart on a bad one.
+export function bond(a: CrewMember, b: CrewMember): number { return a.bonds?.[b.name] ?? 0; }
+export function bondLabel(v: number): string { return v >= 2 ? "FRIENDS" : v <= -2 ? "FEUDING" : v > 0 ? "WARM" : v < 0 ? "COOL" : ""; }
+export function shiftBond(a: CrewMember, b: CrewMember, d: number): void {
+  (a.bonds ??= {})[b.name] = Math.max(-3, Math.min(3, (a.bonds[b.name] ?? 0) + d));
+  (b.bonds ??= {})[a.name] = Math.max(-3, Math.min(3, (b.bonds[a.name] ?? 0) + d));
+}
+export function tickBonds(p: PlayerState, rng: RNG): string[] {
+  const out: string[] = [];
+  const crew = p.crew;
+  if (crew.length < 2) return out;
+  const a = rng.pick(crew); const b = rng.pick(crew.filter((c) => c !== a));
+  const good = (a.morale + b.morale) / 2 >= 55 || !!p.cat || (p.furnishings ?? []).includes("jukebox");
+  const before = bond(a, b);
+  shiftBond(a, b, rng.chance(good ? 0.7 : 0.35) ? 1 : -1);
+  const after = bond(a, b);
+  if (before < 2 && after >= 2) out.push(`${a.name.toUpperCase()} AND ${b.name.toUpperCase()} ARE FAST FRIENDS NOW. MORALE UP FOR BOTH.`);
+  if (before > -2 && after <= -2) out.push(`${a.name.toUpperCase()} AND ${b.name.toUpperCase()} AREN'T SPEAKING. SOMEBODY SHOULD DO SOMETHING.`);
+  // standing effects
+  for (const c of crew) for (const o of crew) {
+    if (c === o) continue;
+    const v = bond(c, o);
+    if (v >= 2) c.morale = Math.min(100, c.morale + 1);
+    else if (v <= -2) c.morale = Math.max(0, c.morale - 2);
+  }
+  return out;
+}
+export function feuds(p: PlayerState): [CrewMember, CrewMember][] {
+  const out: [CrewMember, CrewMember][] = [];
+  for (let i = 0; i < p.crew.length; i++) for (let j = i + 1; j < p.crew.length; j++) if (bond(p.crew[i], p.crew[j]) <= -2) out.push([p.crew[i], p.crew[j]]);
+  return out;
+}
+
+// ---------- The chronicle: a captain's career as text ----------
+export function chronicleText(w: World, callsign: string | null): string {
+  const p = w.player;
+  const h = Math.floor(w.time / 3600), m = Math.floor((w.time % 3600) / 60);
+  const name = (p.captainName ?? callsign ?? "The Captain");
+  const lines: string[] = [];
+  lines.push(`FARSPACE CHRONICLE - ${(p.shipName ?? hull(p.hullId).name).toUpperCase()}`);
+  lines.push(`Captain: ${name}. ${h}h ${m}m under way. ${p.credits} credits. ${w.realGalaxy ? "The real stars." : "An uncharted galaxy."}`);
+  lines.push("");
+  lines.push(`Ranks: explorer ${rankOf(p, "explorer").title}, trader ${rankOf(p, "trader").title}, miner ${rankOf(p, "miner").title}, rescuer ${rankOf(p, "rescuer").title}.`);
+  lines.push(`Rescues ${p.rescues ?? 0}, repairs ${p.repairs ?? 0}, tows ${p.tows ?? 0}, lives ${p.lives ?? 0}, fares ${p.fares ?? 0}, first discoveries ${Object.values(p.firsts ?? {}).filter(Boolean).length}, postcards ${p.postcards ?? 0}.`);
+  if (p.lineage?.length) { lines.push(""); lines.push("Captains before:"); for (const c of p.lineage) lines.push(`  ${c.name}, retired at ${findStation(w, c.stationId)?.st.name ?? "a station"} with ${c.credits} credits and ${c.deeds} deeds.`); }
+  if (p.crew.length) { lines.push(""); lines.push("Crew aboard:"); for (const c of p.crew) lines.push(`  ${c.name}, ${ROLE_INFO[c.role].label.toLowerCase()}, skill ${c.skill}, ${c.docks ?? 0} dockings${c.trait ? `, ${c.trait}` : ""}.`); }
+  if (p.alumni?.length) { lines.push(""); lines.push("Served and went home:"); for (const a of p.alumni) lines.push(`  ${a.name}, ${a.role}, ${a.docks} dockings, at ${findStation(w, a.stationId)?.st.name ?? "a station"}.`); }
+  if (p.cat) { lines.push(""); lines.push(`Ship's cat: ${p.cat.name}.`); }
+  if (w.infra?.length) { lines.push(""); lines.push("Structures:"); for (const i of w.infra) lines.push(`  ${i.kind} in ${w.systems[i.systemId]?.name ?? "?"}, ${i.health}%, ${i.earned} credits earned.`); }
+  if (p.achievements?.length) { lines.push(""); lines.push(`Achievements (${p.achievements.length}): ${p.achievements.join(", ")}.`); }
+  if (p.log?.length) { lines.push(""); lines.push("Captain's log:"); for (const l of p.log) { const lh = Math.floor(l.t / 3600), lm = Math.floor((l.t % 3600) / 60); lines.push(`  [${lh}h${String(lm).padStart(2, "0")}] ${l.text}`); } }
+  return lines.join("\n");
+}
+
 // ---------- Resting at a dock ----------
 // Ten minutes of ship time pass in a moment: markets breathe, tills fill, the sick mend.
 export function restAtDock(w: World, seconds = 600): string[] {

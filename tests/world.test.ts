@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
-  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind } from "../src/world";
+  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText } from "../src/world";
 import type { Infra } from "../src/world";
 import { migrateSave, SAVE_VERSION, saveKeyFor, SLOTS } from "../src/save";
 import { RNG } from "../src/core/rng";
@@ -1044,5 +1044,32 @@ describe("galnet serials", () => {
     const other = w.systems[sys.links[0]];
     const c = { sys, st: sys.stations[0], name: "Test Person", other };
     for (const d of SERIALS) { for (const part of d.parts) expect(part(c).length).toBeGreaterThan(20); expect(d.hookLine(c).length).toBeGreaterThan(10); if (d.hook.kind === "mission") expect(d.hook.mission(w, c).reward).toBeGreaterThan(0); }
+  });
+});
+
+describe("shipmates", () => {
+  it("bonds drift at the dock, feuds and friendships show, and the chronicle reads back the career", () => {
+    const w = generateWorld(91, { realGalaxy: true });
+    const p = w.player;
+    const a = { name: "Ada", role: "engineer" as const, skill: 1, morale: 80, wage: 40 };
+    const b = { name: "Bo", role: "medic" as const, skill: 1, morale: 80, wage: 35 };
+    p.crew = [a, b];
+    for (let i = 0; i < 12; i++) tickBonds(p, new RNG(i));
+    expect(Math.abs(bond(a, b))).toBeGreaterThan(0);
+    shiftBond(a, b, -6);
+    expect(bond(a, b)).toBe(-3);
+    expect(feuds(p).length).toBe(1);
+    expect(bondLabel(bond(a, b))).toBe("FEUDING");
+    shiftBond(a, b, 6);
+    expect(bond(a, b)).toBe(3);
+    expect(feuds(p).length).toBe(0);
+    p.shipName = "Kestrel"; p.cat = { name: "Biscuit", since: 0 }; p.lineage = [{ name: "Old Hand", from: 0, to: 100, stationId: w.systems[p.systemId].stations[0].id, credits: 5000, deeds: 3 }];
+    logEntry(w, "Tested the chronicle");
+    const text = chronicleText(w, "TESTER");
+    expect(text).toContain("KESTREL");
+    expect(text).toContain("Biscuit");
+    expect(text).toContain("Old Hand");
+    expect(text).toContain("Tested the chronicle");
+    expect(text).toContain("Ada, engineer");
   });
 });

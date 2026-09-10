@@ -445,4 +445,10 @@ Time passes for the people on the ship, and for the ship.
 - [x] Furnishings for the deck, drawn aboard, with morale and mood effects
 - [x] Fame: the comms band and station control know a ship by its deeds
 
+## Milestone 25 — Shipmates ✅ (Sep 2026)
+- [x] Crew bonds: friendships and feuds that drift at every dock, shape the
+      banter, and can be mediated at the captain's table
+- [x] A clinic on the promenade for sick crew
+- [x] The chronicle: the whole career exported as a text file (X on RECORD)
+
 ## Later

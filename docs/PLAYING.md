@@ -101,6 +101,20 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   board: sample runs, outcrop runs, and a plant to fix on the spot. Jobs pay
   out when you walk back in.
 
+## Shipmates
+
+- Crew get on, or don't. Every dock one pair drifts a little: toward each
+  other on a happy ship (a cat and a jukebox help), apart on a miserable one.
+  Friends lift each other's morale; a feud drags both down until you sit them
+  down with a bottle, split their shifts, or let them sort it out.
+- Talk to crew aboard and they'll tell you who they're betting with and who
+  should stay out of their engine room. The banter changes to match.
+- The promenade has a clinic (H): sick crew treated on the spot, 120 credits
+  each.
+- On the RECORD tab, X exports the chronicle: your career, the line of
+  captains, crew past and present, structures, achievements and the log, as
+  a text file.
+
 ## Keepsakes
 
 - F7 takes a postcard anywhere but the title screen: the frame as it is with a

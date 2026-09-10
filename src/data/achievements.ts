@@ -31,6 +31,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "warVeteran", title: "WAR VETERAN", desc: "Fight for the winning side of a syndicate war", check: (w) => !!w.player.flags?.warVeteran },
   { id: "theLane", title: "THE LANE", desc: "Find the missing convoy", check: (w) => !!w.player.flags?.theLane },
   { id: "charter", title: "CHARTERED", desc: "Hold a faction charter", check: (w) => !!w.player.flags?.charter },
+  { id: "chronicle", title: "CHRONICLER", desc: "Export the chronicle", check: (w) => !!w.player.flags?.chronicle },
   { id: "homely", title: "HOMELY", desc: "Furnish the deck with four things", check: (w) => !!w.player.flags?.homely },
   { id: "postcards", title: "POSTCARDS", desc: "Take ten postcards", check: (w) => (w.player.postcards ?? 0) >= 10 },
   { id: "shipsCat", title: "SHIP'S CAT", desc: "A cat decides your ship is its ship", check: (w) => !!w.player.flags?.shipsCat },

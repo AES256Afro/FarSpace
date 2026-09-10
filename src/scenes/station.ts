@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS, roleLabel } from "../
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter,
+  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter,
 } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
@@ -161,12 +161,25 @@ export class StationScene implements Scene {
     // old shipmates
     const alum = (p.alumni ?? []).filter((a) => a.stationId === this.station.id);
     if (alum.length && rng.chance(0.4)) { const a = rng.pick(alum); g.toast(`${a.name.toUpperCase()} WAVES FROM THE LOUNGE. ${roleLabel(a.role)}, RETIRED. ${a.docks} DOCKINGS WITH YOU.`); }
+    for (const line of tickBonds(p, rng)) g.toast(line);
     for (const line of settlePassengers(p)) g.toast(line);
     const evHere = galaxyEventAt(g.world, p.systemId);
     if (evHere?.kind === "festival" && evHere.stationId === this.station.id && logSight(p, "festival", `the festival at ${this.station.name}`, p.systemId)) g.toast("YOUR PASSENGERS ARE OFF INTO THE FESTIVAL CROWD. THEY'LL REMEMBER THIS ONE.");
     this.crewRequest(g);
     if (g.sceneName !== "encounter") this.retirement(g, rng);
     if (g.sceneName !== "encounter") this.envoy(g);
+  }
+
+  // Two of yours aren't speaking. The captain's table is where that gets settled, or doesn't.
+  mediate(g: Game, a: CrewMember, b: CrewMember): void {
+    const A = a.name.toUpperCase(), B = b.name.toUpperCase();
+    const text = `${A} AND ${B} HAVEN'T SPOKEN IN THREE DOCKINGS. THE CORRIDOR GOES QUIET WHEN THEY PASS. ${A}: 'IT'S ${B}'S ${["SNORING", "OPINIONS", "COOKING", "MUSIC", "TIMEKEEPING"][a.name.length % 5]}.' ${B}: 'IT'S ${A}. FULL STOP.'`;
+    const opts: Encounter["options"] = [];
+    opts.push({ label: "SIT THEM DOWN WITH A BOTTLE", requires: (g2) => g2.world.player.credits >= 80, result: (g2) => { g2.world.player.credits -= 80; shiftBond(a, b, 3); a.morale = Math.min(100, a.morale + 5); b.morale = Math.min(100, b.morale + 5); return `TWO HOURS AND ONE BOTTLE LATER THEY'RE ARGUING ABOUT SOMETHING ELSE, TOGETHER. THAT'LL DO.`; } });
+    opts.push({ label: "SPLIT THEIR SHIFTS", result: () => { shiftBond(a, b, 1); return `THEY DON'T HAVE TO LIKE EACH OTHER. THEY JUST HAVE TO NOT BE IN THE SAME ROOM. IT HELPS, A LITTLE.`; } });
+    opts.push({ label: "LET THEM SORT IT OUT", result: (g2) => { const rng = new RNG((g2.world.seed ^ Math.floor(g2.world.time)) >>> 0); if (rng.chance(0.4)) { shiftBond(a, b, 2); return `THEY SORT IT OUT. NOBODY SAYS HOW. THE CORRIDOR IS LOUD AGAIN.`; } a.morale = Math.max(0, a.morale - 8); b.morale = Math.max(0, b.morale - 8); return `THEY DON'T SORT IT OUT. MORALE DOWN FOR BOTH. THE REST OF THE CREW TAKE SIDES.`; } });
+    const enc: Encounter = { id: "crew-feud", where: "space", title: `${A} AND ${B}`, text, weight: 0, options: opts };
+    (g.scenes["encounter"] as EncounterScene).open(g, enc, "station", true);
   }
 
   // After a long tour, someone wants to go home. How you part matters to the rest of the crew.
@@ -239,6 +252,8 @@ export class StationScene implements Scene {
     if (!c) return;
     const name = c.name.toUpperCase();
     const kinds = ["leave", "visit", "training", "family", "shore", "goods", "letter"] as const;
+    const feud = feuds(p)[0];
+    if (feud && rng.chance(0.5)) { this.mediate(g, feud[0], feud[1]); return; }
     const kind = c.morale < 30 ? "leave" : rng.pick(kinds);
     const opts: Encounter["options"] = [];
     let text = "";
@@ -560,6 +575,16 @@ export class StationScene implements Scene {
       }
       case "RECORD":
         if (inp.wasPressed("l")) { this.recordView = this.recordView === "log" ? "achievements" : "log"; this.cursor = 0; sfx.blip(); }
+        if (inp.wasPressed("x")) {
+          try {
+            const text = chronicleText(g.world, wire.getCallsign());
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(new Blob([text], { type: "text/plain" }));
+            a.download = `farspace-chronicle-${(p.shipName ?? "ship").toLowerCase().replace(/[^a-z0-9]+/g, "-")}.txt`;
+            document.body.appendChild(a); a.click(); a.remove();
+            g.toast("CHRONICLE SAVED AS A TEXT FILE"); sfx.pickup(); flag(g, "chronicle");
+          } catch { g.toast("CHRONICLE EXPORT FAILED"); }
+        }
         this.cursor = clamp(this.cursor, 0, this.recordView === "log" ? Math.max(0, (p.log?.length ?? 0) - 16) : Math.max(0, Math.ceil(ACHIEVEMENTS.length / 2) - 12));
         break;
     }
@@ -1542,7 +1567,7 @@ export class StationScene implements Scene {
   drawLog(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
     const p = g.world.player;
     const log = [...(p.log ?? [])].reverse();
-    drawText(ctx, `CAPTAIN'S LOG (${log.length}) - L FOR ACHIEVEMENTS - UP/DOWN TO SCROLL`, 8, top, PAL.info);
+    drawText(ctx, `CAPTAIN'S LOG (${log.length}) - L FOR ACHIEVEMENTS - X EXPORTS THE CHRONICLE - UP/DOWN TO SCROLL`, 8, top, PAL.info);
     if (!log.length) { drawText(ctx, "NOTHING WORTH WRITING DOWN YET. FLY SOMEWHERE. HELP SOMEONE.", 8, top + 12, PAL.greyDark); return; }
     const first = Math.min(this.cursor, Math.max(0, log.length - 16));
     log.slice(first, first + 16).forEach((e, i) => {
@@ -1557,7 +1582,7 @@ export class StationScene implements Scene {
     const p = g.world.player;
     const w = g.world;
     const have = new Set(p.achievements ?? []);
-    drawText(ctx, `SERVICE RECORD${w.hardcore ? " - HARDCORE" : ""} - L FOR THE CAPTAIN'S LOG`, 8, top, PAL.info);
+    drawText(ctx, `SERVICE RECORD${w.hardcore ? " - HARDCORE" : ""} - L FOR THE CAPTAIN'S LOG - X EXPORTS THE CHRONICLE`, 8, top, PAL.info);
     const stats = [
       `KILLS ${p.kills}`, `DISCOVERIES ${p.discoveries}`, `ARCS ${Object.values(p.arcs).reduce((a, b) => a + b, 0)}/15`,
       `CREDITS ${p.credits}`, `CREW ${p.crew.length}`, `HULL ${hull(p.hullId).name.toUpperCase()}`,

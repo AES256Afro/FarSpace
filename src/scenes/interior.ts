@@ -4,7 +4,7 @@
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS } from "../world";
+import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond } from "../world";
 import { commodity } from "../data/data";
 
 const PASSENGER_LINES: Record<string, { high: string[]; mid: string[]; low: string[] }> = {
@@ -300,9 +300,11 @@ export class InteriorScene implements Scene {
         const c = crewNear.c;
         const pool = c.morale >= 65 ? CREW_LINES[c.role].high : c.morale >= 30 ? CREW_LINES[c.role].mid : CREW_LINES[c.role].low;
         const ask = c.request ? (c.request.kind === "visit" ? " ...and about that stop I asked for." : c.request.kind === "goods" ? " ...and the list is still by the airlock." : " ...and the letter's still in your locker.") : "";
+        const friend = p.crew.find((o) => o !== c && bond(c, o) >= 2), foe = p.crew.find((o) => o !== c && bond(c, o) <= -2);
+        const bondNote = foe ? ` ...and keep ${foe.name} out of my engine room.` : friend ? ` ...${friend.name} and I have a bet on the next gate.` : "";
         const line = c.sick ? `(${c.sick.kind}, laid up) ${["Don't come too close, Captain.", "I'll be fine. Give me a day.", "The med bay's colder than the hold."][Math.floor(Math.random() * 3)]}`
           : Math.random() < 0.25 && c.trait ? `(${c.trait}) ${pool[Math.floor(Math.random() * pool.length)]}` : pool[Math.floor(Math.random() * pool.length)];
-        this.talk = `${c.name.toUpperCase()} (${ROLE_INFO[c.role].label}, SKILL ${c.skill}, MORALE ${Math.round(c.morale)}${(c.loyalty ?? 0) >= 2 ? ", LOYAL" : ""}, ${c.docks ?? 0} DOCKINGS): ${line}${ask}`;
+        this.talk = `${c.name.toUpperCase()} (${ROLE_INFO[c.role].label}, SKILL ${c.skill}, MORALE ${Math.round(c.morale)}${(c.loyalty ?? 0) >= 2 ? ", LOYAL" : ""}, ${c.docks ?? 0} DOCKINGS): ${line}${ask}${bondNote}`;
         this.talkTimer = 5;
         c.morale = Math.min(100, c.morale + 1);
       } else if (passenger && pSpot && dist(pSpot.tx * T + T / 2, pSpot.ty * T + T / 2, this.px, this.py) < 16) {
@@ -372,8 +374,17 @@ export class InteriorScene implements Scene {
       const a = p.crew[Math.floor(Math.random() * p.crew.length)];
       let b = p.crew[Math.floor(Math.random() * p.crew.length)];
       if (b === a) b = p.crew.find((c) => c !== a) ?? a;
-      const lowMorale = Math.min(a.morale, b.morale) < 35;
-      const lines = lowMorale ? [
+      const v = bond(a, b);
+      const lowMorale = Math.min(a.morale, b.morale) < 35 || v <= -2;
+      const lines = v <= -2 ? [
+        [`${a.name}: ...`, `${b.name}: ...`],
+        [`${a.name}: Tell ${b.name} the coolant's due.`, `${b.name}: Tell ${a.name} I heard.`],
+        [`${a.name}: Is this seat taken?`, `${b.name}: Yes.`],
+      ] : v >= 2 ? [
+        [`${a.name}: Same bet as last time?`, `${b.name}: Double. I feel lucky.`],
+        [`${a.name}: You ate my ration bar.`, `${b.name}: I saved you from it.`],
+        [`${a.name}: If this ship ever docks for good, we open a bar.`, `${b.name}: You cook. I'll pour.`],
+      ] : lowMorale ? [
         [`${a.name}: How long since we ate anything that wasn't a bar?`, `${b.name}: Don't. I'm trying not to count.`],
         [`${a.name}: I had an offer at the last station.`, `${b.name}: You say that every station.`],
         [`${a.name}: Is the captain even listening to us?`, `${b.name}: Ask the wall of record. It listens more.`],
