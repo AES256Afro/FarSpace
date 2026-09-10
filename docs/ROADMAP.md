@@ -321,5 +321,10 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
 - [x] Territory: a rout takes the loser's base as a holding; the loser falls
       back to a partner station; holdings trade like a home base
 
+- [x] Squadrons at war: a squadron with a base declares for a side (front
+      +10, members' work counts 1.5x); winning pays the treasury, losing gets
+      the squadron marked; base raids are led by the pirate syndicate that
+      likes you least, and repelling them costs their standing
+
 ## Later
-- [ ] Player squadrons in syndicate wars (bases as war targets)
+- [ ] Cross-squadron rivalries and treaties

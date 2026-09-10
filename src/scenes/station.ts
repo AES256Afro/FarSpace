@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember } from "../data/crew";
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute,
+  crewWages, genCrewCandidate, applyHull, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar,
 } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
@@ -60,6 +60,10 @@ export class StationScene implements Scene {
     refreshPrices(this.station);
     void wire.fetchSquadronData();
     this.base = null; this.baseLoaded = false;
+    if (p.warPayout && p.warPayout.value > 0) {
+      const wp = p.warPayout; p.warPayout = null;
+      void wire.baseActionFor(wp.tag, "war", { value: wp.value }).then((ok) => { if (ok) g.toast(`WAR SPOILS: +${wp.value}CR TO THE [${wp.tag}] TREASURY`); });
+    }
     void wire.fetchBases().then(() => { this.baseOwner = wire.baseAt(this.station.id)?.tag ?? null; });
     if (wire.getSquadron()) { void wire.fetchBase(wire.getSquadron()!).then((b) => { this.base = b; this.baseLoaded = true; if (!b?.stationId && !this.station.military) g.showHint("base", "BASE TAB: POOL CREDITS WITH YOUR SQUADRON AND BUY A STATION AS YOUR BASE"); }); } else this.baseLoaded = true;
     {
@@ -296,6 +300,12 @@ export class StationScene implements Scene {
               void wire.post("base", `founded the [${tag}] squadron base at ${st.name}`, g.world.systems[p2.systemId].name);
               void b;
             });
+          } else if (row.kind === "back") {
+            if (backWar(g.world, row.id!, tag)) {
+              g.toast(`[${tag}] DECLARES FOR [${row.id}] - THE FRONT MOVES`);
+              sfx.alarm();
+              void wire.post("base", `squadron [${tag}] declared for [${row.id}] in the syndicate war at ${g.world.systems[g.world.synWar!.systemId].name}`, g.world.systems[p2.systemId].name);
+            } else g.toast("THE WAR IS OVER OR A SIDE IS ALREADY BACKED");
           } else if (row.kind === "upgrade") {
             void this.baseDo(g, "upgrade", { upgrade: row.id }, () => { g.toast(`${row.label.toUpperCase()} FITTED`); sfx.repair(); });
           } else if (row.kind === "deposit") {
@@ -985,13 +995,17 @@ export class StationScene implements Scene {
     if (paid >= 1000) void wire.post("discovery", `sold exploration data worth ${paid} CR`, g.world.systems[p.systemId].name);
   }
 
-  baseRows(g: Game): { kind: "fund" | "buy" | "upgrade" | "deposit" | "withdraw" | "info"; id?: string; label: string; sub: string }[] {
+  baseRows(g: Game): { kind: "fund" | "buy" | "upgrade" | "deposit" | "withdraw" | "info" | "back"; id?: string; label: string; sub: string }[] {
     const p = g.world.player;
     const st = this.station;
     const tag = wire.getSquadron();
-    const rows: { kind: "fund" | "buy" | "upgrade" | "deposit" | "withdraw" | "info"; id?: string; label: string; sub: string }[] = [];
+    const rows: { kind: "fund" | "buy" | "upgrade" | "deposit" | "withdraw" | "info" | "back"; id?: string; label: string; sub: string }[] = [];
     if (!tag) return rows;
     const b = this.base;
+    const war = g.world.synWar;
+    if (b && b.stationId && war && !war.backed) {
+      for (const side of [war.attacker, war.defender]) rows.push({ kind: "back", id: side, label: `DECLARE FOR [${side}] IN THE WAR AT ${g.world.systems[war.systemId].name.toUpperCase()}`, sub: "FRONT +10, YOUR WORK COUNTS 1.5X, SPOILS TO THE TREASURY" });
+    }
     if (b && b.stationId) {
       if (b.stationId !== st.id) return rows;
       for (const u of wire.BASE_UPGRADES) {
@@ -1052,10 +1066,16 @@ export class StationScene implements Scene {
       drawText(ctx, `[${tag}] BASE: ${(b.stationName ?? "?").toUpperCase()}, ${(b.systemName ?? "?").toUpperCase()}`, 8, top, PAL.gold);
       drawText(ctx, `TREASURY ${b.treasury}CR   VAULT ${Object.values(b.vault).reduce((a, v) => a + v, 0)} UNITS   UPGRADES: ${b.upgrades.length ? b.upgrades.join(", ").toUpperCase() : "NONE"}`, 8, top + 12, PAL.grey);
       drawText(ctx, "DOCK THERE TO USE THE VAULT AND FIT UPGRADES.", 8, top + 21, PAL.greyDark);
+      const war = g.world.synWar;
+      if (war) {
+        drawText(ctx, war.backed ? `WAR AT ${g.world.systems[war.systemId].name.toUpperCase()}: [${war.backedBy}] BACKS [${war.backed}] - FRONT ${war.score > 0 ? "+" : ""}${war.score}` : `SYNDICATE WAR AT ${g.world.systems[war.systemId].name.toUpperCase()} - DECLARE A SIDE BELOW`, 8, top + 33, PAL.warn);
+        rows.forEach((r, i) => { const y = top + 45 + i * 18; this.row(ctx, y, i === this.cursor); drawText(ctx, r.label, 8, y, PAL.white); drawText(ctx, r.sub, 8, y + 9, PAL.greyDark); });
+      }
       return;
     }
     drawText(ctx, b && b.stationId ? `[${tag}] SQUADRON BASE - ${st.name.toUpperCase()}` : `FOUND A [${tag}] BASE`, 8, top, PAL.gold);
     drawText(ctx, b && b.stationId ? `TREASURY ${b.treasury}CR   VAULT ${Object.values(b.vault).reduce((a, v) => a + v, 0)}/${b.upgrades.includes("vault") ? 600 : 200}   HALF-PRICE SERVICES FOR MEMBERS` : `POOL CREDITS, THEN BUY A CIVILIAN STATION. THIS ONE: ${wire.basePrice(st.type, st.military) ? wire.basePrice(st.type, st.military) + "CR" : "MILITARY, NOT FOR SALE"}`, 8, top + 10, PAL.grey);
+    if (b && b.stationId === st.id && g.world.synWar) { const war = g.world.synWar; drawText(ctx, war.backed ? `WAR: [${war.backedBy}] BACKS [${war.backed}] AT ${g.world.systems[war.systemId].name.toUpperCase()} - FRONT ${war.score > 0 ? "+" : ""}${war.score}` : `SYNDICATE WAR AT ${g.world.systems[war.systemId].name.toUpperCase()} - DECLARE A SIDE (ROWS ABOVE)`, 8, VH - 93, PAL.warn); }
     if (b && b.stationId === st.id) drawText(ctx, `WANTED THIS WEEK (+${Math.round(ROUTE_PREMIUM * 100)}%, 10% TO THE TREASURY): ${baseDemand(`base:${tag}`).map((d) => commodity(d).name.toUpperCase()).join(", ")}`, 8, VH - 84, PAL.gold);
     rows.forEach((r, i) => {
       const y = top + 24 + i * 9;

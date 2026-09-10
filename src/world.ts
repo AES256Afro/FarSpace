@@ -244,6 +244,7 @@ export interface PlayerState {
   ground?: Record<string, GroundState>; // ground map key → what's been taken/charted
   codex?: Record<string, number>;    // "flora:<species>", "biome:<name>" → count
   synRep?: Record<string, number>;   // syndicate tag → standing
+  warPayout?: { tag: string; value: number } | null; // squadron treasury share owed after a won war
   routes?: { from: string; to: string; commodityId: string; t: number }[]; // base trade runs (station ids)
   lastDockedAt?: string;             // previous station id, for route bookkeeping
 }
@@ -260,6 +261,8 @@ export interface SynWar {
   score: number;      // -100 (defender wins) .. 100 (attacker wins)
   until: number;      // world time when it resolves regardless
   contrib: Record<string, number>; // player's contribution per side tag
+  backed?: string;    // side the player's squadron declared for
+  backedBy?: string;  // that squadron's tag
 }
 export interface Syndicate {
   tag: string; name: string; color: string; style: SyndicateStyle;
@@ -1370,10 +1373,22 @@ export function baseDemand(key: string, now = Date.now()): string[] {
 }
 export const ROUTE_PREMIUM = 0.3;
 
+// A squadron with a base declares for a side: the front moves, and members' work counts more
+export function backWar(w: World, side: string, squadron: string): boolean {
+  const war = w.synWar;
+  if (!war || war.backed || (side !== war.attacker && side !== war.defender)) return false;
+  war.backed = side; war.backedBy = squadron;
+  war.score += side === war.attacker ? 10 : -10;
+  const sy = syndicateByTag(w, side);
+  pushEvent(w, { t: w.time, kind: "war", systemId: war.systemId, text: `Squadron [${squadron}] declares for [${side}] ${sy?.name ?? side} in the war at ${w.systems[war.systemId].name}` });
+  return true;
+}
+
 // Player-facing war contributions: kills of a side's raiders, runs for a side
 export function warContribute(w: World, side: string, amount: number): SynWar | null {
   const war = w.synWar;
   if (!war || (side !== war.attacker && side !== war.defender)) return null;
+  if (war.backed === side) amount = Math.round(amount * 1.5); // a declared squadron fights harder
   war.contrib[side] = (war.contrib[side] ?? 0) + amount;
   war.score += side === war.attacker ? amount : -amount;
   war.score = Math.max(-100, Math.min(100, war.score));
@@ -1413,6 +1428,17 @@ function resolveSynWar(w: World, rng: RNG): void {
   const mine = war.contrib[winner.tag] ?? 0;
   if (mine > 0) { adjustSynRep(w, winner.tag, 15); w.player.credits += Math.round(mine * 60); w.player.flags = { ...(w.player.flags ?? {}), warVeteran: true }; }
   else if ((war.contrib[loser.tag] ?? 0) > 0) adjustSynRep(w, loser.tag, 8);
+  // a declared squadron shares the spoils, or the grudge
+  if (war.backed && war.backedBy) {
+    if (war.backed === winner.tag) {
+      w.player.warPayout = { tag: war.backedBy, value: Math.min(5000, Math.round(mine * 40) + 500) };
+      w.player.flags = { ...(w.player.flags ?? {}), squadWarWin: true };
+      pushEvent(w, { t: w.time, kind: "peace", systemId: sys.id, text: `[${winner.tag}] ${winner.name} pays squadron [${war.backedBy}] for its part in the war` });
+    } else {
+      adjustSynRep(w, winner.tag, -10);
+      pushEvent(w, { t: w.time, kind: "war", systemId: sys.id, text: `[${winner.tag}] ${winner.name} marks squadron [${war.backedBy}] for backing the losing side` });
+    }
+  }
   void rng;
 }
 

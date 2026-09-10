@@ -435,7 +435,7 @@ export class FlightScene implements Scene {
 
   arrivalLog = "";
   arrivalTimer = 0;
-  raidBase: { tag: string; stationIdx: number; repelled: boolean } | null = null;
+  raidBase: { tag: string; stationIdx: number; repelled: boolean; by?: string } | null = null;
   maydays: { from: string; x: number; y: number; t: number }[] = [];
   lastMayday = 0;
   // First discovery: the wire remembers who logged a system first.

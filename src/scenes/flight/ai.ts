@@ -81,12 +81,16 @@ export function populate(fs: FlightScene, g: Game): void {
     const b = baseAt(st.id);
     if (!b || b.upgrades.includes("defense") || sys.pirateActivity < 0.2) return;
     const sx = Math.cos(st.angle) * st.orbit, sy = Math.sin(st.angle) * st.orbit;
+    // the raid is led by the pirate syndicate that likes you least
+    const pirates = (g.world.syndicates ?? []).filter((x) => x.style === "pirate");
+    const leader = pirates.sort((x, y) => (g.world.player.synRep?.[x.tag] ?? 0) - (g.world.player.synRep?.[y.tag] ?? 0))[0];
     for (let k = 0; k < 2; k++) {
       const n = spawnNpc(fs, g, "pirate", rng);
       const a = rng.range(0, TAU);
       n.x = sx + Math.cos(a) * 320; n.y = sy + Math.sin(a) * 320;
+      if (leader) { n.tag = leader.tag; n.variant = "raider"; }
     }
-    fs.raidBase = { tag: b.tag, stationIdx: i, repelled: false };
+    fs.raidBase = { tag: b.tag, stationIdx: i, repelled: false, by: leader?.tag };
   });
 
   fs.platforms = [];
@@ -399,7 +403,8 @@ export function npcKilled(fs: FlightScene, g: Game, n: Npc, byPlayer: boolean): 
         const st = g.world.systems[p.systemId].stations[fs.raidBase.stationIdx];
         if (st && dist(n.x, n.y, Math.cos(st.angle) * st.orbit, Math.sin(st.angle) * st.orbit) < 600 && !fs.npcs.some((o) => o !== n && o.kind === "pirate" && o.hull > 0 && dist(o.x, o.y, Math.cos(st.angle) * st.orbit, Math.sin(st.angle) * st.orbit) < 600)) {
           fs.raidBase.repelled = true;
-          g.toast(`RAID REPELLED - THE [${fs.raidBase.tag}] BASE IS CLEAR`);
+          g.toast(`RAID REPELLED - THE [${fs.raidBase.tag}] BASE IS CLEAR${fs.raidBase.by ? ` - [${fs.raidBase.by}] WILL REMEMBER` : ""}`);
+          if (fs.raidBase.by) adjustSynRep(g.world, fs.raidBase.by, -3);
           void wire.post("base", `drove raiders off the [${fs.raidBase.tag}] base at ${st.name}`, g.world.systems[p.systemId].name);
           flag(g, "defender");
         }

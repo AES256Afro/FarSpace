@@ -13,7 +13,7 @@ import { MODULES } from "../src/data/modules";
 import { rareSellPrice, findStation } from "../src/world";
 import { RARES } from "../src/data/data";
 import { baseContract } from "../src/core/wire";
-import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute } from "../src/world";
+import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
 import { genGround, groundKey, passable, GW, GH } from "../src/ground";
 import { BLUEPRINTS, upgrade, addMaterials, nextCost, MATERIAL_CAP } from "../src/data/engineering";
 import { jumpFuelCost, communityGoal, weekKey, permitDenied, navRoute, blackMarket, genMissionsFor, groundProgress, missionDeliverable } from "../src/world";
@@ -586,5 +586,27 @@ describe("syndicate wars", () => {
     const win = w.syndicates!.find((s) => s.tag === winnerSide)!;
     const lose = w.syndicates!.find((s) => s.tag === (winnerSide === war.attacker ? war.defender : war.attacker))!;
     if (win.holdings?.length) { expect(syndicateAt(w, win.holdings[0])?.tag).toBe(win.tag); expect(lose.stationId).not.toBe(win.holdings[0]); }
+  });
+});
+
+describe("squadrons at war", () => {
+  it("declaring moves the front, multiplies contributions, and a win owes the treasury", () => {
+    const w = generateWorld(20, { realGalaxy: true });
+    const [a, b] = w.syndicates!.filter((s) => s.style !== "pirate");
+    shiftRelation(w, a.tag, b.tag, -100);
+    let tries = 0;
+    while (!w.synWar && tries++ < 40) tickSyndicates(w, new RNG(300 + tries));
+    const war = w.synWar!;
+    expect(backWar(w, war.attacker, "RED")).toBe(true);
+    expect(war.score).toBe(10);
+    expect(backWar(w, war.defender, "BLU")).toBe(false);
+    warContribute(w, war.attacker, 10);
+    expect(war.contrib[war.attacker]).toBe(15);
+    warContribute(w, war.attacker, 100);
+    tickSyndicates(w, new RNG(1));
+    expect(w.synWar).toBeNull();
+    expect(w.player.warPayout?.tag).toBe("RED");
+    expect(w.player.warPayout!.value).toBeGreaterThan(500);
+    expect(w.player.flags?.squadWarWin).toBe(true);
   });
 });
