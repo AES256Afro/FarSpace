@@ -247,14 +247,18 @@ export class StationScene implements Scene {
         this.cursor = clamp(this.cursor, 0, rows.length - 1);
         const id = rows[this.cursor];
         if (embargoed(g.world, st.factionId)) { if (enter || inp.wasPressed("b") || inp.wasPressed("s")) g.toast("EMBARGO - THIS MARKET WON'T TRADE WITH YOU"); break; }
-        if (enter || inp.wasPressed("b")) {
+        // Enter and click sell what you hold; they buy only when your hold is empty of it. B and S stay explicit.
+        const holding = (p.cargo[id] ?? 0) > 0;
+        const wantSell = inp.wasPressed("s") || inp.wasPressed("Backspace") || (enter && holding);
+        const wantBuy = inp.wasPressed("b") || (enter && !holding);
+        if (wantBuy) {
           const price = buyPrice(st, id, rep);
           if ((st.stock[id] ?? 0) <= 0) g.toast("OUT OF STOCK");
           else if (p.credits < price) g.toast("NOT ENOUGH CREDITS");
           else if (!addCargo(p, id, 1)) g.toast("CARGO FULL");
           else { p.credits -= price; st.stock[id]--; refreshPrices(st); g.showHint("trade", "PRICES MOVE: BUY WHERE STOCK IS HIGH, SELL WHERE IT'S LOW"); }
         }
-        if (inp.wasPressed("s") || inp.wasPressed("Backspace")) {
+        if (wantSell) {
           const rare = commodity(id).rare;
           const illegal = commodity(id).illegal;
           const fence = illegal && blackMarket(g.world, st);
@@ -863,7 +867,7 @@ export class StationScene implements Scene {
     drawText(ctx, "STOCK", 235, top, PAL.greyDark);
     drawText(ctx, "HELD", 280, top, PAL.greyDark);
     drawText(ctx, "TREND", 320, top, PAL.greyDark);
-    drawText(ctx, "ENTER/B BUY - S SELL", 370, top, PAL.greyDark);
+    drawText(ctx, "ENTER: SELL HELD, ELSE BUY - B BUY - S SELL", 350, top, PAL.greyDark);
     const rows = this.marketRows(g);
     const rowH = rows.length > 12 ? 9 : 11;
     rows.forEach((id, i) => {

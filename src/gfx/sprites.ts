@@ -457,6 +457,23 @@ export function genGlobe(rng: RNG, radius: number, paletteIdx: number, surface: 
   ctx.arc(cx, cy, radius + 0.5, 0, Math.PI * 2);
   ctx.stroke();
   ctx.globalAlpha = 1;
+  // city lights: settlements glitter where the day has gone
+  for (const poi of surface?.pois ?? []) {
+    if (poi.kind !== "city" && poi.kind !== "outpost" && poi.kind !== "mine") continue;
+    const la = (poi.lat * Math.PI) / 180, lo = (poi.lon * Math.PI) / 180 - rot;
+    const x = Math.cos(la) * Math.sin(lo), z = Math.cos(la) * Math.cos(lo), y = -Math.sin(la);
+    if (z < 0.05) continue;
+    const light = 0.55 + 0.6 * Math.max(0, (-x * 0.5 - y * 0.35 + z * 0.75));
+    if (light > 0.85) continue;
+    const px = Math.round(cx + x * radius), py = Math.round(cy + y * radius);
+    const n = poi.kind === "city" ? 4 : 2;
+    const lrng = rng.fork(poi.id.length + Math.round(poi.lat));
+    for (let i = 0; i < n; i++) {
+      const ox = Math.round(lrng.range(-2, 2)), oy = Math.round(lrng.range(-1.5, 1.5));
+      ctx.fillStyle = i === 0 ? "#ffe9a0" : "#d9b45a";
+      ctx.fillRect(px + ox, py + oy, 1, 1);
+    }
+  }
   return c;
 }
 
