@@ -82,7 +82,8 @@ function frame(now: number): void {
     if (!game.toastMsg.startsWith("GLITCH")) game.toast("GLITCH LOGGED - CARRYING ON");
   }
   checkAchievements(game);
-  game.scene.draw(game, game.bctx);
+  try { game.scene.draw(game, game.bctx); }
+  catch (err) { console.error("draw failed in", game.sceneName, err); if (!game.toastMsg.startsWith("GLITCH")) game.toast("GLITCH LOGGED - CARRYING ON"); }
   if (game.input.wasPressed("F7") && game.sceneName !== "title") game.postcard(game.postcardCaption());
   game.input.flush();
 
