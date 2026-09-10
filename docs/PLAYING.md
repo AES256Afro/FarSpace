@@ -91,6 +91,17 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   2.5x for med supplies, provisions or fuel cells before the clock runs out,
   with a bonus and standing for whoever brings the last unit.
 
+## A living galaxy
+
+- Careers: Explorer, Trader, Miner and Rescuer ladders on the SURVEY tab.
+  Rescuer points come from lives saved, repairs, tows, crises and distress
+  calls.
+- Events come and go: a comet seeds a belt with rich ore, a solar flare makes a
+  system hot and blinds long scans, a festival week pays tourists double and
+  drains luxuries, a dock strike doubles fuel and repairs. The galaxy map marks
+  them; bar patrons talk about them.
+- The RECORD tab keeps a captain's log (L); the SURVEY tab keeps your codex (C).
+
 ## Syndicates and trade routes
 
 - Four AI syndicates live in every galaxy, always marked (AI). Their bases show
