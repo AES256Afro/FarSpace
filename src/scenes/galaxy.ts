@@ -22,6 +22,7 @@ export class GalaxyScene implements Scene {
   enter(g: Game): void {
     this.selected = g.world.player.systemId;
     void wire.fetchSquadronData();
+    void wire.fetchBases();
     void wire.fetchRooms().then((r) => { this.rooms = Object.fromEntries(r.rooms.map((x) => [x.system.toLowerCase(), x.count])); this.pilots = r.pilots; });
   }
 
@@ -157,7 +158,7 @@ export class GalaxyScene implements Scene {
       if (rares.length) { drawText(ctx, `RARE: ${rares.join(", ")}`.slice(0, 27), px + 6, y, PAL.gold); y += 9; }
       y += 3;
       drawText(ctx, "STATIONS:", px + 6, y, PAL.greyDark); y += 9;
-      for (const st of sys.stations) { drawText(ctx, `${st.military ? "*" : "-"} ${st.name}`.slice(0, 27), px + 6, y, st.military ? PAL.danger : PAL.ui); y += 8; }
+      for (const st of sys.stations) { const b = wire.baseAt(st.id); drawText(ctx, `${st.military ? "*" : "-"} ${st.name}${b ? ` [${b.tag}]` : ""}`.slice(0, 27), px + 6, y, b ? PAL.gold : st.military ? PAL.danger : PAL.ui); y += 8; }
       y += 3;
       drawText(ctx, "LINKS:", px + 6, y, PAL.greyDark); y += 9;
       for (const l of sys.links) { drawText(ctx, `> ${w.systems[l].name} ${sys.ly[l] ?? "?"}LY`.slice(0, 27), px + 6, y, PAL.info); y += 8; }

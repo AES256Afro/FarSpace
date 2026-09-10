@@ -262,5 +262,15 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
       and the galaxy map, and its members trade there like allies and get
       half-price fuel and repairs at its yards
 
+## Milestone 14 — Squadron Bases ✅ (Sep 2026)
+**Goal:** a place that belongs to your squadron.
+
+- [x] Treasury: members fund it from anywhere; one civilian station per
+      squadron can be bought (price by station type); ownership is global
+- [x] Base perks: half-price services for members, a shared vault (deposit and
+      withdraw cargo), a base log, the tag on the galaxy map and station header
+- [x] Upgrades from the treasury: Defense Grid (extra platforms for everyone),
+      Fuel Depot (free services), Market Stake (+8% sales), Deep Vault (600)
+
 ## Later
-- [ ] Squadron bases: a station a squadron can buy, stock and defend
+- [ ] Base raids and defence events; squadron missions

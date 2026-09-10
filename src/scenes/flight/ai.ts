@@ -16,6 +16,7 @@ import { flag } from "../../core/achievements";
 import { hasModule } from "../../data/modules";
 import { gainMaterials } from "../../core/materials";
 import { presence } from "../../core/presence";
+import { baseAt, fetchBases } from "../../core/wire";
 
 // ---------- Population ----------
 
@@ -47,8 +48,10 @@ export function populate(fs: FlightScene, g: Game): void {
 
   fs.platforms = [];
   const hostile = sys.factionId === "vex";
+  void fetchBases();
   sys.stations.forEach((st, i) => {
-    const n = st.military ? 4 : 2;
+    const grid = baseAt(st.id)?.upgrades.includes("defense") ? 3 : 0;
+    const n = (st.military ? 4 : 2) + grid;
     for (let k = 0; k < n; k++) {
       fs.platforms.push({
         anchor: "station", anchorIdx: i,

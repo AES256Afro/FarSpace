@@ -179,3 +179,51 @@ export async function fetchRooms(force = false): Promise<{ rooms: RoomCount[]; p
     return roomsCache;
   } catch { return roomsCache ?? { rooms: [], pilots: 0 }; }
 }
+
+// ---------- Squadron bases ----------
+export interface BaseRec { stationId: string | null; stationName: string | null; systemName: string | null; treasury: number; vault: Record<string, number>; upgrades: string[]; founded: number; log: { t: number; callsign: string; text: string }[] }
+export interface BaseSummary { tag: string; stationId: string; stationName: string; systemName: string; upgrades: string[] }
+export const BASE_UPGRADES: { id: string; name: string; cost: number; desc: string }[] = [
+  { id: "defense", name: "Defense Grid", cost: 8000, desc: "Three extra platforms and fighters guard the base for everyone" },
+  { id: "depot", name: "Fuel Depot", cost: 5000, desc: "Members refuel and repair here for free" },
+  { id: "market", name: "Market Stake", cost: 6000, desc: "Members sell here at +8%" },
+  { id: "vault", name: "Deep Vault", cost: 4000, desc: "Shared vault holds 600 instead of 200" },
+];
+let basesCache: { at: number; bases: BaseSummary[] } | null = null;
+export async function fetchBases(force = false): Promise<BaseSummary[]> {
+  if (!force && basesCache && Date.now() - basesCache.at < 120_000) return basesCache.bases;
+  try {
+    const r = await fetch(`${cloudBase()}/api/bases`);
+    if (!r.ok) return basesCache?.bases ?? [];
+    basesCache = { at: Date.now(), bases: ((await r.json()) as { bases: BaseSummary[] }).bases };
+    return basesCache.bases;
+  } catch { return basesCache?.bases ?? []; }
+}
+export function baseAt(stationId: string): BaseSummary | null {
+  return basesCache?.bases.find((b) => b.stationId === stationId) ?? null;
+}
+export async function fetchBase(tag: string): Promise<BaseRec | null> {
+  try {
+    const r = await fetch(`${cloudBase()}/api/base?tag=${encodeURIComponent(tag)}`);
+    if (!r.ok) return null;
+    return ((await r.json()) as { base: BaseRec | null }).base;
+  } catch { return null; }
+}
+export async function baseAction(action: string, payload: Record<string, unknown>): Promise<{ ok: boolean; base?: BaseRec; error?: string; short?: number }> {
+  const callsign = getCallsign(), tag = getSquadron();
+  if (!callsign || !tag) return { ok: false, error: "no squadron" };
+  try {
+    const r = await fetch(`${cloudBase()}/api/base`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action, callsign, tag, ...payload }),
+    });
+    const j = (await r.json()) as { ok?: boolean; base?: BaseRec; error?: string; short?: number };
+    if (j.base && j.ok) basesCache = null;
+    return { ok: !!j.ok, base: j.base, error: j.error, short: j.short };
+  } catch { return { ok: false, error: "offline" }; }
+}
+export function basePrice(stationType: string, military: boolean): number {
+  if (military) return 0;
+  const f: Record<string, number> = { trade: 1.5, research: 1.4, refinery: 1.3, mining: 1, agri: 1 };
+  return Math.round(15000 * (f[stationType] ?? 1));
+}

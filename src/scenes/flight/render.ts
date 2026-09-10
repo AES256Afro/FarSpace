@@ -12,6 +12,7 @@ import { hull } from "../../data/hulls";
 import { permitDenied } from "../../world";
 import { hasModule } from "../../data/modules";
 import { presence } from "../../core/presence";
+import { baseAt } from "../../core/wire";
 import { genShip } from "../../gfx/sprites";
 import { RNG } from "../../core/rng";
 import { inSafeZone } from "./ai";

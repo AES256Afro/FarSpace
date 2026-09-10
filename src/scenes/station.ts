@@ -23,7 +23,7 @@ import * as wire from "../core/wire";
 import { drawTutorial } from "../core/tutorial";
 import { music } from "../core/music";
 
-const TABS = ["MARKET", "SHIPYARD", "SHIPS", "MISSIONS", "BAR", "SURVEY", "ENGINEER", "STORAGE", "NEWS", "WIRE", "RECORD"] as const;
+const TABS = ["MARKET", "SHIPYARD", "SHIPS", "MISSIONS", "BAR", "SURVEY", "ENGINEER", "STORAGE", "BASE", "NEWS", "WIRE", "RECORD"] as const;
 
 export class StationScene implements Scene {
   touchMode = "menu" as const;
@@ -58,6 +58,9 @@ export class StationScene implements Scene {
     this.barLine = "";
     refreshPrices(this.station);
     void wire.fetchSquadronData();
+    this.base = null; this.baseLoaded = false;
+    void wire.fetchBases().then(() => { this.baseOwner = wire.baseAt(this.station.id)?.tag ?? null; });
+    if (wire.getSquadron()) { void wire.fetchBase(wire.getSquadron()!).then((b) => { this.base = b; this.baseLoaded = true; }); } else this.baseLoaded = true;
     {
       const rep0 = p.rep[this.station.factionId] ?? 0;
       const seen: Record<string, [number, number]> = {};
@@ -158,7 +161,7 @@ export class StationScene implements Scene {
           } else {
             if (fence) flag(g, "fence");
             const goalHit = id === this.goal.commodityId && st.type === this.goal.stationType;
-            const paid = goalHit ? Math.round(price * (1 + this.goal.premium)) : price;
+            const paid = Math.round(price * (goalHit ? 1 + this.goal.premium : 1) * (this.baseHas("market") ? 1.08 : 1));
             if (goalHit) { this.goalPending++; p.goalContrib ??= {}; p.goalContrib[this.goal.id] = (p.goalContrib[this.goal.id] ?? 0) + 1; if ((p.goalContrib[this.goal.id] ?? 0) >= 20) flag(g, "communal"); }
             p.credits += paid; p.tradeRevenue = (p.tradeRevenue ?? 0) + paid;
             if (!rare || st.rare === id) { st.stock[id] = (st.stock[id] ?? 0) + 1; refreshPrices(st); }
@@ -249,6 +252,39 @@ export class StationScene implements Scene {
         this.cursor = 0;
         if (enter) this.sellExploration(g);
         break;
+      case "BASE": {
+        const p2 = g.world.player;
+        const tag = wire.getSquadron();
+        const rows = this.baseRows(g);
+        this.cursor = clamp(this.cursor, 0, Math.max(0, rows.length - 1));
+        const row = rows[this.cursor];
+        if (enter && row && tag) {
+          if (row.kind === "fund") {
+            const raw = window.prompt(`Fund the [${tag}] treasury. Credits to contribute (you have ${p2.credits}):`, "1000");
+            inp.flush();
+            const n = Math.floor(Number(raw));
+            if (raw !== null && Number.isFinite(n) && n > 0) {
+              if (n > p2.credits) g.toast("NOT ENOUGH CREDITS");
+              else { p2.credits -= n; void this.baseDo(g, "fund", { credits: n }, (b) => { g.toast(`TREASURY NOW ${b.treasury}CR`); sfx.pickup(); flag(g, "baseFunder"); }); }
+            }
+          } else if (row.kind === "buy") {
+            const price = wire.basePrice(st.type, st.military);
+            void this.baseDo(g, "buy", { stationId: st.id, stationName: st.name, systemName: g.world.systems[p2.systemId].name, price }, (b) => {
+              g.toast(`${st.name.toUpperCase()} IS NOW THE [${tag}] BASE`); sfx.dock(); flag(g, "baseFounder");
+              void wire.post("base", `founded the [${tag}] squadron base at ${st.name}`, g.world.systems[p2.systemId].name);
+              void b;
+            });
+          } else if (row.kind === "upgrade") {
+            void this.baseDo(g, "upgrade", { upgrade: row.id }, () => { g.toast(`${row.label.toUpperCase()} FITTED`); sfx.repair(); });
+          } else if (row.kind === "deposit") {
+            if (removeCargo(p2, row.id!, 1)) void this.baseDo(g, "deposit", { id: row.id, qty: 1 }, () => sfx.pickup()).then((ok) => { if (!ok) addCargo(p2, row.id!, 1); });
+          } else if (row.kind === "withdraw") {
+            if (cargoUsed(p2) >= p2.cargoMax) g.toast("CARGO FULL");
+            else void this.baseDo(g, "withdraw", { id: row.id, qty: 1 }, () => { addCargo(p2, row.id!, 1); sfx.pickup(); });
+          }
+        }
+        break;
+      }
       case "ENGINEER": {
         this.cursor = clamp(this.cursor, 0, BLUEPRINTS.length - 1);
         if (enter && this.hasEngineer()) {
@@ -274,6 +310,32 @@ export class StationScene implements Scene {
 
   squadrons: wire.Squadron[] = [];
   patrons: Record<string, string> = {};
+  base: wire.BaseRec | null = null;   // my squadron's base record
+  baseLoaded = false;
+  baseOwner: string | null = null;    // tag owning THIS station
+  baseBusy = false;
+
+  // Is this station my squadron's base?
+  myBaseHere(): boolean {
+    const tag = wire.getSquadron();
+    return !!tag && !!this.base && this.base.stationId === this.station.id;
+  }
+  baseHas(up: string): boolean { return this.myBaseHere() && !!this.base?.upgrades.includes(up); }
+
+  async baseDo(g: Game, action: string, payload: Record<string, unknown>, onOk?: (b: wire.BaseRec) => void): Promise<boolean> {
+    if (this.baseBusy) return false;
+    this.baseBusy = true;
+    const r = await wire.baseAction(action, payload);
+    this.baseBusy = false;
+    if (r.ok && r.base) {
+      this.base = r.base;
+      if (this.base.stationId === this.station.id) this.baseOwner = wire.getSquadron();
+      onOk?.(r.base);
+      return true;
+    }
+    g.toast(`BASE: ${(r.error ?? "FAILED").toUpperCase()}${r.short ? ` (${r.short}CR SHORT)` : ""}`);
+    return false;
+  }
   async loadWire(): Promise<void> {
     this.wireEvents = await wire.fetchWire(true);
     const sd = await wire.fetchSquadronData(true);
@@ -400,20 +462,21 @@ export class StationScene implements Scene {
     const st = this.station;
     const opts: { label: string; sub: string; action: () => void }[] = [];
     // patron squadrons keep their faction's yards half price for members
-    const patronHere = !!wire.getSquadron() && wire.patronOf(st.factionId) === wire.getSquadron();
-    const fuelPrice = patronHere ? Math.max(1, Math.round(st.fuelPrice / 2)) : st.fuelPrice;
-    const repairPrice = patronHere ? Math.max(1, Math.round(st.repairPrice / 2)) : st.repairPrice;
+    const patronHere = (!!wire.getSquadron() && wire.patronOf(st.factionId) === wire.getSquadron()) || this.myBaseHere();
+    const depot = this.baseHas("depot");
+    const fuelPrice = depot ? 0 : patronHere ? Math.max(1, Math.round(st.fuelPrice / 2)) : st.fuelPrice;
+    const repairPrice = depot ? 0 : patronHere ? Math.max(1, Math.round(st.repairPrice / 2)) : st.repairPrice;
     const fuelNeed = Math.ceil(p.fuelMax - p.fuel);
     opts.push({ label: `REFUEL (${fuelNeed} UNITS)${patronHere ? " - PATRON RATE" : ""}`, sub: `${fuelNeed * fuelPrice}CR`, action: () => {
       if (fuelNeed <= 0) return g.toast("TANKS FULL");
-      const afford = Math.min(fuelNeed, Math.floor(p.credits / fuelPrice));
+      const afford = fuelPrice ? Math.min(fuelNeed, Math.floor(p.credits / fuelPrice)) : fuelNeed;
       p.fuel += afford; p.credits -= afford * fuelPrice;
       g.toast(afford < fuelNeed ? "PARTIAL REFUEL" : "REFUELED");
     } });
     const hullNeed = Math.ceil(p.hullMax - p.hull);
     opts.push({ label: `HULL REPAIR (${hullNeed} PTS)${patronHere ? " - PATRON RATE" : ""}`, sub: `${hullNeed * repairPrice}CR`, action: () => {
       if (hullNeed <= 0) return g.toast("HULL INTACT");
-      const afford = Math.min(hullNeed, Math.floor(p.credits / repairPrice));
+      const afford = repairPrice ? Math.min(hullNeed, Math.floor(p.credits / repairPrice)) : hullNeed;
       p.hull += afford; p.credits -= afford * repairPrice;
       p.breaches = []; p.fires = [];
       g.toast(afford < hullNeed ? "PARTIAL REPAIR" : "HULL RESTORED");
@@ -499,6 +562,7 @@ export class StationScene implements Scene {
     if (st.military) drawText(ctx, "SECURITY LEVEL: HIGH", VW - textWidth("SECURITY LEVEL: HIGH") - 6, 17, PAL.danger);
     const war = g.world.wars.find((w) => w.systemId === p.systemId);
     if (war) drawText(ctx, "SYSTEM AT WAR - PRICES UNSTABLE", VW - textWidth("SYSTEM AT WAR - PRICES UNSTABLE") - 6, 26, PAL.warn);
+    else if (this.baseOwner) { const t = `[${this.baseOwner}] SQUADRON BASE${this.baseOwner === wire.getSquadron() ? " - HOME" : ""}`; drawText(ctx, t, VW - textWidth(t) - 6, 26, this.baseOwner === wire.getSquadron() ? PAL.gold : PAL.info); }
     else {
       const patron = wire.patronOf(this.station.factionId);
       if (patron) { const t = `PATRON SQUADRON: [${patron}]${patron === wire.getSquadron() ? " - YOURS, TRADE LIKE ALLIES" : ""}`; drawText(ctx, t, VW - textWidth(t) - 6, 26, patron === wire.getSquadron() ? PAL.gold : PAL.info); }
@@ -527,6 +591,7 @@ export class StationScene implements Scene {
       case "RECORD": this.drawRecord(g, ctx, top); break;
       case "SURVEY": this.drawSurvey(g, ctx, top); break;
       case "ENGINEER": this.drawEngineer(g, ctx, top); break;
+      case "BASE": this.drawBase(g, ctx, top); break;
     }
     if (g.toastTimer > 0) drawText(ctx, g.toastMsg, VW / 2 - textWidth(g.toastMsg) / 2, VH - 10, PAL.ui);
     if (g.hint) drawText(ctx, g.hint, VW / 2 - textWidth(g.hint) / 2, VH - 20, PAL.gold);
@@ -860,6 +925,70 @@ export class StationScene implements Scene {
     g.toast(`CARTOGRAPHICS PAID ${paid}CR${bonus > 1 ? " (RESEARCH POST BONUS)" : ""}`);
     sfx.pickup();
     if (paid >= 1000) void wire.post("discovery", `sold exploration data worth ${paid} CR`, g.world.systems[p.systemId].name);
+  }
+
+  baseRows(g: Game): { kind: "fund" | "buy" | "upgrade" | "deposit" | "withdraw" | "info"; id?: string; label: string; sub: string }[] {
+    const p = g.world.player;
+    const st = this.station;
+    const tag = wire.getSquadron();
+    const rows: { kind: "fund" | "buy" | "upgrade" | "deposit" | "withdraw" | "info"; id?: string; label: string; sub: string }[] = [];
+    if (!tag) return rows;
+    const b = this.base;
+    if (b && b.stationId) {
+      if (b.stationId !== st.id) return rows;
+      for (const u of wire.BASE_UPGRADES) {
+        const have = b.upgrades.includes(u.id);
+        rows.push({ kind: "upgrade", id: u.id, label: `${have ? "FITTED: " : "FIT "}${u.name.toUpperCase()}`, sub: have ? u.desc.toUpperCase() : `${u.cost}CR - ${u.desc.toUpperCase()}` });
+      }
+      rows.push({ kind: "fund", label: "FUND THE TREASURY", sub: `NOW ${b.treasury}CR` });
+      for (const [id, q] of Object.entries(p.cargo)) if (q > 0) rows.push({ kind: "deposit", id, label: `DEPOSIT 1 ${commodity(id).name.toUpperCase()}`, sub: `HOLD ${q}` });
+      for (const [id, q] of Object.entries(b.vault)) if (q > 0) rows.push({ kind: "withdraw", id, label: `WITHDRAW 1 ${commodity(id).name.toUpperCase()}`, sub: `VAULT ${q}` });
+      return rows;
+    }
+    // no base yet: fund, then buy this station
+    const price = wire.basePrice(st.type, st.military);
+    rows.push({ kind: "fund", label: "FUND THE TREASURY", sub: `NOW ${b?.treasury ?? 0}CR` });
+    if (price > 0 && !this.baseOwner) rows.push({ kind: "buy", label: `BUY ${st.name.toUpperCase()} AS THE [${tag}] BASE`, sub: `${price}CR FROM THE TREASURY` });
+    return rows;
+  }
+
+  drawBase(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
+    const tag = wire.getSquadron();
+    const st = this.station;
+    if (this.baseOwner && this.baseOwner !== tag) {
+      drawText(ctx, `${st.name.toUpperCase()} IS THE [${this.baseOwner}] SQUADRON BASE`, 8, top, PAL.info);
+      drawText(ctx, "SQUADRON BASES BELONG TO THE PILOTS WHO POOLED THE CREDITS. FIND YOUR OWN, OR JOIN THEIRS.", 8, top + 12, PAL.greyDark);
+      return;
+    }
+    if (!tag) {
+      drawText(ctx, "SQUADRON BASES", 8, top, PAL.info);
+      drawText(ctx, "JOIN A SQUADRON ON THE TITLE SCREEN. ITS MEMBERS POOL CREDITS TO BUY A STATION AS A BASE:", 8, top + 12, PAL.grey);
+      drawText(ctx, "SHARED VAULT, FREE SERVICES, A DEFENSE GRID, AND YOUR TAG ON THE GALAXY MAP.", 8, top + 21, PAL.grey);
+      return;
+    }
+    if (!this.baseLoaded) { drawText(ctx, "CONTACTING THE SQUADRON...", 8, top, PAL.greyDark); return; }
+    const b = this.base;
+    const rows = this.baseRows(g);
+    if (b && b.stationId && b.stationId !== st.id) {
+      drawText(ctx, `[${tag}] BASE: ${(b.stationName ?? "?").toUpperCase()}, ${(b.systemName ?? "?").toUpperCase()}`, 8, top, PAL.gold);
+      drawText(ctx, `TREASURY ${b.treasury}CR   VAULT ${Object.values(b.vault).reduce((a, v) => a + v, 0)} UNITS   UPGRADES: ${b.upgrades.length ? b.upgrades.join(", ").toUpperCase() : "NONE"}`, 8, top + 12, PAL.grey);
+      drawText(ctx, "DOCK THERE TO USE THE VAULT AND FIT UPGRADES.", 8, top + 21, PAL.greyDark);
+      return;
+    }
+    drawText(ctx, b && b.stationId ? `[${tag}] SQUADRON BASE - ${st.name.toUpperCase()}` : `FOUND A [${tag}] BASE`, 8, top, PAL.gold);
+    drawText(ctx, b && b.stationId ? `TREASURY ${b.treasury}CR   VAULT ${Object.values(b.vault).reduce((a, v) => a + v, 0)}/${b.upgrades.includes("vault") ? 600 : 200}   HALF-PRICE SERVICES FOR MEMBERS` : `POOL CREDITS, THEN BUY A CIVILIAN STATION. THIS ONE: ${wire.basePrice(st.type, st.military) ? wire.basePrice(st.type, st.military) + "CR" : "MILITARY, NOT FOR SALE"}`, 8, top + 10, PAL.grey);
+    rows.forEach((r, i) => {
+      const y = top + 24 + i * 9;
+      if (y > VH - 60) return;
+      this.row(ctx, y, i === this.cursor);
+      drawText(ctx, r.label, 8, y, r.kind === "upgrade" && r.label.startsWith("FITTED") ? PAL.good : PAL.white);
+      drawText(ctx, r.sub, 200, y, PAL.grey);
+    });
+    if (b?.log.length) {
+      const ly = VH - 56;
+      drawText(ctx, "BASE LOG:", 8, ly, PAL.greyDark);
+      b.log.slice(0, 2).forEach((l, i) => drawText(ctx, `${l.callsign} ${l.text} (${wire.ageLabel(l.t)})`.slice(0, 100), 8, ly + 9 + i * 8, PAL.greyDark));
+    }
   }
 
   hasEngineer(): boolean {

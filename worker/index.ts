@@ -134,13 +134,15 @@ const MAX_BYTES = 3 * 1024 * 1024;
 const TTL_SECONDS = 60 * 60 * 24 * 365; // a year of inactivity, then it expires
 
 const CALLSIGN = /^[A-Z0-9][A-Z0-9 _-]{1,15}$/;
-const WIRE_KINDS = new Set(["arc", "discovery", "rescue", "relics", "war", "bounty", "hull", "achievement", "daily"]);
+const WIRE_KINDS = new Set(["arc", "discovery", "rescue", "relics", "war", "bounty", "hull", "achievement", "daily", "base"]);
 const BOARDS = new Set(["discoveries", "arcs", "credits", "kills", "explorers", "traders"]);
 const WIRE_MAX = 40;
 
 interface WireEvent { t: number; callsign: string; kind: string; text: string; system: string; tag?: string }
 interface BoardEntry { callsign: string; score: number; t: number; tag?: string }
 const SQUAD = /^[A-Z0-9]{2,5}$/;
+interface BaseRec { stationId: string | null; stationName: string | null; systemName: string | null; treasury: number; vault: Record<string, number>; upgrades: string[]; founded: number; log: { t: number; callsign: string; text: string }[] }
+const BASE_UPGRADES: Record<string, number> = { defense: 8000, depot: 5000, market: 6000, vault: 4000 };
 
 function clean(s: unknown, max: number): string {
   return String(s ?? "").replace(/[^\x20-\x7e]/g, "").trim().slice(0, max);
@@ -277,6 +279,83 @@ export default {
         if (by) return json({ first: false, by });
         await env.SAVES.put(key, callsign);
         return json({ first: true, by: callsign });
+      }
+      return json({ error: "method" }, 405);
+    }
+
+    // Squadron bases: a station a squadron pools credits to buy. Ownership is a
+    // global registry (owner:<stationId>); the base record holds treasury, a
+    // shared vault, upgrades and a short log. Trust model as everywhere else.
+    if (url.pathname === "/api/bases" && request.method === "GET") {
+      const { keys } = await env.SAVES.list({ prefix: "base:", limit: 200 });
+      const bases: unknown[] = [];
+      for (const k of keys) {
+        const b = JSON.parse((await env.SAVES.get(k.name, "text")) ?? "null") as BaseRec | null;
+        if (b) bases.push({ tag: k.name.slice(5), stationId: b.stationId, stationName: b.stationName, systemName: b.systemName, upgrades: b.upgrades });
+      }
+      return json({ bases });
+    }
+    if (url.pathname === "/api/base") {
+      if (request.method === "GET") {
+        const tag = clean(url.searchParams.get("tag"), 5).toUpperCase();
+        if (!SQUAD.test(tag)) return json({ error: "tag?" }, 400);
+        const b = JSON.parse((await env.SAVES.get(`base:${tag}`, "text")) ?? "null") as BaseRec | null;
+        return json({ tag, base: b });
+      }
+      if (request.method === "POST") {
+        if (await rateLimited(env, request, "base", 2)) return json({ error: "slow down" }, 429);
+        let body: Record<string, unknown>;
+        try { body = (await request.json()) as Record<string, unknown>; } catch { return json({ error: "not json" }, 400); }
+        const tag = clean(body.tag, 5).toUpperCase();
+        const callsign = clean(body.callsign, 16).toUpperCase();
+        const action = clean(body.action, 10);
+        if (!SQUAD.test(tag) || !CALLSIGN.test(callsign)) return json({ error: "bad ids" }, 400);
+        const key = `base:${tag}`;
+        let b = JSON.parse((await env.SAVES.get(key, "text")) ?? "null") as BaseRec | null;
+        const logLine = (text: string) => { b!.log.unshift({ t: Date.now(), callsign, text }); b!.log = b!.log.slice(0, 20); };
+        const save = async () => { await env.SAVES.put(key, JSON.stringify(b)); return json({ ok: true, base: b }); };
+        if (action === "fund") {
+          const credits = Math.floor(num(body.credits));
+          if (credits < 1 || credits > 1e6) return json({ error: "bad amount" }, 400);
+          b ??= { stationId: null, stationName: null, systemName: null, treasury: 0, vault: {}, upgrades: [], founded: 0, log: [] };
+          b.treasury += credits;
+          logLine(`funded ${credits} CR`);
+          return save();
+        }
+        if (action === "buy") {
+          const stationId = clean(body.stationId, 40), stationName = clean(body.stationName, 32), systemName = clean(body.systemName, 32);
+          const price = Math.floor(num(body.price));
+          if (!stationId || price < 1000) return json({ error: "bad station" }, 400);
+          if (!b || b.stationId) return json({ error: b ? "already own a base" : "no treasury" }, 409);
+          if (b.treasury < price) return json({ error: "treasury short", short: price - b.treasury }, 402);
+          const owner = await env.SAVES.get(`owner:${stationId}`, "text");
+          if (owner) return json({ error: "station taken", owner }, 409);
+          b.treasury -= price; b.stationId = stationId; b.stationName = stationName; b.systemName = systemName; b.founded = Date.now();
+          logLine(`founded the base at ${stationName}`);
+          await env.SAVES.put(`owner:${stationId}`, tag);
+          return save();
+        }
+        if (!b || !b.stationId) return json({ error: "no base" }, 404);
+        if (action === "deposit" || action === "withdraw") {
+          const id = clean(body.id, 12), qty = Math.floor(num(body.qty));
+          if (!id || qty < 1 || qty > 999) return json({ error: "bad cargo" }, 400);
+          const cur = b.vault[id] ?? 0;
+          if (action === "withdraw") { if (cur < qty) return json({ error: "vault short" }, 402); b.vault[id] = cur - qty; if (!b.vault[id]) delete b.vault[id]; }
+          else { const cap = b.upgrades.includes("vault") ? 600 : 200; const total = Object.values(b.vault).reduce((a, v) => a + v, 0); if (total + qty > cap) return json({ error: "vault full", cap }, 409); b.vault[id] = cur + qty; }
+          logLine(`${action === "deposit" ? "deposited" : "withdrew"} ${qty} ${id}`);
+          return save();
+        }
+        if (action === "upgrade") {
+          const up = clean(body.upgrade, 10);
+          const cost = BASE_UPGRADES[up];
+          if (!cost) return json({ error: "no such upgrade" }, 400);
+          if (b.upgrades.includes(up)) return json({ error: "already fitted" }, 409);
+          if (b.treasury < cost) return json({ error: "treasury short", short: cost - b.treasury }, 402);
+          b.treasury -= cost; b.upgrades.push(up);
+          logLine(`fitted ${up}`);
+          return save();
+        }
+        return json({ error: "bad action" }, 400);
       }
       return json({ error: "method" }, 405);
     }
