@@ -229,6 +229,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Concourse gossip
+
+- On a station promenade the crowd talk to each other, and you overhear it
+  when you're close: a crisis, a flare, a war between syndicates, the wonder
+  next door, prices through the roof, a patrol that checked every manifest,
+  and, if you've earned it, you. Press E beside anyone in the crowd to hear
+  one line straight.
+
 ## Corridor talk
 
 - Aboard, the crew talk to each other when they cross paths: shop talk by

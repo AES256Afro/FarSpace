@@ -21,6 +21,7 @@ import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
 import { ENCOUNTERS, pickEncounter } from "../src/data/encounters";
 import { crewChatter, soloChatter } from "../src/data/chatter";
+import { concourseGossip } from "../src/data/gossip";
 import { STORY, storyObjective, CONVOY, convoyObjective } from "../src/core/story";
 import { homesteadYield, settleHomestead, HOMESTEAD_CAP, tickCrisis, crisisAt, tickGalaxyEvents, galaxyEventAt, rescuePoints, logEntry, embargoed, hasCharter } from "../src/world";
 import { genGround, groundKey, passable, GW, GH } from "../src/ground";
@@ -655,6 +656,20 @@ describe("corridor talk", () => {
     for (let i = 0; i < 30; i++) expect(crewChatter(w, a, b, new RNG(i)).length).toBeGreaterThan(5);
     a.trait = "plays cards for matchsticks";
     expect(soloChatter(a)).toContain("CARDS");
+  });
+});
+
+describe("concourse gossip", () => {
+  it("the crowd has plenty to say and it all fits on a line", () => {
+    const w = generateWorld(24, { realGalaxy: true });
+    const st = Object.values(w.systems).flatMap((s) => s.stations)[0];
+    const base = concourseGossip(w, st, new RNG(1));
+    expect(base.length).toBeGreaterThan(5);
+    w.crisis = { stationId: st.id, systemId: w.player.systemId, commodityId: "med", need: 20, delivered: 4, until: w.time + 1000, kind: "outbreak" };
+    w.player.rescues = 5; w.player.discoveries = 4; w.player.homePort = st.id; w.player.dockings = { [st.id]: 9 };
+    const rich = concourseGossip(w, st, new RNG(2));
+    expect(rich.length).toBeGreaterThan(base.length + 3);
+    for (const l of rich) expect(l.length).toBeLessThanOrEqual(96);
   });
 });
 

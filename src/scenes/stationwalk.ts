@@ -12,6 +12,7 @@ import type { Encounter } from "../data/encounters";
 import type { EncounterScene } from "./encounter";
 import { faction, genPersonName } from "../data/data";
 import { StationScene } from "./station";
+import { concourseGossip } from "../data/gossip";
 
 const T = 10;
 
@@ -63,6 +64,8 @@ export class StationWalkScene implements Scene {
   px = 37 * T;
   py = 3 * T + 5;
   npcs: WalkerNpc[] = [];
+  bubbles: { n: WalkerNpc; text: string; life: number }[] = [];
+  gossipCd = 1;
   station!: StationDef;
   msg = "";
   msgTimer = 0;
@@ -120,6 +123,20 @@ export class StationWalkScene implements Scene {
     }
     this.msg = `${this.station.name.toUpperCase()} PROMENADE`;
     this.msgTimer = 3;
+    this.bubbles = []; this.gossipCd = 1;
+  }
+  // overheard: two walkers stop near each other and near you, and one of them says something
+  tickGossip(g: Game, dt: number): void {
+    for (const b of this.bubbles) b.life -= dt;
+    this.bubbles = this.bubbles.filter((b) => b.life > 0);
+    this.gossipCd -= dt; if (this.gossipCd > 0) return;
+    this.gossipCd = 2;
+    const rng = new RNG((Math.random() * 1e9) >>> 0);
+    for (const a of this.npcs) {
+      if (a.tag || a.pause <= 0 || this.bubbles.length >= 2 || this.bubbles.some((b) => b.n === a) || dist(a.x, a.y, this.px, this.py) > 90) continue;
+      const b = this.npcs.find((o) => o !== a && !o.tag && o.pause > 0 && dist(a.x, a.y, o.x, o.y) < 20);
+      if (b && rng.chance(0.3)) { this.bubbles.push({ n: a, text: concourseGossip(g.world, this.station, rng)[0], life: 5 }); a.pause = Math.max(a.pause, 5); b.pause = Math.max(b.pause, 5); }
+    }
   }
 
   // The harbourmaster's office: who's in, who's due, your berth log, your charters, the rival if any
@@ -208,11 +225,12 @@ export class StationWalkScene implements Scene {
       }
     }
 
+    this.tickGossip(g, dt);
     // kiosk interaction
     const near = this.nearestKiosk();
     if (inp.wasPressed("e") && !near) {
-      const who = this.npcs.find((n) => n.line && dist(this.px, this.py, n.x, n.y) < 16);
-      if (who) { this.msg = who.line!; this.msgTimer = 6; }
+      const who = this.npcs.find((n) => dist(this.px, this.py, n.x, n.y) < 16);
+      if (who) { if (!who.line) who.line = `${who.name.toUpperCase()}: ${concourseGossip(g.world, this.station, new RNG((Math.random() * 1e9) >>> 0))[0]}`; this.msg = who.line; this.msgTimer = 6; who.pause = Math.max(who.pause, 4); }
     }
     if (near && inp.wasPressed("e")) {
       if (near.def.tab === -2) { this.harbourmaster(g); return; }
@@ -338,6 +356,17 @@ export class StationWalkScene implements Scene {
       ctx.fillRect(x - 3, y - 1, 6, 5);
     }
 
+    // overheard, over their heads
+    const placed: { x: number; y: number; w: number }[] = [];
+    for (const b of this.bubbles) {
+      const w = textWidth(b.text) + 4;
+      const bx = Math.max(2, Math.min(VW - w - 2, Math.round(ox + b.n.x - w / 2))); let by = Math.round(oy + b.n.y) - 24;
+      while (placed.some((q) => Math.abs(q.y - by) < 10 && bx < q.x + q.w + 2 && q.x < bx + w + 2)) by -= 10;
+      placed.push({ x: bx, y: by, w });
+      ctx.fillStyle = "#0b1020"; ctx.fillRect(bx, by - 1, w, 9);
+      ctx.fillStyle = "#2a3550"; ctx.fillRect(Math.max(bx + 2, Math.min(bx + w - 4, Math.round(ox + b.n.x) - 1)), by + 8, 2, 2);
+      drawText(ctx, b.text, bx + 2, by, PAL.grey);
+    }
     // player
     const px = Math.round(ox + this.px), py = Math.round(oy + this.py);
     ctx.fillStyle = "#e8b48c";
