@@ -4,7 +4,7 @@ import {
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
   missionDeliverable, genMissionsFor,
 } from "../src/world";
-import { migrateSave, SAVE_VERSION } from "../src/save";
+import { migrateSave, SAVE_VERSION, saveKeyFor, SLOTS } from "../src/save";
 import { RNG } from "../src/core/rng";
 import { STARS, starDistance } from "../src/data/stars";
 import { ACHIEVEMENTS } from "../src/data/achievements";
@@ -490,5 +490,14 @@ describe("base contract", () => {
     expect(a.need).toBeGreaterThanOrEqual(40);
     expect(a.reward).toBe(4000 + a.need * 40);
     expect(a.commodityId !== d.commodityId || a.need !== d.need || true).toBe(true);
+  });
+});
+
+describe("save slots", () => {
+  it("slot 0 keeps the historic key; others are suffixed", () => {
+    expect(SLOTS).toBe(3);
+    expect(saveKeyFor(0)).toBe("farspace-save");
+    expect(saveKeyFor(1)).toBe("farspace-save-1");
+    expect(saveKeyFor(2)).toBe("farspace-save-2");
   });
 });

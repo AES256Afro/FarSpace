@@ -9,6 +9,7 @@ import { sfx } from "../core/sfx";
 import * as cloud from "../core/cloud";
 import * as wire from "../core/wire";
 import { settings, toggleFullscreen } from "../core/settings";
+import { activeSlot } from "../save";
 import { music } from "../core/music";
 
 export class TitleScene implements Scene {
@@ -39,6 +40,7 @@ export class TitleScene implements Scene {
       opts.push({ label: "CLOUD: CREATE SAVE CODE", sub: "Get a code; your saves then follow you between devices", act: () => { const c = cloud.newCode(); g.toast(`CODE ${c} - SAVE (F5) TO UPLOAD`); } });
       opts.push({ label: "CLOUD: LINK WITH A CODE", sub: "Enter a code from another device", act: () => { void this.link(g); } });
     }
+    opts.push({ label: `SAVE SLOTS (SLOT ${activeSlot() + 1})`, sub: "Three local games; switch, copy or delete", act: () => g.setScene("slots") });
     opts.push({ label: "SETTINGS", sub: "Aim mode, difficulty, key bindings, music, fullscreen, fleet presence", act: () => g.setScene("settings") });
     opts.push({ label: "CONTROLS", sub: "Every key, by where you are", act: () => g.setScene("help") });
     opts.push({ label: "WHAT'S NEW", sub: "Changes since you last flew", act: () => g.setScene("whatsnew") });
@@ -104,7 +106,7 @@ export class TitleScene implements Scene {
     if (g.input.wasPressed("ArrowDown")) { this.cursor = (this.cursor + 1) % opts.length; sfx.blip(); }
     let clicked = false;
     for (let i = 0; i < opts.length; i++) {
-      const y = 106 + i * (opts.length > 11 ? 9 : 10);
+      const y = 104 + i * (opts.length > 12 ? 8 : opts.length > 11 ? 9 : 10);
       if (g.input.mouseY >= y - 3 && g.input.mouseY < y + 10) {
         this.cursor = i;
         if (g.input.mousePressed) clicked = true;
@@ -150,13 +152,13 @@ export class TitleScene implements Scene {
 
     const opts = this.options(g);
     opts.forEach((o, i) => {
-      const y = 106 + i * (opts.length > 11 ? 9 : 10);
+      const y = 104 + i * (opts.length > 12 ? 8 : opts.length > 11 ? 9 : 10);
       const sel = i === this.cursor;
       if (sel && Math.floor(this.t * 3) % 2 === 0) drawText(ctx, ">", VW / 2 - textWidth(o.label) / 2 - 10, y, PAL.gold);
       drawText(ctx, o.label, VW / 2 - textWidth(o.label) / 2, y, sel ? PAL.white : PAL.greyDark);
     });
     const sub = opts[this.cursor]?.sub ?? "";
-    drawText(ctx, sub, VW / 2 - textWidth(sub) / 2, 106 + opts.length * (opts.length > 11 ? 9 : 10) + 3, PAL.uiDim);
+    drawText(ctx, sub, VW / 2 - textWidth(sub) / 2, 104 + opts.length * (opts.length > 12 ? 8 : opts.length > 11 ? 9 : 10) + 3, PAL.uiDim);
     if (this.ticker.length) {
       const e = this.ticker[Math.floor(this.t / 6) % this.ticker.length];
       const line = `FLEET WIRE: ${e.tag ? `[${e.tag}] ` : ""}${e.callsign} ${e.text} - ${e.system} (${wire.ageLabel(e.t)})`.slice(0, 110);

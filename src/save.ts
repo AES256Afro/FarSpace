@@ -7,6 +7,38 @@ import { RNG } from "./core/rng";
 
 export const SAVE_VERSION = 8;
 export const SAVE_KEY = "farspace-save";
+export const SLOTS = 3;
+const SLOT_KEY = "farspace-slot";
+
+// Save slots: slot 0 keeps the historic key so existing saves stay where they are.
+export function activeSlot(): number {
+  try { const n = Number(localStorage.getItem(SLOT_KEY)); return n >= 0 && n < SLOTS ? n : 0; } catch { return 0; }
+}
+export function setActiveSlot(n: number): void {
+  try { localStorage.setItem(SLOT_KEY, String(Math.max(0, Math.min(SLOTS - 1, n)))); } catch { /* ignore */ }
+}
+export function saveKeyFor(slot: number): string {
+  return slot === 0 ? SAVE_KEY : `${SAVE_KEY}-${slot}`;
+}
+export interface SlotSummary { slot: number; empty: boolean; credits?: number; hullId?: string; systemName?: string; savedAt?: number; hardcore?: boolean; discoveries?: number; bytes?: number }
+export function slotSummaries(): SlotSummary[] {
+  const out: SlotSummary[] = [];
+  for (let i = 0; i < SLOTS; i++) {
+    try {
+      const raw = localStorage.getItem(saveKeyFor(i));
+      if (!raw) { out.push({ slot: i, empty: true }); continue; }
+      const w = JSON.parse(raw) as { player?: { credits?: number; hullId?: string; systemId?: string; discoveries?: number }; systems?: Record<string, { name?: string }>; savedAt?: number; hardcore?: boolean };
+      out.push({ slot: i, empty: false, credits: w.player?.credits, hullId: w.player?.hullId, systemName: w.systems?.[w.player?.systemId ?? ""]?.name, savedAt: w.savedAt, hardcore: w.hardcore, discoveries: w.player?.discoveries, bytes: raw.length });
+    } catch { out.push({ slot: i, empty: true }); }
+  }
+  return out;
+}
+export function deleteSlot(slot: number): void {
+  try { localStorage.removeItem(saveKeyFor(slot)); } catch { /* ignore */ }
+}
+export function copySlot(from: number, to: number): boolean {
+  try { const raw = localStorage.getItem(saveKeyFor(from)); if (!raw) return false; localStorage.setItem(saveKeyFor(to), raw); return true; } catch { return false; }
+}
 
 type Migration = (w: Record<string, unknown>) => void;
 
@@ -99,9 +131,9 @@ export function migrateSave(raw: unknown): World | null {
   return w as unknown as World;
 }
 
-export function loadSave(): World | null {
+export function loadSave(slot = activeSlot()): World | null {
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
+    const raw = localStorage.getItem(saveKeyFor(slot));
     if (!raw) return null;
     return migrateSave(JSON.parse(raw));
   } catch {
@@ -109,8 +141,8 @@ export function loadSave(): World | null {
   }
 }
 
-export function writeSave(world: World): void {
+export function writeSave(world: World, slot = activeSlot()): void {
   world.version = SAVE_VERSION;
   world.savedAt = Date.now();
-  localStorage.setItem(SAVE_KEY, JSON.stringify(world));
+  localStorage.setItem(saveKeyFor(slot), JSON.stringify(world));
 }

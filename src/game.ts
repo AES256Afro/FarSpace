@@ -3,7 +3,7 @@
 import { Input } from "./core/input";
 import { RNG } from "./core/rng";
 import { World, generateWorld, WreckDef } from "./world";
-import { loadSave, writeSave, SAVE_KEY } from "./save";
+import { loadSave, writeSave, saveKeyFor, activeSlot } from "./save";
 import * as cloud from "./core/cloud";
 import { syncScores } from "./core/wire";
 import { settings } from "./core/settings";
@@ -61,7 +61,7 @@ export class Game {
   }
 
   hasSave(): boolean {
-    try { return !!localStorage.getItem(SAVE_KEY); } catch { return false; }
+    try { return !!localStorage.getItem(saveKeyFor(activeSlot())); } catch { return false; }
   }
 
   cloudStatus = "";
@@ -86,7 +86,7 @@ export class Game {
 
   // Hardcore death: the save is gone, locally and in the cloud if linked
   eraseSave(): void {
-    try { localStorage.removeItem(SAVE_KEY); } catch { /* ignore */ }
+    try { localStorage.removeItem(saveKeyFor(activeSlot())); } catch { /* ignore */ }
     this.world = generateWorld(0xfa25face);
     if (cloud.getCode()) void cloud.push(this.world);
   }

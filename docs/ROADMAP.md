@@ -289,5 +289,7 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
 - [x] Squadron channel (/s) across the galaxy; squadron board shows base and
       treasury
 
+- [x] Three save slots with their own cloud codes (title screen)
+
 ## Later
 - [ ] Base-to-base trade routes; NPC squadrons

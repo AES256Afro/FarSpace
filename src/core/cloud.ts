@@ -5,6 +5,8 @@ import type { World } from "../world";
 import { migrateSave } from "../save";
 
 const CODE_KEY = "farspace-cloud-code";
+import { activeSlot } from "../save";
+function codeKey(): string { const n = activeSlot(); return n === 0 ? CODE_KEY : `${CODE_KEY}-${n}`; }
 const BASE_KEY = "farspace-cloud-base";
 const ALPHABET = "ABCDEFGHJKMNPQRSTVWXYZ23456789"; // no I/L/O/0/1 confusion, all valid base32-ish
 
@@ -19,13 +21,13 @@ export function cloudBase(): string {
 }
 
 export function getCode(): string | null {
-  try { return localStorage.getItem(CODE_KEY); } catch { return null; }
+  try { return localStorage.getItem(codeKey()); } catch { return null; }
 }
 
 export function setCode(code: string | null): void {
   try {
-    if (code) localStorage.setItem(CODE_KEY, code.toUpperCase());
-    else localStorage.removeItem(CODE_KEY);
+    if (code) localStorage.setItem(codeKey(), code.toUpperCase());
+    else localStorage.removeItem(codeKey());
   } catch { /* ignore */ }
 }
 
