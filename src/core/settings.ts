@@ -6,6 +6,8 @@ export interface Settings {
   aim: "mouse" | "keys";
   keymap: Record<string, string>; // physical key → action key the scenes understand
   hardcore: boolean;              // applies to new games
+  music: number;                  // hum volume 0..1
+  sfx: number;                    // effects volume 0..1
 }
 
 export const ACTIONS: { key: string; label: string }[] = [
@@ -18,7 +20,7 @@ export const ACTIONS: { key: string; label: string }[] = [
 function defaults(): Settings {
   let coarse = false;
   try { coarse = window.matchMedia("(pointer: coarse)").matches && !window.matchMedia("(pointer: fine)").matches; } catch { /* no DOM */ }
-  return { aim: coarse ? "keys" : "mouse", keymap: {}, hardcore: false };
+  return { aim: coarse ? "keys" : "mouse", keymap: {}, hardcore: false, music: 0.6, sfx: 0.8 };
 }
 
 let cached: Settings | null = null;

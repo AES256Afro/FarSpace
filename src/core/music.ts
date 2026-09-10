@@ -3,6 +3,7 @@
 // low throb that rises when hostiles close. Think a quiet deck at night.
 
 import { audioBus } from "./sfx";
+import { settings } from "./settings";
 
 const PREF_KEY = "farspace-music";
 
@@ -57,9 +58,19 @@ class Music {
     if (this.bus) {
       const now = this.bus.context.currentTime;
       this.bus.gain.cancelScheduledValues(now);
-      this.bus.gain.linearRampToValueAtTime(this.muted ? 0 : 0.5, now + 0.8);
+      this.bus.gain.linearRampToValueAtTime(this.muted ? 0 : this.level(), now + 0.8);
     } else if (!this.muted) this.start();
     return !this.muted;
+  }
+
+  // 0.5 was the fixed bus gain before volume became a setting; 0.6 is the default slider
+  level(): number { return 0.5 * (settings().music / 0.6); }
+
+  applyVolume(): void {
+    if (!this.bus) return;
+    const now = this.bus.context.currentTime;
+    this.bus.gain.cancelScheduledValues(now);
+    this.bus.gain.linearRampToValueAtTime(this.muted ? 0 : this.level(), now + 0.15);
   }
 
   start(): void {
@@ -69,7 +80,7 @@ class Music {
     const { ctx, master } = b;
     this.started = true;
     this.bus = ctx.createGain();
-    this.bus.gain.value = this.muted ? 0 : 0.5;
+    this.bus.gain.value = this.muted ? 0 : this.level();
     this.bus.connect(master);
 
     // engine body: brown noise, low-passed hard, breathing gently

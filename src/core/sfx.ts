@@ -1,8 +1,12 @@
 // Procedural sound effects — WebAudio, no assets. Context resumes on first
 // user gesture (browser autoplay policy).
 
+import { settings } from "./settings";
+
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
+// music is routed through the master bus too, so effects get their own gain stage
+let fxBus: GainNode | null = null;
 
 function ac(): AudioContext | null {
   if (!ctx) {
@@ -11,12 +15,20 @@ function ac(): AudioContext | null {
       master = ctx.createGain();
       master.gain.value = 0.35;
       master.connect(ctx.destination);
+      fxBus = ctx.createGain();
+      fxBus.gain.value = settings().sfx / 0.8;
+      fxBus.connect(master);
     } catch {
       return null;
     }
   }
   if (ctx.state === "suspended") void ctx.resume();
   return ctx;
+}
+
+/** Re-read the effects volume setting. */
+export function applySfxVolume(): void {
+  if (fxBus) fxBus.gain.value = settings().sfx / 0.8;
 }
 
 /** Shared context + master bus for other audio modules (music). Null until the first gesture. */
@@ -37,7 +49,7 @@ function env(dur: number, vol = 1): GainNode | null {
   const g = c.createGain();
   g.gain.setValueAtTime(vol, c.currentTime);
   g.gain.exponentialRampToValueAtTime(0.001, c.currentTime + dur);
-  g.connect(master);
+  g.connect(fxBus ?? master);
   return g;
 }
 
@@ -102,7 +114,7 @@ export const sfx = {
       src.buffer = buf; src.loop = true;
       const lp = c.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 320;
       const g = c.createGain(); g.gain.value = 0;
-      src.connect(lp); lp.connect(g); g.connect(master);
+      src.connect(lp); lp.connect(g); g.connect(fxBus ?? master);
       src.start();
       thrustNode = g;
     }

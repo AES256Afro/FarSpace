@@ -5,7 +5,11 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 import { settings, saveSettings, ACTIONS, keyLabel, toggleFullscreen } from "../core/settings";
 import { music } from "../core/music";
-import { sfx } from "../core/sfx";
+import { sfx, applySfxVolume } from "../core/sfx";
+
+interface Row { label: string; value: string; act: () => void; adj?: (dir: number) => void }
+
+const FIXED = 5; // rows before the key-binding list
 
 export class SettingsScene implements Scene {
   touchMode = "menu" as const;
@@ -13,12 +17,19 @@ export class SettingsScene implements Scene {
   binding: string | null = null; // action key waiting for a physical key
   rowBoxes: [number, number][] = [];
 
-  rows(): { label: string; value: string; act: () => void }[] {
+  rows(): Row[] {
     const s = settings();
-    const rows: { label: string; value: string; act: () => void }[] = [
+    const bar = (v: number) => "[" + "#".repeat(Math.round(v * 10)) + ".".repeat(10 - Math.round(v * 10)) + "]";
+    const vol = (key: "music" | "sfx", dir: number) => {
+      const v = Math.round(Math.max(0, Math.min(1, s[key] + dir * 0.1)) * 10) / 10;
+      saveSettings({ [key]: v });
+      if (key === "music") music.applyVolume(); else { applySfxVolume(); sfx.blip(); }
+    };
+    const rows: Row[] = [
       { label: "AIM", value: s.aim === "mouse" ? "MOUSE TURRET" : "KEYBOARD (A/D)", act: () => saveSettings({ aim: s.aim === "mouse" ? "keys" : "mouse" }) },
       { label: "DIFFICULTY (NEW GAMES)", value: s.hardcore ? "HARDCORE - DESTRUCTION ERASES THE SAVE" : "STANDARD", act: () => saveSettings({ hardcore: !s.hardcore }) },
-      { label: "MUSIC", value: music.isMuted() ? "OFF" : "ON", act: () => { music.toggle(); } },
+      { label: "HUM", value: `${music.isMuted() ? "OFF" : "ON "} ${bar(s.music)} ${Math.round(s.music * 100)}%`, act: () => { music.toggle(); }, adj: (d) => vol("music", d) },
+      { label: "EFFECTS", value: `${bar(s.sfx)} ${Math.round(s.sfx * 100)}%`, act: () => vol("sfx", s.sfx >= 1 ? -10 : 1), adj: (d) => vol("sfx", d) },
       { label: "FULLSCREEN", value: document.fullscreenElement ? "ON" : "OFF", act: () => toggleFullscreen(document.getElementById("game")!) },
     ];
     for (const a of ACTIONS) {
@@ -51,6 +62,9 @@ export class SettingsScene implements Scene {
     if (inp.wasPressed("ArrowDown")) { this.cursor = (this.cursor + 1) % rows.length; sfx.blip(); }
     const row = this.rowBoxes.findIndex(([y0, y1]) => inp.mouseY >= y0 && inp.mouseY <= y1);
     if (row >= 0 && inp.mouseX > 40 && inp.mouseX < VW - 40) this.cursor = row;
+    const adj = rows[this.cursor].adj;
+    if (adj && inp.wasPressed("ArrowLeft")) adj(-1);
+    if (adj && inp.wasPressed("ArrowRight")) adj(1);
     if (inp.wasPressed("Enter") || (inp.mousePressed && row >= 0)) { rows[this.cursor].act(); sfx.select(); inp.lastRawKey = null; }
     void dt;
   }
@@ -60,16 +74,17 @@ export class SettingsScene implements Scene {
     ctx.fillStyle = PAL.uiPanel;
     ctx.fillRect(0, 0, VW, VH);
     drawText(ctx, "SETTINGS", 12, 8, PAL.white);
-    drawText(ctx, "ARROWS/CLICK - ENTER CHANGE - ESC BACK", VW - textWidth("ARROWS/CLICK - ENTER CHANGE - ESC BACK") - 12, 8, PAL.greyDark);
+    const help = "UP/DOWN OR CLICK - ENTER CHANGE - LEFT/RIGHT VOLUME - ESC BACK";
+    drawText(ctx, help, VW - textWidth(help) - 12, 8, PAL.greyDark);
     const rows = this.rows();
     let y = 24;
     rows.forEach((r, i) => {
-      if (i === 4) { drawText(ctx, "KEY BINDINGS (FLIGHT)", 12, y, PAL.greyDark); y += 10; }
+      if (i === FIXED) { drawText(ctx, "KEY BINDINGS (FLIGHT)", 12, y, PAL.greyDark); y += 10; }
       this.rowBoxes.push([y - 2, y + 8]);
       if (i === this.cursor) { ctx.fillStyle = "#13203a"; ctx.fillRect(8, y - 2, VW - 16, 10); }
       drawText(ctx, r.label, 12, y, i === this.cursor ? PAL.white : PAL.grey);
-      drawText(ctx, r.value, i < 4 ? 190 : 150, y, this.binding && r.value.startsWith("PRESS") ? PAL.gold : PAL.ui);
-      y += i < 3 ? 11 : 9;
+      drawText(ctx, r.value, i < FIXED ? 190 : 150, y, this.binding && r.value.startsWith("PRESS") ? PAL.gold : PAL.ui);
+      y += i < FIXED - 1 ? 11 : 9;
     });
     if (g.toastTimer > 0) drawText(ctx, g.toastMsg, VW / 2 - textWidth(g.toastMsg) / 2, VH - 10, PAL.ui);
   }
