@@ -248,6 +248,10 @@ export class FlightScene implements Scene {
 
     this.updateHeat(g, dt);
     this.updateDockingComputer(g, dt);
+    if (!this.cruise && !this.autopilot && !p.hints?.["cruisehint"] && (p.tutorial ?? -1) < 0) {
+      const nearest = Math.min(...sys.stations.map((st) => dist(p.x, p.y, Math.cos(st.angle) * st.orbit, Math.sin(st.angle) * st.orbit)), Infinity);
+      if (nearest > 1800) g.showHint("cruisehint", "LONG WAY? J ENGAGES CRUISE - N FLIES YOUR PLOTTED COURSE");
+    }
     if (this.arrivalLog) { this.arrivalTimer -= dt; if (this.arrivalTimer <= 0) this.arrivalLog = ""; }
 
     // soundtrack: faction pad, pulse rising with hostiles in weapons range
