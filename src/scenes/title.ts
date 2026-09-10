@@ -196,12 +196,12 @@ export class TitleScene implements Scene {
       const useLocal = local.length && (!this.ticker.length || slot % 2 === 1);
       if (useLocal) {
         const e = local[Math.floor(slot / 2) % local.length];
-        const line = `GALNET: ${e.text}`.slice(0, 110);
-        drawText(ctx, line, VW / 2 - textWidth(line) / 2, VH - 38, PAL.grey);
+        const line = `GALNET: ${e?.text ?? ""}`.slice(0, 110);
+        if (e) drawText(ctx, line, VW / 2 - textWidth(line) / 2, VH - 38, PAL.grey);
       } else if (this.ticker.length) {
         const e = this.ticker[Math.floor(slot / 2) % this.ticker.length];
-        const line = `FLEET WIRE: ${e.tag ? `[${e.tag}] ` : ""}${e.callsign} ${e.text} - ${e.system} (${wire.ageLabel(e.t)})`.slice(0, 110);
-        drawText(ctx, line, VW / 2 - textWidth(line) / 2, VH - 38, PAL.info);
+        const line = e ? `FLEET WIRE: ${e.tag ? `[${e.tag}] ` : ""}${e.callsign} ${e.text} - ${e.system} (${wire.ageLabel(e.t)})`.slice(0, 110) : "";
+        if (e) drawText(ctx, line, VW / 2 - textWidth(line) / 2, VH - 38, PAL.info);
       }
       }
     }
