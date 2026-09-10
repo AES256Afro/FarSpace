@@ -185,6 +185,14 @@ export class StationScene implements Scene {
           else this.swapShip(g, stored[this.cursor - HULLS.length]);
         }
         if (inp.wasPressed("k") && this.cursor < HULLS.length) this.buyHull(g, HULLS[this.cursor].id, true);
+        if (inp.wasPressed("o")) {
+          const PAINTS = ["#63f2c8", "#ff5a5a", "#ffd75a", "#5ab3ff", "#e060ff", "#ff9a3a", "#f2f4ff", "#3aa55e"];
+          const i = PAINTS.indexOf(p.paint ?? "");
+          p.paint = PAINTS[(i + 1) % PAINTS.length];
+          g.spriteCache.delete(`player-ship-${p.hullId}-${p.paint}`);
+          g.toast(`PAINT: ${["TEAL", "RED", "GOLD", "BLUE", "VIOLET", "ORANGE", "WHITE", "GREEN"][PAINTS.indexOf(p.paint)]} TRIM`);
+          sfx.blip();
+        }
         if (inp.wasPressed("n")) {
           const raw = ask("Name your ship (2-18 characters):", p.shipName ?? "");
           if (raw !== null) {
@@ -731,7 +739,8 @@ export class StationScene implements Scene {
 
   drawShips(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
     const p = g.world.player;
-    drawText(ctx, p.shipName ? `REGISTERED AS "${p.shipName}" - N TO RENAME` : "N TO NAME YOUR SHIP", VW - textWidth(p.shipName ? `REGISTERED AS "${p.shipName}" - N TO RENAME` : "N TO NAME YOUR SHIP") - 8, top, PAL.greyDark);
+    const nameLine = `${p.shipName ? `"${p.shipName}" - N RENAME` : "N NAME YOUR SHIP"} - O PAINT`;
+    drawText(ctx, nameLine, VW - textWidth(nameLine) - 8, top, PAL.greyDark);
     const tradeIn = Math.round(hull(p.hullId).price * 0.6);
     drawText(ctx, `HULL MARKET - ENTER BUYS WITH TRADE-IN (${tradeIn}CR) - K BUYS AND PARKS YOUR ${hull(p.hullId).name.toUpperCase()} HERE`, 8, top, PAL.greyDark);
     const stored = (p.fleet ?? []).filter((f) => f.stationId === this.station.id);

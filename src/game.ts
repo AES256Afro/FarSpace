@@ -176,7 +176,8 @@ export class Game {
 
   playerShip(): Sprite {
     const h = hull(this.world.player.hullId);
-    return this.sprite(`player-ship-${h.id}`, () => genShip(new RNG(this.world.seed ^ 0x51e9 ^ h.id.length), h.spriteSize, h.color, h.accent));
+    const paint = this.world.player.paint;
+    return this.sprite(`player-ship-${h.id}-${paint ?? ""}`, () => genShip(new RNG(this.world.seed ^ 0x51e9 ^ h.id.length), h.spriteSize, h.color, paint ?? h.accent));
   }
   pirateShip(): Sprite {
     return this.sprite("pirate-ship", () => genShip(new RNG(this.world.seed ^ 0xdead), 20, "#8c6a5a", "#ff5a5a"));

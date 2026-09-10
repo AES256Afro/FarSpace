@@ -232,6 +232,7 @@ export interface PlayerState {
   marketMemory?: Record<string, { t: number; systemId: string; prices: Record<string, [number, number]> }>; // station id → last seen buy/sell
   bookmarks?: string[];              // system ids
   shipName?: string;
+  paint?: string;                    // accent colour override for your ship's sprite
   rareRevenue?: number;              // credits from rares sold away from origin
   seismic?: number;                  // seismic charges for core asteroids
   materials?: Record<string, number>;
