@@ -318,5 +318,8 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
       takes a partner lane and a fifth of the treasury; veterans of the
       winning side are paid and remembered
 
+- [x] Territory: a rout takes the loser's base as a holding; the loser falls
+      back to a partner station; holdings trade like a home base
+
 ## Later
-- [ ] Syndicate territory: bases that can change hands
+- [ ] Player squadrons in syndicate wars (bases as war targets)

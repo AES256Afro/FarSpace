@@ -582,5 +582,9 @@ describe("syndicate wars", () => {
     expect(w.player.credits).toBeGreaterThan(credits);
     expect(w.player.flags?.warVeteran).toBe(true);
     expect(w.events.some((e) => e.text.includes("Syndicate war over"))).toBe(true);
+    // a rout (score 100 for the attacker) takes the base when the loser has a free partner to fall back to
+    const win = w.syndicates!.find((s) => s.tag === winnerSide)!;
+    const lose = w.syndicates!.find((s) => s.tag === (winnerSide === war.attacker ? war.defender : war.attacker))!;
+    if (win.holdings?.length) { expect(syndicateAt(w, win.holdings[0])?.tag).toBe(win.tag); expect(lose.stationId).not.toBe(win.holdings[0]); }
   });
 });

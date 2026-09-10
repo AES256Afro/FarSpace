@@ -1023,7 +1023,8 @@ export class StationScene implements Scene {
       const dem = baseDemand(`syn:${syn.tag}`);
       drawText(ctx, `WANTED THIS WEEK (+${Math.round(ROUTE_PREMIUM * 100)}%): ${dem.map((d) => commodity(d).name.toUpperCase()).join(", ")}`, 8, top + 31, PAL.gold);
       const partners = syn.partners.map((pid) => findStation(g.world, pid)).filter((x) => !!x).map((f) => `${f!.st.name.toUpperCase()} (${f!.sys.name.toUpperCase()})`);
-      drawText(ctx, `TRADE PARTNERS: ${partners.join(", ") || "NONE"}`, 8, top + 40, PAL.info);
+      const holds = (syn.holdings ?? []).map((h) => findStation(g.world, h)).filter((x) => !!x).map((f) => f!.st.name.toUpperCase());
+      drawText(ctx, `TRADE PARTNERS: ${partners.join(", ") || "NONE"}${holds.length ? `   HOLDINGS: ${holds.join(", ")}` : ""}${syn.stationId !== st.id ? "   (THIS IS A HOLDING; HOME IS " + (findStation(g.world, syn.stationId)?.st.name.toUpperCase() ?? "?") + ")" : ""}`.slice(0, 118), 8, top + 40, PAL.info);
       const rivals = syn.rivals.map((t) => syndicateByTag(g.world, t)).filter((x) => !!x).map((r) => `[${r!.tag}] ${r!.name.toUpperCase()}`);
       drawText(ctx, `FEUDS: ${rivals.join(", ") || "NONE"}`, 8, top + 49, PAL.danger);
       const allies = synAllies(g.world, syn.tag);

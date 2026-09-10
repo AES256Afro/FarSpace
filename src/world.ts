@@ -267,6 +267,7 @@ export interface Syndicate {
   partners: string[];   // partner station ids in linked systems
   rivals: string[];     // rival tags
   treasury: number;
+  holdings?: string[];  // extra stations taken in wars; they trade like the home base
 }
 
 export interface World {
@@ -1174,7 +1175,7 @@ export function assignSyndicates(systems: Record<string, SystemDef>, startId: st
 }
 
 export function syndicateAt(w: World, stationId: string): Syndicate | null {
-  return w.syndicates?.find((s) => s.stationId === stationId) ?? null;
+  return w.syndicates?.find((s) => s.stationId === stationId || s.holdings?.includes(stationId)) ?? null;
 }
 export function syndicateByTag(w: World, tag: string): Syndicate | null {
   return w.syndicates?.find((s) => s.tag === tag) ?? null;
@@ -1391,11 +1392,23 @@ function resolveSynWar(w: World, rng: RNG): void {
   loser.treasury -= take; winner.treasury += take;
   const lost = loser.partners.find((pid) => !winner.partners.includes(pid));
   if (lost) { loser.partners = loser.partners.filter((x) => x !== lost); winner.partners.push(lost); }
+  // a rout takes the base itself: the loser falls back to a partner station
+  let routed = false;
+  if (war.score >= 100 && attackerWins) { // only a decisive attack takes ground; a repelled attacker keeps its home
+    const fallback = loser.partners.find((pid) => !syndicateAt(w, pid));
+    const f = fallback ? findStation(w, fallback) : null;
+    if (f) {
+      winner.holdings = Array.from(new Set([...(winner.holdings ?? []), loser.stationId]));
+      loser.stationId = f.st.id; loser.systemId = f.sys.id;
+      loser.partners = loser.partners.filter((x) => x !== fallback);
+      routed = true;
+    }
+  }
   w.synRelations ??= {};
   w.synRelations[relKey(atk.tag, def.tag)] = -25; // truce, still cool
   atk.rivals = atk.rivals.filter((t) => t !== def.tag); def.rivals = def.rivals.filter((t) => t !== atk.tag);
   const sys = w.systems[war.systemId];
-  pushEvent(w, { t: w.time, kind: "peace", systemId: sys.id, text: `Syndicate war over: [${winner.tag}] ${winner.name} beats [${loser.tag}] ${loser.name} in ${sys.name}${lost ? `, taking their ${findStation(w, lost)?.st.name ?? "partner"} lane` : ""}` });
+  pushEvent(w, { t: w.time, kind: "peace", systemId: sys.id, text: `Syndicate war over: [${winner.tag}] ${winner.name} beats [${loser.tag}] ${loser.name} in ${sys.name}${routed ? ` and takes their base - [${loser.tag}] falls back to ${w.systems[loser.systemId].name}` : lost ? `, taking their ${findStation(w, lost)?.st.name ?? "partner"} lane` : ""}` });
   // pilots who fought for the winner are remembered
   const mine = war.contrib[winner.tag] ?? 0;
   if (mine > 0) { adjustSynRep(w, winner.tag, 15); w.player.credits += Math.round(mine * 60); w.player.flags = { ...(w.player.flags ?? {}), warVeteran: true }; }
