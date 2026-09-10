@@ -678,6 +678,18 @@ export class FlightScene implements Scene {
         if (line) { this.comms.push({ from: line.from, text: line.text, life: 9, color: PAL.greyDark }); }
       }
     }
+    // launches: now and then a hauler clears a bay
+    if (Math.random() < dt * 0.02 && sys.stations.length) {
+      const rng = new RNG((g.world.seed ^ Math.floor(g.world.time * 5)) >>> 0);
+      const st = rng.pick(sys.stations);
+      const sx = Math.cos(st.angle) * st.orbit, sy = Math.sin(st.angle) * st.orbit;
+      spawnTrader(this, g, rng);
+      const n = this.npcs[this.npcs.length - 1];
+      const a = rng.range(0, Math.PI * 2);
+      n.x = sx + Math.cos(a) * 70; n.y = sy + Math.sin(a) * 70; n.angle = a;
+      boom(this, n.x, n.y, 6, PAL.thrust);
+      if (dist(p.x, p.y, sx, sy) < 700 && this.comms.length < 3) this.comms.push({ from: `${st.name.toUpperCase()} CONTROL`, text: `${rng.pick(["HAULER", "SHUTTLE", "TENDER"])} DEPARTING BAY ${rng.int(1, 9)}, CLEAR THE APPROACH`, life: 5, color: PAL.greyDark });
+    }
     // gate traffic: ships arrive with a flash and leave the same way
     this.trafficTimer -= dt;
     if (this.trafficTimer <= 0 && sys.jumpPoints.length) {

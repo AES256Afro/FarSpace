@@ -1586,6 +1586,43 @@ export function tickSyndicates(w: World, rng: RNG): void {
   }
 }
 
+// ---------- Station life: a profile and a local bulletin, seeded, never stored ----------
+export function stationProfile(w: World, st: StationDef): { population: number; founded: number; knownFor: string; quirk: string } {
+  const rng = new RNG(hashStr(`profile:${w.seed}:${st.id}`));
+  const population = st.military ? rng.int(400, 3000) : rng.int(2000, 90000);
+  const founded = 2140 + rng.int(0, 180);
+  const known: Record<string, string[]> = {
+    mining: ["ore that comes up already half-refined", "the deepest shafts in the sector", "a belt that never quite runs dry"],
+    agri: ["hydroponic tomatoes people cross systems for", "the last real coffee for twenty light-years", "vat protein nobody complains about"],
+    refinery: ["alloys the shipyards fight over", "a smell you stop noticing after a week", "fuel cells with a perfect safety record"],
+    research: ["papers nobody outside understands", "a telescope pointed somewhere it shouldn't be", "the best med bay this side of the core"],
+    trade: ["a market that never closes", "brokers who remember your face", "the cheapest berth fees in the lane"],
+    military: ["drills at all hours", "a very short list of tolerated behaviours", "the sector's only working dry dock"],
+  };
+  const quirks = ["gravity that's a shade too light", "a bar where the regulars vote on the music", "corridors painted by a captain who never came back", "a cat", "an annual race around the outer ring", "a chapel to a saint nobody can name", "a mural of the founding crew, one face scratched out", "docking chimes tuned to a minor key"];
+  return { population, founded, knownFor: rng.pick(known[st.type] ?? known.trade), quirk: rng.pick(quirks) };
+}
+
+export function stationBulletin(w: World, st: StationDef, now = Date.now()): string[] {
+  const rng = new RNG(hashStr(`bulletin:${w.seed}:${st.id}:${dailyKey(now)}`));
+  const lines: string[] = [];
+  const pool = [
+    () => `LOST: ${rng.pick(["a grey tabby", "a set of docking keys", "one pilot's dignity", "a crate marked FRAGILE, sadly"])} near bay ${rng.int(1, 9)}. Reward.`,
+    () => `HIRING: ${rng.pick(["deck hands", "a night-shift medic", "someone who can read a reactor gauge", "tug pilots, no questions"])}. Ask at the bar.`,
+    () => `NOTICE: ${rng.pick(["the outer ring is closed for painting", "the water ration is lifted", "berth fees rise Monday", "gravity maintenance 0300-0400, hold onto something"])}.`,
+    () => `FOR SALE: ${rng.pick(["one Wren Scout, lightly shot", "hydroponic seedlings, assorted", "a telescope, slightly haunted", "cargo racks, no rust to speak of"])}.`,
+    () => `${rng.pick(["Birthday", "Wake", "Wedding", "Retirement"])} for ${rng.pick(["Chief Okonkwo", "the harbourmaster", "old Vask", "the whole night shift"])} in the mess, all welcome.`,
+  ];
+  const picks = new Set<number>();
+  while (picks.size < 3) picks.add(rng.int(0, pool.length - 1));
+  for (const i of picks) lines.push(pool[i]());
+  const cr = crisisAt(w, st.id);
+  if (cr) lines.unshift(`URGENT: ${cr.kind.toUpperCase()} - ${cr.need - cr.delivered} ${COMMODITIES.find((c) => c.id === cr.commodityId)?.name ?? cr.commodityId} still needed. Bring what you have.`);
+  const ev = galaxyEventAt(w, findStation(w, st.id)?.sys.id ?? "");
+  if (ev?.stationId === st.id) lines.unshift(ev.kind === "festival" ? "FESTIVAL WEEK: the ring is open all night. Mind the tourists." : "STRIKE: the yard is picketed. Fuel and repairs at double rates until it's settled.");
+  return lines;
+}
+
 // ---------- Captain's log ----------
 export function logEntry(w: World, text: string): void {
   const p = w.player;

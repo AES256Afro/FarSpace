@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember } from "../data/crew";
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints,
+  crewWages, genCrewCandidate, applyHull, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin,
 } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
@@ -1345,6 +1345,14 @@ export class StationScene implements Scene {
   }
 
   drawNews(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
+    {
+      const pr = stationProfile(g.world, this.station);
+      drawText(ctx, `${this.station.name.toUpperCase()} - POP. ${pr.population.toLocaleString()} - FOUNDED ${pr.founded} - KNOWN FOR ${pr.knownFor.toUpperCase()}. ALSO: ${pr.quirk.toUpperCase()}.`.slice(0, 118), 8, top, PAL.grey);
+      const bl = stationBulletin(g.world, this.station);
+      drawText(ctx, "LOCAL BULLETIN", 8, top + 10, PAL.greyDark);
+      bl.slice(0, 4).forEach((l, i) => drawText(ctx, l.toUpperCase().slice(0, 116), 8, top + 19 + i * 8, l.startsWith("URGENT") || l.startsWith("STRIKE") ? PAL.danger : l.startsWith("FESTIVAL") ? PAL.gold : PAL.grey));
+      top += 19 + Math.min(4, bl.length) * 8 + 6;
+    }
     drawText(ctx, "GALNET NEWS FEED", 8, top, PAL.info);
     let y = top + 14;
     for (const n of g.world.news.slice(0, 7)) {
