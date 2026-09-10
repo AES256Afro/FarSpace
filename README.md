@@ -51,6 +51,9 @@ charters and enforce embargoes, station profiles and bulletins, gate traffic,
 comms chatter, void drifters near gas giants, crew who talk to each other, a
 wall of record aboard your ship, and a second campaign about a missing convoy.
 
+**Settlements grow:** outposts become towns and cities on your trade and
+work, with more lights from orbit and your name on the plaque.
+
 **Shipmates:** crew friendships and feuds that shape the banter and can be
 mediated, a clinic on the promenade, and a chronicle export of the career.
 
@@ -141,7 +144,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestones 1–25 are live (v0.25.0). See the [roadmap](docs/ROADMAP.md) for what's next.
+Milestones 1–26 are live (v0.26.0). See the [roadmap](docs/ROADMAP.md) for what's next.
 
 ```bash
 npm test         # vitest: world-gen, routing, economy, law, missions, save migrations

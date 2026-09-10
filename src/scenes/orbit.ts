@@ -1,7 +1,7 @@
 // Orbit view: a spinning globe with territories, POIs to pin/target, orbital
 // satellites, scanning, and landing at surface outposts.
 
-import { logSight } from "../world";
+import { logSight, settlementTierLabel } from "../world";
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
@@ -217,7 +217,7 @@ export class OrbitScene implements Scene {
       this.rowBoxes.push([y - 1, y + 7]);
       if (i === this.sel) { ctx.fillStyle = "#13203a"; ctx.fillRect(px - 4, y - 2, VW - px, 10); }
       const col = this.poiColor(poi, surf.regions[poi.regionIdx].factionId);
-      drawText(ctx, `${poi.kind.toUpperCase().padEnd(8)} ${poi.name}`.slice(0, 34), px, y, i === this.sel ? PAL.white : col);
+      drawText(ctx, `${settlementTierLabel(poi).padEnd(8)} ${poi.name}`.slice(0, 34), px, y, i === this.sel ? PAL.white : col);
       drawText(ctx, poi.surveyed ? "OK" : "?", VW - 14, y, poi.surveyed ? PAL.good : PAL.greyDark);
       y += 9;
     });

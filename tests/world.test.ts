@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
-  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText } from "../src/world";
+  missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel } from "../src/world";
 import type { Infra } from "../src/world";
 import { migrateSave, SAVE_VERSION, saveKeyFor, SLOTS } from "../src/save";
 import { RNG } from "../src/core/rng";
@@ -1071,5 +1071,27 @@ describe("shipmates", () => {
     expect(text).toContain("Old Hand");
     expect(text).toContain("Tested the chronicle");
     expect(text).toContain("Ada, engineer");
+  });
+});
+
+describe("settlements grow", () => {
+  it("trade and work raise an outpost to a town and then a city, with a patron and a plaque", () => {
+    const w = generateWorld(101, { realGalaxy: true });
+    const pl = Object.values(w.systems).flatMap((s) => s.planets).find((x) => x.surface && x.surface.pois.some((p) => p.kind === "outpost"))!;
+    const poi = pl.surface!.pois.find((p) => p.kind === "outpost")!;
+    expect(settlementTierLabel(poi)).toBe("OUTPOST");
+    expect(growSettlement(w, poi, 50, "TESTER")).toBeNull();
+    const town = growSettlement(w, poi, 60, "TESTER");
+    expect(town).toContain("TOWN");
+    expect(poi.tier).toBe(1);
+    expect(poi.patron).toBe("TESTER");
+    expect(settlementTierLabel(poi)).toBe("TOWN");
+    expect(growSettlement(w, poi, 100, "TESTER")).toBeNull();
+    const city = growSettlement(w, poi, 100, "TESTER");
+    expect(city).toContain("CITY");
+    expect(poi.kind).toBe("city");
+    expect(w.events[w.events.length - 1].text).toContain("TESTER");
+    const ruin = pl.surface!.pois.find((p) => p.kind === "ruin");
+    if (ruin) expect(growSettlement(w, ruin, 500, "X")).toBeNull();
   });
 });

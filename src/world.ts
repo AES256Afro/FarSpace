@@ -35,6 +35,9 @@ export interface Poi {
   landable: boolean;
   surveyed: boolean;
   looted?: boolean; // ruins: relic caches taken
+  growth?: number;  // settlements: trade and work bring people; 100 makes a town, 250 a city
+  tier?: number;    // 0 outpost, 1 town, 2 city (kind becomes "city")
+  patron?: string;  // who pushed it over the last line
 }
 
 export interface PlanetSurface {
@@ -2101,6 +2104,28 @@ export function settlementNeeds(w: World, poi: Poi, now = Date.now()): string[] 
   return out;
 }
 
+// ---------- Settlements grow ----------
+// Trade at the desk, work for the foreman, a survey filed: people come. A hundred
+// makes a town, two hundred and fifty a city, and the globe gets a few more lights.
+export const GROWTH_TOWN = 100, GROWTH_CITY = 250;
+export function settlementTierLabel(poi: Poi): string { return poi.kind === "city" ? "CITY" : (poi.tier ?? 0) >= 1 ? "TOWN" : poi.kind.toUpperCase(); }
+export function growSettlement(w: World, poi: Poi, amount: number, by: string): string | null {
+  if (poi.kind !== "outpost" && poi.kind !== "city") return null;
+  poi.growth = (poi.growth ?? 0) + amount;
+  const tier = poi.tier ?? 0;
+  if (tier < 1 && poi.growth >= GROWTH_TOWN) {
+    poi.tier = 1; poi.patron = by;
+    pushEvent(w, { t: w.time, kind: "discovery", systemId: w.player.systemId, text: `${poi.name} has grown into a town; the new quarter went up on ${by}'s trade` });
+    return `${poi.name.toUpperCase()} IS A TOWN NOW. THE NEW QUARTER WENT UP ON YOUR TRADE. THEY'VE NAMED A STREET.`;
+  }
+  if (tier < 2 && poi.growth >= GROWTH_CITY) {
+    poi.tier = 2; poi.kind = "city"; poi.patron = by;
+    pushEvent(w, { t: w.time, kind: "discovery", systemId: w.player.systemId, text: `${poi.name} is a city now, with a market square and a council, and a plaque with ${by}'s name on it` });
+    return `${poi.name.toUpperCase()} IS A CITY. A MARKET SQUARE, A COUNCIL, AND A PLAQUE WITH YOUR NAME ON IT.`;
+  }
+  return null;
+}
+
 // Settlement mood: a line for outposts and cities, seeded per site and day
 export function settlementLine(w: World, poi: Poi, region: Region, now = Date.now()): string {
   const rng = new RNG(hashStr(`settle:${w.seed}:${poi.id}:${dailyKey(now)}`));
@@ -2120,6 +2145,8 @@ export function settlementLine(w: World, poi: Poi, region: Region, now = Date.no
     "The cook has provisions and opinions. Both are strong.",
     "Comms to orbit are patchy. The relay tech blames the weather; the weather blames the tech.",
   ];
+  if ((poi.tier ?? 0) >= 1 && poi.patron) pool.push(`The new quarter went up on ${poi.patron}'s trade. There's talk of a second pad.`, `Somebody's kids were born here now. That makes it a place.`);
+  if ((poi.growth ?? 0) > 0 && (poi.tier ?? 0) < 2 && rng.chance(0.4)) return `${poi.growth}/${(poi.tier ?? 0) < 1 ? GROWTH_TOWN : GROWTH_CITY} toward ${(poi.tier ?? 0) < 1 ? "a town" : "a city"}: every crate landed and every job done counts.`;
   return rng.pick(pool);
 }
 

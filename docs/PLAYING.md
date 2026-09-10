@@ -101,6 +101,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   board: sample runs, outcrop runs, and a plant to fix on the spot. Jobs pay
   out when you walk back in.
 
+## Settlements grow
+
+- Every crate sold at an outpost's trade desk, every foreman job paid out and
+  every survey filed brings people. At 100 growth an outpost is a town (a new
+  trade row, more faces, more lights from orbit); at 250 it is a city with a
+  square and a council, and a plaque with your name on it.
+- The settlement's arrival line tells you how close it is.
+
 ## Shipmates
 
 - Crew get on, or don't. Every dock one pair drifts a little: toward each

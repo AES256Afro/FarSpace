@@ -4,7 +4,9 @@
 import { Game, Scene, VW } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { settlementLine, settlementNeeds, SETTLEMENT_PREMIUM, missionDeliverable } from "../world";
+import { settlementLine, settlementNeeds, SETTLEMENT_PREMIUM, missionDeliverable, growSettlement, settlementTierLabel, GROWTH_TOWN, GROWTH_CITY, logEntry } from "../world";
+import * as wire from "../core/wire";
+import { flag } from "../core/achievements";
 import type { Encounter } from "../data/encounters";
 import type { EncounterScene } from "./encounter";
 import { RNG, hashStr } from "../core/rng";
@@ -58,14 +60,16 @@ export class OutpostScene implements Scene {
         line: rng.pick(OUTPOST_LINES)(this.poi, this.region),
       });
     }
-    // trade desk: the region's resource sells cheap; food/med/parts buy dear
+    // trade desk: the region's resource sells cheap; food/med/parts buy dear; a town wants luxuries too
     const res = this.region.resource;
     const rows = [
       { id: res, buy: Math.round(commodity(res).base * 0.55), sell: Math.round(commodity(res).base * 0.4) },
       { id: "food", buy: Math.round(commodity("food").base * 1.5), sell: Math.round(commodity("food").base * 1.3) },
       { id: "med", buy: Math.round(commodity("med").base * 1.4), sell: Math.round(commodity("med").base * 1.25) },
       { id: "parts", buy: Math.round(commodity("parts").base * 1.4), sell: Math.round(commodity("parts").base * 1.2) },
+      ...((poi.tier ?? 0) >= 1 ? [{ id: "lux", buy: 0, sell: Math.round(commodity("lux").base * 1.1) }] : []),
     ];
+    for (let i = 0; i < (poi.tier ?? 0); i++) this.npcs.push({ x: rng.int(3, 18) * T, y: rng.int(2, 5) * T + 5, name: genPersonName(rng), skin: rng.pick(["#e8b48c", "#c78a5a"]), suit: "#7a5aa5", line: rng.pick(["New here. Came for the work. Stayed for the sky.", `They say ${poi.patron ?? "some captain"} built half this place out of a cargo hold.`, "There's a school now. Two rooms. It's something."]) });
     this.trade.rows = rows.filter((r, i, a) => a.findIndex((x) => x.id === r.id) === i);
     {
       // this week's needs: sell here at a premium, added to the desk if missing
@@ -84,6 +88,7 @@ export class OutpostScene implements Scene {
       if (!ok) continue;
       m.done = true; p.credits += m.reward; if (this.region.factionId) adjustRep(g.world, this.region.factionId, 3);
       g.toast(`FOREMAN PAYS OUT: ${m.title.toUpperCase()} +${m.reward}CR`); sfx.pickup();
+      { const line = growSettlement(g.world, poi, m.kind === "repair" ? 25 : 15, this.who(g)); if (line) { g.toast(line); logEntry(g.world, line.toLowerCase()); flag(g, "founder"); } }
     }
     this.trade.cursor = 0;
     this.msg = `LANDED: ${poi.name.toUpperCase()}`;
@@ -115,6 +120,7 @@ export class OutpostScene implements Scene {
   }
 
   say(m: string): void { this.msg = m; this.msgTimer = 3; }
+  who(g: Game): string { return g.world.player.captainName ?? wire.getCallsign() ?? (g.world.player.shipName ? `the ${g.world.player.shipName}` : "an independent captain"); }
 
   update(g: Game, dt: number): void {
     const inp = g.input;
@@ -136,7 +142,7 @@ export class OutpostScene implements Scene {
       }
       if (inp.wasPressed("s")) {
         if (!removeCargo(p, r.id, 1)) g.toast("NONE IN CARGO");
-        else { p.credits += r.sell; sfx.select(); }
+        else { p.credits += r.sell; sfx.select(); const line = growSettlement(g.world, this.poi, this.needs.includes(r.id) ? 6 : 2, this.who(g)); if (line) { g.toast(line); logEntry(g.world, line.toLowerCase()); flag(g, "founder"); } }
       }
       return;
     }
@@ -155,6 +161,7 @@ export class OutpostScene implements Scene {
           const pay = 60 * surf.pois.length;
           p.credits += pay;
           surf.surveyFiled = true;
+          { const line = growSettlement(g.world, this.poi, 10, this.who(g)); if (line) g.toast(line); }
           this.say(`SURVEY FILED +${pay}CR`);
           if (this.region.factionId) adjustRep(g.world, this.region.factionId, 4);
           sfx.pickup();
@@ -196,7 +203,8 @@ export class OutpostScene implements Scene {
     const npc = this.npcs.find((n) => Math.hypot(n.x - this.px, n.y - this.py) < 16);
     if (npc) drawText(ctx, `${npc.name} [E]`, ox + npc.x - textWidth(npc.name) / 2, oy + npc.y - 12, PAL.grey);
     const fac = this.region.factionId ? faction(this.region.factionId) : null;
-    drawText(ctx, `${this.poi.name.toUpperCase()} - ${pl.name.toUpperCase()}`, 8, 6, PAL.white);
+    drawText(ctx, `${this.poi.name.toUpperCase()} - ${settlementTierLabel(this.poi)} - ${pl.name.toUpperCase()}`, 8, 6, PAL.white);
+    if ((this.poi.tier ?? 0) < 2 && (this.poi.growth ?? 0) > 0) { const need = (this.poi.tier ?? 0) < 1 ? GROWTH_TOWN : GROWTH_CITY; const gw = Math.min(1, (this.poi.growth ?? 0) / need); ctx.fillStyle = PAL.greyDark; ctx.fillRect(VW - 110, 24, 100, 3); ctx.fillStyle = PAL.gold; ctx.fillRect(VW - 110, 24, Math.round(100 * gw), 3); drawText(ctx, `GROWTH ${Math.round(this.poi.growth ?? 0)}/${need}`, VW - 110, 28, PAL.greyDark); }
     drawText(ctx, `${this.region.name} - ${fac ? fac.name : "UNCLAIMED"} - YIELDS ${this.region.resource.toUpperCase()}`, 8, 15, fac ? fac.color : PAL.grey);
     { const line = settlementLine(g.world, this.poi, this.region); drawText(ctx, line.toUpperCase().slice(0, 112), 8, 24, PAL.greyDark); }
     drawText(ctx, `${p.credits}CR  CARGO ${cargoUsed(p)}/${p.cargoMax}`, VW - 110, 6, PAL.gold);

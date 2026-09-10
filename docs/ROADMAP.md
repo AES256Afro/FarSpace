@@ -451,4 +451,9 @@ Time passes for the people on the ship, and for the ship.
 - [x] A clinic on the promenade for sick crew
 - [x] The chronicle: the whole career exported as a text file (X on RECORD)
 
+## Milestone 26 — Settlements Grow ✅ (Sep 2026)
+- [x] Growth from trade, foreman work and surveys; outpost → town → city
+- [x] Towns get a luxuries row, more faces and more lights; cities switch to the
+      city scene; the patron's name is on the plaque and in the mood lines
+
 ## Later

@@ -468,7 +468,7 @@ export function genGlobe(rng: RNG, radius: number, paletteIdx: number, surface: 
     const dusk = Math.max(0, Math.min(1, (1.0 - light) / 0.35));
     if (dusk <= 0) continue;
     const px = Math.round(cx + x * radius), py = Math.round(cy + y * radius);
-    const n = poi.kind === "city" ? 4 : 2;
+    const n = poi.kind === "city" ? 4 : (poi.tier ?? 0) >= 1 ? 3 : 2;
     const lrng = rng.fork(poi.id.length + Math.round(poi.lat));
     ctx.globalAlpha = 0.35 + dusk * 0.65;
     for (let i = 0; i < n; i++) {
