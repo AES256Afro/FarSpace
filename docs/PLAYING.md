@@ -91,6 +91,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   2.5x for med supplies, provisions or fuel cells before the clock runs out,
   with a bonus and standing for whoever brings the last unit.
 
+## Settlements
+
+- Outposts want two goods a week at +40% (marked WANTED at the trade desk).
+- Once you've filed the survey, the survey office doubles as the foreman's
+  board: sample runs, outcrop runs, and a plant to fix on the spot. Jobs pay
+  out when you walk back in.
+
 ## Politics and the second campaign
 
 - Faction envoys meet you at the airlock: an amnesty for sale when you're
