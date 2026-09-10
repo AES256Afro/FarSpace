@@ -13,6 +13,7 @@ import { OutpostScene } from "./scenes/outpost";
 import { CityScene } from "./scenes/city";
 import { RuinScene } from "./scenes/ruin";
 import { SettingsScene } from "./scenes/settings";
+import { SurfaceScene } from "./scenes/surface";
 import { checkAchievements } from "./core/achievements";
 import { initAudioUnlock } from "./core/sfx";
 import { initTouch } from "./core/touch";
@@ -34,6 +35,7 @@ game.scenes["outpost"] = new OutpostScene();
 game.scenes["city"] = new CityScene();
 game.scenes["ruin"] = new RuinScene();
 game.scenes["settings"] = new SettingsScene();
+game.scenes["surface"] = new SurfaceScene();
 
 game.setScene("title");
 initAudioUnlock();

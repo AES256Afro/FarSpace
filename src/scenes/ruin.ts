@@ -40,7 +40,7 @@ export class RuinScene implements Scene {
     const sys = g.world.systems[p.systemId];
     const surf = sys.planets[g.orbitPlanetIdx].surface!;
     const poi = surf.pois.find((x) => x.id === g.landedPoiId);
-    if (!poi) { g.setScene("orbit"); return; }
+    if (!poi) { g.setScene(g.surfaceReturn ? "surface" : "orbit"); return; }
     this.poi = poi;
     const rng = new RNG(hashStr(poi.id) ^ g.world.seed);
     this.generate(rng, !!poi.looted);
@@ -98,7 +98,7 @@ export class RuinScene implements Scene {
 
   leave(g: Game): void {
     if (this.crates.length && this.crates.every((c) => c.taken)) this.poi.looted = true;
-    g.setScene("orbit");
+    g.setScene(g.surfaceReturn ? "surface" : "orbit");
   }
 
   update(g: Game, dt: number): void {

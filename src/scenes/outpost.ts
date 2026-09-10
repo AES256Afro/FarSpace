@@ -38,7 +38,7 @@ export class OutpostScene implements Scene {
     const pl = sys.planets[g.orbitPlanetIdx];
     const surf = pl.surface!;
     const poi = surf.pois.find((x) => x.id === g.landedPoiId);
-    if (!poi) { g.setScene("orbit"); return; }
+    if (!poi) { g.setScene(g.surfaceReturn ? "surface" : "orbit"); return; }
     this.poi = poi;
     this.region = surf.regions[poi.regionIdx];
     this.px = 11 * T; this.py = 5 * T + 5;
@@ -100,7 +100,7 @@ export class OutpostScene implements Scene {
       }
       return;
     }
-    if (inp.wasPressed("Escape")) { g.setScene("orbit"); return; }
+    if (inp.wasPressed("Escape")) { g.setScene(g.surfaceReturn ? "surface" : "orbit"); return; }
     moveWalker(g, this, dt, (tx, ty) => this.solid(tx, ty));
     const near = nearestTile(DECK, this.px, this.py, "TSBA");
     const npc = this.npcs.find((n) => Math.hypot(n.x - this.px, n.y - this.py) < 16);
@@ -121,7 +121,7 @@ export class OutpostScene implements Scene {
         } else this.say("SURVEY OFFICE: NOTHING NEW TO FILE");
       }
       else if (near?.ch === "B") { p.hull = Math.min(p.hullMax, p.hull + 15); p.shield = p.shieldMax; this.say("YOU REST UNDER A REAL SKY. +15 HULL"); }
-      else if (near?.ch === "A") { g.setScene("orbit"); return; }
+      else if (near?.ch === "A") { g.setScene(g.surfaceReturn ? "surface" : "orbit"); return; }
       else if (npc) { this.say(`${npc.name.toUpperCase()}: ${npc.line}`); }
     }
     if (this.msgTimer > 0) { this.msgTimer -= dt; if (this.msgTimer <= 0) this.msg = ""; }

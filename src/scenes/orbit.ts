@@ -36,7 +36,7 @@ export class OrbitScene implements Scene {
         sfx.pickup();
       }
     }
-    g.showHint("orbit", "ARROWS/CLICK TO TARGET A POI - E LANDS AT OUTPOSTS - HOLD V TO SCAN");
+    g.showHint("orbit", "ARROWS/CLICK TO TARGET A POI - E LANDS THERE - L DROPS THE ROVER IN ITS REGION - HOLD V TO SCAN");
   }
 
   // Project lat/lon onto the visible hemisphere; null if on the far side
@@ -93,6 +93,19 @@ export class OrbitScene implements Scene {
     } else this.scan = 0;
 
     const poi = pois[this.sel];
+    if (poi && inp.wasPressed("l")) {
+      const reg = surf.regions[poi.regionIdx];
+      const rep = reg.factionId ? (p.rep[reg.factionId] ?? 0) : 0;
+      if (reg.factionId && rep < -40) g.toast("LANDING DENIED - REGION HOSTILE TO YOU");
+      else {
+        g.landedRegionIdx = poi.regionIdx;
+        g.surfaceFresh = true;
+        g.surfaceReturn = false;
+        sfx.dock();
+        g.setScene("surface");
+        return;
+      }
+    }
     if (poi && inp.wasPressed("e")) {
       const canLand = poi.landable || poi.kind === "ruin";
       if (!canLand) { g.toast(`${poi.name.toUpperCase()}: NO LANDING PAD`); }
@@ -195,9 +208,11 @@ export class OrbitScene implements Scene {
       drawText(ctx, `TARGET: ${poi.name.toUpperCase()}`, px, y, PAL.gold); y += 9;
       drawText(ctx, `${reg.name} - ${reg.factionId ? faction(reg.factionId).name : "unclaimed"}`, px, y, PAL.grey); y += 9;
       const canLand = poi.landable || poi.kind === "ruin";
-      drawText(ctx, canLand ? (poi.kind === "city" ? "[E] LAND - CITY" : poi.kind === "ruin" ? `[E] LAND - RUINS${poi.looted ? " (LOOTED)" : ""}` : "[E] LAND") : "NO LANDING PAD", px, y, canLand ? PAL.gold : PAL.greyDark);
+      drawText(ctx, canLand ? (poi.kind === "city" ? "[E] LAND - CITY" : poi.kind === "ruin" ? `[E] LAND - RUINS${poi.looted ? " (LOOTED)" : ""}` : "[E] LAND") : "NO LANDING PAD", px, y, canLand ? PAL.gold : PAL.greyDark); y += 9;
+      const gs = p.ground?.[`${sys.id}:${g.orbitPlanetIdx}:${poi.regionIdx}`];
+      drawText(ctx, `[L] DROP ROVER IN ${reg.name.toUpperCase()}${gs?.charted ? " (CHARTED)" : ""}`, px, y, PAL.ui);
     }
-    drawText(ctx, `SATELLITES: ${surf.satellites}   HOLD V: SURVEY SCAN`, 8, VH - 22, PAL.greyDark);
+    drawText(ctx, `SATELLITES: ${surf.satellites}   HOLD V: SURVEY SCAN   L: ROVER`, 8, VH - 22, PAL.greyDark);
     if (this.msg) drawText(ctx, this.msg, VW / 2 - textWidth(this.msg) / 2, VH - 12, PAL.ui);
     if (g.toastTimer > 0) drawText(ctx, g.toastMsg, VW / 2 - textWidth(g.toastMsg) / 2, VH - 32, PAL.ui);
     if (g.hint) drawText(ctx, g.hint, clamp(VW / 2 - textWidth(g.hint) / 2, 2, VW), 22, PAL.gold);

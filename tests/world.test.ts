@@ -12,6 +12,7 @@ import { ARCS, dailyContract, dailyKey, rankOf, logSystem, applyHull } from "../
 import { MODULES } from "../src/data/modules";
 import { rareSellPrice, findStation } from "../src/world";
 import { RARES } from "../src/data/data";
+import { genGround, groundKey, passable, GW, GH } from "../src/ground";
 import { BLUEPRINTS, upgrade, addMaterials, nextCost, MATERIAL_CAP } from "../src/data/engineering";
 import { jumpFuelCost, communityGoal, weekKey, permitDenied, navRoute, blackMarket } from "../src/world";
 
@@ -407,5 +408,39 @@ describe("black markets", () => {
     for (const st of all.filter((s) => s.military)) expect(blackMarket(w, st)).toBe(false);
     expect(all.some((st) => blackMarket(w, st))).toBe(true);
     expect(all.some((st) => !blackMarket(w, st))).toBe(true);
+  });
+});
+
+describe("ground maps", () => {
+  it("are deterministic, keep the lander on open ground, and reach every entrance", () => {
+    const w = generateWorld(13, { realGalaxy: true });
+    const sys = w.systems[w.player.systemId];
+    const pl = sys.planets[0];
+    const key = groundKey(sys.id, 0, 0);
+    const pois = pl.surface!.pois.filter((x) => x.regionIdx === 0);
+    const a = genGround(key, pl.palette, pois, "ore");
+    const b = genGround(key, pl.palette, pois, "ore");
+    expect(Array.from(a.tiles)).toEqual(Array.from(b.tiles));
+    expect(a.tiles.length).toBe(GW * GH);
+    expect(passable(a.tiles[a.lander.y * GW + a.lander.x])).toBe(true);
+    expect(a.entrances.length).toBe(pois.length);
+    expect(a.nodes.length).toBeGreaterThan(20);
+    // flood fill from the lander over passable tiles must touch every entrance
+    const seen = new Uint8Array(GW * GH);
+    const stack = [[a.lander.x, a.lander.y]];
+    seen[a.lander.y * GW + a.lander.x] = 1;
+    while (stack.length) {
+      const [x, y] = stack.pop()!;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= GW || ny >= GH) continue;
+        const i = ny * GW + nx;
+        if (seen[i] || !passable(a.tiles[i])) continue;
+        seen[i] = 1; stack.push([nx, ny]);
+      }
+    }
+    for (const e of a.entrances) expect(seen[e.y * GW + e.x]).toBe(1);
+    // every biome generates
+    for (let bi = 0; bi < 8; bi++) expect(genGround(key + bi, bi, pois, "ore").nodes.length).toBeGreaterThan(10);
   });
 });

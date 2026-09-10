@@ -49,7 +49,7 @@ export class CityScene implements Scene {
     const sys = g.world.systems[p.systemId];
     const surf = sys.planets[g.orbitPlanetIdx].surface!;
     const poi = surf.pois.find((x) => x.id === g.landedPoiId);
-    if (!poi) { g.setScene("orbit"); return; }
+    if (!poi) { g.setScene(g.surfaceReturn ? "surface" : "orbit"); return; }
     this.poi = poi;
     this.region = surf.regions[poi.regionIdx];
     this.px = 32 * T; this.py = 7 * T + 5;
@@ -106,7 +106,7 @@ export class CityScene implements Scene {
     const inp = g.input;
     const p = g.world.player;
     if (this.panel !== "none") { this.updatePanel(g); return; }
-    if (inp.wasPressed("Escape")) { g.setScene("orbit"); return; }
+    if (inp.wasPressed("Escape")) { g.setScene(g.surfaceReturn ? "surface" : "orbit"); return; }
     if (inp.wasPressed("F5")) g.save();
     moveWalker(g, this, dt, (tx, ty) => this.solid(tx, ty));
     for (const r of this.residents) {
@@ -121,7 +121,7 @@ export class CityScene implements Scene {
       if (near?.ch === "T") { this.panel = "market"; this.cursor = 0; sfx.select(); }
       else if (near?.ch === "R") { this.panel = "bar"; this.cursor = 0; sfx.select(); }
       else if (near?.ch === "B") { this.panel = "board"; this.cursor = 0; sfx.select(); }
-      else if (near?.ch === "A") { g.setScene("orbit"); return; }
+      else if (near?.ch === "A") { g.setScene(g.surfaceReturn ? "surface" : "orbit"); return; }
       else if (res) this.say(`${res.name.toUpperCase()}: ${res.line}`);
     }
     if (this.msgTimer > 0) { this.msgTimer -= dt; if (this.msgTimer <= 0) this.msg = ""; }

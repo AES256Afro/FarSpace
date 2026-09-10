@@ -234,7 +234,10 @@ export interface PlayerState {
   engineering?: Record<string, number>; // blueprint id → grade
   goalContrib?: Record<string, number>; // community goal id → units contributed
   fleet?: StoredShip[];              // hulls parked at stations
+  ground?: Record<string, GroundState>; // ground map key → what's been taken/charted
 }
+
+export interface GroundState { taken: number[]; charted: boolean; scanned: number[] }
 
 export interface StoredShip { hullId: string; stationId: string; name?: string; hull: number; torpedoes: number }
 

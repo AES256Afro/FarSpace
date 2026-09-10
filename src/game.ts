@@ -42,6 +42,9 @@ export class Game {
   wreckTarget: WreckDef | null = null;
   orbitPlanetIdx = 0;
   landedPoiId: string | null = null;
+  landedRegionIdx = 0;
+  surfaceFresh = false;   // set by orbit when the rover is dropped
+  surfaceReturn = false;  // sites entered from the ground return to the ground
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
