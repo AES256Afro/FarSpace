@@ -5,7 +5,7 @@ import { ask, confirmBox } from "../../core/dialog";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra, raceCourse, racePar, racePrize, recordRace, beatHolder } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra, raceCourse, racePar, racePrize, recordRace, beatHolder, captainNickname } from "../../world";
 import { COMMODITIES, commodity } from "../../data/data";
 import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
@@ -918,7 +918,7 @@ export class FlightScene implements Scene {
       if (!cap) continue;
       n.hailed = true;
       const line = isRival(cap) ? rivalryLine(g.world, cap, new RNG((g.world.seed ^ Math.floor(g.world.time * 61)) >>> 0))
-        : isFriend(cap) ? (["GOOD TO SEE THAT HULL. STILL OWE YOU.", "IF YOU'RE HEADING MY WAY, THERE'S A DRINK WITH YOUR NAME ON IT.", "KEEP FLYING LIKE THAT AND I'LL HAVE TO START PAYING YOU."][cap.met % 3])
+        : isFriend(cap) ? ([`GOOD TO SEE THAT HULL${captainNickname(g.world) ? `, ${captainNickname(g.world)}` : ""}. STILL OWE YOU.`, "IF YOU'RE HEADING MY WAY, THERE'S A DRINK WITH YOUR NAME ON IT.", "KEEP FLYING LIKE THAT AND I'LL HAVE TO START PAYING YOU."][cap.met % 3])
         : cap.helped > 0 ? "THAT YOU? I HAVEN'T FORGOTTEN." : cap.met > 3 ? "WE KEEP CROSSING PATHS. SMALL GALAXY." : "CLEAR SKIES, STRANGER.";
       this.comms.push({ from: `${cap.name.toUpperCase()}, ${cap.ship.toUpperCase()}`, text: line, life: 7, color: isRival(cap) ? PAL.danger : isFriend(cap) ? PAL.gold : PAL.info });
     }

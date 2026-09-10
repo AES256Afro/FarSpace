@@ -229,6 +229,17 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## A name on the lanes
+
+- Do one thing more than anything else and the lanes give you a name for it:
+  THE LIFEBOAT, THE POSTMAN, RING RUNNER, THE LINER, THE PATHFINDER, THE TUG,
+  THE LAMPLIGHTER, THE CURATOR, OF THE LINE, THE OLD HAND, and MASTER OF THE
+  LANES above them all. Station control uses it when you dock, friends use it
+  on the band, the crowd whispers it, the crew pretend they haven't heard, and
+  the chronicle records it.
+- The ship's voice, the crew and the crowd now also talk about the ring race,
+  the post, watches and weddings.
+
 ## Rites of passage
 
 - Long runs carry lives. A couple among your passengers may ask you to marry

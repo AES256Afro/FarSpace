@@ -15,7 +15,7 @@ import { STARS, starDistance } from "../src/data/stars";
 import { ACHIEVEMENTS } from "../src/data/achievements";
 import { ARCS, dailyContract, dailyKey, rankOf, logSystem, applyHull } from "../src/world";
 import { MODULES } from "../src/data/modules";
-import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable } from "../src/world";
+import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname } from "../src/world";
 import { RARES } from "../src/data/data";
 import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
@@ -737,6 +737,16 @@ describe("the post", () => {
     expect((w.mailQueue ?? []).length).toBe(notes);
     const mil = Object.values(w.systems).flatMap((s) => s.stations).find((x) => x.military);
     if (mil) expect(genMissionsFor(w, mil, new RNG(4)).some((m) => m.kind === "post")).toBe(false);
+  });
+});
+
+describe("a name on the lanes", () => {
+  it("is earned, in order of what you've done most", () => {
+    const w = generateWorld(28, { realGalaxy: true });
+    expect(captainNickname(w)).toBeNull();
+    w.player.postRuns = 10; expect(captainNickname(w)).toBe("THE POSTMAN");
+    w.player.rescues = 5; expect(captainNickname(w)).toBe("THE LIFEBOAT");
+    w.player.rescues = 0; w.player.postRuns = 0; w.player.races = 3; w.player.raceBeaten = { x: true }; expect(captainNickname(w)).toBe("RING RUNNER");
   });
 });
 

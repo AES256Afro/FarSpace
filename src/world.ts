@@ -515,7 +515,8 @@ export function chronicleText(w: World, callsign: string | null): string {
   const name = (p.captainName ?? callsign ?? "The Captain");
   const lines: string[] = [];
   lines.push(`FARSPACE CHRONICLE - ${(p.shipName ?? hull(p.hullId).name).toUpperCase()}`);
-  lines.push(`Captain: ${name}. ${h}h ${m}m under way. ${p.credits} credits. ${w.realGalaxy ? "The real stars." : "An uncharted galaxy."}${p.homePort ? ` Home port: ${findStation(w, p.homePort)?.st.name ?? "?"}.` : ""}`);
+  const nick = captainNickname(w);
+  lines.push(`Captain: ${name}${nick ? `, called ${nick.toLowerCase()} on the lanes` : ""}. ${h}h ${m}m under way. ${p.credits} credits. ${w.realGalaxy ? "The real stars." : "An uncharted galaxy."}${p.homePort ? ` Home port: ${findStation(w, p.homePort)?.st.name ?? "?"}.` : ""}`);
   lines.push("");
   lines.push(`Ranks: explorer ${rankOf(p, "explorer").title}, trader ${rankOf(p, "trader").title}, miner ${rankOf(p, "miner").title}, rescuer ${rankOf(p, "rescuer").title}.`);
   lines.push(`Rescues ${p.rescues ?? 0}, repairs ${p.repairs ?? 0}, tows ${p.tows ?? 0}, lives ${p.lives ?? 0}, fares ${p.fares ?? 0}, first discoveries ${Object.values(p.firsts ?? {}).filter(Boolean).length}, postcards ${p.postcards ?? 0}.`);
@@ -927,6 +928,23 @@ export function hullHistoryFor(w: World, rng: RNG): { previous: string; quirk: s
 }
 // Home port: one station you call yours
 export function setHomePort(p: PlayerState, stationId: string): void { p.homePort = stationId; }
+
+// A name on the lanes: what the stations call you, earned by what you've done most.
+export function captainNickname(w: World): string | null {
+  const p = w.player;
+  if ((["explorer", "trader", "miner", "rescuer"] as const).every((k) => rankOf(p, k).title === "ELITE")) return "MASTER OF THE LANES";
+  if ((p.rescues ?? 0) >= 5) return "THE LIFEBOAT";
+  if ((p.postRuns ?? 0) >= 10) return "THE POSTMAN";
+  if ((p.races ?? 0) >= 3 && Object.keys(p.raceBeaten ?? {}).length) return "RING RUNNER";
+  if ((p.fares ?? 0) >= 10) return "THE LINER";
+  if (p.discoveries >= 5) return "THE PATHFINDER";
+  if ((p.tows ?? 0) >= 3) return "THE TUG";
+  if ((w.infra ?? []).some((i) => i.owner !== "THE KEEPER")) return "THE LAMPLIGHTER";
+  if ((p.donations ?? 0) >= 3) return "THE CURATOR";
+  if ((p.lineage ?? []).length >= 2) return "OF THE LINE";
+  if ((p.alumni ?? []).length >= 3) return "THE OLD HAND";
+  return null;
+}
 
 // Watches: with two or more aboard, half the crew are on watch at any time and the
 // rest are off. The watch changes every four minutes of ship time.

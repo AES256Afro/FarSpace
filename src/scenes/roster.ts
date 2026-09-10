@@ -5,7 +5,7 @@ import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 import { ROLE_INFO, XP_STEPS_LABEL } from "../data/crew";
-import { bond, bondLabel, findStation, ledger, XP_STEPS, onWatch } from "../world";
+import { bond, bondLabel, findStation, ledger, XP_STEPS, onWatch, captainNickname } from "../world";
 import { arcObjective } from "../core/crewarcs";
 import { sfx } from "../core/sfx";
 
@@ -50,7 +50,7 @@ export class RosterScene implements Scene {
       y += 44;
     });
     for (const s of p.shoreCrew ?? []) { drawText(ctx, `${s.member.name.toUpperCase()} - ON LEAVE AT ${(findStation(w, s.stationId)?.st.name ?? "?").toUpperCase()} (${s.docks} DOCKINGS SO FAR)`, 12, y, PAL.gold); y += 10; }
-    drawText(ctx, `CREDITS ${p.credits}   CAT ${p.cat ? p.cat.name.toUpperCase() : "NONE"}   BERTHS ${p.crew.length + (p.shoreCrew ?? []).length}`, 12, VH - 12, PAL.greyDark);
+    drawText(ctx, `CREDITS ${p.credits}   CAT ${p.cat ? p.cat.name.toUpperCase() : "NONE"}   BERTHS ${p.crew.length + (p.shoreCrew ?? []).length}${captainNickname(w) ? `   THE LANES CALL YOU ${captainNickname(w)}` : ""}`, 12, VH - 12, PAL.greyDark);
     void textWidth;
   }
 }

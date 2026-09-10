@@ -4,7 +4,7 @@
 
 import type { World, Mission } from "../world";
 import type { CrewMember } from "./crew";
-import { bond, passengersAboard } from "../world";
+import { bond, passengersAboard, captainNickname } from "../world";
 import { RNG } from "../core/rng";
 
 const ROLE_TALK: Record<string, string[]> = {
@@ -39,6 +39,10 @@ export function crewChatter(w: World, a: CrewMember, b: CrewMember, rng: RNG): s
   if (t.includes("tally")) pool.push("THAT'S ANOTHER MARK FOR THE BULKHEAD.");
   if (t.includes("stamps")) pool.push("THEY'VE GOT A NEW STAMP AT THE NEXT PORT. I CHECKED.");
   if (t.includes("song") || t.includes("hymns")) pool.push("I'VE GOT A SONG FOR THIS GATE. YOU'LL HEAR IT WHETHER YOU LIKE IT OR NOT.");
+  { const nick = captainNickname(w); if (nick) pool.push(`THEY CALLED THE SKIPPER ${nick} AT THE LAST PORT. DON'T LET ON WE HEARD.`); }
+  if ((p.races ?? 0) >= 1) pool.push("THAT LAST RING. I HAD MY EYES SHUT. DID WE WIN?", "NEXT TIME THE SKIPPER RACES, STRAP THE CAT DOWN.");
+  if ((p.postRuns ?? 0) >= 1) pool.push("THERE'S A LETTER IN THE BAG FOR SOMEBODY CALLED 'DAD'. NO ADDRESS. I HOPE IT GETS THERE.");
+  if (p.flags?.crewWed) pool.push("STILL CAN'T BELIEVE THE SKIPPER DID THE WEDDING IN THE GALLEY. WITH THE CAT ON THE TABLE.");
   if (a.morale < 30) pool.push("I'M THINKING ABOUT GOING HOME.", "SOME SHIPS PAY ON TIME, YOU KNOW.");
   if (a.morale > 80) pool.push("BEST SHIP I'VE BEEN ON. DON'T TELL THE SKIPPER.", "I'D FOLLOW THIS ONE ANYWHERE. QUIETLY.");
   if (a.arc && !a.arc.done) pool.push("I'VE GOT SOMETHING I NEED TO SORT OUT. LATER. NOT NOW.");

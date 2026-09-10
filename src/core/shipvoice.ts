@@ -24,6 +24,10 @@ export function pickShipLine(g: Game, rng: RNG): string | null {
   if ((p.furnishings ?? []).includes("mural")) pool.push("THE CREW ADDED ANOTHER SYSTEM TO THE MURAL LAST NIGHT. THEY GOT THE STAR THE WRONG COLOUR. I DIDN'T SAY.");
   if ((p.haulers ?? []).length) pool.push("YOUR CHARTER HAULERS CHECK IN ON THE LONG BAND. THEY SOUND BORED. GOOD. BORED IS SAFE.");
   if ((p.alumni ?? []).length >= 3) pool.push("I COUNT THE PEOPLE WHO'VE WALKED MY CORRIDORS. IT'S A GOOD NUMBER. IT'S GETTING BIGGER.");
+  if ((p.races ?? 0) >= 1) pool.push("SIX RINGS AND NOT A SCRATCH. I'D DO THAT AGAIN. I'D DO THAT AGAIN RIGHT NOW.");
+  if ((p.postRuns ?? 0) >= 1) pool.push("THE MAIL BAG IS LASHED DOWN BY THE AIRLOCK. IT SMELLS OF PAPER AND OTHER PEOPLE'S KITCHENS. I LIKE IT.");
+  if (p.crew.length >= 2) pool.push("WATCH CHANGE IN TEN. THE OFF-WATCH ARE PRETENDING TO SLEEP. I CAN HEAR THE CARDS.");
+  if (p.flags?.crewWed) pool.push("TWO OF THE CREW GOT MARRIED IN MY GALLEY. I HAVE NEVER BEEN SO PROUD OF A ROOM.");
   const deck = hull(p.hullId).deck;
   if (deck === "scout") pool.push("I'M SMALL. I'M FAST. I'M NOT CARRYING THAT MANY CRATES AGAIN.", "SCOUT HULLS DON'T GET STATUES. WE GET THERE FIRST, THOUGH.");
   else if (deck === "prospector") pool.push("THERE'S ORE IN THAT BELT. I CAN SMELL IT. I DON'T HAVE A NOSE. I CAN STILL SMELL IT.", "MY LASERS ARE WARM. POINT ME AT A ROCK.");

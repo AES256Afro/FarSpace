@@ -4,7 +4,7 @@
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond, onWatch, watchIndex } from "../world";
+import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond, onWatch, watchIndex, captainNickname } from "../world";
 import { commodity } from "../data/data";
 import { crewChatter, soloChatter, MESS_LINES, passengerChatter } from "../data/chatter";
 import { RNG } from "../core/rng";
@@ -336,6 +336,7 @@ export class InteriorScene implements Scene {
     ];
     if (p.lineage?.length) lines.push(`CAPTAINS BEFORE YOU: ${p.lineage.slice(-3).map((c) => c.name.toUpperCase()).join(", ")}${p.captainName ? `. NOW: ${p.captainName.toUpperCase()}` : ""}`);
     if (p.hullHistory) lines.push(`THIS HULL WAS ${p.hullHistory.previous.toUpperCase()}'S. THEY LEFT ${p.hullHistory.quirk.toUpperCase()}.`);
+    { const nick = captainNickname(g.world); if (nick) lines.push(`THE LANES CALL THIS SHIP'S CAPTAIN ${nick}.`); }
     if (isOccasion("remembrance")) lines.push(`REMEMBRANCE: ${[...(p.alumni ?? []).map((a) => a.name), ...(p.lineage ?? []).map((c) => c.name)].slice(-5).map((n) => n.toUpperCase()).join(", ") || "NO NAMES YET. GIVE IT TIME."}`);
     const opts: Encounter["options"] = [{ label: "CLOSE", result: () => "" }];
     const why = canRetireCaptain(g.world);

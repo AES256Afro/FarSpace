@@ -3,7 +3,7 @@
 // your own reputation all end up in somebody's mouth.
 
 import type { World, StationDef } from "../world";
-import { crisisAt, galaxyEventAt, wondersIn, dockingsAt, friendsAt, rivalOf, isHome, infraAt, findStation } from "../world";
+import { crisisAt, galaxyEventAt, wondersIn, dockingsAt, friendsAt, rivalOf, isHome, infraAt, findStation, captainNickname } from "../world";
 import { commodity, faction } from "./data";
 import { RNG } from "../core/rng";
 
@@ -29,6 +29,10 @@ export function concourseGossip(w: World, st: StationDef, rng: RNG): string[] {
   if (w.synWar && w.time < w.synWar.until) pool.push(`'THE ${w.synWar.attacker} AND THE ${w.synWar.defender} ARE AT IT AGAIN. STAY OUT OF THE LANES OUT THERE.'`);
   const wd = wondersIn(w, sys.id)[0];
   if (wd) pool.push(wd.seen ? `'SAW A SHIP GO OUT TO ${wd.name.toUpperCase()} LAST WEEK. CAME BACK QUIET.'` : `'NOBODY'S BEEN OUT TO ${wd.name.toUpperCase()} IN AN AGE. IT'S STILL THERE. I CHECKED.'`);
+  { const nick = captainNickname(w); if (nick) pool.push(`'SEE THAT CAPTAIN? ${nick}. THAT'S WHAT THEY CALL THEM OUT ON THE LANES.'`); }
+  if ((p.races ?? 0) >= 1) pool.push("'SOMEBODY RAN THE RINGS UNDER PAR LAST WEEK. THE MARSHAL'S STILL TALKING ABOUT IT.'");
+  if (p.raceBeaten?.[st.id]) pool.push("'THE COURSE RECORD HERE FELL. NEW NAME ON THE BOARD IN THE BAR.'");
+  if ((p.postRuns ?? 0) >= 3) pool.push("'THE MAIL CAME EARLY. I DIDN'T KNOW WHAT TO DO WITH MYSELF.'");
   const docks = dockingsAt(p, st.id);
   if (docks >= 6) pool.push("'THAT'S THE ONE WHO'S ALWAYS IN. THE REGULAR. HARBOURMASTER LIKES THEM.'");
   if ((p.rescues ?? 0) >= 3) pool.push("'THAT CAPTAIN OVER THERE? PULLED A FREIGHTER OUT OF A FIGHT. I SAW THE WIRE.'");

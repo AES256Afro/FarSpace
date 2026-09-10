@@ -626,4 +626,9 @@ Time passes for the people on the ship, and for the ship.
 - [x] A wedding, a birth, a passing among passengers; a crew wedding; all
       logged in the chronicle
 
+## Milestone 66 — A Name on the Lanes ✅ (Sep 2026)
+- [x] Earned captain nicknames used by control, friends, the crowd, the crew
+      and the chronicle; talk of the ship catches up on races, post, watches
+      and weddings
+
 ## Later

@@ -4,7 +4,7 @@
 import type { Game } from "../game";
 import { faction } from "../data/data";
 import { commodity } from "../data/data";
-import { findStation, galaxyEventAt } from "../world";
+import { findStation, galaxyEventAt, captainNickname } from "../world";
 import { RNG } from "./rng";
 
 export interface ChatterLine { from: string; text: string }
@@ -41,6 +41,9 @@ export function pickChatter(g: Game, rng: RNG): ChatterLine | null {
     if ((p.fares ?? 0) >= 5) famous.push(`${ship}? THE LINER? MY SISTER RODE WITH THEM. SAID THE CAT SAT ON HER LAP THE WHOLE WAY.`);
     if ((w.infra ?? []).some((i) => i.owner === (p.captainName ?? "YOU") || i.owner)) famous.push(`${ship} KEEPS THE LIGHT ON OUT PAST THE GATES. IF YOU'VE EVER LIMPED HOME BY THAT BEACON, YOU OWE THEM A DRINK.`);
     if ((p.lineage ?? []).length) famous.push(`${ship}, STILL FLYING. ${p.lineage!.length + 1} CAPTAINS NOW. SOME HULLS JUST DON'T KNOW HOW TO STOP.`);
+    { const nick = captainNickname(w); if (nick) famous.push(`${ship} ON APPROACH. THAT'S ${nick}, THAT IS. MIND YOUR MANNERS ON THE BAND.`); }
+    if ((p.races ?? 0) >= 1) famous.push(`${ship} RAN THE RINGS AT ${rng.pick(sys.stations)?.name.toUpperCase() ?? "THE STATION"}. ${(p.raceBeaten && Object.keys(p.raceBeaten).length) ? "TOOK THE RECORD, TOO." : "CLEAN RUN, THEY SAY."}`);
+    if ((p.postRuns ?? 0) >= 3) famous.push(`${ship} CARRIES THE POST. MY LETTERS GOT THERE FOR ONCE.`);
     if ((p.alumni ?? []).length >= 2) famous.push(`HALF THE GOOD HANDS ON THIS STATION SERVED ON THE ${ship} ONCE. THEY ALL TELL THE SAME STORIES.`);
     if ((p.kills ?? 0) >= 40 && (p.rescues ?? 0) < 1) famous.push(`${ship} INBOUND. KEEP YOUR HEADS DOWN, THAT ONE SHOOTS FIRST.`);
     if (famous.length) pool.push({ from: rng.pick(["HAULER MARGIT", "FREIGHTER OKONKWO", `${st.name.toUpperCase()} CONTROL`, "TENDER BLUE-4"]), text: rng.pick(famous) });
