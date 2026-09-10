@@ -40,6 +40,11 @@ a call sign and your arc completions, rescues, surveys and relic hauls appear on
 every player's WIRE tab and the title ticker, with leaderboards for discoveries,
 arcs, credits and kills.
 
+**Not everything is a fight:** disabled freighters call mayday. Board them and
+bring three dead systems back on a suit clock, or send your engineer across and
+stand guard while they work. Crew ask for things when you dock, and loyalty
+means something. Stake homestead claims on worlds you've charted.
+
 **The Signal:** a seven-stage campaign that starts once you've logged a few
 systems and ends beside a star with a warship that has no faction. Fourteen
 encounter cards interrupt flight and rover drives with choices that matter.

@@ -73,6 +73,15 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   line. Some options only show when you can afford them or have the goods.
   Debts owed to you are paid at your next dock.
 
+## Helping ships
+
+- A MAYDAY marker is a freighter with dead engines. Fly within 80m and press E:
+  board it yourself (hold E at engines, life support and the reactor; spare
+  parts speed it up; watch your suit O2 and the fires), or send your engineer
+  across and hold off the two corsair waves that come for a sitting duck.
+- Damaged convoys and freighters take a spare part for credits and standing;
+  syndicate convoys remember it.
+
 ## Syndicates and trade routes
 
 - Four AI syndicates live in every galaxy, always marked (AI). Their bases show
