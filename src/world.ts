@@ -300,6 +300,7 @@ export interface PlayerState {
   racePending?: string | null;       // station whose ring race you've entered; rings appear when you launch
   raceBest?: Record<string, number>; // station id -> best time in seconds
   races?: number;                    // ring races finished
+  raceBeaten?: Record<string, true>; // stations where you've beaten the local record
   donations?: number;                // relics given to museums
   hullHistory?: { previous: string; quirk: string } | null; // who flew this hull before you, and what they left
   jumpStreak?: number;               // gates in a row without a dock (a pilot's arc counts them)
@@ -942,6 +943,27 @@ export function racePar(gates: { x: number; y: number }[]): number {
 }
 export function racePrize(t: number, par: number): number {
   return Math.round(250 + (t <= par ? 200 : 0) + Math.max(0, par - t) * 25);
+}
+// Every course has a local record holder: a named captain with a time a shade over par.
+// Beat it and the bar hears; if the holder is your rival, they hear too.
+export function raceHolder(w: World, st: StationDef): { name: string; t: number; captain: NpcCaptain | null } {
+  const rng = new RNG(hashStr(`holder:${w.seed}:${st.id}`));
+  const caps = w.captains ?? [];
+  const local = caps.filter((c) => c.homeStationId === st.id);
+  const captain = local.length ? rng.pick(local) : caps.length ? rng.pick(caps) : null;
+  const par = racePar(raceCourse(st, w.seed));
+  const t = Math.round(par * (1.04 + rng.next() * 0.12) * 10) / 10;
+  return { name: captain?.name ?? rng.pick(["Old Marrow", "Tess Okonkwo", "The Harbourmaster's Kid"]), t, captain };
+}
+export function beatHolder(w: World, st: StationDef, t: number): string | null {
+  const h = raceHolder(w, st);
+  if (t >= h.t) return null;
+  const p = w.player;
+  if ((p.raceBeaten ??= {})[st.id]) return null;
+  p.raceBeaten[st.id] = true;
+  if (h.captain && isRival(h.captain)) { h.captain.disposition = Math.max(-5, h.captain.disposition - 1); return `${h.captain.name.toUpperCase()}: 'ENJOY IT WHILE IT LASTS.'`; }
+  if (h.captain) { h.captain.met++; return `${h.captain.name.toUpperCase()}: 'ABOUT TIME SOMEBODY DID. DRINKS ON ME, NEXT TIME WE'RE IN TOGETHER.'`; }
+  return `THE BAR HEARS ABOUT IT BEFORE YOU'VE DOCKED. ${h.name.toUpperCase()}'S TIME HAD STOOD FOR YEARS.`;
 }
 // Returns true when this is a new best at that station
 export function recordRace(p: PlayerState, stationId: string, t: number): boolean {

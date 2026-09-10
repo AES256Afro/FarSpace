@@ -5,7 +5,7 @@ import { ask, confirmBox } from "../../core/dialog";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra, raceCourse, racePar, racePrize, recordRace } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra, raceCourse, racePar, racePrize, recordRace, beatHolder } from "../../world";
 import { COMMODITIES, commodity } from "../../data/data";
 import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
@@ -516,7 +516,10 @@ export class FlightScene implements Scene {
     this.comms.push({ from: "MARSHAL", text: r.t <= r.par ? "UNDER PAR. THE BAR WILL HEAR ABOUT THAT." : "OVER PAR, BUT CLEAN. THE PRIZE STANDS.", life: 8, color: PAL.gold });
     { const up = crewXp(p, "pilot"); if (up) g.toast(up); }
     flag(g, "raced"); sfx.pickup();
-    void wire.post("race", `ran the ring race at ${st?.name ?? "a station"} in ${r.t.toFixed(1)}s`, g.world.systems[p.systemId].name);
+    const beat = st ? beatHolder(g.world, st, r.t) : null;
+    if (beat) { this.comms.push({ from: "MARSHAL", text: "THAT'S THE COURSE RECORD. THE BAR WILL HEAR.", life: 8, color: PAL.gold }); this.comms.push({ from: "BAND", text: beat, life: 9, color: PAL.gold }); }
+    if (beat || r.t <= r.par) void wire.post("race", `${beat ? "took the course record" : "ran under par"} at ${st?.name ?? "a station"}: ${r.t.toFixed(1)}s`, g.world.systems[p.systemId].name);
+    if (g.world.realGalaxy && st) void wire.postRaceTime(st.name, g.world.systems[p.systemId].name, r.t).then((res) => { if (res?.improved && res.rank === 1) g.toast("THE WIRE HAS YOU AT THE TOP OF THE BOARD FOR THIS COURSE"); });
     this.race = null;
   }
 

@@ -8,6 +8,7 @@
 //   POST /api/board/:name     <- { callsign, score }  keeps each call sign's best
 //   GET  /api/discover?system= / POST { system, callsign }  first-discovery tags
 //   GET  /api/lights / POST { system, callsign, kind, upgraded }  lights planted in the real galaxy
+//   GET  /api/race?station= / POST { station, system, callsign, t }  ring race course records, top five
 //   GET  /api/goal?id= / POST { id, callsign, amount }      weekly community goal
 //   WS   /api/room/:system    presence + chat, one Durable Object per system
 // Codes are the only secret (like a share link). CORS is open so self-hosted
@@ -305,6 +306,42 @@ export default {
         const rec = { callsign, system, kind, upgraded, t: Date.now() };
         await env.SAVES.put(`light:${system.toLowerCase()}:${callsign}`, JSON.stringify(rec), { expirationTtl: 60 * 60 * 24 * 30 });
         return json({ ok: true, light: rec });
+      }
+      return json({ error: "method" }, 405);
+    }
+
+    // Ring race course records: top five times per station name, best per call sign.
+    if (url.pathname === "/api/race") {
+      const stationKey = (st: string) => `race:${st.toLowerCase()}`;
+      if (request.method === "GET") {
+        const station = clean(url.searchParams.get("station"), 40);
+        if (!station) return json({ error: "station?" }, 400);
+        const v = await env.SAVES.get(stationKey(station), "text");
+        let records: unknown[] = [];
+        if (v) { try { records = JSON.parse(v); } catch { records = []; } }
+        return json({ records });
+      }
+      if (request.method === "POST") {
+        if (await rateLimited(env, request, "race", 10)) return json({ error: "slow down" }, 429);
+        let body: Record<string, unknown>;
+        try { body = (await request.json()) as Record<string, unknown>; } catch { return json({ error: "not json" }, 400); }
+        const callsign = clean(body.callsign, 16).toUpperCase();
+        const station = clean(body.station, 40);
+        const system = clean(body.system, 40);
+        const t = Math.round(Number(body.t) * 10) / 10;
+        if (!CALLSIGN.test(callsign)) return json({ error: "bad callsign" }, 400);
+        if (!station || !Number.isFinite(t) || t < 5 || t > 600) return json({ error: "bad time" }, 400);
+        const v = await env.SAVES.get(stationKey(station), "text");
+        let records: { callsign: string; t: number; system: string; at: number }[] = [];
+        if (v) { try { records = JSON.parse(v); } catch { records = []; } }
+        const mine = records.find((r) => r.callsign === callsign);
+        if (mine && mine.t <= t) return json({ ok: true, records, improved: false });
+        records = records.filter((r) => r.callsign !== callsign);
+        records.push({ callsign, t, system, at: Date.now() });
+        records.sort((a, b) => a.t - b.t);
+        records = records.slice(0, 5);
+        await env.SAVES.put(stationKey(station), JSON.stringify(records), { expirationTtl: 60 * 60 * 24 * 90 });
+        return json({ ok: true, records, improved: true, rank: records.findIndex((r) => r.callsign === callsign) + 1 });
       }
       return json({ error: "method" }, 405);
     }

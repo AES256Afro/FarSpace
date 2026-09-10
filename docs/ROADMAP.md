@@ -607,4 +607,10 @@ Time passes for the people on the ship, and for the ship.
       roster shows ON/OFF WATCH
 - [x] Passengers path-find and question the crew; crew answer by role
 
+## Milestone 62 — The Course Record ✅ (Sep 2026)
+- [x] Local record holder per course (a named captain); beating it is
+      remembered and rivals take it personally
+- [x] Wire course records: `/api/race` GET/POST, top five per station, shown
+      in the lounge
+
 ## Later

@@ -15,7 +15,7 @@ import { STARS, starDistance } from "../src/data/stars";
 import { ACHIEVEMENTS } from "../src/data/achievements";
 import { ARCS, dailyContract, dailyKey, rankOf, logSystem, applyHull } from "../src/world";
 import { MODULES } from "../src/data/modules";
-import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN } from "../src/world";
+import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder } from "../src/world";
 import { RARES } from "../src/data/data";
 import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
@@ -690,6 +690,17 @@ describe("the ring race", () => {
     expect(recordRace(w.player, st.id, 39)).toBe(true);
     expect(w.player.raceBest![st.id]).toBe(39);
     expect(w.player.races).toBe(3);
+    // the local record holder: a named captain a shade over par, beaten once and remembered
+    const h = raceHolder(w, st);
+    expect(h.t).toBeGreaterThan(racePar(raceCourse(st, w.seed)));
+    expect(raceHolder(w, st).name).toBe(h.name);
+    expect(beatHolder(w, st, h.t + 1)).toBeNull();
+    if (h.captain) h.captain.disposition = -2;
+    const line = beatHolder(w, st, h.t - 1);
+    expect(line).toBeTruthy();
+    if (h.captain) expect(h.captain.disposition).toBe(-3);
+    expect(beatHolder(w, st, h.t - 2)).toBeNull();
+    expect(w.player.raceBeaten![st.id]).toBe(true);
   });
 });
 

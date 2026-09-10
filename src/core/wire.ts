@@ -159,6 +159,26 @@ export async function postLight(system: string, kind: "beacon" | "depot", upgrad
   } catch { return false; }
 }
 
+export interface RaceRec { callsign: string; t: number; system: string; at: number }
+export async function fetchRaceRecords(station: string): Promise<RaceRec[]> {
+  try {
+    const r = await fetch(`${cloudBase()}/api/race?station=${encodeURIComponent(station)}`);
+    if (!r.ok) return [];
+    const j = (await r.json()) as { records: RaceRec[] };
+    return j.records ?? [];
+  } catch { return []; }
+}
+export async function postRaceTime(station: string, system: string, t: number): Promise<{ improved: boolean; rank: number } | null> {
+  const callsign = getCallsign();
+  if (!callsign) return null;
+  try {
+    const r = await fetch(`${cloudBase()}/api/race`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ station, system, callsign, t }) });
+    if (!r.ok) return null;
+    const j = (await r.json()) as { improved: boolean; rank?: number };
+    return { improved: !!j.improved, rank: j.rank ?? 0 };
+  } catch { return null; }
+}
+
 export async function discover(system: string): Promise<{ first: boolean; by: string } | null> {
   const callsign = getCallsign();
   if (!callsign) return null;

@@ -245,6 +245,10 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   starts your clock, the last stops it. Prize money for a clean run, more under
   par, and your best time is remembered per station. Stop flying for a minute
   and the marshal stops the clock.
+- Every course has a local record holder, a named captain with a time a shade
+  over par. Beat it and the bar hears; if the holder is your rival, so do they.
+  In the real galaxy your times go to the wire too, and the lounge shows the
+  top wire time for the course.
 
 ## Concourse gossip
 

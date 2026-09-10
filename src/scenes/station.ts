@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS, roleLabel } from "../
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, tickAlumniMail, catGift, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, notableOutcome, ledger, ledgerAround, LEDGER_LABELS, dockingsAt, OLD_HAND_AT, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter, RACE_GATES } from "../world";
+  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, tickAlumniMail, catGift, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, notableOutcome, ledger, ledgerAround, LEDGER_LABELS, dockingsAt, OLD_HAND_AT, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter, RACE_GATES, raceHolder } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
 import { BLUEPRINTS, MATERIALS, engGrade, nextCost, canAfford, upgrade } from "../data/engineering";
@@ -82,6 +82,8 @@ export class StationScene implements Scene {
       fs.towing = null;
     }
     this.base = null; this.baseLoaded = false;
+    this.raceRecords = null;
+    if (g.world.realGalaxy && !this.station.military) { const name = this.station.name; void wire.fetchRaceRecords(name).then((r) => { if (this.station?.name === name) this.raceRecords = r; }); }
     if (p.warPayout && p.warPayout.value > 0) {
       const wp = p.warPayout; p.warPayout = null;
       void wire.baseActionFor(wp.tag, "war", { value: wp.value }).then((ok) => { if (ok) g.toast(`WAR SPOILS: +${wp.value}CR TO THE [${wp.tag}] TREASURY`); });
@@ -637,6 +639,7 @@ export class StationScene implements Scene {
   patrons: Record<string, string> = {};
   recordView: "achievements" | "log" | "ledger" = "achievements";
   surveyView: "data" | "codex" = "data";
+  raceRecords: wire.RaceRec[] | null = null; // the wire's course records for this station
   base: wire.BaseRec | null = null;   // my squadron's base record
   baseLoaded = false;
   baseOwner: string | null = null;    // tag owning THIS station
@@ -1345,7 +1348,11 @@ export class StationScene implements Scene {
       const best = p.raceBest?.[st.id];
       drawText(ctx, `THE RING RACE  -  ${RACE_GATES} RINGS ROUND THE STATION, AGAINST THE CLOCK${best !== undefined ? `  -  YOUR BEST HERE ${best.toFixed(1)}S` : ""}${p.racePending === st.id ? "  -  ENTERED" : ""}`, 12, y, p.racePending === st.id ? PAL.gold : PAL.ui);
       y += 9;
-      if (sel) { drawText(ctx, "ENTER, THEN LAUNCH. RINGS APPEAR AROUND THE STATION. PRIZE FOR A CLEAN RUN, MORE UNDER PAR.", 12, y, PAL.greyDark); y += 9; }
+      if (sel) {
+        const h = raceHolder(g.world, st);
+        const rec = this.raceRecords?.[0];
+        drawText(ctx, `LOCAL RECORD ${h.t.toFixed(1)}S, ${h.name.toUpperCase()}${p.raceBeaten?.[st.id] ? " (BEATEN)" : ""}${rec ? `  -  WIRE RECORD ${rec.t.toFixed(1)}S BY ${rec.callsign}` : g.world.realGalaxy ? "  -  NO WIRE TIMES YET" : ""}`.slice(0, 112), 12, y, PAL.greyDark); y += 9;
+      }
       idx++; y += 2;
     }
     if (this.barLine) {
