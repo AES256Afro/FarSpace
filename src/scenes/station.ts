@@ -59,6 +59,7 @@ export class StationScene implements Scene {
     this.barLine = "";
     refreshPrices(this.station);
     void wire.fetchSquadronData();
+    if (p.ious?.length) { for (const iou of p.ious) { p.credits += iou.credits; g.toast(iou.text); } p.ious = []; sfx.pickup(); }
     this.base = null; this.baseLoaded = false;
     if (p.warPayout && p.warPayout.value > 0) {
       const wp = p.warPayout; p.warPayout = null;

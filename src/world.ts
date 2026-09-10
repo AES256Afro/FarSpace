@@ -245,6 +245,8 @@ export interface PlayerState {
   codex?: Record<string, number>;    // "flora:<species>", "biome:<name>" → count
   synRep?: Record<string, number>;   // syndicate tag → standing
   warPayout?: { tag: string; value: number } | null; // squadron treasury share owed after a won war
+  encounters?: Record<string, number>; // encounter id → times seen
+  ious?: { credits: number; text: string }[];       // debts paid to you at the next dock
   routes?: { from: string; to: string; commodityId: string; t: number }[]; // base trade runs (station ids)
   lastDockedAt?: string;             // previous station id, for route bookkeeping
 }

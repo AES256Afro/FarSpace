@@ -22,12 +22,15 @@ import { VW, VH } from "../../game";
 import { music } from "../../core/music";
 import * as wire from "../../core/wire";
 import { presence } from "../../core/presence";
+import { pickEncounter } from "../../data/encounters";
+import type { EncounterScene } from "../encounter";
+import { RNG } from "../../core/rng";
 import type { Bullet, Npc, Particle, Platform, Loot, Sos } from "./types";
 import type { StationDef } from "../../world";
 import { BULLET_SPEED } from "./types";
 import {
   populate, spawnPirateNearBelt, spawnDrones, exhaust, mine, updateBullets, updateNpcs,
-  updatePlatforms, updateParticles, updateLoot, updateSos, boom,
+  updatePlatforms, updateParticles, updateLoot, updateSos, boom, spawnNpc,
 } from "./ai";
 import { drawFlight } from "./render";
 import type { Torpedo, Floater, Comms } from "./types";
@@ -251,6 +254,7 @@ export class FlightScene implements Scene {
 
     this.updateHeat(g, dt);
     this.updateDockingComputer(g, dt);
+    this.updateEncounters(g, dt);
     // other pilots in this system
     presence.tick(p, sys.name);
     this.drainRoomEvents(g);
@@ -516,6 +520,33 @@ export class FlightScene implements Scene {
         sfx.pickup();
       }
     }
+  }
+
+  // ---------- Encounters ----------
+  encounterTimer = 90;
+  updateEncounters(g: Game, dt: number): void {
+    const p = g.world.player;
+    if ((p.tutorial ?? -1) >= 0) return;
+    this.encounterTimer -= dt;
+    if (this.encounterTimer > 0) return;
+    this.encounterTimer = 110 + Math.random() * 90;
+    if (this.cruise || this.autopilot) return;
+    if (this.npcs.some((n) => n.kind === "pirate" && n.hull > 0 && dist(n.x, n.y, p.x, p.y) < 500)) return;
+    const rng = new RNG((g.world.seed ^ Math.floor(g.world.time)) >>> 0);
+    const enc = pickEncounter(g, "space", rng);
+    if (!enc) return;
+    sfx.thrust(false);
+    (g.scenes["encounter"] as EncounterScene).open(g, enc, "flight");
+  }
+  // a bounty hunter who took the hard answer
+  spawnHunter(g: Game): void {
+    const rng = new RNG((g.world.seed ^ Math.floor(g.world.time * 13)) >>> 0);
+    const n = spawnNpc(this, g, "pirate", rng);
+    const p = g.world.player;
+    const a = rng.range(0, Math.PI * 2);
+    n.x = p.x + Math.cos(a) * 260; n.y = p.y + Math.sin(a) * 260;
+    n.variant = "captain"; n.name = rng.pick(["HUNTER VASK", "MARSHAL OKONKWO", "THE COLLECTOR", "CAPTAIN LIRRA"]);
+    n.hullMax = n.hull = 140;
   }
 
   // ---------- Cruise & autopilot ----------

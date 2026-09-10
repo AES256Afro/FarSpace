@@ -8,6 +8,9 @@ import { PAL } from "../gfx/palette";
 import { clamp } from "../core/mathx";
 import { sfx } from "../core/sfx";
 import { music } from "../core/music";
+import { pickEncounter } from "../data/encounters";
+import type { EncounterScene } from "./encounter";
+import { RNG } from "../core/rng";
 import * as wire from "../core/wire";
 import { flag } from "../core/achievements";
 import { gainMaterials } from "../core/materials";
@@ -43,6 +46,7 @@ export class SurfaceScene implements Scene {
   storm = 0; stormTimer = 0;
   regionName = ""; planetName = ""; biome = 0;
   hurtCd = 0;
+  encounterTimer = 60;
   mini: HTMLCanvasElement | null = null; // cached minimap, redrawn a few times a second
   miniAt = 0;
 
@@ -89,6 +93,14 @@ export class SurfaceScene implements Scene {
       g.showHint("rover", "WASD DRIVE - E TAKE/ENTER - HOLD V SCAN FLORA - RETURN TO THE LANDER TO RECHARGE OR LIFT OFF");
     }
     g.surfaceReturn = true;
+    // encounter outcomes that hurt the rover say so in their text
+    const enc = g.scenes["encounter"] as EncounterScene | undefined;
+    const out = enc?.outcome ?? "";
+    if (enc && enc.returnTo === "surface" && out) {
+      const m = out.match(/ROVER INTEGRITY -(\d+)/);
+      if (m) { this.integrity = Math.max(1, this.integrity - Number(m[1])); sfx.hit(); }
+      enc.outcome = null;
+    }
   }
 
   say(m: string): void { this.msg = m; this.msgTimer = 4; }
@@ -123,6 +135,14 @@ export class SurfaceScene implements Scene {
     const powered = this.power > 0;
     const top = (here === HILLS ? 50 : here === SAND ? 70 : 95) * (powered ? 1 : 0.35) * (this.storm > 0 ? 0.7 : 1) * (1 + 0.12 * engGrade(p, "rover"));
     sfx.rover(!!(ax || ay) && powered);
+    if (ax || ay) {
+      this.encounterTimer -= dt;
+      if (this.encounterTimer <= 0) {
+        this.encounterTimer = 75 + Math.random() * 60;
+        const enc = pickEncounter(g, "ground", new RNG((g.world.seed ^ Math.floor(g.world.time)) >>> 0));
+        if (enc) { sfx.rover(false); this.vx = 0; this.vy = 0; (g.scenes["encounter"] as EncounterScene).open(g, enc, "surface"); return; }
+      }
+    }
     music.setMood(this.storm > 0 ? "storm" : "ground", 0);
     if (ax || ay) {
       const l = Math.hypot(ax, ay); ax /= l; ay /= l;

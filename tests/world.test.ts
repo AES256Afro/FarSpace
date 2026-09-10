@@ -14,6 +14,7 @@ import { rareSellPrice, findStation } from "../src/world";
 import { RARES } from "../src/data/data";
 import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
+import { ENCOUNTERS, pickEncounter } from "../src/data/encounters";
 import { genGround, groundKey, passable, GW, GH } from "../src/ground";
 import { BLUEPRINTS, upgrade, addMaterials, nextCost, MATERIAL_CAP } from "../src/data/engineering";
 import { jumpFuelCost, communityGoal, weekKey, permitDenied, navRoute, blackMarket, genMissionsFor, groundProgress, missionDeliverable } from "../src/world";
@@ -608,5 +609,26 @@ describe("squadrons at war", () => {
     expect(w.player.warPayout?.tag).toBe("RED");
     expect(w.player.warPayout!.value).toBeGreaterThan(500);
     expect(w.player.flags?.squadWarWin).toBe(true);
+  });
+});
+
+describe("encounters", () => {
+  it("every option resolves to a line, and repeats are weighted down", () => {
+    const w = generateWorld(21, { realGalaxy: true });
+    w.player.credits = 5000; w.player.fuel = 100; w.player.cargo = { food: 5, parts: 2 };
+    const g = { world: w, scenes: {} } as unknown as import("../src/game").Game;
+    for (const e of ENCOUNTERS) for (const o of e.options) {
+      if (o.requires && !o.requires(g)) continue;
+      const line = o.result(g, new RNG(3));
+      expect(typeof line).toBe("string");
+      expect(line.length).toBeGreaterThan(10);
+    }
+    const first = pickEncounter(g, "space", new RNG(1))!;
+    expect(first.where).toBe("space");
+    w.player.encounters = { [first.id]: 50 };
+    let same = 0;
+    for (let i = 0; i < 40; i++) if (pickEncounter(g, "space", new RNG(100 + i))!.id === first.id) same++;
+    expect(same).toBeLessThan(6);
+    expect(pickEncounter(g, "ground", new RNG(2))!.where).toBe("ground");
   });
 });

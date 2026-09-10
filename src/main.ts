@@ -16,6 +16,7 @@ import { SettingsScene } from "./scenes/settings";
 import { SurfaceScene } from "./scenes/surface";
 import { HelpScene } from "./scenes/help";
 import { WhatsNewScene } from "./scenes/whatsnew";
+import { EncounterScene } from "./scenes/encounter";
 import { SlotsScene } from "./scenes/slots";
 import { checkAchievements } from "./core/achievements";
 import { presence } from "./core/presence";
@@ -42,6 +43,7 @@ game.scenes["settings"] = new SettingsScene();
 game.scenes["surface"] = new SurfaceScene();
 game.scenes["help"] = new HelpScene();
 game.scenes["whatsnew"] = new WhatsNewScene();
+game.scenes["encounter"] = new EncounterScene();
 game.scenes["slots"] = new SlotsScene();
 
 game.setScene("title");
