@@ -367,5 +367,10 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
 - [x] Bar rumours point at real things: the crisis, the comet, the war
 - [x] Captain's log: encounters, rescues and campaign beats remembered
 
+- [x] Faction politics: envoys sell amnesties, grant charters at 75 standing
+      (+15% contract pay, yards at cost) and enforce embargoes between -40 and
+      -60 (fuel and repairs only)
+- [x] Sound pass: station PA chimes, gate arrival cracks, drifter song
+
 ## Later
 - [ ] Cross-squadron rivalries and treaties

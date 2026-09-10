@@ -684,7 +684,11 @@ export class FlightScene implements Scene {
       }
     });
   }
+  songTimer = 0;
   updateDrifters(g: Game, dt: number): void {
+    const p = g.world.player;
+    this.songTimer -= dt;
+    if (this.songTimer <= 0) { this.songTimer = 6 + Math.random() * 8; if (this.drifters.some((d) => dist(p.x, p.y, d.x, d.y) < 500)) sfx.drifterSong(); }
     for (const d of this.drifters) {
       d.x += d.vx * dt; d.y += d.vy * dt;
       d.angle += Math.sin(g.world.time * 0.3 + d.phase) * 0.002;
@@ -741,7 +745,7 @@ export class FlightScene implements Scene {
         const n = this.npcs[this.npcs.length - 1];
         n.x = jp.x + rng.range(-30, 30); n.y = jp.y + rng.range(-30, 30);
         boom(this, jp.x, jp.y, 10, PAL.info);
-        if (dist(p.x, p.y, jp.x, jp.y) < 900) this.comms.push({ from: "GATE", text: `ARRIVAL FROM ${g.world.systems[jp.targetSystemId].name.toUpperCase()}`, life: 5, color: PAL.greyDark });
+        if (dist(p.x, p.y, jp.x, jp.y) < 900) { this.comms.push({ from: "GATE", text: `ARRIVAL FROM ${g.world.systems[jp.targetSystemId].name.toUpperCase()}`, life: 5, color: PAL.greyDark }); sfx.gateCrack(); }
       } else {
         // departure: the trader nearest a gate lights out
         const t = this.npcs.filter((n) => n.kind === "trader" && !n.tag && !n.disabled && !n.casualties && n !== this.towing && n !== this.sos?.trader).sort((a, b) => dist(a.x, a.y, jp.x, jp.y) - dist(b.x, b.y, jp.x, jp.y))[0];

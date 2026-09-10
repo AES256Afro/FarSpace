@@ -124,6 +124,18 @@ export const sfx = {
     thrustNode.gain.cancelScheduledValues(now);
     thrustNode.gain.setTargetAtTime(target, now, on ? 0.08 : 0.25);
   },
+  // station PA: a soft two-tone chime, the kind you stop hearing after a week
+  pa(): void {
+    osc("sine", 660, 0.12, 0.05, 660); setTimeout(() => osc("sine", 880, 0.16, 0.05, 880), 130);
+  },
+  // gate crack: a short bright snap when something drops in from a jump
+  gateCrack(): void {
+    osc("triangle", 1400, 0.08, 0.12, 200); osc("sawtooth", 90, 0.25, 0.08, 40);
+  },
+  // drifter song: a slow warble, felt more than heard
+  drifterSong(): void {
+    osc("sine", 110, 1.6, 0.06, 98); setTimeout(() => osc("sine", 146, 1.4, 0.05, 130), 500);
+  },
   // rover drivetrain: a lower, grittier loop than the ship's engines
   rover(on: boolean): void {
     const c = ac();

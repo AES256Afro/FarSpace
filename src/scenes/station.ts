@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember } from "../data/crew";
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin,
+  crewWages, genCrewCandidate, applyHull, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter,
 } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
@@ -121,6 +121,38 @@ export class StationScene implements Scene {
       } else if (++c.request.docks >= 4) { c.request = null; c.morale = Math.max(0, c.morale - 20); g.toast(`${c.name.toUpperCase()} STOPS ASKING. MORALE DOWN.`); }
     }
     this.crewRequest(g);
+    if (g.sceneName !== "encounter") this.envoy(g);
+  }
+
+  // Faction envoys: the powers notice you. Amnesties, charters, warnings.
+  envoy(g: Game): void {
+    const p = g.world.player;
+    const st = this.station;
+    if ((p.tutorial ?? -1) >= 0 || st.factionId === "vex") return;
+    const fid = st.factionId;
+    const fac = faction(fid);
+    const rep = p.rep[fid] ?? 0;
+    p.envoySeen ??= {};
+    if (g.world.time - (p.envoySeen[fid] ?? -1e9) < 600) return;
+    const name = fac.name.toUpperCase();
+    let text = ""; const opts: Encounter["options"] = [];
+    if (p.wanted > 0.5 && rep > -20 && p.credits >= 800) {
+      text = `A ${name} ENVOY MEETS YOU AT THE AIRLOCK. 'YOUR RECORD IS... BUSY. WE CAN MAKE IT LESS BUSY. ${Math.round(1200 + p.wanted * 1500)} CREDITS AND THE PATROLS FORGET YOUR HULL.'`;
+      const price = Math.round(1200 + p.wanted * 1500);
+      opts.push({ label: `PAY ${price}CR FOR AMNESTY`, requires: (g2) => g2.world.player.credits >= price, result: (g2) => { g2.world.player.credits -= price; g2.world.player.wanted = 0; logEntry(g2.world, `Bought an amnesty from the ${fac.name}`); return "THE ENVOY SIGNS SOMETHING. SOMEWHERE A FILE CLOSES. YOU ARE NOBODY AGAIN."; } });
+      opts.push({ label: "KEEP MY RECORD, THANKS", result: () => "'AS YOU LIKE. THE PATROLS HAVE LONG MEMORIES.'" });
+    } else if (rep >= 75 && !hasCharter(g.world, fid)) {
+      text = `A ${name} ENVOY, IN DRESS GREYS. 'THE ${name} RECOGNISES ITS FRIENDS. A CHARTER: OUR CONTRACTS PAY YOU FIFTEEN PERCENT MORE, AND OUR YARDS WORK AT COST. WE ASK ONLY THAT YOU KEEP FLYING THE WAY YOU FLY.'`;
+      opts.push({ label: "ACCEPT THE CHARTER", result: (g2) => { (g2.world.player.charters ??= []).push(fid); flag(g2, "charter"); logEntry(g2.world, `Chartered by the ${fac.name}`); void wire.post("arc", `was chartered by the ${fac.name}`, g2.world.systems[g2.world.player.systemId].name); return "A SEAL ON YOUR MANIFEST, A LINE IN THEIR LEDGER. DOORS OPEN A LITTLE WIDER FROM HERE."; } });
+      opts.push({ label: "DECLINE, POLITELY", result: () => "'THE OFFER STANDS. IT USUALLY DOES.'" });
+    } else if (rep <= -40 && rep > -60) {
+      text = `A ${name} CUSTOMS OFFICER, NOT AN ENVOY. 'YOU'RE UNDER EMBARGO. FUEL AND REPAIRS ONLY. FIX YOUR STANDING OR FIND ANOTHER FLAG TO FLY UNDER.'`;
+      opts.push({ label: "ASK WHAT IT WOULD TAKE", result: () => "'RUN OUR CONTRACTS. ANSWER OUR DISTRESS CALLS. STOP SHOOTING OUR PATROLS. IN THAT ORDER.'" });
+      opts.push({ label: "SAY NOTHING", result: () => "THE OFFICER MAKES A NOTE. YOU SUSPECT IT IS NOT A KIND ONE." });
+    } else return;
+    p.envoySeen[fid] = g.world.time;
+    const enc: Encounter = { id: `envoy-${fid}`, where: "space", title: `${name} - ENVOY`, text, weight: 0, options: opts };
+    (g.scenes["encounter"] as EncounterScene).open(g, enc, "station", true);
   }
 
   // Now and then somebody wants something. A card, a choice, a consequence.
@@ -164,9 +196,12 @@ export class StationScene implements Scene {
     (g.scenes["encounter"] as EncounterScene).open(g, enc, "station", true);
   }
 
+  paTimer = 20;
   update(g: Game, dt: number): void {
     const inp = g.input;
     music.setMood(this.station.factionId, 0);
+    this.paTimer -= dt;
+    if (this.paTimer <= 0) { this.paTimer = 25 + Math.random() * 35; sfx.pa(); }
     presence.tick(g.world.player, g.world.systems[g.world.player.systemId].name); // still "here" while docked
     if (inp.wasPressed("Escape")) {
       this.flushGoal();
@@ -211,6 +246,7 @@ export class StationScene implements Scene {
         const rows = this.marketRows(g);
         this.cursor = clamp(this.cursor, 0, rows.length - 1);
         const id = rows[this.cursor];
+        if (embargoed(g.world, st.factionId)) { if (enter || inp.wasPressed("b") || inp.wasPressed("s")) g.toast("EMBARGO - THIS MARKET WON'T TRADE WITH YOU"); break; }
         if (enter || inp.wasPressed("b")) {
           const price = buyPrice(st, id, rep);
           if ((st.stock[id] ?? 0) <= 0) g.toast("OUT OF STOCK");
@@ -500,7 +536,8 @@ export class StationScene implements Scene {
     }
     m.done = true;
     const fest = m.kind === "passenger" && galaxyEventAt(g.world, p.systemId)?.kind === "festival" && galaxyEventAt(g.world, p.systemId)?.stationId === st.id;
-    p.credits += fest ? m.reward * 2 : m.reward;
+    const charter = hasCharter(g.world, st.factionId) && !m.syndicate ? 1.15 : 1;
+    p.credits += Math.round((fest ? m.reward * 2 : m.reward) * charter);
     if (fest) g.toast("FESTIVAL WEEK - YOUR PASSENGERS PAID DOUBLE");
     adjustRep(g.world, st.factionId, m.repReward ?? 3);
     if (m.kind === "passenger" && m.passengerKind === "tourist") flag(g, "tourist");
@@ -608,7 +645,7 @@ export class StationScene implements Scene {
     const st = this.station;
     const opts: { label: string; sub: string; action: () => void }[] = [];
     // patron squadrons keep their faction's yards half price for members
-    const patronHere = (!!wire.getSquadron() && wire.patronOf(st.factionId) === wire.getSquadron()) || this.myBaseHere();
+    const patronHere = (!!wire.getSquadron() && wire.patronOf(st.factionId) === wire.getSquadron()) || this.myBaseHere() || hasCharter(g.world, st.factionId);
     const depot = this.baseHas("depot");
     const fuelPrice = depot ? 0 : patronHere ? Math.max(1, Math.round(st.fuelPrice / 2)) : st.fuelPrice;
     const repairPrice = depot ? 0 : patronHere ? Math.max(1, Math.round(st.repairPrice / 2)) : st.repairPrice;
@@ -708,7 +745,9 @@ export class StationScene implements Scene {
     if (st.military) drawText(ctx, "SECURITY LEVEL: HIGH", VW - textWidth("SECURITY LEVEL: HIGH") - 6, 17, PAL.danger);
     const war = g.world.wars.find((w) => w.systemId === p.systemId);
     const gev = galaxyEventAt(g.world, p.systemId);
-    if (gev && (gev.kind === "festival" || gev.kind === "strike") && gev.stationId === this.station.id) { const t = gev.kind === "festival" ? "FESTIVAL WEEK - LUXURIES DEAR, TOURISTS PAY DOUBLE" : "DOCK STRIKE - FUEL AND REPAIRS COST DOUBLE"; drawText(ctx, t, VW - textWidth(t) - 6, 26, gev.kind === "festival" ? PAL.gold : PAL.warn); }
+    if (embargoed(g.world, this.station.factionId)) { const t = "EMBARGO - FUEL AND REPAIRS ONLY"; drawText(ctx, t, VW - textWidth(t) - 6, 26, PAL.danger); }
+    else if (hasCharter(g.world, this.station.factionId)) { const t = `${faction(this.station.factionId).name.toUpperCase()} CHARTER - CONTRACTS +15%, YARD AT COST`; drawText(ctx, t, VW - textWidth(t) - 6, 26, PAL.gold); }
+    else if (gev && (gev.kind === "festival" || gev.kind === "strike") && gev.stationId === this.station.id) { const t = gev.kind === "festival" ? "FESTIVAL WEEK - LUXURIES DEAR, TOURISTS PAY DOUBLE" : "DOCK STRIKE - FUEL AND REPAIRS COST DOUBLE"; drawText(ctx, t, VW - textWidth(t) - 6, 26, gev.kind === "festival" ? PAL.gold : PAL.warn); }
     else if (war) drawText(ctx, "SYSTEM AT WAR - PRICES UNSTABLE", VW - textWidth("SYSTEM AT WAR - PRICES UNSTABLE") - 6, 26, PAL.warn);
     else if (this.baseOwner) { const t = `[${this.baseOwner}] SQUADRON BASE${this.baseOwner === wire.getSquadron() ? " - HOME" : ""}`; drawText(ctx, t, VW - textWidth(t) - 6, 26, this.baseOwner === wire.getSquadron() ? PAL.gold : PAL.info); }
     else if (syndicateAt(g.world, this.station.id)) { const sy = syndicateAt(g.world, this.station.id)!; const t = `[${sy.tag}] ${sy.name.toUpperCase()} BASE (AI) - ${synStandingLabel(effectiveSynStanding(g.world, sy.tag))}`; drawText(ctx, t, VW - textWidth(t) - 6, 26, sy.color); }

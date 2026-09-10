@@ -16,7 +16,7 @@ import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
 import { ENCOUNTERS, pickEncounter } from "../src/data/encounters";
 import { STORY, storyObjective } from "../src/core/story";
-import { homesteadYield, settleHomestead, HOMESTEAD_CAP, tickCrisis, crisisAt, tickGalaxyEvents, galaxyEventAt, rescuePoints, logEntry } from "../src/world";
+import { homesteadYield, settleHomestead, HOMESTEAD_CAP, tickCrisis, crisisAt, tickGalaxyEvents, galaxyEventAt, rescuePoints, logEntry, embargoed, hasCharter } from "../src/world";
 import { genGround, groundKey, passable, GW, GH } from "../src/ground";
 import { BLUEPRINTS, upgrade, addMaterials, nextCost, MATERIAL_CAP } from "../src/data/engineering";
 import { jumpFuelCost, communityGoal, weekKey, permitDenied, navRoute, blackMarket, genMissionsFor, groundProgress, missionDeliverable } from "../src/world";
@@ -722,5 +722,20 @@ describe("living galaxy", () => {
     expect(rankOf(w.player, "rescuer").title).toBe("FIRST RESPONDER");
     for (let i = 0; i < 70; i++) logEntry(w, `entry ${i}`);
     expect(w.player.log!.length).toBe(60);
+  });
+});
+
+describe("faction politics", () => {
+  it("embargo band and charters", () => {
+    const w = generateWorld(26);
+    w.player.rep.tsc = -50;
+    expect(embargoed(w, "tsc")).toBe(true);
+    w.player.rep.tsc = -70;
+    expect(embargoed(w, "tsc")).toBe(false); // docking is refused instead
+    w.player.rep.tsc = 0;
+    expect(embargoed(w, "tsc")).toBe(false);
+    expect(hasCharter(w, "tsc")).toBe(false);
+    w.player.charters = ["tsc"];
+    expect(hasCharter(w, "tsc")).toBe(true);
   });
 });

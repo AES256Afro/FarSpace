@@ -254,6 +254,8 @@ export interface PlayerState {
   repairs?: number;                                   // ships brought back to life
   lives?: number;                                     // people your medic pulled through
   rescues?: number;                                   // distress calls answered, crises broken
+  charters?: string[];                                // factions that granted you a charter (+15% their mission pay)
+  envoySeen?: Record<string, number>;                 // faction → world time of the last envoy card
   log?: { t: number; text: string }[];                // captain's log: things worth remembering
   tows?: number;
   evacuees?: { n: number; from: string } | null;      // survivors aboard, paid out at the next dock
@@ -1621,6 +1623,15 @@ export function stationBulletin(w: World, st: StationDef, now = Date.now()): str
   const ev = galaxyEventAt(w, findStation(w, st.id)?.sys.id ?? "");
   if (ev?.stationId === st.id) lines.unshift(ev.kind === "festival" ? "FESTIVAL WEEK: the ring is open all night. Mind the tourists." : "STRIKE: the yard is picketed. Fuel and repairs at double rates until it's settled.");
   return lines;
+}
+
+// ---------- Faction politics ----------
+export function embargoed(w: World, factionId: string): boolean {
+  const rep = w.player.rep[factionId] ?? 0;
+  return factionId !== "vex" && rep <= -40 && rep > -60; // below -60 they don't let you dock at all
+}
+export function hasCharter(w: World, factionId: string): boolean {
+  return (w.player.charters ?? []).includes(factionId);
 }
 
 // ---------- Captain's log ----------
