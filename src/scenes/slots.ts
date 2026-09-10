@@ -1,5 +1,6 @@
 // Save slots: three local games. Switching a slot swaps the world in play.
 
+import { ask, confirmBox } from "../core/dialog";
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
@@ -37,7 +38,7 @@ export class SlotsScene implements Scene {
       this.rows = slotSummaries();
     }
     if (inp.wasPressed("d") && cur && !cur.empty) {
-      if (window.confirm(`Delete the game in slot ${this.cursor + 1}? This cannot be undone.`)) {
+      if (confirmBox(`Delete the game in slot ${this.cursor + 1}? This cannot be undone.`)) {
         deleteSlot(this.cursor);
         if (this.cursor === activeSlot()) g.world = generateWorld(0xfa25face);
         this.rows = slotSummaries();

@@ -1,5 +1,6 @@
 // Station scene: docked services — market, shipyard, ships, missions, bar (crew), storage, news.
 
+import { ask, confirmBox } from "../core/dialog";
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth, CHAR_H } from "../gfx/font";
 import { PAL } from "../gfx/palette";
@@ -185,7 +186,7 @@ export class StationScene implements Scene {
         }
         if (inp.wasPressed("k") && this.cursor < HULLS.length) this.buyHull(g, HULLS[this.cursor].id, true);
         if (inp.wasPressed("n")) {
-          const raw = window.prompt("Name your ship (2-18 characters):", p.shipName ?? "");
+          const raw = ask("Name your ship (2-18 characters):", p.shipName ?? "");
           if (raw !== null) {
             const n = raw.trim().toUpperCase().replace(/[^A-Z0-9 '\-]/g, "").slice(0, 18);
             if (n.length >= 2) { p.shipName = n; g.toast(`REGISTERED: ${n}`); sfx.select(); } else g.toast("NAME NOT ACCEPTED");
@@ -260,7 +261,7 @@ export class StationScene implements Scene {
         const row = rows[this.cursor];
         if (enter && row && tag) {
           if (row.kind === "fund") {
-            const raw = window.prompt(`Fund the [${tag}] treasury. Credits to contribute (you have ${p2.credits}):`, "1000");
+            const raw = ask(`Fund the [${tag}] treasury. Credits to contribute (you have ${p2.credits}):`, "1000");
             inp.flush();
             const n = Math.floor(Number(raw));
             if (raw !== null && Number.isFinite(n) && n > 0) {
@@ -344,7 +345,7 @@ export class StationScene implements Scene {
   }
 
   async chooseCallsign(g: Game): Promise<void> {
-    const raw = window.prompt("Choose a call sign (2-16 letters, digits, space, - or _):", wire.getCallsign() ?? "");
+    const raw = ask("Choose a call sign (2-16 letters, digits, space, - or _):", wire.getCallsign() ?? "");
     if (raw === null) return;
     const c = raw.trim().toUpperCase();
     if (!wire.validCallsign(c)) { g.toast("CALL SIGN NOT ACCEPTED"); return; }

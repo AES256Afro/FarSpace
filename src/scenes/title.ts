@@ -1,5 +1,6 @@
 // Title screen.
 
+import { ask, confirmBox } from "../core/dialog";
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
@@ -50,7 +51,7 @@ export class TitleScene implements Scene {
   }
 
   async squadron(g: Game): Promise<void> {
-    const raw = window.prompt("Squadron tag (2-5 letters or digits; empty to leave):", wire.getSquadron() ?? "");
+    const raw = ask("Squadron tag (2-5 letters or digits; empty to leave):", wire.getSquadron() ?? "");
     if (raw === null) return;
     const t = raw.trim().toUpperCase();
     if (!t) { wire.setSquadron(null); g.toast("LEFT THE SQUADRON"); wire.syncScores(g.world); return; }
@@ -61,7 +62,7 @@ export class TitleScene implements Scene {
   }
 
   async callsign(g: Game): Promise<void> {
-    const raw = window.prompt("Choose a call sign (2-16 letters, digits, space, - or _):", wire.getCallsign() ?? "");
+    const raw = ask("Choose a call sign (2-16 letters, digits, space, - or _):", wire.getCallsign() ?? "");
     if (raw === null) return;
     const c = raw.trim().toUpperCase();
     if (!wire.validCallsign(c)) { g.toast("CALL SIGN NOT ACCEPTED"); return; }
@@ -70,7 +71,7 @@ export class TitleScene implements Scene {
   }
 
   async link(g: Game): Promise<void> {
-    const raw = window.prompt("Enter your FarSpace cloud code:");
+    const raw = ask("Enter your FarSpace cloud code:");
     if (!raw) return;
     const code = raw.trim().toUpperCase();
     if (!cloud.validCode(code)) { g.toast("THAT DOESN'T LOOK LIKE A CODE"); return; }

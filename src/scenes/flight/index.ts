@@ -1,6 +1,7 @@
 // Flight scene: player controls, interactions (dock/jump/orbit/board), law.
 // Simulation lives in ./ai, rendering in ./render.
 
+import { ask, confirmBox } from "../../core/dialog";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
@@ -263,7 +264,7 @@ export class FlightScene implements Scene {
       if (!wire.getCallsign()) g.toast("CHOOSE A CALL SIGN ON THE TITLE SCREEN TO USE THE SYSTEM CHANNEL");
       else if (presence.status !== "on") g.toast("SYSTEM CHANNEL OFFLINE" + (settings().presence ? "" : " - FLEET PRESENCE IS OFF IN SETTINGS"));
       else {
-        const raw = window.prompt(`System channel - ${sys.name} (${presence.ghosts.size} other pilot${presence.ghosts.size === 1 ? "" : "s"} here).\n/give <qty> <goods> <callsign>   /pay <credits> <callsign>   (within 300m)${wire.getSquadron() ? `\n/s <message> to the [${wire.getSquadron()}] squadron channel` : ""}`, "");
+        const raw = ask(`System channel - ${sys.name} (${presence.ghosts.size} other pilot${presence.ghosts.size === 1 ? "" : "s"} here).\n/give <qty> <goods> <callsign>   /pay <credits> <callsign>   (within 300m)${wire.getSquadron() ? `\n/s <message> to the [${wire.getSquadron()}] squadron channel` : ""}`, "");
         g.input.flush();
         if (raw && /^\/s\s+/i.test(raw.trim())) { if (!presence.saySquad(raw.trim().slice(2))) g.toast("SQUADRON CHANNEL OFFLINE"); }
         else if (raw && raw.trim().startsWith("/")) this.roomCommand(g, raw.trim());
