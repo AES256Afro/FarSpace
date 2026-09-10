@@ -8,6 +8,7 @@ import { faction, commodity } from "../data/data";
 import { dist } from "../core/mathx";
 import { navRoute, routeFuel, jumpFuelCost, repLabel, permitDenied } from "../world";
 import { sfx } from "../core/sfx";
+import * as wire from "../core/wire";
 
 const OX = 90;
 const OY = 30;
@@ -15,9 +16,12 @@ const OY = 30;
 export class GalaxyScene implements Scene {
   touchMode = "menu" as const;
   selected: string | null = null;
+  rooms: Record<string, number> = {};
+  pilots = 0;
 
   enter(g: Game): void {
     this.selected = g.world.player.systemId;
+    void wire.fetchRooms().then((r) => { this.rooms = Object.fromEntries(r.rooms.map((x) => [x.system.toLowerCase(), x.count])); this.pilots = r.pilots; });
   }
 
   update(g: Game, dt: number): void {
@@ -67,6 +71,7 @@ export class GalaxyScene implements Scene {
     const w = g.world;
     const title = w.realGalaxy ? `SOL NEIGHBOURHOOD - ${w.galaxyLy ?? 20} LY` : "GALAXY MAP";
     drawText(ctx, title, VW / 2 - textWidth(title) / 2, 6, PAL.ui);
+    if (this.pilots) drawText(ctx, `${this.pilots} PILOT${this.pilots === 1 ? "" : "S"} FLYING NOW`, VW / 2 - textWidth(`${this.pilots} PILOTS FLYING NOW`) / 2, 15, PAL.info);
 
     ctx.strokeStyle = PAL.uiBorder;
     for (const sys of Object.values(w.systems)) {
@@ -116,6 +121,8 @@ export class GalaxyScene implements Scene {
         ctx.fillStyle = PAL.gold; ctx.fillRect(Math.round(x) + 4, Math.round(y) - 4, 2, 2);
       }
       if (w.player.bookmarks?.includes(sys.id)) { ctx.fillStyle = PAL.gold; ctx.fillRect(Math.round(x) - 6, Math.round(y) - 6, 2, 2); ctx.fillRect(Math.round(x) + 4, Math.round(y) - 6, 2, 2); }
+      const here = this.rooms[sys.name.toLowerCase()];
+      if (here) { ctx.fillStyle = PAL.info; ctx.fillRect(Math.round(x) + 4, Math.round(y) - 1, 2, 2); drawText(ctx, `${here}`, x + 7, y - 4, PAL.info); }
       if (sys.id === w.player.systemId) { ctx.strokeStyle = PAL.white; ctx.strokeRect(Math.round(x) - 4.5, Math.round(y) - 4.5, 9, 9); }
       if (sys.id === this.selected) { ctx.strokeStyle = PAL.ui; ctx.strokeRect(Math.round(x) - 6.5, Math.round(y) - 6.5, 13, 13); }
     }
@@ -141,6 +148,8 @@ export class GalaxyScene implements Scene {
       const first = w.player.firsts?.[sys.id];
       if (first) { drawText(ctx, `FIRST: ${first}`.slice(0, 27), px + 6, y, PAL.gold); y += 9; }
       if (w.player.bookmarks?.includes(sys.id)) { drawText(ctx, "BOOKMARKED (B)", px + 6, y, PAL.gold); y += 9; }
+      const n = this.rooms[sys.name.toLowerCase()];
+      if (n) { drawText(ctx, `${n} PILOT${n === 1 ? "" : "S"} HERE NOW`, px + 6, y, PAL.info); y += 9; }
       const rares = sys.stations.filter((st) => st.rare && (w.player.marketMemory?.[st.id])).map((st) => commodity(st.rare!).name);
       if (rares.length) { drawText(ctx, `RARE: ${rares.join(", ")}`.slice(0, 27), px + 6, y, PAL.gold); y += 9; }
       y += 3;

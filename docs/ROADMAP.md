@@ -250,6 +250,9 @@ bounty with a controller and music on, and the frame rate holds in a war zone.
 - [x] Wing shares: a pirate kill near another pilot pays them a share and
       credits their bounty contracts
 
+- [x] Where everyone is: rooms publish head counts, the galaxy map marks
+      systems with pilots in them and the title shows how many are flying;
+      docked pilots stay visible and the WIRE tab lists who's in the system
 - [x] Squadrons: a shared 2-5 letter tag on the title screen; shown on ghosts,
       wire posts and boards; squadrons rank together (credits, discoveries,
       kills of their members) on the WIRE tab

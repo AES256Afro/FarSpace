@@ -17,6 +17,7 @@ import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
 import { BLUEPRINTS, MATERIALS, engGrade, nextCost, canAfford, upgrade } from "../data/engineering";
 import { flag } from "../core/achievements";
+import { presence } from "../core/presence";
 import { sfx } from "../core/sfx";
 import * as wire from "../core/wire";
 import { drawTutorial } from "../core/tutorial";
@@ -93,6 +94,7 @@ export class StationScene implements Scene {
   update(g: Game, dt: number): void {
     const inp = g.input;
     music.setMood(this.station.factionId, 0);
+    presence.tick(g.world.player, g.world.systems[g.world.player.systemId].name); // still "here" while docked
     if (inp.wasPressed("Escape")) {
       this.flushGoal();
       if (this.returnTo === "stationwalk") g.setScene("stationwalk");
@@ -819,6 +821,8 @@ export class StationScene implements Scene {
     });
     const sy = y + 9 + 5 * 8 + 4;
     const mine = wire.getSquadron();
+    const nearby = [...presence.ghosts.values()].map((gh) => `${gh.tag ? `[${gh.tag}] ` : ""}${gh.callsign}`);
+    drawText(ctx, nearby.length ? `IN THIS SYSTEM NOW: ${nearby.join(", ")}`.slice(0, 110) : presence.status === "on" ? "NO OTHER PILOTS IN THIS SYSTEM RIGHT NOW" : "", 8, sy - 10, PAL.info);
     drawText(ctx, `SQUADRONS${mine ? ` - YOURS: [${mine}]` : " - JOIN ONE ON THE TITLE SCREEN"}`, 8, sy, PAL.ui);
     if (!this.squadrons.length) drawText(ctx, "NONE RANKED YET", 8, sy + 9, PAL.greyDark);
     this.squadrons.slice(0, 6).forEach((sq, i) => {

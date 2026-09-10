@@ -144,3 +144,16 @@ export async function contributeGoal(id: string, amount: number): Promise<GoalSt
     return (await r.json()) as GoalState;
   } catch { return null; }
 }
+
+export interface RoomCount { system: string; count: number }
+let roomsCache: { at: number; rooms: RoomCount[]; pilots: number } | null = null;
+export async function fetchRooms(force = false): Promise<{ rooms: RoomCount[]; pilots: number }> {
+  if (!force && roomsCache && Date.now() - roomsCache.at < 30_000) return roomsCache;
+  try {
+    const r = await fetch(`${cloudBase()}/api/rooms`);
+    if (!r.ok) return roomsCache ?? { rooms: [], pilots: 0 };
+    const j = (await r.json()) as { rooms: RoomCount[]; pilots: number };
+    roomsCache = { at: Date.now(), rooms: j.rooms, pilots: j.pilots };
+    return roomsCache;
+  } catch { return roomsCache ?? { rooms: [], pilots: 0 }; }
+}

@@ -16,11 +16,12 @@ interface KVNamespace {
   get(key: string, type: "text"): Promise<string | null>;
   put(key: string, value: string, opts?: { expirationTtl?: number }): Promise<void>;
   delete(key: string): Promise<void>;
+  list(opts: { prefix: string; limit?: number }): Promise<{ keys: { name: string }[] }>;
 }
 interface DurableObjectId { toString(): string }
 interface DurableObjectStub { fetch(request: Request): Promise<Response> }
 interface DurableObjectNamespace { idFromName(name: string): DurableObjectId; get(id: DurableObjectId): DurableObjectStub }
-interface DurableObjectState { acceptWebSocket(ws: WebSocket, tags?: string[]): void; getWebSockets(tag?: string): WebSocket[] }
+interface DurableObjectState { acceptWebSocket(ws: WebSocket, tags?: string[]): void; getWebSockets(tag?: string): WebSocket[]; storage: { get(key: string): Promise<unknown>; put(key: string, value: unknown): Promise<void> } }
 interface RoomSocket extends WebSocket { serializeAttachment(v: unknown): void; deserializeAttachment(): unknown }
 declare const WebSocketPair: { new (): { 0: WebSocket; 1: WebSocket } };
 interface Env {
@@ -33,14 +34,29 @@ interface Env {
 // and share a text channel. Nothing is stored; a room is just the sockets in it.
 // Hibernation API keeps idle rooms free.
 export class SystemRoom {
-  constructor(private state: DurableObjectState) {}
+  constructor(private state: DurableObjectState, private env: Env) {}
+
+  // Head count published to KV so the galaxy map can show where pilots are.
+  // Expires on its own if a room dies quietly.
+  async publish(delta = 0): Promise<void> {
+    const name = (await this.state.storage.get("name")) as string | undefined;
+    if (!name) return;
+    const n = Math.max(0, this.state.getWebSockets().length + delta);
+    try {
+      if (n > 0) await this.env.SAVES.put(`room:${name}`, String(n), { expirationTtl: 900 });
+      else await this.env.SAVES.delete(`room:${name}`);
+    } catch { /* KV hiccup: the next join fixes it */ }
+  }
 
   async fetch(request: Request): Promise<Response> {
     if (request.headers.get("Upgrade") !== "websocket") return json({ error: "websocket only" }, 426);
+    const name = clean(decodeURIComponent(new URL(request.url).pathname.replace(/^\/api\/room\//, "")), 40);
+    await this.state.storage.put("name", name);
     const pair = new WebSocketPair();
     const client = pair[0], server = pair[1] as RoomSocket;
     this.state.acceptWebSocket(server);
     server.serializeAttachment({ callsign: null, last: 0 });
+    await this.publish();
     // tell the newcomer who's already here
     const here: unknown[] = [];
     for (const o of this.state.getWebSockets()) {
@@ -98,12 +114,13 @@ export class SystemRoom {
     }
   }
 
-  webSocketClose(ws: WebSocket): void { this.goodbye(ws); }
-  webSocketError(ws: WebSocket): void { this.goodbye(ws); }
-  goodbye(ws: WebSocket): void {
+  async webSocketClose(ws: WebSocket): Promise<void> { await this.goodbye(ws); }
+  async webSocketError(ws: WebSocket): Promise<void> { await this.goodbye(ws); }
+  async goodbye(ws: WebSocket): Promise<void> {
     const att = (ws as RoomSocket).deserializeAttachment() as { callsign: string | null } | null;
     if (att?.callsign) this.broadcast(ws, JSON.stringify({ t: "bye", callsign: att.callsign }));
     try { ws.close(); } catch { /* already */ }
+    await this.publish(-1);
   }
 }
 
@@ -157,6 +174,18 @@ export default {
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
 
     if (url.pathname === "/api/health") return json({ ok: true });
+
+    // Where is everyone: systems with pilots right now (from the rooms' head counts)
+    if (url.pathname === "/api/rooms") {
+      const { keys } = await env.SAVES.list({ prefix: "room:", limit: 200 });
+      const rooms: { system: string; count: number }[] = [];
+      for (const k of keys) {
+        const n = Number(await env.SAVES.get(k.name, "text"));
+        if (n > 0) rooms.push({ system: k.name.slice(5), count: n });
+      }
+      rooms.sort((a, b) => b.count - a.count);
+      return json({ rooms, pilots: rooms.reduce((a, r) => a + r.count, 0) });
+    }
 
     // Presence rooms: ws(s)://host/api/room/<system name>
     const rm = url.pathname.match(/^\/api\/room\/(.{1,40})$/);
