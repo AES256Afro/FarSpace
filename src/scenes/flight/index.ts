@@ -362,7 +362,7 @@ export class FlightScene implements Scene {
         for (const d of this.drifters) if (!d.logged && dist(p.x, p.y, d.x, d.y) < 400) this.scanDrifter(g, d);
         let found = 0;
         for (const an of sys.anomalies) {
-          if (!an.discovered && dist(an.x, an.y, p.x, p.y) < (galaxyEventAt(g.world, sys.id)?.kind === "flare" ? 450 : stormBlind(g.world, sys.id) ? 300 : 900)) { an.discovered = true; found++; }
+          if (!an.discovered && dist(an.x, an.y, p.x, p.y) < (galaxyEventAt(g.world, sys.id)?.kind === "flare" ? 450 : stormBlind(g.world, sys.id) ? 300 : 900) * (hasSpecialty(p, "science") ? 1.5 : 1)) { an.discovered = true; found++; }
         }
         keeperScan(g);
         const logged = logSystem(p, sys, 2);

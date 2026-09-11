@@ -927,7 +927,7 @@ describe("station hours and the tannoy", () => {
     const w = generateWorld(42, { realGalaxy: true }); const p = w.player;
     p.crew = [{ ...genCrewCandidate(new RNG(1)), role: "engineer" }, { ...genCrewCandidate(new RNG(2)), role: "medic" }] as any; for (const c of p.crew) c.sick = null;
     p.wear = 65; const rep = briefingReports(w);
-    expect(rep.length).toBe(4); expect(rep[0]).toContain("(ENGINES)"); expect(rep[0]).toContain("WEAR AT 65%"); expect(rep[1]).toContain("(SICKBAY)"); expect(rep[2]).toContain("NO PILOT"); expect(rep[3]).toContain("NO GUNNER");
+    expect(rep.length).toBe(5); expect(rep[0]).toContain("(ENGINES)"); expect(rep[0]).toContain("WEAR AT 65%"); expect(rep[1]).toContain("(SICKBAY)"); expect(rep[2]).toContain("NO PILOT"); expect(rep[3]).toContain("(THE SHIP)"); expect(rep[4]).toContain("NO GUNNER");
     const w0 = p.wear; p.focus = null; tickWear(p, 10); const plain = p.wear - w0;
     p.wear = w0; p.focus = "engines"; tickWear(p, 10); expect(p.wear - w0).toBeCloseTo(plain * 0.8, 5);
     const sys = w.systems[p.systemId]; const to = sys.links[0]; p.focus = null; const f0 = jumpFuelCost(w, sys.id, to); p.focus = "helm"; expect(jumpFuelCost(w, sys.id, to)).toBeLessThanOrEqual(f0);

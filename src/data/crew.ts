@@ -59,6 +59,7 @@ export const SPECIALTIES: Record<CrewRole, { id: string; name: string; desc: str
   pilot: [
     { id: "gaterunner", name: "GATE RUNNER", desc: "Every jump costs ten percent less fuel." },
     { id: "helmsman", name: "HELMSMAN", desc: "Ten percent more thrust and turn, on top of the rest." },
+    { id: "science", name: "SCIENCE OFFICER", desc: "The deep scan reaches half again as far; strange readings pay half again." },
   ],
   medic: [
     { id: "surgeon", name: "FIELD SURGEON", desc: "Illness aboard runs a quarter of its course." },

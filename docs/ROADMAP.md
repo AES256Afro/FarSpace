@@ -1045,6 +1045,11 @@ Time passes for the people on the ship, and for the ship.
 - [x] A counsellor aboard takes a low crew member into the study once a leg;
       the helm calls the flip and burn; the cat has the conn
 
+## Milestone 172 — Science Officer ✅ (Sep 2026)
+- [x] A third pilot specialty: the deep scan reaches half again as far and
+      strange readings pay more; the ship reports at the briefing; a hostage
+      on the band
+
 ## Later: Trek / Expanse / Orville
 
 - A second story arc per faction (first contact proper: the singers' home)

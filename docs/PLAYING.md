@@ -846,6 +846,10 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   somebody built, and the outpost's one bar with its one board game.
 - They pay in data, rep, lives saved, morale and stories; a few of them cost
   something, and a couple leave a mark the crew remember.
+- A hostage on the band: a corsair with a hauler's lifeboat clamped to it
+  and a price. Pay the three hundred, talk them down at parley odds, or go and
+  get them (a red alert and an ambush, and the lifeboat comes free half the
+  time). Three lives either way, if it works.
 - A distress call, unverified: the right words in the right order and a
   signal a little too strong. Answer it (real about half the time: four
   lives; otherwise two hulls come out from behind the hulk already talking),
@@ -920,6 +924,10 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   counsel costs almost nothing). With a counsellor aboard, E beside any crew
   member under sixty morale sends the two of them into the study for twenty
   minutes: morale +6, once a leg, and nobody says what was said.
+- Pilots can take a third specialty at skill three: science officer. The
+  deep scan (hold V) reaches half again as far, and the strange readings
+  (folds, lenses, echoes) pay half again in data. The ship itself reports at
+  the senior staff briefing, between sickbay and tactical, in its own way.
 - Brake hard at better than four-fifths of top speed with a pilot aboard and
   the helm calls the flip and burn. The cat is already under the bunk.
 - Every clamp writes a supplemental entry in the captain's voice: the hours
