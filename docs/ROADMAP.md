@@ -1432,6 +1432,17 @@ Time passes for the people on the ship, and for the ship.
 - [x] Handbook lines for naming finds, the counsellor, wakes, talent night,
       commissioning, the anniversary and ribbons
 
+## Milestone 261 — With a Dog in It ✅ (Sep 2026)
+- [x] Talk to a rock kid on a belt promenade and their mam writes later with
+      a drawing of the ship (a keepsake, belt standing, a deed)
+
+## Milestone 262 — Number One's Chair ✅ (Sep 2026)
+- [x] When the captain retires, Number One is first in line for the ship
+
+## Milestone 263 — The Galley Door II ✅ (Sep 2026)
+- [x] Newsletter lines for the system names, ribbons, the anniversary, the
+      cup, the cadet's column and the undock word
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

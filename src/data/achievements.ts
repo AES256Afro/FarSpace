@@ -145,6 +145,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "inspection", title: "A GOOD SHIP", desc: "Pass an inspection with three marks of four", check: (w) => !!w.player.flags?.inspection },
   { id: "freeman", title: "FREEMAN OF THE BELT", desc: "Earn a standing of three with the rocks", check: (w) => !!w.player.flags?.freeman },
   { id: "requisition", title: "COURTESY OF THE SERVICE", desc: "Requisition a full service at a naval station", check: (w) => !!w.player.flags?.requisition },
+  { id: "rockkid", title: "WITH A DOG IN IT", desc: "Stop and talk to a rock kid", check: (w) => !!w.player.flags?.rockkid },
   { id: "nicknames", title: "DORIS", desc: "Put the engineer's names for the systems on the board", check: (w) => !!w.player.flags?.nicknames },
   { id: "bottle", title: "THE LONG WAY", desc: "Find an old captain's log in a bottle", check: (w) => !!w.player.flags?.bottle },
   { id: "ribbons", title: "CROOKED, THREE TIMES", desc: "Have three ribbons pinned on at receptions", check: (w) => !!w.player.flags?.ribbons },

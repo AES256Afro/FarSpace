@@ -311,6 +311,13 @@ export class StationWalkScene implements Scene {
         if (c && !(g.world.player.flags ?? {})[key]) { (g.world.player.flags ??= {})[key] = true; c.morale = Math.min(100, c.morale + 12); c.loyalty = (c.loyalty ?? 0) + 0.5; addCargo(g.world.player, "food", 1); flag(g, "family"); g.toast(`${c.name.toUpperCase()} IS GLAD YOU STOPPED. +1 PROVISIONS FOR THE GALLEY, MORALE UP`); sfx.pickup(); logEntry(g.world, `Met ${c.name}'s ${fam.name.split("'s ")[1] ?? "family"} at ${this.station.name}`); }
         return;
       }
+      const kid = this.npcs.find((n) => n.tag === "ROCK KID" && dist(this.px, this.py, n.x, n.y) < 16);
+      if (kid) {
+        const p2 = g.world.player; const key = `kid:${this.station.id}`;
+        this.msg = kid.line!; this.msgTimer = 6;
+        if (!(p2.flags ?? {})[key]) { (p2.flags ??= {})[key] = true; p2.flags.rockkid = true; p2.beltStanding = (p2.beltStanding ?? 0) + 0.5; (g.world.mailQueue ??= []).push({ dueT: g.world.time + 700, from: `${kid.name.split(" ")[0]}'s mam, ${this.station.name}`, text: `${kid.name.split(" ")[0]} hasn't stopped talking about the ship with the dent. Enclosed is the drawing. The dent is in it. So, for some reason, is a dog. You don't have a dog. ${kid.name.split(" ")[0]} says you should. Thank you for stopping. Inners don't, usually.` }); (p2.keepsakes ??= []).push(`a rock kid's drawing of the ship, with a dog in it`); if (p2.keepsakes.length > 8) p2.keepsakes.shift(); flag(g, "rockkid"); logEntry(g.world, `Talked to a rock kid at ${this.station.name}; a drawing of the ship came later, with a dog in it`); }
+        return;
+      }
       const band = this.npcs.find((n) => n.tag === "THE BAND" && dist(this.px, this.py, n.x, n.y) < 16);
       if (band) {
         const p2 = g.world.player; const key = `band:${this.station.id}:${weekKey()}`;

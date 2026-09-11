@@ -42,7 +42,7 @@ import { sfx } from "../core/sfx";
 import { flag } from "../core/achievements";
 import { ask } from "../core/dialog";
 import { music } from "../core/music";
-import { rankOf, rescuePoints, STORY_LEN, findStation, canRetireCaptain, retireCaptain, RETIRE_AFTER, ledger, logEntry, chooseSpecialty } from "../world";
+import { rankOf, rescuePoints, STORY_LEN, findStation, canRetireCaptain, retireCaptain, RETIRE_AFTER, ledger, logEntry, firstOfficer, chooseSpecialty } from "../world";
 import * as wire from "../core/wire";
 import { isOccasion } from "../data/occasions";
 import { serialLines } from "../data/serials";
@@ -524,8 +524,9 @@ export class InteriorScene implements Scene {
     const st = findStation(g.world, p.dockedAt ?? "")?.st;
     const me = (p.captainName ?? wire.getCallsign() ?? "THE CAPTAIN").toUpperCase();
     const opts: Encounter["options"] = [];
-    for (const c of p.crew.slice(0, 3)) {
-      opts.push({ label: `HAND THE SHIP TO ${c.name.toUpperCase()} (${ROLE_INFO[c.role].label}, SKILL ${c.skill})`, hint: c.role === "pilot" ? "Their piloting becomes yours" : c.role === "engineer" ? "Their engineering becomes yours" : "A steady hand", result: (g2) => {
+    const fo = firstOfficer(p); const order = fo ? [fo, ...p.crew.filter((c) => c !== fo)] : [...p.crew];
+    for (const c of order.slice(0, 3)) {
+      opts.push({ label: `HAND THE SHIP TO ${c.name.toUpperCase()} (${c === fo ? "NUMBER ONE, " : ""}${ROLE_INFO[c.role].label}, SKILL ${c.skill})`, hint: c.role === "pilot" ? "Their piloting becomes yours" : c.role === "engineer" ? "Their engineering becomes yours" : "A steady hand", result: (g2) => {
         const cap = retireCaptain(g2.world, me, c);
         void wire.post("achievement", `retired and handed ${g2.world.player.shipName ?? "the ship"} to ${c.name}`, st?.name ?? "");
         return `${me} SIGNS THE SHIP OVER AT ${(st?.name ?? "THE DOCK").toUpperCase()} AND WALKS DOWN THE RAMP WITH ${cap.credits - g2.world.player.credits}CR OF PENSION. ${c.name.toUpperCase()} SITS IN THE CHAIR. IT CREAKS THE SAME WAY.`;

@@ -1182,6 +1182,12 @@ export function shipNewsletter(w: World): string[] {
   if (p.prankUntil !== undefined) out.push("THE VOICE SETTINGS REMAIN 'ADJUSTED'. THE EDITOR IS THE VOICE. THE EDITOR IS ENJOYING THIS.");
   if ((p.officeLetters ?? 0) > 0) out.push(`LETTERS FROM THE OFFICE: ${p.officeLetters}. FORMS RETURNED: 0. THE EDITOR IS NOT WORRIED. THE EDITOR IS A LITTLE WORRIED.`);
   if ((p.hailsAnswered ?? 0) > 0) out.push(`HAILS ANSWERED CIVILLY THIS CAREER: ${p.hailsAnswered}. THE LANES ARE KEEPING COUNT TOO.`);
+  if (p.systemNicks && Object.keys(p.systemNicks).length) out.push(`THE EDITOR REMINDS THE CREW THAT ${Object.values(p.systemNicks)[0].toUpperCase()} IS A SYSTEM, NOT A PERSON, AND WOULD LIKE TO STOP BEING ASKED HOW SHE IS.`);
+  if ((p.ribbons ?? 0) > 0) out.push(`RIBBONS ABOARD: ${p.ribbons}. ALL CROOKED. THE EDITOR HAS OFFERED TO STRAIGHTEN THEM AND BEEN REFUSED.`);
+  if (p.flags?.anniversary) out.push("THE ANNIVERSARY WAS MARKED. THE EDITOR TURNED THE GALLEY LIGHTS UP. NOBODY NOTICED. THE EDITOR NOTICED.");
+  if ((p.wakes ?? 0) > 0) out.push("THE CUP IS STILL ON THE TABLE. THE EDITOR WILL NOT BE PRINTING ANYTHING FUNNY ABOUT THE CUP.");
+  if (p.crew.some((c) => (c.docks ?? 0) === 0)) out.push("THE CADET HAS ASKED THE EDITOR FOR A COLUMN. THE EDITOR HAS SAID 'AFTER YOUR FIRST DOCKING'. THE EDITOR IS FAIR.");
+  if (p.catchphrase) out.push(`THE CAPTAIN'S UNDOCK WORD REMAINS '${p.catchphrase.toUpperCase()}'. THE EDITOR HAS STOPPED COUNTING. THE EDITOR HAS NOT STOPPED COUNTING.`);
   const last = (p.log ?? []).slice(-3).reverse().map((e) => e.text); for (const t of last) out.push(`FROM THE LOG: ${t.toUpperCase()}`.slice(0, 118));
   if (out.length === 1) out.push("NOTHING HAPPENED THIS WEEK. THE EDITOR WOULD LIKE SOMETHING TO HAPPEN. NOT A FIRE.");
   out.push("CORRECTIONS: NONE. THE EDITOR IS NEVER WRONG. THE EDITOR IS THE SHIP.");

@@ -752,6 +752,9 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- Stop and talk to a rock kid on a belt promenade. Their mam writes later,
+  with a drawing of the ship that has a dog in it. It stays aboard.
+- When the captain retires, Number One is first in line for the ship.
 - The engineer has names for the systems. Put them on the board and the HUD
   warnings and the briefing use them: BIG RED (REACTOR CORE) 40%.
 - A message in a bottle: an old captain's recorder on a dead survey pod.
