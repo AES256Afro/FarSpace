@@ -2,22 +2,22 @@
 
 ## Current checkpoint
 
-- Release: **v0.252.0**, milestones through **M412**.
-- Release commit: `aca6ee4be84e2c77f0485fefd86c350d32154d14` on `main`.
+- Release: **v0.253.0**, milestones through **M413**.
+- Release commit: `8f809536f9d4ab24253cee9eb4594169a845cb2d` on `main`.
 - Repository: `https://github.com/AES256Afro/FarSpace`.
 - Local workspace: `/Users/chris/Projects/FarSpace`.
-- Tests: **378 passing**, up from 153 at the beginning of this window.
-- TypeScript and production build passed. Bundle: `index-9nDpjZkt.js`,
-  1217.24 kB raw / 430.50 kB gzip. The existing Vite bundle-size notice remains.
-- Hosted CI `34632161029` passed, including the actual Cloudflare deploy step.
-  Container workflow `34632161663` passed for v0.252.0.
-- Live site: <https://farspace.fsociety.work>. The production bundle matched
-  the preserved local build, SHA-256
-  `404b42a9dee0b536c265f57d535692c070560726ab0f0bc4c4d26044caa7ea55`.
+- Tests: **385 passing**. M413 adds seven regressions to the six-hour checkpoint.
+- TypeScript and production build passed. Bundle: `index-Bk73yNWT.js`,
+  1218.20 kB raw / 430.84 kB gzip. The existing Vite bundle-size notice remains.
+- Hosted CI `34634759782` passed, including the actual Cloudflare deploy step.
+  Container workflow `34634761091` passed for v0.253.0.
+- Live site: <https://farspace.fsociety.work>. Production matches the tested
+  local build, SHA-256
+  `6185b087c51aa88d62d89549a085958d7919dc1e7700a581c9afde057b399c9e`.
   `/api/health` returned `{"ok":true}`.
-- BoxPilot catalog: **0.252.0**, PR256 merged as
-  `4fe9fcd4cbc0c6913a88208ee3000553a39407e1`; validate and tags-resolve passed.
-  Remote main's manifest names the exact 0.252.0 image. Catalog publication
+- BoxPilot catalog: **0.253.0**, PR257 merged as
+  `dc6dbf4382d33e660413c7b6bb0cd6792eb04673`; validate and tags-resolve passed.
+  Remote main's manifest names the exact 0.253.0 image. Catalog publication
   is separate from installation on Bigbox; this session did not restart or
   redeploy that server.
 - Save schema remains **14**. New state is optional and has migration and
@@ -26,8 +26,8 @@
 The authorized work window was 12:34:39 to 18:34:39 UTC on September 11
 (07:34:39 to 13:34:39 CDT). The continuation automation is
 `farspace-six-hour-development`, attached to task
-`01a08fcd-5c4c-7161-85da-481557fa6a42`. Pause it at the deadline. Do not extend
-that window without a new user instruction.
+`01a08fcd-5c4c-7161-85da-481557fa6a42`. It is paused. The later user report
+about station scrolling authorized the M413 follow-up only.
 
 The detailed release and native-test evidence is in
 [the September 11 work log](WORKLOG-2026-09-11.md). Earlier handoff content is
@@ -93,6 +93,21 @@ subsequent multi-platform image workflows passed. The original fourth-sitting
 backlog, M387-M402, is complete. Reconcile new ideas against the existing
 roadmap before adding more overlapping milestones.
 
+## M413 follow-up: station scrolling
+
+The user reported shipyard and market scrolling returning to the top. Native
+wheel events with one-pixel pointer drift reproduced the reset. Station rows
+now select by click; pointer motion cannot overwrite wheel or keyboard
+selection. The marketplace also uses a twelve-row viewport for all goods,
+including carried rares. Its range count and information remain below the
+list, outside trade hit areas.
+
+Seven new tests cover pointer drift during and after scrolling, keyboard
+selection, every market row, the exact scrolled trade and inert information
+clicks. The native production preview reached all 37 shipyard entries and all
+26 market goods, bought the final shield upgrade, and sold only the selected
+Thal Root. No console errors. This follow-up adds no save state.
+
 ## State boundaries to preserve
 
 - `FlightScene.enter` and `resetPopulation` own world/system population state.
@@ -112,7 +127,8 @@ roadmap before adding more overlapping milestones.
   Search uses `src/core/searchbox.ts`, an in-page field. Native window.prompt
   did not open in the test host; avoid adding that dependency to this reader.
 - Scrolled station rows must keep their actual indices in `rowBoxes`.
-  `shipWindow`, `storageWindow` and `missionWindow` are the current examples.
+  `shipWindow`, `marketWindow`, `storageWindow` and `missionWindow` are
+  the current examples.
   Do not interpret a visible row number as an index in the complete list.
 
 ## Verification and release procedure
@@ -152,7 +168,7 @@ and a Bigbox installation are separate claims.
 ## Local runtime and next work
 
 The dev server was restarted at <http://127.0.0.1:5199> so its version define
-reads 0.252.0. The separate production-build preview on port 5198 was stopped.
+reads 0.253.0. The separate production-build preview on port 5198 was stopped.
 All temporary browser tabs are closed. No test saves or linked cloud codes
 were created. The next substantive task should start with a native playtest
 and a specific user priority or confirmed defect, rather than replaying the
