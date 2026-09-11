@@ -780,7 +780,9 @@ describe("station hours and the tannoy", () => {
     newLeg(p, w.time); expect(legSummary(w)).toBeNull();
     noteLeg(p, "jumps"); noteLeg(p, "jumps"); noteLeg(p, "fights"); noteLeg(p, "alerts"); noteLeg(p, "cards"); p.rescues = (p.rescues ?? 0) + 1; w.time += 5400;
     const s = legSummary(w)!;
-    expect(s).toMatch(/^Captain's log, supplemental, stardate 41\d+\.\d\. 1\.5 hours since the last clamp: 2 jumps, the hull took fire, red alert once, 1 thing on the lane worth writing down, 1 rescue\. The crew are in good heart\.$/);
+    expect(s).toMatch(/^Supplemental, stardate 41\d+\.\d, 1\.5h since the clamp: 2 jumps, fire taken, red alert x1, 1 card on the lane, 1 rescue\.( Crew in good heart\.)?$/);
+    newLeg(p, w.time); noteLeg(p, "jumps"); w.time += 600; expect(legSummary(w)).toMatch(/10m since the clamp: 1 jump\. Crew in good heart\.$/);
+    expect(s.length).toBeLessThanOrEqual(118);
     newLeg(p, w.time); expect(legSummary(w)).toBeNull();
   });
   it("reviews: commend, counsel, or choose Number One, once a week each", () => {

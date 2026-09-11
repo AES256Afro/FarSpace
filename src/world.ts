@@ -569,15 +569,16 @@ export function legSummary(w: World): string | null {
   if (!l.jumps && !l.fights && !l.cards && !l.alerts && !l.burns && !rescues) return null;
   const parts: string[] = [];
   if (l.jumps) parts.push(`${l.jumps} jump${l.jumps > 1 ? "s" : ""}`);
-  if (l.fights) parts.push(l.fights > 3 ? "the hull took fire more than once" : "the hull took fire");
-  if (l.alerts) parts.push(`red alert ${l.alerts > 1 ? l.alerts + " times" : "once"}`);
-  if (l.burns) parts.push("a hard burn on the juice");
-  if (l.cards) parts.push(`${l.cards} thing${l.cards > 1 ? "s" : ""} on the lane worth writing down`);
+  if (l.fights) parts.push(l.fights > 3 ? "fire taken, more than once" : "fire taken");
+  if (l.alerts) parts.push(`red alert x${l.alerts}`);
+  if (l.burns) parts.push("a hard burn");
+  if (l.cards) parts.push(`${l.cards} card${l.cards > 1 ? "s" : ""} on the lane`);
   if (rescues) parts.push(`${rescues} rescue${rescues > 1 ? "s" : ""}`);
   const hours = Math.max(0, (w.time - l.t0) / 3600);
   const mood = p.crew.length ? Math.round(p.crew.reduce((a, c) => a + c.morale, 0) / p.crew.length) : 0;
-  const close = !p.crew.length ? "Alone on the bridge, and fine with it." : mood >= 70 ? "The crew are in good heart." : mood >= 45 ? "The crew are tired and say so." : "The crew are worn thin. A meal and a port would help.";
-  return `Captain's log, supplemental, stardate ${stardate(w)}. ${hours >= 1 ? `${hours.toFixed(1)} hours` : `${Math.round(hours * 60)} minutes`} since the last clamp: ${parts.join(", ")}. ${close}`;
+  const close = !p.crew.length ? "Alone, and fine with it." : mood >= 70 ? "Crew in good heart." : mood >= 45 ? "Crew tired, and say so." : "Crew worn thin; a meal and a port would help.";
+  const head = `Supplemental, stardate ${stardate(w)}, ${hours >= 1 ? `${hours.toFixed(1)}h` : `${Math.round(hours * 60)}m`} since the clamp: ${parts.join(", ")}.`;
+  return (head + " " + close).length <= 118 ? head + " " + close : head.slice(0, 118);
 }
 // A stardate for the log: hours under way, to a tenth, on a base that looks the part.
 export function stardate(w: World): string { return (41000 + w.time / 360).toFixed(1); }
