@@ -903,4 +903,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Help and handbook cover the harbour: hours, paging, the dock-hand,
       neighbours, lost property, requests, the galley; the ship has lines too
 
+## Milestone 137 — The Harbour View ✅ (Sep 2026)
+- [x] H on RECORD: the clock and rate, who's in the bays, lost property and
+      keepsakes, open requests, and what the tannoy would page you about
+
 ## Later

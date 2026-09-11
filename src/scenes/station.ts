@@ -4,7 +4,7 @@ import { ask, confirmBox } from "../core/dialog";
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth, CHAR_H } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { RNG } from "../core/rng";
+import { RNG, hashStr } from "../core/rng";
 import { clamp } from "../core/mathx";
 import { commodity, faction } from "../data/data";
 import { HULLS, hull } from "../data/hulls";
@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS, roleLabel } from "../
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, tickAlumniMail, catGift, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, notableOutcome, ledger, ledgerAround, LEDGER_LABELS, dockingsAt, OLD_HAND_AT, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter, RACE_GATES, raceHolder, postDelivered, captainNickname, charterRoute, tickWorld, signGuestbook, regattaObjective, buyStake, collectStake, stakeDividend, stakePrice, totalShares, hasSpecialty, crewOwnHull, OWN_HULL_CREW_FEE, favourFor, favourDone, resolveBorder, pushInfluence, weekKey, borderStanding, replyToLetter, borderContest, collectRemoteStakes, lanesReport, isFriend, isRival, hangPicture, leaveLostItem, tickLostProperty } from "../world";
+  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, tickAlumniMail, catGift, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, notableOutcome, ledger, ledgerAround, LEDGER_LABELS, dockingsAt, OLD_HAND_AT, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter, RACE_GATES, raceHolder, postDelivered, captainNickname, charterRoute, tickWorld, signGuestbook, regattaObjective, buyStake, collectStake, stakeDividend, stakePrice, totalShares, hasSpecialty, crewOwnHull, OWN_HULL_CREW_FEE, favourFor, favourDone, resolveBorder, pushInfluence, weekKey, borderStanding, replyToLetter, borderContest, collectRemoteStakes, lanesReport, isFriend, isRival, hangPicture, leaveLostItem, tickLostProperty, berthedCaptains } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
 import { BLUEPRINTS, MATERIALS, engGrade, nextCost, canAfford, upgrade } from "../data/engineering";
@@ -28,6 +28,7 @@ import { isOccasion, occasionFor } from "../data/occasions";
 import { sfx } from "../core/sfx";
 import * as wire from "../core/wire";
 import { stationHour, clockText, tannoyLines, hoursRate } from "../data/tannoy";
+import { dockhandLines } from "../data/dockhand";
 import { weeklyIssue, myVote, voteResult, castVote, voteMods } from "../data/votes";
 import { drawTutorial } from "../core/tutorial";
 import { music } from "../core/music";
@@ -646,6 +647,7 @@ export class StationScene implements Scene {
         if (inp.wasPressed("b")) { this.recordView = this.recordView === "ledger" ? "achievements" : "ledger"; this.cursor = 0; sfx.blip(); }
         if (inp.wasPressed("p")) { this.recordView = this.recordView === "guestbook" ? "achievements" : "guestbook"; this.cursor = 0; sfx.blip(); }
         if (inp.wasPressed("w")) { this.recordView = this.recordView === "week" ? "achievements" : "week"; this.cursor = 0; sfx.blip(); }
+        if (inp.wasPressed("h")) { this.recordView = this.recordView === "harbour" ? "achievements" : "harbour"; this.cursor = 0; sfx.blip(); }
         if (inp.wasPressed("c")) { g.settingsReturn = "station"; g.setScene("chronicle"); return; }
         if (inp.wasPressed("x")) {
           try {
@@ -664,7 +666,7 @@ export class StationScene implements Scene {
 
   squadrons: wire.Squadron[] = [];
   patrons: Record<string, string> = {};
-  recordView: "achievements" | "log" | "ledger" | "guestbook" | "week" = "achievements";
+  recordView: "achievements" | "log" | "ledger" | "guestbook" | "week" | "harbour" = "achievements";
   surveyView: "data" | "codex" = "data";
   raceRecords: wire.RaceRec[] | null = null; // the wire's course records for this station
   tannoy = ""; tannoyT = 4; tannoyDur = 8;
@@ -1828,6 +1830,39 @@ export class StationScene implements Scene {
     drawText(ctx, "WAGES, FUEL, YARD WORK, TRADE, FARES, TOLLS, CHARTERS, LETTERS: THE WHOLE STORY OF THE MONEY.", 8, VH - 32, PAL.greyDark);
   }
   // The week: the strategy layer on one page. Votes, the border, the regatta, holdings, your name.
+  // the harbour view: what this port knows about you and your ship right now, without walking the deck
+  drawHarbour(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
+    const w = g.world; const p = w.player; const st = this.station;
+    const t = stationHour(st); const hr = hoursRate(st);
+    drawText(ctx, `${st.name.toUpperCase()} HARBOUR - H FOR THE SERVICE RECORD`, 8, top, PAL.info);
+    let y = top + 12;
+    drawText(ctx, "THE CLOCK", 8, y, PAL.gold); y += 9;
+    drawText(ctx, `${clockText(t)} STATION TIME, ${t.label}. YARD: ${hr.label || "STANDARD RATE"}${hr.mul !== 1 ? ` (${hr.mul > 1 ? "+" : ""}${Math.round((hr.mul - 1) * 100)}%)` : ""}. THE LOUNGE IS ${hr.lounge >= 0.75 ? "FULL" : hr.lounge <= 0.35 ? "QUIET" : "BUSY ENOUGH"}.`, 8, y, PAL.grey); y += 9;
+    y += 3;
+    drawText(ctx, "IN THE BAYS", 8, y, PAL.gold); y += 9;
+    const caps = berthedCaptains(w, st.id);
+    drawText(ctx, caps.length ? caps.map((c) => `${c.name.toUpperCase()} OFF THE ${c.ship.toUpperCase()}${isRival(c) ? " (RIVAL)" : isFriend(c) ? " (FRIEND)" : ""}`).join("; ").slice(0, 104) : "NOBODY YOU KNOW IS BERTHED THIS WEEK.", 8, y, PAL.grey); y += 9;
+    { const parked = (p.fleet ?? []).filter((f) => f.stationId === st.id); drawText(ctx, `${(p.shipName ?? hull(p.hullId).name).toUpperCase()} IN BAY 4${parked.length ? `; YOURS ACROSS THE DECK: ${parked.map((f) => (f.name ?? hull(f.hullId).name).toUpperCase()).join(", ")}` : ""}. THE DOCK-HAND: ${dockhandLines(w, st, new RNG(hashStr(`dh:${st.id}:${weekKey()}`)))[0].toUpperCase()}`.slice(0, 104), 8, y, PAL.grey); y += 9; }
+    y += 3;
+    drawText(ctx, "ON YOUR SHIP", 8, y, PAL.gold); y += 9;
+    const lost = p.lostProperty ?? [];
+    drawText(ctx, lost.length ? `LOST PROPERTY: ${lost.map((it) => `${it.name.toUpperCase().split(",")[0]} (${it.owner.toUpperCase()}${it.stationId === st.id ? ", GOT OFF HERE" : ""})`).join("; ")}`.slice(0, 104) : "LOST PROPERTY: NOTHING LEFT IN THE CABIN.", 8, y, PAL.grey); y += 9;
+    drawText(ctx, (p.keepsakes ?? []).length ? `KEPT ABOARD: ${(p.keepsakes ?? []).slice(-3).map((k) => k.toUpperCase().split(",")[0]).join(", ")}`.slice(0, 104) : "KEPT ABOARD: NOTHING YET.", 8, y, PAL.grey); y += 9;
+    const open = passengersAboard(p).filter((m) => m.request && !m.requestSettled);
+    drawText(ctx, open.length ? `FARES ASKING: ${open.map((m) => `${(m.passengerName ?? "A FARE").toUpperCase()} WANTS ${m.request === "meal" ? "A HOT MEAL" : m.request === "quiet" ? "A QUIET RUN" : "A VIEW"}${m.requestMet ? " (DONE)" : ""}`).join("; ")}`.slice(0, 104) : "FARES ASKING: NOTHING OPEN.", 8, y, PAL.grey); y += 9;
+    y += 3;
+    drawText(ctx, "PAGING", 8, y, PAL.gold); y += 9;
+    const pages: string[] = [];
+    if ((p.mail ?? []).some((m) => !m.replied)) pages.push("A LETTER WAITS FOR AN ANSWER (NEWS, R)");
+    if (p.cat && p.catAway === st.id) pages.push(`${p.cat.name.toUpperCase()} IS ON THE PROMENADE`);
+    for (const c of p.crew.filter((c) => c.home === st.id && !c.sick && !(p.flags ?? {})[`family:${st.id}:${c.name}:${weekKey()}`])) pages.push(`${c.name.split(" ")[0].toUpperCase()}'S PEOPLE ARE ON THE PROMENADE`);
+    if (p.missions.some((m) => m.accepted && !m.done && m.targetStationId === st.id)) pages.push("A CONSIGNMENT IS DUE HERE (MISSIONS)");
+    if (p.hull < p.hullMax * 0.4) pages.push("THE HULL IS TRAILING SOMETHING (SHIPYARD)");
+    if (p.fuel < p.fuelMax * 0.15) pages.push("THE TANK CAME IN ON FUMES (SHIPYARD)");
+    if (!pages.length) drawText(ctx, "NOTHING FOR YOU ON THE TANNOY. ENJOY THE QUIET.", 8, y, PAL.grey);
+    for (const l of pages.slice(0, 5)) { drawText(ctx, `- ${l}`, 8, y, PAL.grey); y += 9; }
+  }
+
   drawWeek(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
     const w = g.world; const p = w.player;
     drawText(ctx, `THE WEEK OF ${weekKey()} - W FOR THE SERVICE RECORD`, 8, top, PAL.info);
@@ -1875,10 +1910,11 @@ export class StationScene implements Scene {
     if (this.recordView === "ledger") { this.drawLedger(g, ctx, top); return; }
     if (this.recordView === "guestbook") { this.drawGuestbook(g, ctx, top); return; }
     if (this.recordView === "week") { this.drawWeek(g, ctx, top); return; }
+    if (this.recordView === "harbour") { this.drawHarbour(g, ctx, top); return; }
     const p = g.world.player;
     const w = g.world;
     const have = new Set(p.achievements ?? []);
-    drawText(ctx, `SERVICE RECORD${w.hardcore ? " - HARDCORE" : ""} - L LOG - B LEDGER - P GUESTBOOK - W THE WEEK - C CHRONICLE - X EXPORT`, 8, top, PAL.info);
+    drawText(ctx, `SERVICE RECORD${w.hardcore ? " - HARDCORE" : ""} - L LOG - B LEDGER - P GUESTBOOK - W WEEK - H HARBOUR - C CHRONICLE - X EXPORT`, 8, top, PAL.info);
     const stats = [
       `KILLS ${p.kills}`, `DISCOVERIES ${p.discoveries}`, `ARCS ${Object.values(p.arcs).reduce((a, b) => a + b, 0)}/15`,
       `CREDITS ${p.credits}`, `CREW ${p.crew.length}`, `HULL ${hull(p.hullId).name.toUpperCase()}`,
