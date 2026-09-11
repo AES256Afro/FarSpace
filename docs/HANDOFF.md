@@ -1,115 +1,159 @@
-# FarSpace handoff — end of the Sep 10–11 2026 block
+# FarSpace handoff, September 11, 2026
 
-Written 04:30 CDT, Sep 11 2026. Everything below was true at that moment.
+## Current checkpoint
 
-For the later six-hour work window, see [the September 11 work log](WORKLOG-2026-09-11.md).
+- Release: **v0.252.0**, milestones through **M412**.
+- Release commit: `aca6ee4be84e2c77f0485fefd86c350d32154d14` on `main`.
+- Repository: `https://github.com/AES256Afro/FarSpace`.
+- Local workspace: `/Users/chris/Projects/FarSpace`.
+- Tests: **378 passing**, up from 153 at the beginning of this window.
+- TypeScript and production build passed. Bundle: `index-9nDpjZkt.js`,
+  1217.24 kB raw / 430.50 kB gzip. The existing Vite bundle-size notice remains.
+- Hosted CI `34632161029` passed, including the actual Cloudflare deploy step.
+  Container workflow `34632161663` passed for v0.252.0.
+- Live site: <https://farspace.fsociety.work>. The production bundle matched
+  the preserved local build, SHA-256
+  `404b42a9dee0b536c265f57d535692c070560726ab0f0bc4c4d26044caa7ea55`.
+  `/api/health` returned `{"ok":true}`.
+- BoxPilot catalog: **0.252.0**, PR256 merged as
+  `4fe9fcd4cbc0c6913a88208ee3000553a39407e1`; validate and tags-resolve passed.
+  Remote main's manifest names the exact 0.252.0 image. Catalog publication
+  is separate from installation on Bigbox; this session did not restart or
+  redeploy that server.
+- Save schema remains **14**. New state is optional and has migration and
+  round-trip coverage where it changes persistent behavior.
 
-## State
+The authorized work window was 12:34:39 to 18:34:39 UTC on September 11
+(07:34:39 to 13:34:39 CDT). The continuation automation is
+`farspace-six-hour-development`, attached to task
+`01a08fcd-5c4c-7161-85da-481557fa6a42`. Pause it at the deadline. Do not extend
+that window without a new user instruction.
 
-- **Code:** `main` at v0.232.0 plus one untagged test commit (`334e7bc`, the
-  loaded-ship encounter soak). Working tree clean, everything pushed to
-  `github.com/AES256Afro/FarSpace`.
-- **Milestones:** 1–392 shipped. This block covered M126–M392 (v0.125.0 →
-  v0.232.0), all browser-verified against the dev tab, themed on Star Trek,
-  The Expanse and The Orville (original names and lines only).
-- **Tests:** 153 vitest tests pass (`npx vitest run`). `npx tsc --noEmit` and
-  `npx vite build` are clean.
-- **Performance:** worst frame ~10.4 ms in flight (20 NPCs, red alert),
-  interior, promenade (13 NPCs) and station views.
-- **Live site:** farspace.fsociety.work serves 0.232.0 (Cloudflare Workers
-  follows `main`).
-- **BoxPilot catalog:** merged through **0.221.0**. Tagged but not yet
-  catalogued: **0.222.0 – 0.232.0**. Their container images are built
-  (`ghcr.io/aes256afro/farspace:<version>`), so only the catalog PRs remain.
+The detailed release and native-test evidence is in
+[the September 11 work log](WORKLOG-2026-09-11.md). Earlier handoff content is
+available in Git history at `4aa3cff:docs/HANDOFF.md`.
 
-## First thing to do next session
+## User's attack-on-sight request
 
-Catalogue the eleven pending versions with one sequential chain, from the
-session scratchpad copy of `catalog.sh` (or restore it from memory notes):
+M405 and M406 implement two separate ways to end pursuit.
 
-```bash
-for v in 0.222.0 0.223.0 0.224.0 0.225.0 0.226.0 0.227.0 0.228.0 0.229.0 0.230.0 0.231.0 0.232.0; do bash catalog.sh $v "Milestones through $v"; done
-```
+- Law: break contact for **60 flight seconds**. Keep 900m from patrols and
+  fighters, and 500m from hostile law platforms on a severe warrant. The HUD
+  shows contact or the remaining countdown. An offence or renewed contact
+  resets progress. Free cooling preserves reputation, closes existing cases,
+  and reopens civilian docking. That closed record does not restart pursuit
+  by itself. Military access can still depend on standing.
+- Immediate settlement: **U in flight**, or Traffic control in the pause menu,
+  presents the current quote. Payment closes cases, stops law fire, and
+  restores affected faction standings to neutral or better. It is reachable
+  from space when docking is refused. Insufficient credits do not pay.
+- Pirates: **E within 260m** opens parley. Payment is **120cr per nearby
+  corsair**; a successful bluff, warning or reputation appeal also works.
+  Successful parley grants **180 flight seconds of safe passage in that
+  system**. Replacement pirates and Veil platforms respect it, as do your
+  automatic gunner and escorts. A manual hit on a corsair breaks the temporary
+  agreement. Flight elsewhere consumes time; menus and docking do not.
+- Both mechanisms persist through saves. Law payment does not buy pirate
+  passage. Veil standing of 40 also keeps pirates peaceful.
 
-Run a hang guard beside it: any "Container image" workflow run in progress
-for more than nine minutes is hung and should be cancelled (`gh run cancel`);
-the chain then reports "image run failed" for that version and moves on. Use
-`gh run list --limit 40` in the guard so old tags stay visible. Never run two
-catalog PRs at once. Roughly one image build in three hung tonight.
+Source: `src/core/law.ts`, `src/core/piracy.ts`, and
+`src/scenes/flight/{index,ai,combat,render}.ts`. Regression suites:
+`tests/law-cooldown.test.ts` and `tests/pirate-passage.test.ts`. The work log
+records full unaccelerated 60-second and 180-second native tests, payment,
+insufficient funds, save migration, replacement ships and manual truce break.
+The final v0.252.0 bundle also passed a paid-settlement and natural-cooldown
+integration check: 60.018 flight seconds to close pursuit, with a story scene
+pausing the timer, unchanged credits and retained -85 standing.
 
-Versions superseded and never catalogued (safe to ignore): 0.119–0.124,
-0.125.1–0.127.0, 0.129, 0.130, 0.133, 0.138, 0.139, 0.141, 0.145, 0.153,
-0.160, 0.162, 0.165–0.167, 0.175, 0.176, 0.183, 0.188, 0.191, 0.193, 0.198,
-0.202.
+## Work completed in this window
 
-## Release procedure (unchanged)
+Twenty incremental releases, v0.233.0 through v0.252.0:
 
-1. Edit, then gate: `npx tsc --noEmit && npx vitest run`, commit, push.
-2. Bump `package.json` and the README "Milestones 1–N are live (vX)" line.
-3. Tag only via `scratchpad/tag.sh <version>`; it refuses unless package.json
-   and README carry the version (two tags failed the workflow guard before
-   this script existed).
-4. `catalog.sh <version> "<summary>"` waits for the image run, opens the
-   BoxPilot PR, polls checks (reruns a failing check once), squash-merges.
-5. BoxPilot's `validate` check now takes ~5–8 minutes; budget ~10 minutes per
-   version.
+| Milestones | Result |
+| --- | --- |
+| M393 | Two-person ground teams, visible companions and combined role benefits. |
+| M394-M395 | Dockable singers' home, light economy, passenger journey and guestbook. |
+| M396 | Flight contacts and rescue state survive temporary scenes; changed worlds rebuild them. |
+| M397 | An old shipmate's final journey, chosen retirement port and complete letters. |
+| M398 | Belt council votes, representation journey and physical council room. |
+| M399 | Ship-specific simulation with saved choices and once-per-leg crew rewards. |
+| M400-M402 | Voluntary service career, assignments and reports, borrowed cutter, explicit choice between orders and booked fares. |
+| M403-M404 | Docking settles once per actual arrival; purchased fittings survive hull transfers and loans. |
+| M405-M406 | Free law cooldown, paid settlement and pirate safe passage. |
+| M407 | Complete fleet list, selected charter release, exact remote-ship liner travel and shipyard pointer repair. |
+| M408 | Searchable Controls and Handbook, full scrolling and section navigation. |
+| M409 | Crew arrival dialogue finishes before a pending port audience; no duplicate docking settlement. |
+| M410 | Complete current service orders and every retained report. |
+| M411 | Complete warehouse list with stable selection and one-unit transfers. |
+| M412 | Complete mission board and searchable mission log; singer fares cannot be handed in at human stations. |
 
-## Gotchas learned this block (also in memory)
+M397 also changed the Docker build stage to run Node on the build platform.
+The earlier arm64-emulated Node build crashed with an illegal instruction;
+subsequent multi-platform image workflows passed. The original fourth-sitting
+backlog, M387-M402, is complete. Reconcile new ideas against the existing
+roadmap before adding more overlapping milestones.
 
-- macOS `grep -qs pattern fileA fileB` returns exit 2 when fileB is missing,
-  even on a match. Waiters built on it hung silently. Grep exactly one
-  existing file.
-- A guard with `--limit 6` never saw a hung run once six newer tags existed.
-- Waiter shells carry `catalog.sh X` in their argv; `pgrep -f catalog.sh`
-  shows waiters as if chains were running. Check `ps` for the real process.
-- Story cards opened on flight entry ("THE SIGNAL - STATIC") block flight
-  updates in browser tests; dismiss with Enter first.
-- A dynamic `import("/src/core/settings.ts")` in the dev console is a
-  different module instance from the app's; test settings through the
-  settings scene keys.
-- `window.game` becomes the `<canvas id="game">` element when `main.ts` fails
-  to load; if `g.setScene` is undefined, reload and read the console.
-- Python `sub()` edits assert their anchors; a failed assert leaves earlier
-  edits applied. Re-run only the remaining edits.
+## State boundaries to preserve
 
-## Where things live
+- `FlightScene.enter` and `resetPopulation` own world/system population state.
+  `doJump` has a direct entry path and must follow the same rules. Temporary
+  scenes must preserve ship identity, rescue work, escorts and projectiles.
+- `src/core/docking.ts` identifies real arrivals. `StationScene.enter` may
+  rebuild views after loading, but cannot repeat wages, food, passenger stops
+  or leg resets for a settled visit. `portAudiencePending` lets the second
+  arrival conversation wait for the first without another settlement.
+- Fitted capacities come from `fittedHullStats` and `refreshFittedStats`.
+  Yard fittings are explicit saved bonuses. Check cargo and reserved crew
+  berths before changing a hull, including service loans and remote liners.
+- Service state lives in `src/core/service.ts` and `src/core/serviceloan.ts`.
+  Booked-fare receipts stay attached to the accepted order. Reading the file
+  cannot file a report, collect pay or return a cutter.
+- `ReaderScene` handles Controls, Handbook, Service file and Mission log.
+  Search uses `src/core/searchbox.ts`, an in-page field. Native window.prompt
+  did not open in the test host; avoid adding that dependency to this reader.
+- Scrolled station rows must keep their actual indices in `rowBoxes`.
+  `shipWindow`, `storageWindow` and `missionWindow` are the current examples.
+  Do not interpret a visible row number as an index in the complete list.
 
-- `src/world.ts` — pure sim (missions, fares, crew, belt standing, letters,
-  chronicle, newsletter, briefing, standing orders' effects).
-- `src/scenes/station.ts` — the station enter chain (inspection → inquiry →
-  hearing → reception → grievance → spin outage → register → overrun → …),
-  mission completion, harbour view, drawLog.
-- `src/scenes/flight/index.ts` — alerts, parley, hails, pause menu actions,
-  observation/patrol ticks, the long leg, the service cutter, the singers'
-  home.
-- `src/scenes/interior.ts` — study/briefing/motions, card and talent night,
-  the captain's table, the wall of record (plaque, motto, log, newsletter,
-  undock word).
-- `src/scenes/stationwalk.ts` — promenade crowds (marines, rock kids, the
-  cadet's mam), the harbour office (tithe), the band.
-- `src/scenes/surface.ts` — landings, who comes down, shore leave.
-- `src/scenes/wreck.ts` — boarding party (incl. the cadet), salvage rights,
-  the recorder, the place.
-- `src/data/encounters.ts` — ~100 cards; a test asserts unique ids and that
-  every option returns a line under a fake Game (`g.toast` may be absent:
-  guard with `typeof g.toast === "function"`).
-- `src/data/{hails,gossip,tannoy,dockhand,chatter,achievements,almanac}.ts`,
-  `src/core/shipvoice.ts` — flavour pools keyed on player state.
-- `tests/second-sitting.test.ts`, `tests/encounter-soak.test.ts` — the new
-  pure-function and loaded-ship tests.
-- `docs/ROADMAP.md` — every milestone, plus "Later: Trek / Expanse /
-  Orville (the fourth sitting)" as the next backlog. `docs/PLAYING.md` — the
-  player-facing guide (new sections are prepended, so it reads
-  newest-first). `src/scenes/whatsnew.ts` — in-game notes; the second
-  sitting is one long entry headed "0.167 TO 0.232".
+## Verification and release procedure
 
-## Housekeeping notes
+1. Inspect the checkout and `git status`; preserve any active work.
+2. Run `npm test` and `npm run build` for substantive changes. Use native
+   browser keys/pointer for the affected player flow. Tests run in Node and
+   are excluded from the TypeScript source build, so use actual model types.
+3. Update `package.json`, `package-lock.json`, README milestone/version,
+   roadmap, player guide, in-game notes and the work log as applicable.
+4. Commit and publish to `main`. The tag helper is currently at:
+   `/private/tmp/claude-501/-Users-chris-Projects-FarSpace/a99b5ff3-5c95-4912-af91-c13c47022b3f/scratchpad/tag.sh`.
+   Inspect it before using it. Run from the explicit FarSpace workspace.
+5. Query workflows with the full release SHA. Check the actual Deploy to
+   Cloudflare step, not just the parent workflow's green status. Check the
+   container image separately. Preserve the exact local JS bundle before
+   another build replaces `dist`.
+6. Compare the live asset bytes with that preserved build and check API health.
+   Python's local CA lookup failed during this session; `curl --fail` worked.
+   Do not bypass certificate verification.
+7. Update `catalog/farspace.yaml` in an isolated BoxPilot checkout only after
+   the image workflow succeeds. Run a single catalog chain, wait for required
+   checks, merge the exact checked commit, then verify remote main.
 
-- The dev tab (localhost:5199) had no callsign and no cloud-base override,
-  so nothing was posted to prod KV and nothing needs purging. Its settings
-  were toggled during tests and restored to defaults.
-- Save data: all new fields are optional; `SAVE_VERSION` unchanged; a
-  round-trip test covers the new state.
-- Memory files: `farspace-state.md` (summary at top, append log below; some
-  "CDT" stamps in the log drifted, trust `date`), `trek-expanse-orville.md`
-  (the directive and the done list), `release-chain-gotcha.md`.
+The current catalog helper is
+`/private/tmp/farspace-six-hour-20260911/catalog-queue.mjs`, with `catalog.log`
+and `catalog-current.json` beside it. It contains this session's deadline;
+read it before reusing it for another authorized window. The old 0.222.0 image
+was cancelled and superseded. Initial successful catalog backlog versions
+were handled sequentially; do not revive the old handoff's pending list.
+
+Local browser fixtures used temporary worlds, disabled autosaves and no
+callsign/cloud link. Close test tabs when done. Physical touch, gamepad and
+VoiceOver use were not performed. Hosted deployment, native browser behavior,
+and a Bigbox installation are separate claims.
+
+## Local runtime and next work
+
+The dev server was restarted at <http://127.0.0.1:5199> so its version define
+reads 0.252.0. The separate production-build preview on port 5198 was stopped.
+All temporary browser tabs are closed. No test saves or linked cloud codes
+were created. The next substantive task should start with a native playtest
+and a specific user priority or confirmed defect, rather than replaying the
+completed fourth-sitting backlog.
