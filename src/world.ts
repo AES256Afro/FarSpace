@@ -170,6 +170,7 @@ export interface Mission {
   docksAboard?: number;
   party?: number;           // how many of them there are
   returning?: boolean;      // rode with you before and asked for you by name
+  favourFor?: string;       // a post run carried as a favour for this captain (NpcCaptain id)
   anomalyId?: string;
   syndicate?: string;                  // contract issued by an AI syndicate (tag)
   tenderDone?: boolean;                // repair tenders: the work is done, collect at the station
@@ -970,6 +971,30 @@ export function helpCaptain(w: World, name: string | undefined, kind: keyof type
   (w.mailQueue ??= []).push({ dueT: w.time + rng.int(300, 900), from: `${c.name}, ${c.ship}`, text: `${rng.pick(HELP_LINES[kind])} Look me up at ${home}.`, gift });
   if (c.disposition >= 2 && c.helped === 2) return `${c.name.toUpperCase()} OF THE ${c.ship.toUpperCase()} CALLS YOU A FRIEND NOW. THEIR HOME IS ${home.toUpperCase()}.`;
   return null;
+}
+// A favour for a friend: something of theirs carried to a nearby station. No fee; a letter and a gift later,
+// and a captain who remembers.
+export function favourFor(w: World, cap: NpcCaptain, station: StationDef, rng: RNG): Mission | null {
+  const sys = findStation(w, station.id)?.sys; if (!sys) return null;
+  const pool = sys.links.map((l) => w.systems[l]).filter(Boolean).flatMap((s2) => s2.stations.filter((x) => !x.military).map((st) => ({ sys: s2, st })));
+  if (!pool.length) return null;
+  const t = rng.pick(pool);
+  const item = rng.pick(["a sealed letter", "a box of seedlings", "a repaired clock", "a photograph in a frame", "a bottle of something older than either of you", "a child's drawing, folded twice"]);
+  return {
+    id: `favour-${cap.id}-${Math.floor(w.time)}`, kind: "post", accepted: false, done: false, tier: 0,
+    title: `A favour for ${cap.name}: ${t.st.name}`,
+    desc: `${item.charAt(0).toUpperCase() + item.slice(1)} for someone at ${t.st.name}, ${t.sys.name}. ${cap.name} can't get there this month. No fee; they'll remember.`,
+    fromStationId: station.id, targetSystemId: t.sys.id, targetStationId: t.st.id, reward: 0, repReward: 1, favourFor: cap.id,
+  };
+}
+export function favourDone(w: World, m: Mission, rng: RNG): string | null {
+  const cap = (w.captains ?? []).find((c) => c.id === m.favourFor); if (!cap) return null;
+  cap.helped++; cap.disposition = Math.min(5, cap.disposition + 1); cap.met++;
+  const home = findStation(w, cap.homeStationId)?.st.name ?? "home";
+  const gift = rng.chance(0.5) ? { credits: rng.int(150, 400) } : rng.chance(0.5) ? { parts: 2 } : { data: 80 };
+  (w.mailQueue ??= []).push({ dueT: w.time + rng.int(200, 700), from: `${cap.name}, ${cap.ship}`, text: rng.pick([`It got there. She cried. I owe you more than this, but take this. Look me up at ${home}.`, `You didn't have to. That's why it matters. Drinks are on me for a year.`, `They said the box arrived in one piece. Nobody's managed that before. Thank you.`]), gift });
+  logEntry(w, `Carried a favour for ${cap.name}`);
+  return `${cap.name.toUpperCase()} WILL HEAR IT ARRIVED. THAT'S THE KIND OF THING THAT COMES BACK AROUND.`;
 }
 // Carry the post and sometimes a letter in the bag is for you: a stranger who saw your name on the manifest
 export function postDelivered(w: World, rng: RNG): string | null {

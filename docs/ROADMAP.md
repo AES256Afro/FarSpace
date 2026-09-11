@@ -699,4 +699,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] `/api/notes`: one line per pilot per system, tied to a wonder, read by
       whoever sights it next
 
+## Milestone 84 — Favours ✅ (Sep 2026)
+- [x] Friends in the lounge hand you errands; no fee, a letter and gift later,
+      disposition up
+
 ## Later

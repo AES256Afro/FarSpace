@@ -229,6 +229,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Favours
+
+- Sit with a friend in a lounge and ask if there's anything you can carry.
+  Sometimes there is: a sealed letter, a box of seedlings, a repaired clock,
+  bound for a nearby station. No fee. A letter and a gift come later, and a
+  captain who remembers you when it counts.
+
 ## Notes at the wonders
 
 - In the real galaxy, within sight of a wonder, the pause menu offers LEAVE A

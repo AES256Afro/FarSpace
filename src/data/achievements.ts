@@ -96,6 +96,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "fleetAtWork", title: "FLEET AT WORK", desc: "Put one of your own hulls on a charter run", check: (w) => !!w.player.flags?.fleetAtWork },
   { id: "fuelrat", title: "FUEL RAT", desc: "Answer another pilot's mayday with fuel", check: (w) => !!w.player.flags?.fuelrat },
   { id: "note", title: "FOR WHOEVER COMES NEXT", desc: "Leave a note at a wonder", check: (w) => !!w.player.flags?.note },
+  { id: "favour", title: "A FAVOUR OWED", desc: "Carry a favour for a friend", check: (w) => !!w.player.flags?.favour },
   { id: "first", title: "FIRST FOOTFALL", desc: "Be first to log a system", check: (w) => !!w.player.flags?.first },
   { id: "scout", title: "SCOUT", desc: "Reach Explorer rank Scout", check: (w) => rankOf(w.player, "explorer").idx >= 2 },
   { id: "dealer", title: "DEALER", desc: "Reach Trader rank Dealer", check: (w) => rankOf(w.player, "trader").idx >= 3 },

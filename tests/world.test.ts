@@ -15,7 +15,7 @@ import { STARS, starDistance } from "../src/data/stars";
 import { ACHIEVEMENTS } from "../src/data/achievements";
 import { ARCS, dailyContract, dailyKey, rankOf, logSystem, applyHull } from "../src/world";
 import { MODULES } from "../src/data/modules";
-import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook, leaveWreck, addWireWrecks, enterRegatta, regattaObjective, regattaProgress, buyStake, collectStake, stakePrice, STAKE_CAP, hasSpecialty, chooseSpecialty, wearRate, crewOwnHull, OWN_HULL_CREW_FEE, maydayAnswered } from "../src/world";
+import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook, leaveWreck, addWireWrecks, enterRegatta, regattaObjective, regattaProgress, buyStake, collectStake, stakePrice, STAKE_CAP, hasSpecialty, chooseSpecialty, wearRate, crewOwnHull, OWN_HULL_CREW_FEE, maydayAnswered, favourFor, favourDone } from "../src/world";
 import { RARES } from "../src/data/data";
 import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
@@ -914,6 +914,20 @@ describe("maydays on the wire", () => {
     expect(maydayAnswered(evs, "ABLE-1", 1500)).toBeNull();
     expect(maydayAnswered(evs, "able-1", 500)).toBe("BAKER-2");
     expect(maydayAnswered(evs, "EASY-5", 0)).toBeNull();
+  });
+});
+
+describe("favours", () => {
+  it("a friend's errand: no fee, a letter and a gift later, a captain who remembers", () => {
+    const w = generateWorld(37, { realGalaxy: true });
+    const cap = (w.captains ?? [])[0]; expect(cap).toBeTruthy();
+    const st = Object.values(w.systems).flatMap((s) => s.stations).find((x) => !x.military && (w.systems[Object.values(w.systems).find((s2) => s2.stations.includes(x))!.id].links.length > 0))!;
+    const m = favourFor(w, cap, st, new RNG(2))!;
+    expect(m.kind).toBe("post"); expect(m.reward).toBe(0); expect(m.favourFor).toBe(cap.id);
+    const helped = cap.helped, disp = cap.disposition;
+    expect(favourDone(w, m, new RNG(3))).toContain(cap.name.toUpperCase());
+    expect(cap.helped).toBe(helped + 1); expect(cap.disposition).toBe(Math.min(5, disp + 1));
+    expect((w.mailQueue ?? []).some((l) => l.from.startsWith(cap.name))).toBe(true);
   });
 });
 
