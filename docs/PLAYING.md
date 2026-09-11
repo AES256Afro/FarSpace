@@ -229,6 +229,12 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Ports remember you
+
+- The harbourmaster's office on the promenade has you on file: dockings here,
+  your stake and what it pays, fares you've landed here, how you voted this
+  week, and the ring course record against your best.
+
 ## Traffic control
 
 - Near a station the band carries the real traffic: control clears each

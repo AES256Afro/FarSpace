@@ -7,7 +7,7 @@ import { PAL } from "../gfx/palette";
 import { RNG, hashStr } from "../core/rng";
 import { dist } from "../core/mathx";
 import { sfx } from "../core/sfx";
-import { StationDef, findStation, isFriend, isRival, rivalOf, galaxyEventAt } from "../world";
+import { StationDef, findStation, isFriend, isRival, rivalOf, galaxyEventAt, dockingsAt, raceHolder, stakeDividend } from "../world";
 import { occasionFor } from "../data/occasions";
 import type { Encounter } from "../data/encounters";
 import type { EncounterScene } from "./encounter";
@@ -15,7 +15,7 @@ import { faction, genPersonName } from "../data/data";
 import { StationScene } from "./station";
 import { concourseGossip } from "../data/gossip";
 import { stationHour, clockText, tannoyLines } from "../data/tannoy";
-import { voteMods } from "../data/votes";
+import { voteMods, myVote } from "../data/votes";
 import { hull } from "../data/hulls";
 import * as spriteMod from "../gfx/sprites";
 
@@ -179,6 +179,15 @@ export class StationWalkScene implements Scene {
     lines.push(bl.length ? `YOUR BERTH LOG: ${bl.map((b) => `${(findStation(w, b.stationId)?.st.name ?? "?").toUpperCase()} ${b.cost}CR`).join("; ")}` : "YOUR BERTH LOG: NO YARD SERVICES ON FILE. THE HARBOURMASTER RAISES AN EYEBROW.");
     for (const c of p.haulers ?? []) lines.push(`CHARTER ${c.name.toUpperCase()}: ${c.trips} TRIPS, ${c.earned}CR, HULL ${c.health}%`);
     lines.push(`WEAR ${Math.round(p.wear ?? 0)}%   FARES CARRIED ${p.fares ?? 0}   DOCKINGS BY YOUR CREW ${p.crew.reduce((a, c) => Math.max(a, c.docks ?? 0), 0)}`);
+    // this port remembers you: dockings, your stake, your times, who you've landed here, how you voted
+    {
+      const st = this.station; const docks = dockingsAt(p, st.id);
+      const held = p.stakes?.[st.id] ?? 0; const best = p.raceBest?.[st.id]; const holder = raceHolder(w, st);
+      const landed = (p.guestbook ?? []).filter((e) => e.to === st.name).length;
+      const mine = st.factionId !== "vex" ? myVote(w, st.factionId) : null;
+      lines.push(`ON FILE HERE: ${docks} DOCKING${docks === 1 ? "" : "S"}${held ? `; ${held} SHARE${held > 1 ? "S" : ""} (~${stakeDividend(w, st)}CR A DOCKING)` : ""}${landed ? `; ${landed} FARE${landed > 1 ? "S" : ""} LANDED` : ""}${mine ? `; VOTED ${mine.toUpperCase()} THIS WEEK` : ""}`);
+      lines.push(st.military ? "NO RING COURSE AT A NAVAL STATION." : `THE RINGS: LOCAL RECORD ${holder.t.toFixed(1)}S (${holder.name.toUpperCase()})${best !== undefined ? `, YOUR BEST ${best.toFixed(1)}S` : ", NO TIME OF YOURS YET"}`);
+    }
     const enc: Encounter = { id: "harbour", where: "space", title: "HARBOURMASTER'S OFFICE", text: lines.join("\n"), weight: 0, options: [{ label: "THANK THEM AND GO", result: () => "" }] };
     (g.scenes["encounter"] as EncounterScene).open(g, enc, "stationwalk", true);
   }

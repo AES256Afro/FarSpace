@@ -753,4 +753,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Control calls real ships in and out of bays on the band when you're
       close enough to hear
 
+## Milestone 98 — Ports Remember You ✅ (Sep 2026)
+- [x] The harbourmaster's office lists your dockings, stake, fares landed,
+      vote and ring times at this station
+
 ## Later
