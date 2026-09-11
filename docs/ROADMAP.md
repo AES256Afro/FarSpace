@@ -964,4 +964,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Dock with standing and the faction throws a reception now and then:
       a speech, a gift from the hold, or an early night
 
+## Milestone 152 — She Has a Name ✅ (Sep 2026)
+- [x] Ask the ship at the wall of record what it wants to be called; its
+      voice signs its lines with that name from then on
+
 ## Later

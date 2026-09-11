@@ -7,7 +7,7 @@ CONTROLS, and WHAT'S NEW lists recent changes.
 
 The guide grew a section per milestone; this is where to look.
 
-- **Getting started:** [First hour](#first-hour) · [The handbook, the voice, the greenhouse](#the-handbook-the-voice-the-greenhouse) · [The lanes setting](#the-lanes-setting) · [Music and slots](#music-and-slots) · [Comfort](#comfort)
+- **Getting started:** [First hour](#first-hour) · [She has a name](#she-has-a-name) · [The handbook, the voice, the greenhouse](#the-handbook-the-voice-the-greenhouse) · [The lanes setting](#the-lanes-setting) · [Music and slots](#music-and-slots) · [Comfort](#comfort)
 - **Flying:** [Docking and launching](#docking-and-launching) · [Holding short](#holding-short) · [Traffic control](#traffic-control) · [Combat, when it finds you](#combat-when-it-finds-you) · [The ring race](#the-ring-race) · [The regatta](#the-regatta) · [The convoy](#the-convoy) · [Hum](#hum) · [Calls and courses](#calls-and-courses)
 - **Trading and industry:** [Trader](#trader) · [Miner](#miner) · [Syndicates and trade routes](#syndicates-and-trade-routes) · [Charters](#charters) · [The liner trade](#the-liner-trade) · [Fleet at work](#fleet-at-work) · [Scrapping a hull](#scrapping-a-hull) · [Passage on a liner](#passage-on-a-liner) · [Stakes](#stakes) · [The post](#the-post) · [Pictures wanted](#pictures-wanted) · [The lighthouse](#the-lighthouse) · [The waystation](#the-waystation) · [The ledger](#the-ledger) · [Settlements](#settlements) · [Settlements grow](#settlements-grow) · [Town projects](#town-projects)
 - **People aboard:** [Shipmates](#shipmates) · [The galley](#the-galley) · [Life on the deck](#life-on-the-deck) · [A life aboard](#a-life-aboard) · [Crew arcs](#crew-arcs) · [Second stories](#second-stories) · [A trade of their own](#a-trade-of-their-own) · [The roster](#the-roster) · [Watches and passengers](#watches-and-passengers) · [Receptions](#receptions) · [Alert status](#alert-status) · [The belt](#the-belt) · [Hard burn](#hard-burn) · [Medical runs](#medical-runs) · [Envoys](#envoys) · [Requests from the lounge](#requests-from-the-lounge) · [Corridor talk](#corridor-talk) · [Senior staff](#senior-staff) · [The sim rig](#the-sim-rig) · [Cards after watch](#cards-after-watch) · [The band](#the-band) · [The viewport and the bays](#the-viewport-and-the-bays) · [Rites of passage](#rites-of-passage) · [The guestbook](#the-guestbook) · [Lost property](#lost-property) · [Family](#family) · [Lost and found](#lost-and-found) · [Company](#company) · [Belonging](#belonging) · [Small kindnesses](#small-kindnesses) · [Keepsakes](#keepsakes)
@@ -189,6 +189,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - Help them when they're in trouble, twice, and the rivalry ends.
 - The harbourmaster's office on the promenade (O) knows who's in the lanes,
   what's on file about you, your berth log and your charters.
+
+## She has a name
+
+- The ship's voice signs its lines with the hull's name until you ask. At
+  the wall of record there's an option: ask the ship what it wants to be
+  called, and it spells it out on the band. Type what it said; from then on its lines come from that name,
+  the wall of record notes it, the ship mentions it on the night watch, and
+  the cat still won't use it. A deed, too.
 
 ## The handbook, the voice, the greenhouse
 

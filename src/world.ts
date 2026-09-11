@@ -330,6 +330,7 @@ export interface PlayerState {
   convoys?: number;                  // convoys walked through a gate
   catAway?: string | null;           // station id where the cat got left behind; she turns up again
   juice?: number;                    // doses of burn juice from a clinic: one hard burn each
+  voiceName?: string;                // what the ship asked to be called; its lines come from that name
   focus?: FocusKind | null;          // the senior staff's focus for this leg, set at the briefing, cleared at the clamp
   briefed?: boolean;                 // the briefing has been held this leg
   simUsed?: boolean;                 // the sim rig has run this leg
@@ -963,6 +964,13 @@ export function settlePassengers(p: PlayerState): string[] {
   }
   settleRequests(p, out);
   return out;
+}
+// The ship's own name: what its voice signs its lines with. Until it's asked, it's the hull's name.
+export function shipVoiceName(p: PlayerState): string { return (p.voiceName ?? p.shipName ?? hull(p.hullId).name).toUpperCase(); }
+export function nameTheShip(w: World, name: string): string {
+  const n = name.trim().slice(0, 16); if (n.length < 2) return "THE SHIP WAITS. IT CAN WAIT A LONG TIME.";
+  w.player.voiceName = n; logEntry(w, `Asked the ship what it wanted to be called. It said ${n}`);
+  return `"${n.toUpperCase()}." A PAUSE ON THE BAND. "YES. THAT'S IT. THAT'S THE ONE. I'VE BEEN SAYING IT TO MYSELF FOR A WHILE. THANK YOU FOR ASKING."`;
 }
 // Receptions: dock with standing (rep 20+) and now and then the faction throws one in your honour, once a week.
 export function receptionDue(w: World, st: StationDef, now = Date.now()): boolean {

@@ -4,7 +4,7 @@
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond, onWatch, watchIndex, captainNickname, borderStanding, passengersFed, cookMeal, briefingReports, setFocus, runSim, SIM_PROGRAMS } from "../world";
+import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond, onWatch, watchIndex, captainNickname, borderStanding, passengersFed, cookMeal, briefingReports, setFocus, runSim, SIM_PROGRAMS, nameTheShip } from "../world";
 import { commodity, faction } from "../data/data";
 import { crewChatter, soloChatter, MESS_LINES, passengerChatter } from "../data/chatter";
 import { RNG } from "../core/rng";
@@ -31,6 +31,7 @@ import { CREW_LINES, ROLE_INFO, roleLabel, SPECIALTIES } from "../data/crew";
 import { clamp, dist } from "../core/mathx";
 import { sfx } from "../core/sfx";
 import { flag } from "../core/achievements";
+import { ask } from "../core/dialog";
 import { music } from "../core/music";
 import { rankOf, rescuePoints, STORY_LEN, findStation, canRetireCaptain, retireCaptain, RETIRE_AFTER, ledger, logEntry, chooseSpecialty } from "../world";
 import * as wire from "../core/wire";
@@ -399,6 +400,8 @@ export class InteriorScene implements Scene {
     if (p.wrecksOfMine?.length) lines.push(`${p.wrecksOfMine.length} SHIP${p.wrecksOfMine.length > 1 ? "S" : ""} OF YOURS STILL OUT THERE, WHERE ${p.wrecksOfMine.length > 1 ? "THEY" : "IT"} FELL.`);
     if (isOccasion("remembrance")) lines.push(`REMEMBRANCE: ${[...(p.lost ?? []).map((l) => l.name), ...(p.alumni ?? []).map((a) => a.name), ...(p.lineage ?? []).map((c) => c.name)].slice(-5).map((n) => n.toUpperCase()).join(", ") || "NO NAMES YET. GIVE IT TIME."}`);
     const opts: Encounter["options"] = [{ label: "CLOSE", result: () => "" }];
+    if (!p.voiceName) opts.push({ label: "ASK THE SHIP WHAT IT WANTS TO BE CALLED", hint: "It has had a name for a while. Nobody asked.", result: (g2) => { const name = ask("The band goes quiet. The ship spells something, slowly, letter by letter. What did it say?", ""); if (!name) return "THE BAND STAYS QUIET. ANOTHER TIME."; const l = nameTheShip(g2.world, name); if (g2.world.player.voiceName) { flag(g2, "shipnamed"); sfx.select(); } return l; } });
+    else lines.push(`THE SHIP CALLS ITSELF ${p.voiceName.toUpperCase()}. IT SIGNS ITS LINES THAT WAY NOW.`);
     const why = canRetireCaptain(g.world);
     if (!why) opts.push({ label: "RETIRE THIS CAPTAIN...", hint: "Hand the ship on; the galaxy carries on", result: (g2) => { this.retireMenu(g2); return ""; } });
     else if (g.world.time >= RETIRE_AFTER / 2) opts.push({ label: "RETIRE THIS CAPTAIN", hint: why, result: () => why });
