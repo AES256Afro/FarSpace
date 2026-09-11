@@ -3774,7 +3774,7 @@ export function logEntry(w: World, text: string): void {
 }
 
 // ---------- Galaxy events (not wars): comets, flares, festivals, strikes ----------
-export type GalaxyEventKind = "comet" | "flare" | "festival" | "strike" | "storm" | "secession" | "drought" | "review";
+export type GalaxyEventKind = "comet" | "flare" | "festival" | "strike" | "storm" | "secession" | "drought" | "review" | "launch";
 export function fleetReviewAt(w: World, stationId: string): GalaxyEvent | null {
   const e = w.galaxyEvent; return e && e.kind === "review" && e.stationId === stationId && w.time < e.until ? e : null;
 }
@@ -3806,16 +3806,18 @@ export function tickGalaxyEvents(w: World, rng: RNG): void {
   }
   if (w.galaxyEvent || !rng.chance(0.3)) return;
   const sys = rng.pick(Object.values(w.systems));
-  const kind = rng.pick(["comet", "flare", "festival", "strike", "storm", "secession", "drought", "review"] as GalaxyEventKind[]);
+  const kind0 = rng.pick(["comet", "flare", "festival", "strike", "storm", "secession", "drought", "review"] as GalaxyEventKind[]);
+  const kind: GalaxyEventKind = w.player.flags?.longship && !w.player.flags?.longshipLeft && rng.chance(0.15) ? "launch" : kind0;
   const belt = sys.stations.filter((s) => isBeltStation(s) && s.factionId !== "vex");
   const naval = sys.stations.filter((s) => s.military);
-  const st = kind === "secession" || kind === "drought" ? (belt.length ? rng.pick(belt) : null) : kind === "review" ? (naval.length ? rng.pick(naval) : null) : sys.stations.length ? rng.pick(sys.stations) : null;
-  if ((kind === "festival" || kind === "strike" || kind === "secession" || kind === "drought" || kind === "review") && !st) return;
+  const st = kind === "secession" || kind === "drought" || kind === "launch" ? (belt.length ? rng.pick(belt) : null) : kind === "review" ? (naval.length ? rng.pick(naval) : null) : sys.stations.length ? rng.pick(sys.stations) : null;
+  if ((kind === "festival" || kind === "strike" || kind === "secession" || kind === "drought" || kind === "review" || kind === "launch") && !st) return;
   w.galaxyEvent = { kind, systemId: sys.id, stationId: st?.id, until: w.time + 720 };
   if (kind === "comet") { for (const a of sys.asteroids) { a.rich = a.rich || rng.chance(0.5); a.ore += 4; } pushEvent(w, { t: w.time, kind: "discovery", systemId: sys.id, text: `A comet crosses ${sys.name}: the belt is seeded with rich ore for a while` }); }
   if (kind === "flare") pushEvent(w, { t: w.time, kind: "shock", systemId: sys.id, text: `Solar flare warning for ${sys.name}: hulls run hot, scanners struggle` });
   if (kind === "festival" && st) { for (const id of ["lux", "food"]) st.stock[id] = Math.max(0, Math.round((st.stock[id] ?? 0) * 0.3)); refreshPrices(st); pushEvent(w, { t: w.time, kind: "discovery", systemId: sys.id, text: `Festival week at ${st.name}: luxuries and provisions sell dear, tourists pay double` }); }
   if (kind === "strike" && st) { st.fuelPrice *= 2; st.repairPrice *= 2; pushEvent(w, { t: w.time, kind: "shock", systemId: sys.id, text: `Dock workers strike at ${st.name}: fuel and repairs cost double` }); }
+  if (kind === "launch" && st) { const p = w.player; (p.flags ??= {}).longshipLeft = true; (p.keepsakes ??= []).push("the last hail from the long ship's scaffold, recorded"); if (p.keepsakes.length > 8) p.keepsakes.shift(); logEntry(w, `The long ship left ${st.name}'s cradle; my name went with it`); pushEvent(w, { t: w.time, kind: "discovery", systemId: sys.id, text: `The long ship has left ${st.name}'s cradle on a burn nobody alive will see the end of. Every plate went with it` }); }
   if (kind === "review" && st) { pushEvent(w, { t: w.time, kind: "discovery", systemId: sys.id, text: `Fleet review at ${st.name} this week: the service's hulls in line abreast, and any captain with a rank is expected` }); }
   if (kind === "drought" && st) { st.stock.water = 0; refreshPrices(st); pushEvent(w, { t: w.time, kind: "shock", systemId: sys.id, text: `${st.name}'s ice line has failed: the rock is on ration until a tank comes in. Water pays, and the belt remembers who brings it` }); }
   if (kind === "storm") pushEvent(w, { t: w.time, kind: "shock", systemId: sys.id, text: `Ion storm over ${sys.name}: radar and charts are blind there unless a beacon holds the picture` });

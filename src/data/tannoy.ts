@@ -61,6 +61,7 @@ export function tannoyLines(w: World, st: StationDef, rng: RNG, now = Date.now()
   const ev = galaxyEventAt(w, sys.id);
   if (ev?.kind === "festival" && ev.stationId === st.id) pool.push("THE FESTIVAL CONTINUES ON THE UPPER RING. LOST CHILDREN TO THE HARBOUR OFFICE. LOST PARENTS TO THE BAR.");
   if (ev?.kind === "flare") pool.push("SOLAR FLARE IN PROGRESS. DEPARTURES SUNWARD ARE AT YOUR OWN RISK.");
+  if (ev?.kind === "launch" && ev.stationId === st.id) pool.push("THE LONG SHIP IS AWAY. THE SCAFFOLD WATCH STANDS DOWN AFTER FORTY YEARS. THE BAR IS OPEN AND NOBODY IS PAYING.", "IF YOUR NAME WAS ON A PLATE IN THE LONG SHIP, IT'S ON ITS WAY. THAT'S ALL. THAT'S THE ANNOUNCEMENT.");
   if (ev?.kind === "review" && ev.stationId === st.id) pool.push("FLEET REVIEW AT FOURTEEN HUNDRED. HULLS WITH A RANK ON THE REGISTER: THE END OF THE LINE, LIGHTS IN SEQUENCE. NO EXCUSES ABOUT PAINT.", "THE ADMIRAL'S BARGE IS IN BAY ONE. WALK PAST IT SLOWLY. IT LIKES THAT.");
   if (isBeltStation(st) && p.flags?.longship) pool.push("THE LONG SHIP'S SCAFFOLD WATCH THANKS THE HULLS THAT GAVE THIS WEEK. YOUR NAMES ARE INSIDE. NOBODY'S READING THEM. THAT'S THE POINT.");
   if (isBeltStation(st) && p.flags?.freeman) pool.push("FREEMAN'S RUNS ARE ON THE BOARD, ROCK TO ROCK, FREEMAN'S RATE. INNERS NEED NOT APPLY. INNERS KNOW WHO THEY ARE.");

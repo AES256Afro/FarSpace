@@ -1696,6 +1696,17 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 329 — The Ship's Hint ✅ (Sep 2026)
 - [x] The ship says so on a long leg: not a complaint, a hint
 
+## Milestone 330 — Standing Orders II ✅ (Sep 2026)
+- [x] Two more orders in settings: Number One takes the leg at eight hours
+      (off by default: they ask), and objects to landings once (on)
+
+## Milestone 331 — On Its Way ✅ (Sep 2026)
+- [x] Once you've given to the long ship, a galaxy event may see it leave
+      its cradle: the last hail kept aboard, every plate gone with it, tannoy
+
+## Milestone 332 — Seconds-in-Command ✅ (Sep 2026)
+- [x] Your rival's Number One writes to yours, once: first round's theirs
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

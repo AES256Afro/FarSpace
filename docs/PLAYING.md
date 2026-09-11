@@ -752,6 +752,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- Settings has two more standing orders: NO. 1 TAKES THE LEG AT 8H (off by
+  default; on, they take the ship instead of asking) and NO. 1 OBJECTS TO
+  LANDINGS (once, or never).
+- Once you've given to the long ship, a galaxy event may see it leave: the
+  scaffold's last hail is kept aboard, every plate goes with it, and the rock's
+  bar is open with nobody paying.
+- Your rival's Number One writes to yours, once, about the bar where the
+  seconds-in-command drink while the captains posture.
 - At eight hours since the clamp Number One asks for any port on the chart,
   the counsellor's hour comes round, and a hot meal from the galley is worth
   three more morale than usual.

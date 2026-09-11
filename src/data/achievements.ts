@@ -145,6 +145,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "inspection", title: "A GOOD SHIP", desc: "Pass an inspection with three marks of four", check: (w) => !!w.player.flags?.inspection },
   { id: "freeman", title: "FREEMAN OF THE BELT", desc: "Earn a standing of three with the rocks", check: (w) => !!w.player.flags?.freeman },
   { id: "requisition", title: "COURTESY OF THE SERVICE", desc: "Requisition a full service at a naval station", check: (w) => !!w.player.flags?.requisition },
+  { id: "longshipLeft", title: "ON ITS WAY", desc: "See the long ship leave its cradle", check: (w) => !!w.player.flags?.longshipLeft },
   { id: "firstdock", title: "THE BAR'S BOOK", desc: "Bring a cadet through their first docking", check: (w) => !!w.player.flags?.firstdock },
   { id: "cadetMistake", title: "THE SAME COLOUR", desc: "See the cadet through their first mistake", check: (w) => !!w.player.flags?.cadetMistake },
   { id: "hundreddeeds", title: "A HUNDRED DEEDS", desc: "Earn a hundred deeds", check: (w) => (w.player.achievements ?? []).length >= 100 },

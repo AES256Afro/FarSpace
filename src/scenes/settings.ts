@@ -37,6 +37,8 @@ export class SettingsScene implements Scene {
       { label: "THE SHIP'S VOICE", value: (s.voice ?? true) ? "ON - SHE SPEAKS NOW AND THEN" : "OFF - SHE KEEPS IT TO HERSELF", act: () => saveSettings({ voice: !(s.voice ?? true) }) },
       { label: "ORDERS: LEAVE THE CLAMP AT", value: (s.alertOnUndock ?? "green") === "yellow" ? "YELLOW ALERT" : "GREEN", act: () => saveSettings({ alertOnUndock: (s.alertOnUndock ?? "green") === "yellow" ? "green" : "yellow" }) },
       { label: "ORDERS: NO. 1 ANSWERS HAILS", value: (s.numberOneHails ?? true) ? "ON (AUTOPILOT)" : "OFF", act: () => saveSettings({ numberOneHails: !(s.numberOneHails ?? true) }) },
+      { label: "ORDERS: NO. 1 TAKES THE LEG AT 8H", value: (s.numberOneTakesLeg ?? false) ? "ON" : "OFF (ASKS)", act: () => saveSettings({ numberOneTakesLeg: !(s.numberOneTakesLeg ?? false) }) },
+      { label: "ORDERS: NO. 1 OBJECTS TO LANDINGS", value: (s.objectsToLandings ?? true) ? "ONCE" : "NEVER", act: () => saveSettings({ objectsToLandings: !(s.objectsToLandings ?? true) }) },
     ];
     for (const a of ACTIONS) {
       const physical = Object.entries(s.keymap).find(([, v]) => v === a.key)?.[0] ?? a.key;
