@@ -1,4 +1,5 @@
 // Flight scene: player controls, interactions (dock/jump/orbit/board), law.
+import { FACTIONS } from "../../data/data";
 // Simulation lives in ./ai, rendering in ./render.
 
 import { ask, confirmBox } from "../../core/dialog";
@@ -646,6 +647,17 @@ export class FlightScene implements Scene {
   // ---------- Interactions ----------
 
   // the ready room: a word with Number One, once a leg. They say what they see.
+  // the singers' home: ninety seconds of quiet orbit, and then the whole sky sings
+  singersHome(g: Game, m: import("../../world").Mission): void {
+    const p = g.world.player; const sys = g.world.systems[p.systemId];
+    const enc: Encounter = { id: "singershome", where: "space", title: "THE SINGERS' HOME", weight: 0,
+      text: `Ninety seconds of quiet over ${sys.planets[m.sightPlanetIdx ?? 0]?.name ?? "the world"}, and then the whole sky sings: not one ship but hundreds, rising out of the atmosphere in a spiral, every one of them holding the rising three-note phrase you learned at a gate a long way from here. It's not a greeting. It's a roll-call. They're waiting to see if you know your line.`,
+      options: [
+        { label: "SING THE WORDS YOU KNOW, ALL OF THEM", hint: "Every word learned counts; the crew join in; an embassy berth", result: (g2) => { const n = (p.words ?? []).length; (p.flags ??= {}).singersHomeDone = true; (p.codex ??= {})["contact:THE SINGERS"] = 4; for (const f of FACTIONS) adjustRep(g2.world, f.id, 4); for (const c of p.crew) { c.morale = Math.min(100, c.morale + 12); c.loyalty = (c.loyalty ?? 0) + 0.3; } (p.keepsakes ??= []).push("the singers' berth-token: a stone that hums the roll-call"); if (p.keepsakes.length > 8) p.keepsakes.shift(); p.expData = (p.expData ?? 0) + 300; flag(g2, "singershome"); logEntry(g2.world, `The singers' home, ${sys.name}: sang ${n} word${n === 1 ? "" : "s"} back and was given a berth`); return `YOU SING THE ${n || "NO"} WORD${n === 1 ? "" : "S"} YOU HAVE, AND THE CREW COME IN ON THE SECOND ONE, AND THE SPIRAL CLOSES AROUND THE SHIP LIKE A HAND AROUND SOMETHING SMALL AND WARM. A BERTH, THEY SAY, OR SING, OR MEAN. YOURS, WHENEVER. +300 DATA. EVERY FACTION WILL HEAR WHO WAS ASKED.`; } },
+        { label: "HOLD STATION AND LISTEN", hint: "Data, and the codex; the berth waits for another day", result: (g2) => { (p.flags ??= {}).singersHomeDone = true; (p.codex ??= {})["contact:THE SINGERS"] = 4; p.expData = (p.expData ?? 0) + 200; flag(g2, "singershome"); logEntry(g2.world, `The singers' home, ${sys.name}: listened`); return "YOU HOLD STATION AND LISTEN TO THE WHOLE ROLL-CALL, HUNDREDS OF NAMES YOU CAN'T SAY, AND WHEN IT'S DONE THE SPIRAL OPENS AND LETS YOU GO WITH SOMETHING THAT ISN'T A BERTH BUT ISN'T NOTHING. +200 DATA. THE CODEX CALLS IT CONTACT."; } },
+      ] };
+    (g.scenes["encounter"] as EncounterScene).open(g, enc, "flight", true);
+  }
   // answering a passing hail: how the lanes hear you is a small thing that adds up
   answerHail(g: Game): void {
     const h = this.lastHail; if (!h) return; h.answered = true;
@@ -1135,7 +1147,7 @@ export class FlightScene implements Scene {
       if (!near) continue;
       if (this.alert === 2 && !m.observeBlown) { m.observeBlown = true; m.reward = Math.round(m.reward / 2); m.patrolT = 0; g.toast(`${m.title.toUpperCase()}: RED ALERT IN ORBIT. IF ANYONE'S DOWN THERE, THEY SAW THAT. HALF PAY, AND START AGAIN.`); continue; }
       m.patrolT = (m.patrolT ?? 0) + dt;
-      if (m.patrolT >= (m.patrolNeed ?? 60)) { m.patrolDone = true; noteLeg(p, "cards", g.world.time); flag(g, "observe"); g.toast(`${m.title.toUpperCase()}: ORBIT HELD, NOBODY LOOKED UP. REPORT TO ${(findStation(g.world, m.fromStationId)?.st.name ?? "THE SURVEY").toUpperCase()}`); }
+      if (m.patrolT >= (m.patrolNeed ?? 60)) { m.patrolDone = true; noteLeg(p, "cards", g.world.time); if (m.singers) this.singersHome(g, m); else { flag(g, "observe"); g.toast(`${m.title.toUpperCase()}: ORBIT HELD, NOBODY LOOKED UP. REPORT TO ${(findStation(g.world, m.fromStationId)?.st.name ?? "THE SURVEY").toUpperCase()}`); } }
     }
     if (!this.cruise && !this.docking) for (const m of p.missions) if (m.kind === "patrol" && m.accepted && !m.done && m.targetSystemId === p.systemId) { m.patrolT = (m.patrolT ?? 0) + dt; if (!m.patrolDone && m.patrolT >= (m.patrolNeed ?? 90)) { m.patrolDone = true; g.toast(`${m.title.toUpperCase()}: STATION HELD. REPORT BACK TO ${(findStation(g.world, m.fromStationId)?.st.name ?? "THE WATCH").toUpperCase()}`); sfx.select(); } }
     // tactical calls yellow alert when a hostile closes and nobody has yet

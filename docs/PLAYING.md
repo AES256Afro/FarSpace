@@ -752,6 +752,12 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- The singers' home: their third gift is a chart pointing at a system two
+  gates or more away. Research stations then post FOLLOW THE LIGHT: ninety
+  seconds of quiet orbit over that system's first world, no cruise, no red.
+  The orbit ends in a roll-call of hundreds of ships. Sing every word you've
+  learned (a berth-token, rep with every faction, three hundred data) or
+  hold station and listen (two hundred data, contact 4).
 - The singers and the quiet ones teach a word with each contact. The wall of
   record lists them, the chronicle keeps them, and the ship sings the first
   one to the gate.

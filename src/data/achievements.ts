@@ -145,6 +145,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "inspection", title: "A GOOD SHIP", desc: "Pass an inspection with three marks of four", check: (w) => !!w.player.flags?.inspection },
   { id: "freeman", title: "FREEMAN OF THE BELT", desc: "Earn a standing of three with the rocks", check: (w) => !!w.player.flags?.freeman },
   { id: "requisition", title: "COURTESY OF THE SERVICE", desc: "Requisition a full service at a naval station", check: (w) => !!w.player.flags?.requisition },
+  { id: "singershome", title: "THE ROLL-CALL", desc: "Reach the singers' home", check: (w) => !!w.player.flags?.singershome },
   { id: "words", title: "NOT OURS", desc: "Learn a word from the singers or the quiet ones", check: (w) => !!w.player.flags?.words },
   { id: "rockrace", title: "MAM, COME AND SEE", desc: "Run a rock's rings under par", check: (w) => !!w.player.flags?.rockrace },
   { id: "awayteam2", title: "ONE SEAT BESIDE YOU", desc: "Take a crew member down and bring them back up", check: (w) => !!w.player.flags?.awayteam2 },

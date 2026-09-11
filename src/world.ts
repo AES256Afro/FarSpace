@@ -168,6 +168,7 @@ export interface Mission {
   patrolDone?: boolean;
   byT?: number;                       // emergencies: world time the clamp needs the engineer by; half pay after
   observeBlown?: boolean;             // observation posts: went to red alert in orbit; the world below noticed
+  singers?: boolean;                  // the singers' home: the orbit ends in a meeting, not a toast
   riteDone?: boolean;                 // the envoy's rite has been offered a room
   sightPlanetIdx?: number;  // tourists want to orbit this planet in the target system first
   sightSeen?: boolean;
@@ -364,6 +365,7 @@ export interface PlayerState {
   ruleBroken?: number;               // first contacts made, kindly or otherwise
   hearings?: number;                 // hearings sat through over the rule, one per contact broken
   words?: string[];                  // words learned from the singers and the quiet ones
+  singersHome?: string;              // the system the singers' last gift pointed at; a survey will post orders
   motto?: string;                    // the line on the dedication plaque by the airlock
   prisoners?: number;                // prisoners delivered to a brig
   evacuated?: number;                // people carried out of a bad week
@@ -619,6 +621,15 @@ export function legSummary(w: World): string | null {
   return (head + " " + close).length <= 118 ? head + " " + close : head.slice(0, 118);
 }
 // Strange readings: the phenomena among the anomalies. Each does something when you reach it.
+// The singers' gift points somewhere: a system at least two gates away, chosen once, kept on the chart.
+export function chartSingersHome(w: World, rng: RNG): string | null {
+  const p = w.player; if (p.singersHome) return p.singersHome;
+  const here = w.systems[p.systemId]; if (!here) return null;
+  const near = new Set<string>([here.id, ...here.links]);
+  const far = Object.values(w.systems).filter((s) => !near.has(s.id) && s.planets.length > 0);
+  const pick = far.length ? rng.pick(far) : Object.values(w.systems).find((s) => s.planets.length > 0 && s.id !== here.id);
+  if (!pick) return null; p.singersHome = pick.id; logEntry(w, `The singers' gift points at ${pick.name}; the survey will want to know`); return pick.id;
+}
 // Words: what the singers and the quiet ones have taught the ship, one contact at a time.
 export function learnWord(p: PlayerState, word: string): string | null {
   const w = (p.words ??= []); if (w.includes(word)) return null; w.push(word); (p.flags ??= {}).words = true;
@@ -2967,6 +2978,9 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
   if (station.military && commandRank(world.player) !== "SKIPPER") kinds.push("patrol", "patrol");
   if (tier >= 1 && linked.length && rng.chance(0.4)) kinds.push("emergency");
   if (station.type === "research" && rng.chance(0.6)) kinds.push("observe");
+  if (station.type === "research" && world.player.singersHome && !world.player.flags?.singersHomeDone && !world.player.missions.some((m) => m.singers && !m.done)) {
+    const hs = world.systems[world.player.singersHome]; if (hs && hs.planets.length) { const pi = 0; missions.push({ id: `m-singers-${station.id}`, kind: "observe", accepted: false, done: false, tier, title: `Follow the light: ${hs.name}`, desc: `The survey has your chart. Hold a quiet orbit over ${hs.planets[pi].name}, ${hs.name}, for ninety seconds, no cruise, no red alert, and listen. The singers left it for you. The survey would like to know what's there. So, quietly, would everyone.`, fromStationId: station.id, targetSystemId: hs.id, sightPlanetIdx: pi, patrolT: 0, patrolNeed: 90, reward: 1500, repReward: 6, singers: true }); }
+  }
   // a picture wanted: a magazine, a museum, a family; a postcard (F7) taken in the right place
   if (!station.military && (station.type === "research" || station.type === "trade") && rng.chance(0.5)) {
     const pool: { systemId: string; wonderId?: string; planetIdx?: number; label: string }[] = [];

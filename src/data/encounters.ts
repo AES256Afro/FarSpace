@@ -7,7 +7,7 @@ import { hull } from "./hulls";
 import { RNG } from "../core/rng";
 import { addMaterials } from "./engineering";
 import { commodity, FACTIONS } from "./data";
-import { SYSTEM_NICKS, learnWord } from "../world";
+import { SYSTEM_NICKS, learnWord, chartSingersHome } from "../world";
 import { officeWrites, findStation as findStationW, isBeltStation, berthsUsed as berthsUsedW, hasSpecialty as hasSpecialtyW, syndicateAt as syndicateAtW } from "../world";
 const facNameW2 = (id: string): string => FACTIONS.find((f) => f.id === id)?.name ?? id;
 
@@ -317,7 +317,7 @@ export const ENCOUNTERS: Encounter[] = [
     id: "singersgift", where: "space", weight: 4, title: "WHAT THE SINGERS LEFT", when: (g) => !!p(g).flags?.singersGuided && !p(g).flags?.singersGift,
     text: "No hull this time. Only a small thing tumbling in the lane where you'd expect them: a shard of something like glass, and the scanner says it is singing, very quietly, in the greeting's key.",
     options: [
-      { label: "TAKE IT ABOARD", result: (g) => { { const wl = learnWord(p(g), "thank you, or goodbye; they may be the same word"); if (wl && typeof g.toast === "function") g.toast(wl); } (p(g).flags ??= {}).singersGift = true; (p(g).codex ??= {})["contact:THE SINGERS"] = 3; p(g).expData = (p(g).expData ?? 0) + 120; (p(g).keepsakes ??= []).push("a shard that hums, from the singers"); if (p(g).keepsakes!.length > 8) p(g).keepsakes!.shift(); logEntry(g.world, "Took the singers' shard aboard; it hums on the passenger seat"); return "IT COMES ABOARD WARM. ON THE PASSENGER SEAT IT HUMS THE GREETING, ONCE AN HOUR, TO NOBODY. +120 DATA. THE CODEX HAS A CONTACT NOW. THE SHIP HAS A KEY."; } },
+      { label: "TAKE IT ABOARD", result: (g, rng) => { { const home = chartSingersHome(g.world, rng); if (home && typeof g.toast === "function") g.toast(`THE GIFT IS A CHART. IT POINTS AT ${(g.world.systems[home]?.name ?? "SOMEWHERE").toUpperCase()}. A SURVEY STATION WILL POST ORDERS.`); } { const wl = learnWord(p(g), "thank you, or goodbye; they may be the same word"); if (wl && typeof g.toast === "function") g.toast(wl); } (p(g).flags ??= {}).singersGift = true; (p(g).codex ??= {})["contact:THE SINGERS"] = 3; p(g).expData = (p(g).expData ?? 0) + 120; (p(g).keepsakes ??= []).push("a shard that hums, from the singers"); if (p(g).keepsakes!.length > 8) p(g).keepsakes!.shift(); logEntry(g.world, "Took the singers' shard aboard; it hums on the passenger seat"); return "IT COMES ABOARD WARM. ON THE PASSENGER SEAT IT HUMS THE GREETING, ONCE AN HOUR, TO NOBODY. +120 DATA. THE CODEX HAS A CONTACT NOW. THE SHIP HAS A KEY."; } },
       { label: "LOG IT AND LEAVE IT", result: (g) => { (p(g).flags ??= {}).singersGift = true; p(g).expData = (p(g).expData ?? 0) + 40; return "YOU RECORD IT FROM A DISTANCE AND LET IT TUMBLE ON. +40 DATA. SOMEBODY ELSE WILL FIND IT, OR NOBODY WILL. IT'S STILL SINGING WHEN YOU GO."; } },
     ],
   },

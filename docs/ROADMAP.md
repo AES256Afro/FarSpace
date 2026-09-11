@@ -1762,6 +1762,18 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 347 — The Ship Sings One ✅ (Sep 2026)
 - [x] A ship's-voice line: it sings the first word to the gate, quietly
 
+## Milestone 348 — The Gift Is a Chart ✅ (Sep 2026)
+- [x] The singers' third gift points at a system two gates or more away
+
+## Milestone 349 — Follow the Light ✅ (Sep 2026)
+- [x] Research stations post orders to hold ninety seconds of quiet orbit
+      over that system's first world
+
+## Milestone 350 — The Roll-Call ✅ (Sep 2026)
+- [x] The orbit ends in a meeting: hundreds of ships rising in a spiral;
+      sing every word you know (a berth-token, rep with everyone, data) or
+      listen (data, contact 4)
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
