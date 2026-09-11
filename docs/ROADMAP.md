@@ -2139,3 +2139,10 @@ The decision between service orders and booked fares is covered by M402.
 - Resume the pending port audience after the first conversation, with saved
   visit state and world/visit identity checks.
 - Keep arrival settlement once per docking and ordinary menu returns inert.
+
+### M410: The Whole Service File
+
+- Open complete current orders, fare receipts and cutter custody from the
+  Service Office. Read every retained report with its date and actual payment.
+- Keep the archive newest first, scroll to final lines, and reuse section
+  navigation and search. Reading preserves credits, assignments and hulls.

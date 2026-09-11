@@ -20,7 +20,7 @@ export class ReaderScene implements Scene {
 
   constructor(readonly title: string, readonly sections: Section[]) {}
 
-  enter(): void { this.closeSearchBox?.(); this.search(""); }
+  enter(_g?: Game): void { this.closeSearchBox?.(); this.search(""); }
 
   search(query: string): void {
     this.query = query.trim().slice(0, 48).toUpperCase();

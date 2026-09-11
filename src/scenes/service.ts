@@ -1,7 +1,8 @@
+import type { ServiceFileScene } from "./servicefile";
 import { borrowServiceCutter, loanBorrowReason, loanReturnReason, loanSummary, plotLoanDepot, returnServiceCutter } from "../core/serviceloan";
 import type { Game, Scene } from "../game";
 import { VW, VH } from "../game";
-import { acceptServiceOrder, joinService, plotServiceOrder, reportServiceOrder, SERVICE_RANKS, serviceConflictingFares, serviceFareReport, serviceJoinReason, serviceObjective, serviceOffers, serviceOffice, serviceRank, serviceWorkReason, transferService, withdrawServiceOrder, type ServiceFareChoice, type ServiceOrder } from "../core/service";
+import { acceptServiceOrder, joinService, plotServiceOrder, reportServiceOrder, SERVICE_RANKS, serviceConflictingFares, serviceJoinReason, serviceObjective, serviceOffers, serviceOffice, serviceRank, serviceWorkReason, transferService, withdrawServiceOrder, type ServiceFareChoice, type ServiceOrder } from "../core/service";
 import { clamp } from "../core/mathx";
 import { sfx } from "../core/sfx";
 import { commandRank, findStation } from "../world";
@@ -60,7 +61,7 @@ export class ServiceScene implements Scene {
     else {
       if (record.order) {
         const order = record.order;
-        rows.push({ label: "READ CURRENT ORDERS", detail: `${serviceObjective(w)}. PAY ${order.pay}CR. ${order.description}`.toUpperCase(), run: () => `${serviceObjective(w)}. PAY ${order.pay}CR.${serviceFareReport(w, order)}`.toUpperCase() });
+        rows.push({ label: "READ CURRENT ORDERS", detail: `${serviceObjective(w)}. PAY ${order.pay}CR. ${order.description}`.toUpperCase(), run: () => { (g.scenes.servicefile as ServiceFileScene).open(g); return ""; } });
         if (order.stage === "return" && order.fromStationId === st.id) rows.push({ label: "FILE THE COMPLETED REPORT", detail: `${order.pay}CR / +2 FACTION STANDING / ONE SERVICE CREDIT. ${order.report ?? ""}`.toUpperCase(), run: () => reportServiceOrder(w, order) });
         rows.push({ label: "PLOT THE SERVICE JOURNEY", detail: "N IN FLIGHT FOLLOWS THE COURSE. G/U RESTORES IT WHILE AWAY.", run: () => plotServiceOrder(w) ? "SERVICE COURSE RESTORED. N IN FLIGHT FOLLOWS THE ROUTE." : "THE ROUTE IS CLOSED. YOUR ORDERS CAN WAIT." });
         rows.push({ label: "RETURN ORDERS UNFINISHED", detail: "NO PAYMENT OR SERVICE CREDIT. KEEP YOUR EXISTING RECORD.", run: () => withdrawServiceOrder(w, order) });
@@ -69,8 +70,8 @@ export class ServiceScene implements Scene {
         for (const order of serviceOffers(w, st.id)) rows.push({ label: order.title.toUpperCase(), detail: `${order.pay}CR ON REPORT. ${order.description}`.toUpperCase(), run: () => this.takeOrder(g, st.id, order) });
         if (rows.length === 0) rows.push({ label: "ASK FOR ORDERS", detail: serviceWorkReason(w, st.id) ?? "NO REACHABLE ASSIGNMENT ON THE CURRENT CHART.", run: () => serviceWorkReason(w, st.id) ?? "THE CHART HAS NO SUITABLE OPEN ROUTE. THE CLERK LEAVES YOUR NAME ON THE LIST." });
       }
-      rows.push({ label: "READ YOUR LAST REPORT", detail: `${record.completed} ASSIGNMENTS COMPLETED. THE OFFICE KEEPS THE LAST TWELVE REPORTS.`, run: () => {
-        const last = record.history.at(-1); return last ? `${last.title}: ${last.report} PAID ${last.pay}CR.`.toUpperCase() : "YOUR FILE HAS A NAME, A POSTING AND AN EMPTY FIRST PAGE. 'THAT PART IS NORMAL,' SAYS THE CLERK.";
+      rows.push({ label: "READ YOUR SERVICE FILE", detail: `${record.completed} ASSIGNMENTS COMPLETED. READ CURRENT ORDERS AND ALL ${record.history.length} RETAINED REPORTS IN FULL.`, run: () => {
+        (g.scenes.servicefile as ServiceFileScene).open(g, true); return "";
       } });
     }
     if (record?.loan) {

@@ -1999,3 +1999,13 @@ other audience. The port's turn is saved with the current visit and resumes
 when you return to station services. Reading both does not repeat wages,
 food, passenger stops or arrival rewards. Older settled visits do not gain a
 new audience merely from loading a save.
+
+## Reading the service file
+
+At the Service Office, Read current orders opens the active assignment in
+full. Read your service file opens the retained report archive, newest first.
+The file includes booked fare receipts, custody details for a borrowed cutter,
+and all twelve retained reports with their filed stardate and actual payment.
+Use the reader's scrolling, section navigation and search controls. Escape
+returns to the duty desk. Reading does not file an assignment, collect pay,
+or transfer a hull.
