@@ -140,6 +140,7 @@ export class FlightScene implements Scene {
       { label: "THE CHRONICLE", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("chronicle"); } },
       { label: "THE ROSTER", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("roster"); } },
       ...(g.world.player.crew.length >= 1 && !this.addressed && !this.docking ? [{ label: "ADDRESS THE CREW", act: () => { this.paused = false; this.addressCrew(g); } }] : []),
+      ...(this.lastFound && !this.lastFound.named && !this.docking ? [{ label: `NAME THE FIND (${this.lastFound.name.toUpperCase()})`, act: () => { this.paused = false; const an = this.lastFound!; const t = (ask(`The survey lets the finder name it. It's on the chart as ${an.name}. What do you call it?`, "") ?? "").trim().slice(0, 28); if (!t) { g.toast("IT KEEPS THE SURVEY'S NAME. THAT'S ALLOWED."); return; } an.name = t; an.named = true; this.lastFound = null; g.world.player.named = (g.world.player.named ?? 0) + 1; flag(g, "namer"); logEntry(g.world, `Named a find in ${g.world.systems[g.world.player.systemId].name}: ${t}`); g.toast(`LOGGED WITH THE SURVEY AS ${t.toUpperCase()}. THE CHART WILL SAY SO FOR ANYONE WHO COMES AFTER.`); sfx.pickup(); } }] : []),
       ...(this.lastHail && !this.lastHail.answered && g.world.time - this.lastHail.t < 120 && !this.docking ? [{ label: `ANSWER ${this.lastHail.from}`, act: () => { this.paused = false; this.answerHail(g); } }] : []),
       ...(firstOfficer(g.world.player) && !this.readyRoom && !this.docking ? [{ label: "THE READY ROOM (NUMBER ONE)", act: () => { this.paused = false; this.readyRoomTalk(g); } }] : []),
       ...((g.world.player.juice ?? 0) > 0 && !this.hardBurn && !this.docking ? [{ label: `HARD BURN (JUICE X${g.world.player.juice})`, act: () => { this.paused = false; const l = takeJuice(g.world.player); if (l) { this.hardBurn = true; noteLeg(g.world.player, "burns", g.world.time); g.toast(l); sfx.alarm(); flag(g, "juiced"); logEntry(g.world, "Hard burn on the juice"); } } }] : []),
@@ -367,7 +368,7 @@ export class FlightScene implements Scene {
         for (const d of this.drifters) if (!d.logged && dist(p.x, p.y, d.x, d.y) < 400) this.scanDrifter(g, d);
         let found = 0;
         for (const an of sys.anomalies) {
-          if (!an.discovered && dist(an.x, an.y, p.x, p.y) < (galaxyEventAt(g.world, sys.id)?.kind === "flare" ? 450 : stormBlind(g.world, sys.id) ? 300 : 900) * (hasSpecialty(p, "science") ? 1.5 : 1)) { an.discovered = true; found++; }
+          if (!an.discovered && dist(an.x, an.y, p.x, p.y) < (galaxyEventAt(g.world, sys.id)?.kind === "flare" ? 450 : stormBlind(g.world, sys.id) ? 300 : 900) * (hasSpecialty(p, "science") ? 1.5 : 1)) { an.discovered = true; found++; if (!an.named) this.lastFound = an; }
         }
         keeperScan(g);
         const logged = logSystem(p, sys, 2);
@@ -727,6 +728,7 @@ export class FlightScene implements Scene {
   alert: AlertLevel = 0; alertT = 0; autoAlertT = 0; klaxonT = 0; flipT = 0;
   addressed = false; reported = false; readyRoom = false;
   lastHail: { from: string; kind: string; t: number; answered: boolean } | null = null;
+  lastFound: import("../../world").AnomalyDef | null = null;
   hailT = 25;
   dockAt(g: Game, st: StationDef): boolean {
     this.hardBurn = false; this.alert = 0; this.addressed = false; this.reported = false; this.readyRoom = false;

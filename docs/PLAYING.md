@@ -752,6 +752,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- After a scan turns up an anomaly, the pause menu offers NAME THE FIND: the
+  finder's name goes on the chart for anyone who comes after.
+- Crew chatter now covers your undock word, the plaque, Number One having the
+  conn, the cadet, the cup on the table and the prisoner's seconds.
+- With a counsellor aboard, after two red alerts or three fights in a leg,
+  the counsellor knocks with two cups: take the hour (the ship drifts an hour,
+  loyalty up, the leg reads two alerts calmer), ten minutes, or "I'm fine".
 - After a crew member is lost the galley holds a wake on the next leg: say
   the name (morale and loyalty up, a log line), stand with them and say
   nothing, or send them back to stations and find the cup gone by morning.

@@ -32,6 +32,12 @@ export function crewChatter(w: World, a: CrewMember, b: CrewMember, rng: RNG): s
   if (p.cat && p.catAway) pool.push(`WHERE'S ${p.cat.name.toUpperCase()}? ... WE LEFT HER? WE LEFT HER. THE SKIPPER LEFT THE CAT.`, `THE SHIP'S WRONG WITHOUT ${p.cat.name.toUpperCase()}. WE'RE GOING BACK FOR HER, RIGHT?`);
   else if (p.cat) pool.push(`${p.cat.name.toUpperCase()} WAS IN THE VENTS AGAIN.`, `WHO'S FEEDING ${p.cat.name.toUpperCase()}? NOT ME. I FED HER TWICE.`);
   if (passengersAboard(p).length) pool.push("KEEP IT DOWN, WE'VE GOT PAYING PEOPLE ABOARD.", "THE ONE IN THE LOUNGE ASKED IF WE HAVE A POOL.");
+  if (p.catchphrase) pool.push(`'${p.catchphrase.toUpperCase()}.' THE SKIPPER SAYS IT EVERY TIME. I'VE STARTED SAYING IT IN MY SLEEP.`, `${B}, DO THE SKIPPER'S UNDOCK VOICE. NO, THE OTHER ONE. YES. THAT ONE.`);
+  if (p.motto) pool.push(`READ THE PLAQUE THIS MORNING. '${p.motto.toUpperCase().slice(0, 30)}'. I THINK ABOUT IT ON WATCH. DON'T TELL ANYONE.`);
+  if (p.numberOne && p.numberOne !== a.name && p.numberOne !== b.name) pool.push(`${p.numberOne.split(" ")[0].toUpperCase()} HAS THE CONN AGAIN. THEY'RE GOOD. DON'T TELL THEM I SAID.`);
+  if (p.crew.some((c) => (c.docks ?? 0) === 0 && c !== a && c !== b)) pool.push("THE CADET ASKED WHERE WE KEEP THE SPARE GRAVITY. I SENT THEM TO THE ENGINEER.", "THE NEW ONE'S ALL RIGHT. DON'T TELL THEM I SAID. THEY'LL GET IDEAS.");
+  if ((p.wakes ?? 0) > 0) pool.push("THE CUP'S STILL ON THE TABLE. LEAVE IT. IT'S NOT YOURS TO MOVE.");
+  if ((p.prisoners ?? 0) > 0 || p.missions.some((m) => m.passengerKind === "prisoner" && m.accepted && !m.done)) pool.push("THE ONE IN IRONS ASKED FOR SECONDS. THE SKIPPER SAID YES. I'D HAVE SAID YES.");
   const t = a.trait ?? "";
   if (t.includes("litres")) pool.push("YOU LEFT THE TAP RUNNING. I COUNTED. THAT'S TWO LITRES. TWO. LITRES.");
   if (t.includes("spin")) pool.push("THIS STATION'S SPIN IS WRONG. DON'T TELL ME IT ISN'T. MY INNER EAR HAS OPINIONS.");

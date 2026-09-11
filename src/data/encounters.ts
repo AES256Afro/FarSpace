@@ -7,7 +7,7 @@ import { hull } from "./hulls";
 import { RNG } from "../core/rng";
 import { addMaterials } from "./engineering";
 import { commodity, FACTIONS } from "./data";
-import { officeWrites, findStation as findStationW, isBeltStation, berthsUsed as berthsUsedW } from "../world";
+import { officeWrites, findStation as findStationW, isBeltStation, berthsUsed as berthsUsedW, hasSpecialty as hasSpecialtyW } from "../world";
 const facNameW2 = (id: string): string => FACTIONS.find((f) => f.id === id)?.name ?? id;
 
 export interface EncounterOption {
@@ -400,6 +400,15 @@ export const ENCOUNTERS: Encounter[] = [
       { label: "ALL HANDS TO THE VENTS", hint: "Morale up; an hour lost; the envoy is grateful", result: (g) => { const env = passengersAboard(p(g)).find((m) => m.passengerKind === "envoy"); if (env) env.mood = Math.min(100, (env.mood ?? 60) + 15); for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 4); g.world.time += 600; logEntry(g.world, "All hands to the vents for an envoy's escaped companion"); return "AN HOUR OF THE WHOLE CREW ON THEIR KNEES AT DUCT GRILLES MAKING NOISES. IT COMES OUT FOR THE ENGINEER, FOR SOME REASON. THE ENVOY WEEPS. MORALE UP, THEIRS AND EVERYBODY'S."; } },
       { label: "LET THE CAT HANDLE IT", hint: "The cat finds it in a minute; the cat is unbearable after", requires: (g) => !!p(g).cat && !p(g).catAway, result: (g) => { const env = passengersAboard(p(g)).find((m) => m.passengerKind === "envoy"); if (env) env.mood = Math.min(100, (env.mood ?? 60) + 10); logEntry(g.world, `${p(g).cat!.name} found an envoy's escaped companion in the vents`); return `${p(g).cat!.name.toUpperCase()} GOES INTO DUCT FOUR AND COMES OUT OF DUCT ONE WITH THE THING WALKING BEHIND, CHASTENED. NOBODY KNOWS WHAT WAS SAID. THE ENVOY IS GRATEFUL. THE CAT IS INSUFFERABLE FOR A WEEK.`; } },
       { label: "SEAL THE VENTS AND WAIT", hint: "The envoy's mood falls; it comes out at the gate, eventually", result: (g) => { const env = passengersAboard(p(g)).find((m) => m.passengerKind === "envoy"); if (env) env.mood = Math.max(0, (env.mood ?? 60) - 15); return "IT COMES OUT AT THE GATE, THIN AND FURIOUS, AND SO IS THE ENVOY. THE TREATY, IF THERE IS ONE, WILL BE COLDER FOR IT."; } },
+    ],
+  },
+  {
+    id: "counsel", where: "space", weight: 4, title: "THE COUNSELLOR'S HOUR", when: (g) => hasSpecialtyW(p(g), "counsellor") && !!p(g).leg && (p(g).leg!.alerts >= 2 || p(g).leg!.fights >= 3) && !p(g).flags?.counselledLeg,
+    text: "The counsellor knocks on the cabin hatch with two cups and a face that has already decided. 'IT'S NOT AN ORDER. I CAN'T GIVE YOU ORDERS. BUT THE CREW ARE WATCHING YOU NOT SLEEP, AND THEY'RE COUNTING THE ALERTS, AND I'D LIKE AN HOUR. YOU CAN TALK OR NOT TALK. THE HOUR HAPPENS EITHER WAY.'",
+    options: [
+      { label: "TAKE THE HOUR", hint: "The ship drifts an hour; the crew see it; loyalty up, and the leg counts as calmer", result: (g) => { g.world.time += 3600; (p(g).flags ??= {}).counselledLeg = true; (p(g).flags ??= {}).counselled = true; for (const c of p(g).crew) { c.loyalty = (c.loyalty ?? 0) + 0.15; c.morale = Math.min(100, c.morale + 3); } if (p(g).leg) p(g).leg!.alerts = Math.max(0, p(g).leg!.alerts - 2); logEntry(g.world, "Took the counsellor's hour"); return "YOU TAKE THE HOUR. YOU TALK, EVENTUALLY, ABOUT THE THING YOU WEREN'T GOING TO TALK ABOUT. THE COUNSELLOR SAYS ALMOST NOTHING, PROFESSIONALLY. THE CREW SEE THE HATCH SHUT AND FLY QUIETER FOR IT. LOYALTY UP."; } },
+      { label: "TEN MINUTES. THEN THE BRIDGE", hint: "A little of it; the counsellor takes what they can get", result: (g) => { g.world.time += 600; (p(g).flags ??= {}).counselledLeg = true; for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 1); return "TEN MINUTES, AND THE COUNSELLOR USES ALL OF THEM AND DOESN'T ASK FOR THE ELEVENTH. 'NEXT LEG, THE HOUR.' YOU SAY YES. YOU MIGHT EVEN MEAN IT."; } },
+      { label: "I'M FINE", hint: "The counsellor writes that down", result: (g) => { (p(g).flags ??= {}).counselledLeg = true; const c = p(g).crew.find((x) => x.specialty === "counsellor"); if (c) c.morale = Math.max(0, c.morale - 3); return "'FINE.' THE COUNSELLOR WRITES IT DOWN, IN QUOTATION MARKS, AND LEAVES THE SECOND CUP ON THE DESK WHERE YOU'LL HAVE TO LOOK AT IT."; } },
     ],
   },
   {

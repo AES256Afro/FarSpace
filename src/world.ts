@@ -106,6 +106,7 @@ export interface WreckDef {
 }
 
 export type AnomalyKind = "data" | "derelict" | "survey" | "fold" | "lens" | "echo";
+// named?: the finder gave it a name; the chart keeps it
 
 export interface AnomalyDef {
   id: string;
@@ -115,6 +116,7 @@ export interface AnomalyDef {
   discovered: boolean;
   claimed: boolean;
   reward: number;
+  named?: boolean;  // the finder gave it a name; the chart keeps it
 }
 
 export interface SystemDef {
@@ -352,6 +354,7 @@ export interface PlayerState {
   keepsakes?: string[];              // small things that stayed aboard: unclaimed lost property
   inquiries?: number;                // boards of inquiry sat through, one per crew member lost
   wakes?: number;                    // wakes held in the galley, one per crew member lost
+  named?: number;                    // finds the captain named for the survey
   motto?: string;                    // the line on the dedication plaque by the airlock
   prisoners?: number;                // prisoners delivered to a brig
   evacuated?: number;                // people carried out of a bad week

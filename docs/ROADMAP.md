@@ -1369,6 +1369,19 @@ Time passes for the people on the ship, and for the ship.
       (a child drew your lander) and once after one kept (a grant; they
       invented the wheel)
 
+## Milestone 246 — On the Chart ✅ (Sep 2026)
+- [x] The finder names the find: after a scan turns up an anomaly the pause
+      menu offers NAME THE FIND; the chart keeps it (deed "on the chart")
+
+## Milestone 247 — The Crew Talk ✅ (Sep 2026)
+- [x] Crew chatter about the undock word, the plaque, Number One's conn, the
+      cadet's spare gravity, the cup on the table, seconds for the prisoner
+
+## Milestone 248 — The Counsellor's Hour ✅ (Sep 2026)
+- [x] With a counsellor aboard and a rough leg (two red alerts or three
+      fights) they knock with two cups: take the hour (loyalty, the leg reads
+      calmer), ten minutes, or "I'm fine" (they write it down)
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
