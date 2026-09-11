@@ -1292,6 +1292,19 @@ Time passes for the people on the ship, and for the ship.
       fares: a party of up to eight at a head rate, rep, lives counted at the
       far clamp (deeds at one party and thirty people)
 
+## Milestone 228 — Any Other Business ✅ (Sep 2026)
+- [x] The briefing ends with a motion from one of the staff: run the drive
+      hot, a rest day, a live-fire drill, the long way round the star; grant,
+      deny, or table it
+
+## Milestone 229 — One Quiet Leg ✅ (Sep 2026)
+- [x] Once on the roster the ship asks for a leg with no red alert and no
+      fire; keep the promise and it tightens something itself (wear -6, deed)
+
+## Milestone 230 — Third Contact ✅ (Sep 2026)
+- [x] The quiet ones set up shop: a crate in the ring for a trading stone
+      (codex contact 3, data, a keepsake), or take it and the lights go out
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

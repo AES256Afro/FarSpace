@@ -752,6 +752,15 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- The senior staff briefing has an "any other business" line: one of the
+  staff brings a motion (the drive run hot, a rest day, a live-fire drill, the
+  long way round the star). Grant it, deny it, or table it for the next leg.
+- Once the ship is on the roster it asks for one leg with no red alert and no
+  fire taken. Promise, keep it to the next clamp, and the ship tightens
+  something in the mounts itself: wear down six.
+- Third contact: with two meetings in the codex, the quiet ones set up a ring
+  of lights with a stone in the middle. Leave a crate and the stone is yours
+  (data, a keepsake, contact 3); take it for nothing and it stops glowing.
 - At a reception you can commend your longest-serving crew member before the
   room: their loyalty and morale up a lot, some XP, rep, and a deed.
 - A drought: a belt rock's ice line fails for the week. Water stock drops to

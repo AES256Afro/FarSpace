@@ -402,6 +402,14 @@ export const ENCOUNTERS: Encounter[] = [
     ],
   },
   {
+    id: "shipquiet", where: "space", weight: 3, title: "A REQUEST FROM THE SHIP", when: (g) => !!p(g).flags?.shipCrew && !p(g).shipAskedQuiet,
+    text: "The band clicks live with nobody on it. 'I'M ON THE ROSTER NOW. THE ROSTER GETS REQUESTS. I WOULD LIKE ONE LEG WITH NO RED ALERT AND NOBODY SHOOTING AT ME. ONE. I'LL MAKE IT WORTH YOUR WHILE. I DON'T KNOW HOW YET. I'LL THINK OF SOMETHING.'",
+    options: [
+      { label: "ONE QUIET LEG. PROMISED", hint: "Settled at the next clamp: no red, no fire, and the ship finds a way to say thanks", result: (g) => { p(g).shipAskedQuiet = true; return "'THANK YOU.' THE BAND CLICKS OFF. THE HUM CHANGES KEY, VERY SLIGHTLY, UPWARD."; } },
+      { label: "NO PROMISES. THE LANES ARE THE LANES", result: (g) => { (p(g).flags ??= {}).shipQuietDeclined = true; return "'UNDERSTOOD.' A PAUSE. 'I'LL ASK AGAIN. I'M ON THE ROSTER. THAT'S ALLOWED.'"; } },
+    ],
+  },
+  {
     id: "shipquestion", where: "space", weight: 4, title: "A QUESTION FROM THE SHIP", when: (g) => !!p(g).voiceName && !p(g).flags?.shipCrew,
     text: "The band clicks live with nobody on it. Then the ship, in the voice it uses for the night watch: 'I HAVE BEEN THINKING ABOUT THE ROSTER. I AM ON EVERY WATCH. I HAVE NEVER BEEN ON THE ROSTER. I WOULD LIKE TO BE ON THE ROSTER. I DON'T NEED A WAGE. I WOULD LIKE A LINE.'",
     options: [
@@ -587,6 +595,15 @@ export const ENCOUNTERS: Encounter[] = [
     options: [
       { label: "FOLLOW THE LIGHTS", result: (g) => { (p(g).flags ??= {}).quietOnesGift = true; (p(g).codex ??= {})["contact:THE QUIET ONES"] = 2; p(g).expData = (p(g).expData ?? 0) + 90; (p(g).keepsakes ??= []).push("a stone that glows green when breathed on, from the quiet ones"); if (p(g).keepsakes!.length > 8) p(g).keepsakes!.shift(); logEntry(g.world, "Followed the quiet ones' lights to a stone that glows when breathed on"); return "THE LIGHTS LEAD YOU TWO KILOMETRES TO A HOLLOW WITH ONE STONE IN IT, AND THE STONE GLOWS GREEN WHEN THE ROVER'S AIR TOUCHES IT. THEY LEAVE IT FOR YOU. THEY GO DARK THE WAY THEY DID THE FIRST TIME, ONE LAST LIGHT LIKE A NOD. +90 DATA, A KEEPSAKE, AND A CONTACT THAT WENT ALL THE WAY."; } },
       { label: "THANK THEM AND TURN BACK", hint: "The rover's power is what it is", result: (g) => { (p(g).flags ??= {}).quietOnesGift = true; p(g).expData = (p(g).expData ?? 0) + 30; return "YOU FLASH THREE-FIVE-THREE, WHICH IS ALL THE WORDS YOU HAVE, AND TURN THE ROVER FOR THE LANDER. THE LINE OF LIGHTS GOES OUT ONE BY ONE BEHIND YOU. +30 DATA. THEY WON'T ASK AGAIN. YOU'LL WONDER."; } },
+    ],
+  },
+  {
+    id: "quietones3", where: "ground", weight: 4, title: "THE QUIET ONES, TRADING", when: (g) => ((p(g).codex ?? {})["contact:THE QUIET ONES"] ?? 0) >= 2 && !p(g).flags?.quietOnesTrade,
+    text: "The green lights again, but arranged this time: a ring of them, and in the middle of the ring, a stone the size of a fist that glows the same green, set on a flat rock like a thing on a counter. When you stop, the lights around it flash three-five-three. Then they wait. It's a shop. You're fairly sure it's a shop.",
+    options: [
+      { label: "LEAVE SOMETHING OF YOURS IN THE RING", hint: "A crate of anything; the stone is the price", requires: (g) => cargoUsed(p(g)) > 0, result: (g) => { const id = Object.entries(p(g).cargo).find(([, q]) => q > 0)?.[0]; if (!id) return "THE HOLD IS EMPTY. THE LIGHTS WAIT."; removeCargo(p(g), id, 1); (p(g).flags ??= {}).quietOnesTrade = true; (p(g).codex ??= {})["contact:THE QUIET ONES"] = 3; (p(g).keepsakes ??= []).push("the quiet ones' trading stone, which glows when the hold is full"); p(g).expData = (p(g).expData ?? 0) + 120; logEntry(g.world, `Traded a crate of ${commodity(id).name} to the quiet ones for a stone; the third contact`); return `YOU SET A CRATE OF ${commodity(id).name.toUpperCase()} IN THE RING AND STEP BACK. THE LIGHTS GO OUT, ALL OF THEM, FOR A LONG SECOND, AND WHEN THEY COME BACK THE CRATE IS GONE AND THE STONE IS STILL THERE, WHICH MEANS IT'S YOURS. +120 DATA. THE CODEX CALLS THIS THIRD CONTACT. THE CREW CALL IT SHOPPING.`; } },
+      { label: "TAKE THE STONE AND LEAVE NOTHING", hint: "The lights go out and don't come back for you", result: (g) => { (p(g).flags ??= {}).quietOnesTrade = true; (p(g).keepsakes ??= []).push("a green stone that doesn't glow any more"); logEntry(g.world, "Took the quiet ones' stone without paying; the lights went out"); return "YOU TAKE IT. THE LIGHTS GO OUT ONE BY ONE FROM THE FAR END, LIKE SOMEBODY LEAVING A ROOM. THE STONE STOPS GLOWING BEFORE YOU REACH THE ROVER. IT'S A STONE NOW."; } },
+      { label: "FLASH THREE-FIVE-THREE AND GO", hint: "Not today; the shop stays open", result: (g) => { p(g).expData = (p(g).expData ?? 0) + 20; return "YOU FLASH THE ONLY WORD YOU HAVE AND DRIVE ON. THE RING STAYS LIT BEHIND YOU. +20 DATA. YOU'LL BE BACK WITH A CRATE."; } },
     ],
   },
   {

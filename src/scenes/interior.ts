@@ -213,6 +213,26 @@ export class InteriorScene implements Scene {
       }
     }
   }
+  // any other business: one of the staff brings a motion, and the table waits for the captain
+  staffMotion(g: Game): void {
+    const p = g.world.player; const rng = new RNG(Math.floor(g.world.time * 3) + 5);
+    const by = (role: string) => p.crew.find((c) => c.role === role && !c.sick);
+    const eng = by("engineer"), med = by("medic"), gun = by("gunner"), pil = by("pilot");
+    const motions: { who: import("../data/crew").CrewMember; text: string; yes: (g2: Game) => string; no: (g2: Game) => string }[] = [];
+    if (eng) motions.push({ who: eng, text: `${eng.name.split(" ")[0].toUpperCase()} (ENGINES): "I WANT TO RUN THE DRIVE HOT FOR A LEG. TEN PERCENT ON THE FUEL. IT'LL COST US IN WEAR AND I'LL OWN THAT."`, yes: (g2) => { g2.world.player.focus = "helm"; p.wear = (p.wear ?? 0) + 3; eng.morale = Math.min(100, eng.morale + 6); return "GRANTED. THE DRIVE RUNS HOT AND THE ENGINEER RUNS HAPPY. FOCUS: HELM FOR THE LEG; WEAR +3 UP FRONT."; }, no: () => { eng.morale = Math.max(0, eng.morale - 2); return "DENIED. THE ENGINEER NODS LIKE THEY EXPECTED IT AND WRITES SOMETHING DOWN."; } });
+    if (med) motions.push({ who: med, text: `${med.name.split(" ")[0].toUpperCase()} (SICKBAY): "THE CREW NEED A REST DAY. NOT A WATCH. A DAY. I'LL SIGN THE ORDER IF YOU WON'T."`, yes: (g2) => { g2.world.time += 3600; for (const c of p.crew) c.morale = Math.min(100, c.morale + 8); return "GRANTED. AN HOUR OF SHIP TIME GOES BY WITH NOBODY ON WATCH BUT THE SHIP. MORALE +8. THE MEDIC LOOKS SMUG, MEDICALLY."; }, no: () => { med.morale = Math.max(0, med.morale - 3); return "DENIED. THE MEDIC SIGNS SOMETHING ANYWAY AND PINS IT TO THE GALLEY DOOR."; } });
+    if (gun) motions.push({ who: gun, text: `${gun.name.split(" ")[0].toUpperCase()} (TACTICAL): "LIVE-FIRE DRILL BEFORE THE JUMP. THE CREW HATE IT. THAT'S HOW YOU KNOW IT WORKS."`, yes: (g2) => { const x = crewXp(p, "gunner", 2); for (const c of p.crew) if (c !== gun) c.morale = Math.max(0, c.morale - 2); g2.world.player.focus = "tactical"; return `GRANTED. TWENTY MINUTES OF THE KLAXON AND EVERYBODY'S FIRST NAME. FOCUS: TACTICAL FOR THE LEG. MORALE -2, EXCEPT THE GUNNER'S.${x ? " " + x : ""}`; }, no: () => "DENIED. THE GUNNER SAYS 'NOTED' THE WAY THE OFFICE SAYS IT." });
+    if (pil) motions.push({ who: pil, text: `${pil.name.split(" ")[0].toUpperCase()} (HELM): "LET ME TAKE THE LONG WAY ROUND THE STAR ON THE NEXT LEG. THE PASSENGERS PAY FOR THE VIEW AND I NEVER GET TO SEE IT."`, yes: () => { for (const m of passengersAboard(p)) m.mood = Math.min(100, (m.mood ?? 60) + 6); pil.morale = Math.min(100, pil.morale + 8); p.fuel = Math.max(0, p.fuel - 3); return "GRANTED. THREE UNITS OF FUEL FOR A VIEW OF THE STAR NOBODY ON THE BRIDGE WILL FORGET. THE PILOT DOESN'T SAY THANK YOU. THE PILOT HUMS."; }, no: () => { pil.morale = Math.max(0, pil.morale - 2); return "DENIED. THE PILOT FLIES THE SHORT WAY, PRECISELY, WHICH IS ITS OWN COMMENT."; } });
+    if (!motions.length) { g.toast("NO OTHER BUSINESS. THE TABLE EMPTIES."); return; }
+    const mo = rng.pick(motions); p.briefed = true;
+    const enc: Encounter = { id: "motion", where: "space", title: "ANY OTHER BUSINESS", weight: 0, text: mo.text,
+      options: [
+        { label: "GRANTED", result: (g2) => { flag(g2, "motion"); logEntry(g2.world, `Granted ${mo.who.name}'s motion at the briefing`); return mo.yes(g2); } },
+        { label: "DENIED", result: (g2) => mo.no(g2) },
+        { label: "TABLE IT. NEXT LEG", hint: "They'll bring it back", result: () => { p.briefed = false; return "TABLED. THEY'LL BRING IT BACK, WORD FOR WORD, AND YOU'LL KNOW BY THEIR FACE."; } },
+      ] };
+    (g.scenes["encounter"] as EncounterScene).open(g, enc, "interior", true);
+  }
   // the captain's table: a mess call with a fare aboard is a dinner, if you ask them
   captainsTable(g: Game, m: import("../world").Mission): void {
     const p = g.world.player; const name = (m.passengerName ?? "THE PASSENGER").toUpperCase(); const kind = m.passengerKind ?? "vip";
@@ -665,6 +685,7 @@ export class InteriorScene implements Scene {
               { label: "FOCUS: TACTICAL", hint: "Shields recharge half again as fast", result: (g2) => { sfx.select(); flag(g2, "briefing"); return setFocus(g2.world, "tactical"); } },
               { label: "FOCUS: HELM", hint: "The next jumps cost 10% less fuel", result: (g2) => { sfx.select(); flag(g2, "briefing"); return setFocus(g2.world, "helm"); } },
               { label: "NO CHANGES. STUDY INSTEAD", result: (g2) => { g2.world.player.briefed = true; return "YOU THANK THEM AND LET THEM GO. THE STUDY IS QUIET AGAIN; E TO READ."; } },
+              { label: "ANY OTHER BUSINESS?", hint: "Somebody always has a motion", result: (g2) => { this.staffMotion(g2); return ""; } },
             ] };
           (g.scenes["encounter"] as EncounterScene).open(g, enc, "interior", true);
           return;
