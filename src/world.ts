@@ -525,7 +525,8 @@ export function crewXp(p: PlayerState, role: CrewRole, n = 1): string | null {
     c.xp = (c.xp ?? 0) + n;
     if (c.skill < 3 && c.xp >= XP_STEPS[c.skill]) {
       c.skill++; c.xp = 0; c.wage += ROLE_INFO[role].baseWage; c.morale = Math.min(100, c.morale + 10);
-      line = `${c.name.toUpperCase()} HAS GOT BETTER AT THIS. ${ROLE_INFO[role].label} SKILL ${c.skill}, WAGE ${c.wage}CR.`;
+      for (const o of p.crew) if (o !== c && !o.sick) o.morale = Math.min(100, o.morale + 2);
+      line = `${c.name.toUpperCase()} HAS GOT BETTER AT THIS. ${ROLE_INFO[role].label} SKILL ${c.skill}, WAGE ${c.wage}CR.${p.crew.length > 1 ? " THE CREW STAND THEM A DRINK." : ""}`;
     }
   }
   return line;
@@ -1036,6 +1037,7 @@ export function settlePassengers(p: PlayerState): string[] {
     else if (m.treaty && m.docksAboard === (m.patience ?? 2)) out.push(`${name} CHECKS THE CASE AND THE CLOCK. ONE MORE DOCKING AND THE TALKS ARE OFF.`);
     if (m.passengerKind === "patient" && m.docksAboard === patientDeadline(p, m) && m.targetStationId !== p.dockedAt) out.push(`${name}'S READINGS ARE SLIPPING. THE NEXT DOCKING HAS TO BE THE CLINIC.`);
     if (p.hull < p.hullMax * 0.4) { m.mood = Math.max(0, m.mood - 10); out.push(`${name} HAS SEEN THE HULL READOUT. NOT HAPPY.`); }
+    if (hasSpecialty(p, "counsellor")) m.mood = Math.min(100, m.mood + 3);
   }
   settleRequests(p, out);
   return out;

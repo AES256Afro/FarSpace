@@ -1326,6 +1326,7 @@ export class FlightScene implements Scene {
         const t = this.apTarget(g);
         if (!t) { g.toast("AUTOPILOT: NOTHING TO FLY TO - PLOT A COURSE ON THE GALAXY MAP"); return; }
         this.autopilot = true; this.apLabel = t.label;
+        { const fo = firstOfficer(g.world.player); if (fo && !fo.sick && this.comms.length < 3) this.comms.push({ from: fo.name.split(" ")[0].toUpperCase(), text: `COURSE LAID IN FOR ${t.label.toUpperCase()}. NUMBER ONE HAS THE CONN.`, life: 5, color: PAL.grey }); }
         g.toast(`AUTOPILOT: FLYING TO ${t.label} - TOUCH THE CONTROLS TO TAKE OVER`);
         sfx.select();
       }

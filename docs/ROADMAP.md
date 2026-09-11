@@ -1120,6 +1120,10 @@ Time passes for the people on the ship, and for the ship.
 - [x] At mess call the captain sits with whoever's nearest, once a week
       each, for loyalty; a sixth sim program, the pictures, for the bonds
 
+## Milestone 189 — Small Ceremonies ✅ (Sep 2026)
+- [x] A promotion lifts the whole crew; Number One lays in the course when
+      the autopilot engages; a counsellor eases the fares every docking
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

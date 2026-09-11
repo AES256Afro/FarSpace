@@ -1014,6 +1014,10 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   more, off cruise, and report back to the watch that sent you. The HUD
   counts the seconds on the mission line; a toast says when the flag's been
   shown. Rep and credits on return.
+- When someone earns a skill star, the rest of the crew stand them a drink:
+  morale up all round. When the autopilot engages with a Number One aboard,
+  they lay in the course on the band and take the conn. And a counsellor
+  aboard eases every passenger's mood a little at every docking.
 - With the autopilot flying and a Number One aboard, they take the conn:
   passing hails get acknowledged in their name, the captain being below. And
   when cruise engages with a pilot aboard, the helm answers. Aye, captain.
