@@ -666,4 +666,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Three-course racing campaign across three stations with a title,
       tracked on the MISSIONS board
 
+## Milestone 76 — Stakes ✅ (Sep 2026)
+- [x] Buy shares in stations; dividends on docking; holdings on NEWS;
+      SHAREHOLDER
+
 ## Later

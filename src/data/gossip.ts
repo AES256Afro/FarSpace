@@ -34,6 +34,7 @@ export function concourseGossip(w: World, st: StationDef, rng: RNG): string[] {
   if ((p.races ?? 0) >= 1) pool.push("'SOMEBODY RAN THE RINGS UNDER PAR LAST WEEK. THE MARSHAL'S STILL TALKING ABOUT IT.'");
   if (p.raceBeaten?.[st.id]) pool.push("'THE COURSE RECORD HERE FELL. NEW NAME ON THE BOARD IN THE BAR.'");
   if ((p.postRuns ?? 0) >= 3) pool.push("'THE MAIL CAME EARLY. I DIDN'T KNOW WHAT TO DO WITH MYSELF.'");
+  if ((p.stakes?.[st.id] ?? 0) >= 10) pool.push("'THAT CAPTAIN OWNS A PIECE OF THIS PLACE. MIND WHAT YOU SAY ABOUT THE BERTH FEES.'");
   const docks = dockingsAt(p, st.id);
   if (docks >= 6) pool.push("'THAT'S THE ONE WHO'S ALWAYS IN. THE REGULAR. HARBOURMASTER LIKES THEM.'");
   if ((p.rescues ?? 0) >= 3) pool.push("'THAT CAPTAIN OVER THERE? PULLED A FREIGHTER OUT OF A FIGHT. I SAW THE WIRE.'");

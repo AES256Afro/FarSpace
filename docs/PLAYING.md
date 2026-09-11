@@ -229,6 +229,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Stakes
+
+- I on the MARKET tab buys a share in the station (Shift: ten). Shares cost
+  what the place is worth and a little more each time you buy. Every docking
+  there pays a dividend on your holding: more during a festival, less in a
+  strike or a crisis. Fifty shares a station, and at ten the crowd starts
+  calling you one of the owners. The NEWS tab lists your holdings.
+
 ## The regatta
 
 - Finish any ring race and the marshal enters you in the regatta: three

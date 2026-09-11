@@ -15,7 +15,7 @@ import { STARS, starDistance } from "../src/data/stars";
 import { ACHIEVEMENTS } from "../src/data/achievements";
 import { ARCS, dailyContract, dailyKey, rankOf, logSystem, applyHull } from "../src/world";
 import { MODULES } from "../src/data/modules";
-import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook, leaveWreck, addWireWrecks, enterRegatta, regattaObjective, regattaProgress } from "../src/world";
+import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook, leaveWreck, addWireWrecks, enterRegatta, regattaObjective, regattaProgress, buyStake, collectStake, stakePrice, STAKE_CAP } from "../src/world";
 import { RARES } from "../src/data/data";
 import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
@@ -824,6 +824,22 @@ describe("the regatta", () => {
     expect(regattaProgress(w, c[2], 12, 15, false)).toContain("CHAMPION");
     expect(p.regatta).toBe(3);
     expect(captainNickname(w)).toBe("THE CHAMPION");
+  });
+});
+
+describe("stakes", () => {
+  it("shares cost more as you hold more, pay a dividend on docking, and stop at the cap", () => {
+    const w = generateWorld(33, { realGalaxy: true });
+    const p = w.player; p.credits = 100000;
+    const st = Object.values(w.systems).flatMap((s) => s.stations).find((x) => !x.military)!;
+    const p0 = stakePrice(w, st);
+    expect(buyStake(w, st, 1)).toContain("1 HELD");
+    expect(stakePrice(w, st)).toBeGreaterThan(p0);
+    expect(collectStake(w, st)).toBeGreaterThan(0);
+    expect(buyStake(w, st, STAKE_CAP)).toContain("ALL ONE CAPTAIN");
+    p.credits = 10; expect(buyStake(w, st, 1)).toContain("SHORT");
+    const mil = Object.values(w.systems).flatMap((s) => s.stations).find((x) => x.military);
+    if (mil) expect(buyStake(w, mil, 1)).toContain("NAVY");
   });
 });
 

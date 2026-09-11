@@ -305,6 +305,7 @@ export interface PlayerState {
   postRuns?: number;                 // mail bags delivered
   guestbook?: GuestEntry[];          // the last dozen passengers and what they wrote on the way out
   lost?: { name: string; role: string; where: string; t: number }[]; // crew who didn't make it to the pod
+  stakes?: Record<string, number>;   // station id -> shares held; they pay a dividend every time you dock there
   regatta?: number;                  // the regatta: 0 entered, 1 first course won, 2 second, 3 champion
   regattaCourse?: string[];          // the three stations of your regatta, set when you're entered
   wrecksOfMine?: string[];           // wreck ids of ships you lost; they stay where they fell
@@ -449,7 +450,7 @@ export interface Captain { name: string; from: number; to: number; stationId: st
 // ---------- The ledger: where the money comes from and goes ----------
 export const LEDGER_LABELS: Record<string, string> = {
   trade: "TRADE SALES", buys: "TRADE PURCHASES", fares: "FARES AND TIPS", contracts: "CONTRACTS", rescues: "RESCUES AND SALVAGE", races: "THE RING RACE",
-  tolls: "TOLLS AND THE TILL", charters: "CHARTER HAULERS", letters: "LETTERS AND GIFTS", crew: "CREW WAGES AND BONUSES", yard: "YARD, FUEL AND OUTFITTING",
+  tolls: "TOLLS AND THE TILL", charters: "CHARTER HAULERS", stakes: "STAKES AND DIVIDENDS", letters: "LETTERS AND GIFTS", crew: "CREW WAGES AND BONUSES", yard: "YARD, FUEL AND OUTFITTING",
   settlements: "SETTLEMENTS", other: "EVERYTHING ELSE",
 };
 export function ledger(p: PlayerState, source: string, delta: number): void {
@@ -1036,6 +1037,40 @@ export function racePar(gates: { x: number; y: number }[]): number {
 export function racePrize(t: number, par: number): number {
   return Math.round(250 + (t <= par ? 200 : 0) + Math.max(0, par - t) * 25);
 }
+// Stakes: buy into a station. Shares cost what the place is worth; every docking there pays a dividend
+// on what it's doing, and the crowd starts calling you one of the owners.
+export const STAKE_CAP = 50;
+export function stakePrice(w: World, st: StationDef): number {
+  const pr = stationProfile(w, st);
+  const held = w.player.stakes?.[st.id] ?? 0;
+  return Math.round((300 + pr.population / 120) * (1 + held * 0.04));
+}
+export function stakeDividend(w: World, st: StationDef): number {
+  const held = w.player.stakes?.[st.id] ?? 0;
+  if (!held) return 0;
+  const pr = stationProfile(w, st);
+  const busy = crisisAt(w, st.id) ? 0.5 : galaxyEventAt(w, findStation(w, st.id)?.sys.id ?? "")?.kind === "festival" ? 1.6 : galaxyEventAt(w, findStation(w, st.id)?.sys.id ?? "")?.kind === "strike" ? 0.3 : 1;
+  return Math.round(held * (3 + pr.population / 9000) * busy);
+}
+export function buyStake(w: World, st: StationDef, n: number): string {
+  const p = w.player;
+  if (st.military) return "THE NAVY DOESN'T SELL SHARES";
+  const held = p.stakes?.[st.id] ?? 0;
+  if (held + n > STAKE_CAP) return `${STAKE_CAP} SHARES IS ALL ONE CAPTAIN MAY HOLD HERE`;
+  let cost = 0; for (let i = 0; i < n; i++) cost += Math.round((300 + stationProfile(w, st).population / 120) * (1 + (held + i) * 0.04));
+  if (p.credits < cost) return `${n} SHARE${n > 1 ? "S" : ""} HERE COSTS ${cost}CR. YOU'RE SHORT`;
+  p.credits -= cost; ledger(p, "stakes", -cost);
+  (p.stakes ??= {})[st.id] = held + n;
+  if (held === 0) logEntry(w, `Bought into ${st.name}`);
+  return `${n} SHARE${n > 1 ? "S" : ""} IN ${st.name.toUpperCase()} FOR ${cost}CR. ${held + n} HELD`;
+}
+export function collectStake(w: World, st: StationDef): number {
+  const d = stakeDividend(w, st);
+  if (d) { w.player.credits += d; ledger(w.player, "stakes", d); }
+  return d;
+}
+export function totalShares(p: PlayerState): number { return Object.values(p.stakes ?? {}).reduce((a, b) => a + b, 0); }
+
 // The regatta: three courses, three stations, a title at the end. Entered by finishing any race.
 export function enterRegatta(w: World, firstStationId: string): string | null {
   const p = w.player;
