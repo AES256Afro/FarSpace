@@ -325,6 +325,9 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   credits for your trouble; anywhere else forwards it for 20 and a nod.
 - Carry it through four dockings unclaimed and it's the ship's: a keepsake on
   the wall of record, and still on the seat for anyone who asks.
+- Sometimes the owner comes looking: a shuttle chases you down between the
+  gates, out of breath. Hand it over on a line for 80 credits pressed on you,
+  or keep it and watch them turn for home. The crew have opinions.
 
 ## Family
 

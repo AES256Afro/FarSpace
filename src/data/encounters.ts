@@ -291,6 +291,14 @@ export const ENCOUNTERS: Encounter[] = [
     ],
   },
   {
+    id: "lostowner", where: "space", weight: 3, title: "SOMETHING OF THEIRS", when: (g) => (p(g).lostProperty ?? []).length > 0,
+    text: "A shuttle hails on the short band, out of breath: 'THAT'S YOU, ISN'T IT? THE SHIP I CAME IN ON. I LEFT SOMETHING IN THE CABIN. I'VE BEEN CHASING YOU SINCE THE GATE. PLEASE.'",
+    options: [
+      { label: "HAND IT OVER ON A LINE", result: (g) => { const it = (p(g).lostProperty ?? [])[0]; if (!it) return "THE SHUTTLE FINDS NOTHING OF THEIRS ABOARD AND APOLOGISES ALL THE WAY OUT OF RANGE."; p(g).lostProperty = (p(g).lostProperty ?? []).filter((x) => x !== it); p(g).credits += 80; logEntry(g.world, `${it.owner} chased the ship down for ${it.name}; handed it over`); return `${it.owner.toUpperCase()} TAKES ${it.name.toUpperCase().split(",")[0]} ACROSS THE LINE AND HOLDS IT LIKE A CHILD. +80CR, PRESSED ON YOU. 'I WAS WINNING, YOU KNOW.'`; } },
+      { label: "KEEP IT. FINDERS KEEPERS", result: (g) => { const it = (p(g).lostProperty ?? [])[0]; if (!it) return "THERE'S NOTHING TO KEEP. THE SHUTTLE GOES AWAY CONFUSED."; p(g).lostProperty = (p(g).lostProperty ?? []).filter((x) => x !== it); (p(g).keepsakes ??= []).push(`${it.name}, left by ${it.owner}, who wanted it back`); logEntry(g.world, `${it.owner} chased the ship down for ${it.name}; kept it`); return `THE SHUTTLE HANGS THERE A LONG MOMENT, THEN TURNS FOR HOME. ${it.name.toUpperCase().split(",")[0]} STAYS ON THE SEAT. THE CREW SAY NOTHING. LOUDLY.`; } },
+    ],
+  },
+  {
     id: "cargopod", where: "space", weight: 2, title: "A POD WITH A NOTE",
     text: "A cargo pod on a slow drift, transponder dead, a message painted on the side by hand: 'IF FOUND, PLEASE TAKE TO ANY STATION. THE CONTENTS ARE PAID FOR. THE SHIPPER IS NOT COMING BACK.'",
     options: [

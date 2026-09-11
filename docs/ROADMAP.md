@@ -895,4 +895,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Crew chatter and concourse gossip cover keepsakes, lost property, the
       dock-hand, berth neighbours, open requests and the yard's shift rate
 
+## Milestone 135 — Something of Theirs ✅ (Sep 2026)
+- [x] An encounter: the owner of lost property chases the ship down; hand it
+      over or keep it
+
 ## Later
