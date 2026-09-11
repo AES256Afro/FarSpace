@@ -826,6 +826,15 @@ describe("station hours and the tannoy", () => {
     const m = { ...pm!, accepted: true } as Mission;
     expect(missionDeliverable(w, m, mil)).toBe(false); m.patrolT = m.patrolNeed; expect(missionDeliverable(w, m, mil)).toBe(true);
   });
+  it("research stations post science postings for the strange readings", () => {
+    const w = generateWorld(62, { realGalaxy: true }); const p = w.player;
+    const sts = Object.values(w.systems).flatMap((s) => s.stations).filter((s) => s.type === "research");
+    for (const st of sts) p.rep[st.factionId] = 40;
+    let post: Mission | undefined;
+    for (const st of sts) for (let i = 0; i < 8 && !post; i++) post = genMissionsFor(w, st, new RNG(i)).find((m) => m.kind === "research" && m.title.startsWith("Science posting"));
+    if (post) { expect(post.reward).toBeGreaterThanOrEqual(700); expect(post.desc).toContain("science council"); }
+    expect(FURNISHINGS.some((f) => f.id === "chair" && f.tile === "C")).toBe(true);
+  });
   it("strange readings: folds skip the clock, lenses light the system, echoes play the log back", () => {
     const w = generateWorld(56, { realGalaxy: true }); const p = w.player;
     const all = Object.values(w.systems).flatMap((s) => s.anomalies);

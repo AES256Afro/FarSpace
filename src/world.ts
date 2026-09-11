@@ -778,6 +778,7 @@ export const FURNISHINGS: { id: string; name: string; price: number; desc: strin
   { id: "shelf", name: "A Trophy Shelf", price: 300, desc: "By the wall of record, for the things you've brought back.", tile: "M" },
   { id: "hammock", name: "A Hammock", price: 180, desc: "Slung in the hold. Somebody is always in it.", tile: "G" },
   { id: "mural", name: "A Mural", price: 350, desc: "The crew paint the corridor with everywhere the ship has been.", tile: "E" },
+  { id: "chair", name: "A Captain's Chair", price: 500, desc: "On the bridge, bolted down. The crew stand a little straighter; morale +1 more every dock.", tile: "C" },
   { id: "simrig", name: "A Sim Rig", price: 700, desc: "An environment rig by the study. An hour somewhere else, once a leg. It jams sometimes.", tile: "S" },
 ];
 
@@ -2928,15 +2929,16 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
     } else if (kind === "research") {
       const pool = Object.values(world.systems).filter((s) => s === sys || sys.links.includes(s.id));
       const anomSys = rng.pick(pool);
-      const an = anomSys.anomalies.find((a) => !a.claimed);
+      const strange = station.type === "research" ? anomSys.anomalies.find((a) => !a.claimed && (a.kind === "fold" || a.kind === "lens" || a.kind === "echo")) : undefined;
+      const an = strange ?? anomSys.anomalies.find((a) => !a.claimed);
       if (!an) continue;
       missions.push({
         id: idn, kind, accepted: false, done: false, tier,
-        title: `Research: survey ${an.name}`,
-        desc: `Deep-scan ${anomSys.name} (hold V) to locate ${an.name}, investigate it, and report back here.`,
+        title: strange ? `Science posting: the ${an.kind} in ${anomSys.name}` : `Research: survey ${an.name}`,
+        desc: strange ? `The science council wants readings from ${an.name}, a ${an.kind} in ${anomSys.name}: deep-scan (hold V), reach the marker, take what it gives, and bring the tape back here. A science officer aboard reads more.` : `Deep-scan ${anomSys.name} (hold V) to locate ${an.name}, investigate it, and report back here.`,
         fromStationId: station.id, targetSystemId: anomSys.id, targetStationId: station.id,
         anomalyId: an.id,
-        reward: Math.round((420 + rng.int(0, 300)) * payMult),
+        reward: Math.round((strange ? 700 : 420 + rng.int(0, 300)) * payMult),
         repReward: 5,
       });
     }

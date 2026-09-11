@@ -594,6 +594,9 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   nothing and weep at the second act; their mood lifts), or your home port in
   spring (morale up a lot, and the crew with people somewhere feel it). It
   jams sometimes; there's a card for that.
+- A captain's chair (500 credits, any shipyard) bolts to the bridge: the
+  crew stand a little straighter, morale one more every dock, and it counts
+  toward an inspection's deck mark.
 - The fifth program is the unwinnable: a freighter in trouble on the wrong
   side of a line and everything that comes for you if you cross it. You
   lose; the pilot learns something anyway. With an engineer aboard there's a
@@ -959,6 +962,10 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - A translator core from the shipyard (900 credits) means the first contact
   always lands, and the singers add a third thing the old core would have
   missed: they remember the ones who answer.
+- Research stations put the strange readings on their boards first, as
+  science postings at seven hundred credits: deep-scan, reach the marker,
+  take what it gives, bring the tape back. A science officer aboard reads
+  more from it.
 - Among the anomalies the deep scan finds (hold V) there are now strange
   readings in new galaxies: a fold, which skips the clock fifteen minutes
   nobody aboard remembers; a lens, which lights every signal in the system on

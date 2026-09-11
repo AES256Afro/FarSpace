@@ -154,7 +154,7 @@ export class StationScene implements Scene {
       if ((p.cargo.food ?? 0) > 0) { removeCargo(p, "food", 1); c.morale = Math.min(100, c.morale + 8); }
       else c.morale = Math.max(0, c.morale - 15);
       if (p.cat) c.morale = Math.min(100, c.morale + 2);
-      c.morale = Math.min(100, c.morale + Math.min(3, (p.furnishings ?? []).length) + ((p.modules ?? []).includes("greenhouse") ? 1 : 0));
+      c.morale = Math.min(100, c.morale + Math.min(3, (p.furnishings ?? []).length) + ((p.modules ?? []).includes("greenhouse") ? 1 : 0) + ((p.furnishings ?? []).includes("chair") ? 1 : 0));
     }
     for (const m of passengersAboard(p)) m.mood = Math.min(100, (m.mood ?? 60) + Math.min(6, (p.furnishings ?? []).length * 2));
     const quitters = p.crew.filter((c) => c.morale <= 5 && (c.loyalty ?? 0) < 3);

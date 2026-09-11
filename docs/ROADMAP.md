@@ -1108,6 +1108,10 @@ Time passes for the people on the ship, and for the ship.
       the belt calls you a freeman and its yards go to fifteen under; the
       science officer labels folds, lenses and echoes on the chart
 
+## Milestone 186 — Science Postings ✅ (Sep 2026)
+- [x] Research stations post the strange readings first, at a better rate;
+      a captain's chair for the bridge
+
 ## Later: Trek / Expanse / Orville
 
 - A second story arc per faction (first contact proper: the singers' home)
