@@ -742,4 +742,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] README feature summary regrouped with a Politics section and every
       system from milestones 56–93
 
+## Milestone 95 — More Voices ✅ (Sep 2026)
+- [x] A batch of new gossip, tannoy, crew, passenger and ship's-voice lines
+      about everything the ship does now
+
 ## Later
