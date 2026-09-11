@@ -15,7 +15,7 @@ import { STARS, starDistance } from "../src/data/stars";
 import { ACHIEVEMENTS } from "../src/data/achievements";
 import { ARCS, dailyContract, dailyKey, rankOf, logSystem, applyHull } from "../src/world";
 import { MODULES } from "../src/data/modules";
-import { WONDER_DEFS, rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook, lanesReport, leaveWreck, addWireWrecks, enterRegatta, regattaObjective, regattaProgress, buyStake, collectStake, stakePrice, STAKE_CAP, collectRemoteStakes, hasSpecialty, chooseSpecialty, wearRate, crewOwnHull, OWN_HULL_CREW_FEE, maydayAnswered, favourFor, favourDone, borderContest, pushInfluence, borderStanding, resolveBorder, photoTaken, WONDER_RANGE, replyToLetter } from "../src/world";
+import { WONDER_DEFS, rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook, lanesReport, hangPicture, leaveWreck, addWireWrecks, enterRegatta, regattaObjective, regattaProgress, buyStake, collectStake, stakePrice, STAKE_CAP, collectRemoteStakes, hasSpecialty, chooseSpecialty, wearRate, crewOwnHull, OWN_HULL_CREW_FEE, maydayAnswered, favourFor, favourDone, borderContest, pushInfluence, borderStanding, resolveBorder, photoTaken, WONDER_RANGE, replyToLetter } from "../src/world";
 import { RARES } from "../src/data/data";
 import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
@@ -1009,6 +1009,9 @@ describe("pictures wanted", () => {
     else { expect(photoTaken(w, { systemId: ph.systemId, x: 0, y: 0, inOrbit: false }).length).toBe(0); expect(photoTaken(w, { systemId: ph.systemId, x: 0, y: 0, inOrbit: true, orbitPlanetIdx: ph.planetIdx }).length).toBe(1); }
     expect(m!.photoDone).toBe(true);
     expect(missionDeliverable(w, m!, from)).toBe(true);
+    const research = sts.find((x) => x.type === "research");
+    if (research) { expect(hangPicture(w, research, m!, "TEST")).toContain("MUSEUM"); expect(research.museum![research.museum!.length - 1].item).toContain("a picture of"); }
+    const trade = sts.find((x) => x.type === "trade"); if (trade) expect(hangPicture(w, trade, m!, "TEST")).toBeNull();
   });
 });
 

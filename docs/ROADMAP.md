@@ -852,4 +852,7 @@ Time passes for the people on the ship, and for the ship.
 - [x] The chronicle carries the guestbook; the wall of record lists ring
       times and the regatta title; the roster totals wages
 
+## Milestone 124 — Pictures in the Museum ✅ (Sep 2026)
+- [x] Picture jobs turned in at research stations hang in the museum
+
 ## Later

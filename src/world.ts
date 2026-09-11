@@ -1040,6 +1040,14 @@ export function favourDone(w: World, m: Mission, rng: RNG): string | null {
   logEntry(w, `Carried a favour for ${cap.name}`);
   return `${cap.name.toUpperCase()} WILL HEAR IT ARRIVED. THAT'S THE KIND OF THING THAT COMES BACK AROUND.`;
 }
+// A picture turned in at a research station hangs in its museum, under your name
+export function hangPicture(w: World, st: StationDef, m: Mission, by: string): string | null {
+  if (st.type !== "research" || !m.photo) return null;
+  (st.museum ??= []).push({ by, item: `a picture of ${m.photo.label}`, t: w.time }); if (st.museum.length > 12) st.museum.shift();
+  w.player.donations = (w.player.donations ?? 0) + 1;
+  logEntry(w, `A picture of ${m.photo.label} hangs in the ${st.name} museum`);
+  return `THE MUSEUM HANGS YOUR PICTURE OF ${m.photo.label.toUpperCase()} WITH YOUR NAME UNDER IT.`;
+}
 // A postcard taken: any picture missions it satisfies are marked done
 export function photoTaken(w: World, where: { systemId: string; x: number; y: number; orbitPlanetIdx?: number; inOrbit: boolean }): string[] {
   const out: string[] = [];

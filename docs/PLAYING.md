@@ -369,7 +369,8 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - Research and trade stations post picture jobs: a wonder in a nearby system,
   a world from orbit. Take a postcard (F7) within sight of the wonder, or
   from that planet's orbit, and the job is done; turn it in where it was
-  posted. Sell one and you're a STRINGER.
+  posted. Sell one and you're a STRINGER. Turn one in at a research station
+  and the museum hangs it with your name under it.
 
 ## The convoy
 
