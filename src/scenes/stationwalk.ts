@@ -121,7 +121,7 @@ export class StationWalkScene implements Scene {
     // the ship's cat, if she's slipped out: a small walker with opinions, and a homecoming if she was left here before
     if (p.cat && p.catAway === this.station.id) {
       p.catAway = null; g.toast(`${p.cat.name.toUpperCase()} IS WAITING BY THE AIRLOCK, LOOKING SMUG AND A LITTLE FATTER. SHE'S BEEN FED.`);
-    } else if (p.cat && !p.catAway && rng.chance(0.25)) {
+    } else if (p.cat && !p.catAway && Math.random() < 0.25) {
       const spot = this.randomFloor(rng);
       this.npcs.push({ x: spot.x, y: spot.y, tx: spot.x, ty: spot.y, name: p.cat.name, skin: "#e0b070", suit: "#e0b070", pause: 1, tag: "YOUR CAT", line: `${p.cat.name.toUpperCase()} LOOKS AT YOU AS IF YOU'RE THE ONE WHO WANDERED OFF. SHE FOLLOWS YOU BACK TO THE SHIP.` });
       this.msg = `${p.cat.name.toUpperCase()} HAS SLIPPED OUT ONTO THE PROMENADE. FIND HER BEFORE YOU LEAVE (E BESIDE HER)`; this.msgTimer = 6;
