@@ -5,7 +5,7 @@ import { ask, confirmBox } from "../../core/dialog";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra, raceCourse, racePar, racePrize, recordRace, beatHolder, captainNickname, leaveWreck, addWireWrecks, enterRegatta, regattaProgress, hasSpecialty, maydayAnswered, watchIndex, onWatch, raceHolder, askPassengerRequest, takeJuice, alertMods, AlertLevel, shipVoiceName, noteLeg, firstOfficer, strangeReading, findStation, parleyChance } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra, raceCourse, racePar, racePrize, recordRace, beatHolder, captainNickname, leaveWreck, addWireWrecks, enterRegatta, regattaProgress, hasSpecialty, maydayAnswered, watchIndex, onWatch, raceHolder, askPassengerRequest, takeJuice, alertMods, AlertLevel, shipVoiceName, noteLeg, firstOfficer, isBeltStation, beltGain, registry, strangeReading, findStation, parleyChance } from "../../world";
 import { COMMODITIES, commodity } from "../../data/data";
 import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
@@ -139,6 +139,7 @@ export class FlightScene implements Scene {
       { label: "THE CHRONICLE", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("chronicle"); } },
       { label: "THE ROSTER", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("roster"); } },
       ...(g.world.player.crew.length >= 1 && !this.addressed && !this.docking ? [{ label: "ADDRESS THE CREW", act: () => { this.paused = false; this.addressCrew(g); } }] : []),
+      ...(this.lastHail && !this.lastHail.answered && g.world.time - this.lastHail.t < 120 && !this.docking ? [{ label: `ANSWER ${this.lastHail.from}`, act: () => { this.paused = false; this.answerHail(g); } }] : []),
       ...(firstOfficer(g.world.player) && !this.readyRoom && !this.docking ? [{ label: "THE READY ROOM (NUMBER ONE)", act: () => { this.paused = false; this.readyRoomTalk(g); } }] : []),
       ...((g.world.player.juice ?? 0) > 0 && !this.hardBurn && !this.docking ? [{ label: `HARD BURN (JUICE X${g.world.player.juice})`, act: () => { this.paused = false; const l = takeJuice(g.world.player); if (l) { this.hardBurn = true; noteLeg(g.world.player, "burns", g.world.time); g.toast(l); sfx.alarm(); flag(g, "juiced"); logEntry(g.world, "Hard burn on the juice"); } } }] : []),
       ...(() => {
@@ -640,6 +641,20 @@ export class FlightScene implements Scene {
   // ---------- Interactions ----------
 
   // the ready room: a word with Number One, once a leg. They say what they see.
+  // answering a passing hail: how the lanes hear you is a small thing that adds up
+  answerHail(g: Game): void {
+    const h = this.lastHail; if (!h) return; h.answered = true;
+    const p = g.world.player; const sys = g.world.systems[p.systemId]; const belt = sys.stations.some((st) => isBeltStation(st));
+    const say = (text: string) => this.comms.push({ from: "YOU", text, life: 7, color: PAL.gold });
+    const enc: Encounter = { id: "answerhail", where: "space", title: `ANSWER ${h.from}`, weight: 0,
+      text: `${h.from} is still on the band, a few hundred metres off the beam and not in a hurry. The lanes are small. What you say gets repeated.`,
+      options: [
+        { label: "A CIVIL WORD", hint: "Rep +1 with the system; the crew like a captain who answers", result: (g2) => { adjustRep(g2.world, sys.factionId, 1); for (const c of p.crew) c.morale = Math.min(100, c.morale + 1); say(`${h.from}, ${registry(g2.world)}. FAIR WINDS. MIND THE ${belt ? "ROCKS" : "GATE"}.`); p.hailsAnswered = (p.hailsAnswered ?? 0) + 1; if (p.hailsAnswered >= 10) flag(g2, "civil"); return "A CIVIL WORD, AND A CIVIL WORD BACK. THE LANES REMEMBER THE SHIPS THAT ANSWER."; } },
+        { label: "BELT MANNERS", hint: belt ? "Belt standing up; a rock hears its own words" : "No rocks in this system; they'll think you're trying too hard", result: (g2) => { if (belt) { const bl = beltGain(g2.world, 0.3); say(`${h.from}, ${registry(g2.world)}. KEEP THE WATER COLD, BERATNA.`); if (bl) g2.toast(bl); return "YOU ANSWER THE WAY THE ROCKS ANSWER. A PAUSE, THEN A LAUGH ON THE BAND, THE GOOD KIND. THE BELT HEARS."; } say(`${h.from}. KEEP THE WATER COLD.`); return "A LONG PAUSE ON THE BAND. 'SURE, CAPTAIN.' THE CREW WINCE. NOBODY SAYS ANYTHING, LOUDLY."; } },
+        { label: "SHIP'S BUSINESS. CLEAR THE BAND", hint: h.kind === "patrol" ? "The patrol notes the ship that didn't want to talk" : "Curt, and fine", result: (g2) => { say(`${h.from}, CLEAR THE BAND.`); if (h.kind === "patrol") { adjustRep(g2.world, sys.factionId, -1); return "THE PATROL CLEARS THE BAND AND WRITES YOUR REGISTRY DOWN, IN THE OTHER COLUMN."; } return "THEY CLEAR THE BAND. THE LANES ARE SMALL. THAT GETS REPEATED TOO."; } },
+      ] };
+    (g.scenes["encounter"] as EncounterScene).open(g, enc, "flight", true);
+  }
   readyRoomTalk(g: Game): void {
     const p = g.world.player; const fo = firstOfficer(p); if (!fo) return;
     this.readyRoom = true;
@@ -709,6 +724,7 @@ export class FlightScene implements Scene {
   bridgeT = 40;
   alert: AlertLevel = 0; alertT = 0; autoAlertT = 0; klaxonT = 0; flipT = 0;
   addressed = false; reported = false; readyRoom = false;
+  lastHail: { from: string; kind: string; t: number; answered: boolean } | null = null;
   hailT = 25;
   dockAt(g: Game, st: StationDef): boolean {
     this.hardBurn = false; this.alert = 0; this.addressed = false; this.reported = false; this.readyRoom = false;
@@ -1152,7 +1168,7 @@ export class FlightScene implements Scene {
     }
     // the unnamed traffic hails too, now and then, with manners and opinions
     this.hailT -= dt;
-    if (this.hailT <= 0) { this.hailT = 50 + Math.random() * 60; if (this.comms.length < 2 && !this.docking) { const near = this.npcs.find((n) => (n.kind === "trader" || n.kind === "patrol") && !n.name && !n.hailed && n.hull > 0 && dist(p.x, p.y, n.x, n.y) < 420); if (near) { near.hailed = true; const h = passingHail(g.world, near, this.alert, new RNG((Math.random() * 1e9) >>> 0)); if (h) { this.comms.push({ from: h.from, text: h.text, life: 8, color: near.kind === "patrol" ? PAL.info : PAL.grey }); const fo = firstOfficer(p); if (fo && this.autopilot && !fo.sick && (settings().numberOneHails ?? true)) this.comms.push({ from: fo.name.split(" ")[0].toUpperCase(), text: `NUMBER ONE HAS THE CONN. ACKNOWLEDGED, ${h.from}. THE CAPTAIN'S BELOW.`, life: 6, color: PAL.grey }); } } } }
+    if (this.hailT <= 0) { this.hailT = 50 + Math.random() * 60; if (this.comms.length < 2 && !this.docking) { const near = this.npcs.find((n) => (n.kind === "trader" || n.kind === "patrol") && !n.name && !n.hailed && n.hull > 0 && dist(p.x, p.y, n.x, n.y) < 420); if (near) { near.hailed = true; const h = passingHail(g.world, near, this.alert, new RNG((Math.random() * 1e9) >>> 0)); if (h) { this.comms.push({ from: h.from, text: h.text, life: 8, color: near.kind === "patrol" ? PAL.info : PAL.grey }); this.lastHail = { from: h.from, kind: near.kind, t: g.world.time, answered: false }; const fo = firstOfficer(p); if (fo && this.autopilot && !fo.sick && (settings().numberOneHails ?? true)) this.comms.push({ from: fo.name.split(" ")[0].toUpperCase(), text: `NUMBER ONE HAS THE CONN. ACKNOWLEDGED, ${h.from}. THE CAPTAIN'S BELOW.`, life: 6, color: PAL.grey }); } } } }
     // the wonders have voices: a pulsar ticks, the cathedral hums
     this.wonderSfx -= dt;
     if (this.wonderSfx <= 0) {

@@ -752,6 +752,12 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- A passing hail can be answered from the pause menu for two minutes after
+  it lands: a civil word (rep and morale; ten of them is a deed), belt
+  manners (standing, if there are rocks in the system; a wince if not), or
+  clear the band (a patrol writes your registry in the other column).
+- Naval promenades have marines now, with opinions about the brig, the board
+  and who gets saluted.
 - Every fold, echo, loop and mirror gets a letter from the office of
   anomalous incidents, with a form. The third letter opens a file on you and
   comes with thirty data.

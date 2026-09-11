@@ -1237,6 +1237,19 @@ Time passes for the people on the ship, and for the ship.
       from the bunk room on the way (listen, let them walk at a rock, double
       the watch); chatter, HUD tag, deeds
 
+## Milestone 216 — Answer the Hail ✅ (Sep 2026)
+- [x] A passing hail can be answered from the pause menu for two minutes: a
+      civil word (rep, morale, deed at ten), belt manners (standing, if there
+      are rocks about), or clear the band (a patrol notes it)
+
+## Milestone 217 — Marines ✅ (Sep 2026)
+- [x] Two marines on every naval promenade with lines about the brig, the
+      board, the emergency call and who gets saluted
+
+## Milestone 218 — The Service in the Handbook ✅ (Sep 2026)
+- [x] Handbook section "The service and the belt"; a help line for naval
+      stations and belt standing
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

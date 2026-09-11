@@ -350,6 +350,7 @@ export interface PlayerState {
   inquiries?: number;                // boards of inquiry sat through, one per crew member lost
   motto?: string;                    // the line on the dedication plaque by the airlock
   prisoners?: number;                // prisoners delivered to a brig
+  hailsAnswered?: number;            // passing hails answered with a civil word
   waterToBelt?: number;              // units of water sold to belt rocks; the belt keeps count
   officeLetters?: number;            // letters from the office of anomalous incidents; three and they open a file
   commissionedAt?: number;           // world time this captain took the ship; stardate on the plaque

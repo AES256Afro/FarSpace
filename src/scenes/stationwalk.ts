@@ -153,6 +153,7 @@ export class StationWalkScene implements Scene {
       const ev = galaxyEventAt(g.world, p.systemId);
       const crowd: { tag: string; suit: string; lines: string[]; n: number }[] = [];
       if (oc.id === "market") crowd.push({ tag: "STALLHOLDER", suit: "#c7a54a", n: 3, lines: ["'Fresh in from the belt! Well. Fresh-ish.'", "'Two for the price of one and a half. Market day, captain.'", "'Don't squeeze the fruit. Or do. I'm not your mother.'"] });
+      if (this.station.military) crowd.push({ tag: "MARINE", suit: "#3a6a3a", n: 2, lines: ["'Brig's aft of the yard, captain. Transfers sign in there. Don't let them talk to you on the way. They all talk.'", "'Board of inquiry sits at ten. You're not on the list. That's the good version of that sentence.'", "'Emergency call went out an hour ago. Reactor, next system over. If you've an engineer aboard, the board's got your name on it already.'", "'We don't salute merchants. ... All right, we salute the ones with a rank. Carry on, captain.'", "'Patrol orders on the board for anyone with a stripe. Hold station, show the flag, come home. It's not hard. People make it hard.'"] });
       if (oc.id === "remembrance") crowd.push({ tag: "MOURNER", suit: "#5d6680", n: 2, lines: ["'My brother flew the lanes. They read his name at noon.'", "'It's a good list. A long one. Mind how you go out there.'"] });
       if (night && !curfew) {
         // the band: three of them in the lower corridor, clear of the kiosks, standing their set

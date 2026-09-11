@@ -145,6 +145,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "inspection", title: "A GOOD SHIP", desc: "Pass an inspection with three marks of four", check: (w) => !!w.player.flags?.inspection },
   { id: "freeman", title: "FREEMAN OF THE BELT", desc: "Earn a standing of three with the rocks", check: (w) => !!w.player.flags?.freeman },
   { id: "requisition", title: "COURTESY OF THE SERVICE", desc: "Requisition a full service at a naval station", check: (w) => !!w.player.flags?.requisition },
+  { id: "civil", title: "THE SHIPS THAT ANSWER", desc: "Answer ten passing hails with a civil word", check: (w) => !!w.player.flags?.civil },
   { id: "office", title: "FORM 30-D", desc: "Get a third letter from the office of anomalous incidents", check: (w) => !!w.player.flags?.office },
   { id: "waterbearer", title: "WATERBEARER", desc: "Sell fifty units of water to the belt", check: (w) => !!w.player.flags?.waterbearer },
   { id: "prisoner", title: "SIGNED FOR LIKE FREIGHT", desc: "Deliver a prisoner to a brig", check: (w) => !!w.player.flags?.prisoner },
