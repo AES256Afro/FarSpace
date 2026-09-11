@@ -1116,6 +1116,10 @@ Time passes for the people on the ship, and for the ship.
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
 
+## Milestone 188 — Company ✅ (Sep 2026)
+- [x] At mess call the captain sits with whoever's nearest, once a week
+      each, for loyalty; a sixth sim program, the pictures, for the bonds
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

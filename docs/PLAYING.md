@@ -10,7 +10,7 @@ The guide grew a section per milestone; this is where to look.
 - **Getting started:** [First hour](#first-hour) · [She has a name](#she-has-a-name) · [The handbook, the voice, the greenhouse](#the-handbook-the-voice-the-greenhouse) · [The lanes setting](#the-lanes-setting) · [Music and slots](#music-and-slots) · [Comfort](#comfort)
 - **Flying:** [Docking and launching](#docking-and-launching) · [Holding short](#holding-short) · [Traffic control](#traffic-control) · [Parley](#parley) · [Combat, when it finds you](#combat-when-it-finds-you) · [The ring race](#the-ring-race) · [The regatta](#the-regatta) · [The convoy](#the-convoy) · [Hum](#hum) · [Calls and courses](#calls-and-courses)
 - **Trading and industry:** [Trader](#trader) · [Miner](#miner) · [Syndicates and trade routes](#syndicates-and-trade-routes) · [Charters](#charters) · [The liner trade](#the-liner-trade) · [Fleet at work](#fleet-at-work) · [Scrapping a hull](#scrapping-a-hull) · [Passage on a liner](#passage-on-a-liner) · [Stakes](#stakes) · [The post](#the-post) · [Pictures wanted](#pictures-wanted) · [The lighthouse](#the-lighthouse) · [The waystation](#the-waystation) · [The ledger](#the-ledger) · [Settlements](#settlements) · [Settlements grow](#settlements-grow) · [Town projects](#town-projects)
-- **People aboard:** [Shipmates](#shipmates) · [The galley](#the-galley) · [Life on the deck](#life-on-the-deck) · [A life aboard](#a-life-aboard) · [Crew arcs](#crew-arcs) · [Second stories](#second-stories) · [A trade of their own](#a-trade-of-their-own) · [The crew want a word](#the-crew-want-a-word) · [Reviews](#reviews) · [The roster](#the-roster) · [Watches and passengers](#watches-and-passengers) · [Receptions](#receptions) · [An inspection](#an-inspection) · [Alert status](#alert-status) · [The belt](#the-belt) · [Hard burn](#hard-burn) · [Medical runs](#medical-runs) · [Envoys](#envoys) · [Requests from the lounge](#requests-from-the-lounge) · [Corridor talk](#corridor-talk) · [Senior staff](#senior-staff) · [The sim rig](#the-sim-rig) · [Cards after watch](#cards-after-watch) · [The band](#the-band) · [The viewport and the bays](#the-viewport-and-the-bays) · [Rites of passage](#rites-of-passage) · [The guestbook](#the-guestbook) · [Lost property](#lost-property) · [Family](#family) · [Lost and found](#lost-and-found) · [Company](#company) · [Belonging](#belonging) · [Small kindnesses](#small-kindnesses) · [Keepsakes](#keepsakes)
+- **People aboard:** [Shipmates](#shipmates) · [The galley](#the-galley) · [Life on the deck](#life-on-the-deck) · [A life aboard](#a-life-aboard) · [Crew arcs](#crew-arcs) · [Second stories](#second-stories) · [A trade of their own](#a-trade-of-their-own) · [The crew want a word](#the-crew-want-a-word) · [Reviews](#reviews) · [The roster](#the-roster) · [Watches and passengers](#watches-and-passengers) · [Receptions](#receptions) · [An inspection](#an-inspection) · [Alert status](#alert-status) · [The belt](#the-belt) · [Hard burn](#hard-burn) · [Medical runs](#medical-runs) · [Envoys](#envoys) · [Requests from the lounge](#requests-from-the-lounge) · [Corridor talk](#corridor-talk) · [Senior staff](#senior-staff) · [The sim rig](#the-sim-rig) · [Company](#company) · [Cards after watch](#cards-after-watch) · [The band](#the-band) · [The viewport and the bays](#the-viewport-and-the-bays) · [Rites of passage](#rites-of-passage) · [The guestbook](#the-guestbook) · [Lost property](#lost-property) · [Family](#family) · [Lost and found](#lost-and-found) · [Company](#company) · [Belonging](#belonging) · [Small kindnesses](#small-kindnesses) · [Keepsakes](#keepsakes)
 - **Places:** [Explorer](#explorer) · [A living galaxy](#a-living-galaxy) · [Wonders](#wonders) · [More wonders](#more-wonders) · [Station hours and the tannoy](#station-hours-and-the-tannoy) · [Concourse gossip](#concourse-gossip) · [Ports remember you](#ports-remember-you) · [Places with detail](#places-with-detail) · [Away teams](#away-teams) · [Lore](#lore) · [The dock-hand](#the-dock-hand) · [Berth neighbours](#berth-neighbours) · [Regulars](#regulars) · [Contacts](#contacts) · [Rivals and the harbourmaster](#rivals-and-the-harbourmaster) · [Favours](#favours) · [Faces](#faces)
 - **Stories and encounters:** [The Signal and encounters](#the-signal-and-encounters) · [The Keeper](#the-keeper) · [GalNet serials](#galnet-serials) · [Helping ships](#helping-ships) · [More encounters](#more-encounters) · [Four more cards](#four-more-cards) · [Quiet moments](#quiet-moments) · [Rhythms](#rhythms) · [Loose ends](#loose-ends)
 - **Politics:** [Politics and the second campaign](#politics-and-the-second-campaign) · [The week's vote](#the-weeks-vote) · [The border](#the-border) · [The week](#the-week) · [A name on the lanes](#a-name-on-the-lanes)
@@ -597,11 +597,20 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - A captain's chair (500 credits, any shipyard) bolts to the bridge: the
   crew stand a little straighter, morale one more every dock, and it counts
   toward an inspection's deck mark.
+- The sixth program is the pictures: an old film, the whole crew, the same
+  jokes at the same lines. Morale up, the fares' mood up, and every bond
+  aboard a little closer.
 - The fifth program is the unwinnable: a freighter in trouble on the wrong
   side of a line and everything that comes for you if you cross it. You
   lose; the pilot learns something anyway. With an engineer aboard there's a
   chance they reprogram the rig from inside and you win, and there's a deed
   for changing the conditions.
+
+## Company
+
+- At mess call, eating at the galley with the crew now sits you with whoever
+  is nearest: they talk about home, their loyalty goes up, once a week each,
+  and there's a deed the first time.
 
 ## Cards after watch
 

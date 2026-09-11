@@ -4,7 +4,7 @@
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond, onWatch, watchIndex, captainNickname, borderStanding, passengersFed, cookMeal, briefingReports, setFocus, runSim, SIM_PROGRAMS, nameTheShip } from "../world";
+import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond, onWatch, watchIndex, captainNickname, borderStanding, passengersFed, cookMeal, briefingReports, setFocus, runSim, SIM_PROGRAMS, nameTheShip, weekKey } from "../world";
 import { commodity, faction } from "../data/data";
 import { crewChatter, soloChatter, MESS_LINES, passengerChatter } from "../data/chatter";
 import { RNG } from "../core/rng";
@@ -197,7 +197,10 @@ export class InteriorScene implements Scene {
         for (const c of p.crew) if (!c.sick) c.morale = Math.min(100, c.morale + 1);
         const i = p.crew.findIndex((c) => !c.sick);
         if (i >= 0) this.bubbles.push({ i, text: rng.pick(MESS_LINES), life: 5 });
-        this.say("YOU EAT WITH THE CREW. MORALE UP.");
+        const near = p.crew.map((c, ci) => ({ c, at: this.crewAt(ci) })).filter((x) => x.at && !x.c.sick).sort((a, b) => dist(a.at!.x, a.at!.y, this.px, this.py) - dist(b.at!.x, b.at!.y, this.px, this.py))[0];
+        const key = near ? `dine:${near.c.name}:${weekKey()}` : "";
+        if (near && !(p.flags ?? {})[key]) { (p.flags ??= {})[key] = true; near.c.loyalty = (near.c.loyalty ?? 0) + 0.4; near.c.morale = Math.min(100, near.c.morale + 4); flag(g, "company"); this.say(`YOU EAT WITH THE CREW AND SIT WITH ${near.c.name.split(" ")[0].toUpperCase()}. THEY TALK ABOUT HOME. LOYALTY UP.`); }
+        else this.say("YOU EAT WITH THE CREW. MORALE UP.");
       }
     }
   }

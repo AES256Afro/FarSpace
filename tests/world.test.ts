@@ -951,9 +951,9 @@ describe("station hours and the tannoy", () => {
     p.crew = [genCrewCandidate(new RNG(1))]; p.crew[0].morale = 50;
     p.missions.push({ id: "f", kind: "passenger", title: "t", desc: "d", fromStationId: "a", targetSystemId: "b", reward: 100, accepted: true, done: false, passengerName: "Rook", mood: 50 } as Mission);
     expect(runSim(w, "opera", new RNG(1))).toContain("OPERA"); expect(p.simUsed).toBe(true); expect(p.crew[0].morale).toBe(54); expect(passengersAboard(p)[0].mood).toBe(58);
-    for (const id of ["beach", "frontier", "home", "unwinnable"] as const) expect(runSim(w, id, new RNG(2)).length).toBeGreaterThan(20);
+    for (const id of ["beach", "frontier", "home", "unwinnable", "pictures"] as const) expect(runSim(w, id, new RNG(2)).length).toBeGreaterThan(20);
     expect(SIM_PROGRAMS.some((s) => s.id === "unwinnable")).toBe(true);
-    expect(p.crew[0].morale).toBeGreaterThanOrEqual(66); expect(p.crew[0].morale).toBeLessThanOrEqual(78);
+    expect(p.crew[0].morale).toBeGreaterThanOrEqual(70); expect(p.crew[0].morale).toBeLessThanOrEqual(82);
   });
   it("the senior staff report by department and a focus changes wear, fuel and the sick", () => {
     const w = generateWorld(42, { realGalaxy: true }); const p = w.player;
