@@ -634,6 +634,13 @@ export class FlightScene implements Scene {
 
   // ---------- Interactions ----------
 
+  // a trap springs: pirates appear close, already talking
+  ambush(g: Game, n: number): void {
+    const p = g.world.player; const rng = new RNG((Math.random() * 1e9) >>> 0);
+    for (let i = 0; i < n; i++) { const npc = spawnNpc(this, g, "pirate", rng); npc.x = p.x + rng.range(-420, 420); npc.y = p.y + rng.range(-420, 420); }
+    this.comms.push({ from: "UNKNOWN", text: "THANKS FOR COMING. WE'LL TAKE THE CARGO AND THE HULL, IN THAT ORDER.", life: 7, color: PAL.danger });
+    sfx.alarm();
+  }
   hardBurn = false;
   bridgeT = 40;
   alert: AlertLevel = 0; alertT = 0;

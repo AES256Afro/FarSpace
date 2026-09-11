@@ -725,12 +725,13 @@ export const FURNISHINGS: { id: string; name: string; price: number; desc: strin
 ];
 
 // The sim rig: an hour somewhere else. Each program has its own way of going right, and its own way of going wrong.
-export type SimProgram = "beach" | "frontier" | "opera" | "home";
+export type SimProgram = "beach" | "frontier" | "opera" | "home" | "unwinnable";
 export const SIM_PROGRAMS: { id: SimProgram; name: string; blurb: string }[] = [
   { id: "beach", name: "THE BEACH", blurb: "Sand, a sea that isn't wet, and a sun that doesn't burn" },
   { id: "frontier", name: "FRONTIER TOWN", blurb: "Dust, a saloon, and a duel at noon that nobody wins" },
   { id: "opera", name: "THE OPERA HOUSE", blurb: "Velvet seats and a soprano; the fares are invited" },
   { id: "home", name: "HOME PORT, SPRING", blurb: "The promenade of wherever you call home, on a good day" },
+  { id: "unwinnable", name: "THE UNWINNABLE", blurb: "A training scenario nobody has passed. That's the point. Probably." },
 ];
 export function runSim(w: World, program: SimProgram, rng: RNG): string {
   const p = w.player; p.simUsed = true;
@@ -739,6 +740,13 @@ export function runSim(w: World, program: SimProgram, rng: RNG): string {
   if (program === "beach") { all(6); return rng.pick([`AN HOUR ON THE BEACH. ${p.cat ? `${p.cat.name.toUpperCase()} HUNTS A CRAB THAT ISN'T THERE. ` : ""}EVERYBODY COMES OUT SQUINTING. MORALE UP.`, "AN HOUR ON THE BEACH. THE RIG ADDED A HORSE. NOBODY ASKED FOR THE HORSE. THE HORSE STAYS. MORALE UP."]); }
   if (program === "frontier") { all(5); const g = p.crew.find((c) => c.role === "gunner"); if (g) g.morale = Math.min(100, g.morale + 4); return rng.pick(["HIGH NOON IN FRONTIER TOWN. YOU LOSE THE DUEL TO THE PIANO PLAYER. TWICE. THE CREW WILL NOT LET THIS GO. MORALE UP.", `FRONTIER TOWN. ${g ? g.name.toUpperCase() + " WINS THE DUEL AND KEEPS THE HAT." : "THE SHERIFF'S HAT COMES OUT OF THE RIG SOMEHOW."} MORALE UP.`]); }
   if (program === "opera") { all(4); for (const m of passengersAboard(p)) m.mood = Math.min(100, (m.mood ?? 60) + 8); return passengersAboard(p).length ? "THE OPERA HOUSE. THE FARES DRESS UP FROM NOTHING AND WEEP AT THE SECOND ACT. MOOD UP ALL ROUND. THE CREW FALL ASLEEP IN THE BOX." : "THE OPERA HOUSE, EMPTY BUT FOR YOU AND THE CREW. THE SOPRANO SINGS TO SIX PEOPLE LIKE IT'S SIX THOUSAND. MORALE UP."; }
+  if (program === "unwinnable") {
+    const pil = p.crew.find((c) => c.role === "pilot"); const eng = p.crew.find((c) => c.role === "engineer" && !c.sick);
+    const x = crewXp(p, "pilot", 2);
+    if (eng && rng.chance(0.3)) { (p.flags ??= {}).conditions = true; all(6); logEntry(w, "Changed the conditions of the unwinnable scenario. Passed it"); return `THE SCENARIO: A FREIGHTER IN TROUBLE ON THE WRONG SIDE OF A LINE, AND EVERYTHING THAT COMES FOR YOU IF YOU CROSS IT. ${eng.name.toUpperCase()} REPROGRAMS THE RIG FROM INSIDE AND YOU WIN. "I CHANGED THE CONDITIONS." THE CREW ARE DELIGHTED AND APPALLED.${x ? " " + x : ""}`; }
+    all(-2); if (pil) pil.morale = Math.min(100, pil.morale + 4);
+    return `THE SCENARIO: A FREIGHTER IN TROUBLE ON THE WRONG SIDE OF A LINE, AND EVERYTHING THAT COMES FOR YOU IF YOU CROSS IT. YOU CROSS IT. YOU LOSE. EVERYBODY LOSES. THAT IS THE POINT, THE RIG SAYS, AND WON'T SAY WHAT THE POINT IS.${x ? " " + x : ""} MORALE DOWN, PRIDE UP.`;
+  }
   const home = p.homePort ? findStation(w, p.homePort)?.st.name : null;
   all(home ? 8 : 5); for (const c of p.crew) if (c.home) c.loyalty = (c.loyalty ?? 0) + 0.2;
   return home ? `${home.toUpperCase()} IN SPRING, THE PROMENADE ON A GOOD DAY. NOBODY SAYS MUCH. MORALE UP, A LOT.` : "A PROMENADE SOMEWHERE, IN SPRING. THE RIG GUESSED AT A HOME PORT AND GOT IT ALMOST RIGHT. MORALE UP.";

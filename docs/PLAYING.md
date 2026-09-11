@@ -584,6 +584,11 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   nothing and weep at the second act; their mood lifts), or your home port in
   spring (morale up a lot, and the crew with people somewhere feel it). It
   jams sometimes; there's a card for that.
+- The fifth program is the unwinnable: a freighter in trouble on the wrong
+  side of a line and everything that comes for you if you cross it. You
+  lose; the pilot learns something anyway. With an engineer aboard there's a
+  chance they reprogram the rig from inside and you win, and there's a deed
+  for changing the conditions.
 
 ## Cards after watch
 
@@ -814,6 +819,11 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   somebody built, and the outpost's one bar with its one board game.
 - They pay in data, rep, lives saved, morale and stories; a few of them cost
   something, and a couple leave a mark the crew remember.
+- A distress call, unverified: the right words in the right order and a
+  signal a little too strong. Answer it (real about half the time: four
+  lives; otherwise two hulls come out from behind the hulk already talking),
+  scan it first with a gunner or a discovery scanner, or fly on and take the
+  mark.
 - On the ground, an away team: a door in the rock and a light that shouldn't
   be on. Send the engineer (the light means power), the medic (if something's
   alive in there), the gunner (who will shoot the light), or go yourself,

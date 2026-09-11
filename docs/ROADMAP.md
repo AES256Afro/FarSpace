@@ -984,4 +984,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] A ground card that asks who walks in: the engineer, the medic, the
       gunner, or you; each has its own way of going right or wrong
 
+## Milestone 157 — The Unwinnable, and the Trap ✅ (Sep 2026)
+- [x] A sim program nobody passes unless the engineer changes the conditions;
+      an unverified distress call that is real or an ambush
+
 ## Later

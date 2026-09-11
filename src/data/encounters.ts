@@ -318,6 +318,15 @@ export const ENCOUNTERS: Encounter[] = [
     ],
   },
   {
+    id: "unverified", where: "space", weight: 3, title: "DISTRESS CALL, UNVERIFIED",
+    text: "A distress call on the open band, a freighter's callsign, a voice that says the right words in the right order: hull breach, four aboard, drifting. The signal is strong. The signal is a little too strong. Nothing on the scanner yet.",
+    options: [
+      { label: "ANSWER IT", hint: "Somebody always has to", result: (g, rng) => { if (rng.chance(0.55)) { p(g).lives = (p(g).lives ?? 0) + 4; p(g).rescues = (p(g).rescues ?? 0) + 1; adjustRep(g.world, sys(g).factionId, 2); logEntry(g.world, "Answered an unverified distress call; it was real"); return "IT'S REAL. A FREIGHTER WITH ITS SIDE OPEN AND FOUR PEOPLE IN SUITS ON THE HULL, WAVING. YOU TAKE THEM ACROSS ON A LINE. FOUR LIVES, AND A CREW WHO'D HAVE HATED YOU IF YOU'D FLOWN ON."; } const fs = (g.scenes as Record<string, unknown>)["flight"] as { ambush?: (g2: Game, n: number) => void } | undefined; fs?.ambush?.(g, 2); logEntry(g.world, "Answered an unverified distress call; it was a trap"); return "IT'S A TRAP. THE FREIGHTER IS A HULK WITH A TRANSMITTER, AND TWO HULLS COME OUT FROM BEHIND IT ALREADY TALKING. RED ALERT WOULD BE GOOD ABOUT NOW."; } },
+      { label: "SCAN BEFORE YOU COMMIT", hint: "A gunner or a discovery scanner reads the signal first", requires: (g) => p(g).crew.some((c) => c.role === "gunner" && !c.sick) || (p(g).modules ?? []).includes("discovery"), result: (g, rng) => { p(g).expData = (p(g).expData ?? 0) + 20; if (rng.chance(0.55)) { p(g).lives = (p(g).lives ?? 0) + 4; p(g).rescues = (p(g).rescues ?? 0) + 1; adjustRep(g.world, sys(g).factionId, 2); return "THE SCAN SAYS ONE HULL, HOLED, WARM BODIES. REAL. YOU GO IN AND TAKE FOUR PEOPLE OFF IT. +20 DATA FOR THE SCAN, FOUR LIVES FOR THE REST."; } return "THE SCAN SAYS THREE HULLS WHERE THE VOICE SAYS ONE. YOU LOG THE POSITION FOR THE PATROL AND LEAVE THEM WAITING FOR SOMEBODY LESS CAREFUL. +20 DATA."; } },
+      { label: "FLY ON", result: (g) => { for (const c of p(g).crew) c.morale = Math.max(0, c.morale - 3); adjustRep(g.world, sys(g).factionId, -1); return "YOU FLY ON. THE CALL REPEATS BEHIND YOU FOR A WHILE, THEN STOPS. THE CREW DON'T SAY ANYTHING. MORALE DOWN, AND A MARK AGAINST YOU IF IT WAS REAL."; } },
+    ],
+  },
+  {
     id: "loop", where: "space", weight: 2, title: "THE SAME MINUTE, AGAIN", when: (g) => !p(g).flags?.loopDone,
     text: "The clock on the console reads a time it read a moment ago. The coffee is full again. Somebody on the band says the thing they just said, word for word, and then, seeing your face, says 'WHAT?' the same way. You have been here before. You will be here again unless something changes.",
     options: [
