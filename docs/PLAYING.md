@@ -638,6 +638,11 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   role, warmth or needle depending on how they get on, and the state of the
   ship (low hull, low fuel, a worn drive, thin credits, the cat, paying
   passengers). Alone, they hum, shuffle cards, water the plant.
+- They notice the new things too: a keepsake on the seat, lost property
+  waiting to be handed in, the dock-hand's free patch, the captain hugging a
+  berth neighbour, a fare's request still open, the night rate at the yard.
+  The concourse gossips about who's berthed, the yard's shift rate, the lost
+  property drawer and the dock-hand who knows every hull by ear.
 - Crew now walk the deck properly, door to door, instead of stopping at the
   first wall.
 - Mess call: every so often the crew gather at the galley for a while. Stand

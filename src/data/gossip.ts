@@ -3,7 +3,8 @@
 // your own reputation all end up in somebody's mouth.
 
 import type { World, StationDef } from "../world";
-import { crisisAt, galaxyEventAt, wondersIn, dockingsAt, friendsAt, rivalOf, isHome, infraAt, findStation, captainNickname, borderContest } from "../world";
+import { crisisAt, galaxyEventAt, wondersIn, dockingsAt, friendsAt, rivalOf, isHome, infraAt, findStation, captainNickname, borderContest, berthedCaptains, isRival } from "../world";
+import { hoursRate } from "./tannoy";
 import { commodity, faction } from "./data";
 import { RNG } from "../core/rng";
 import { stationHour } from "./tannoy";
@@ -43,6 +44,10 @@ export function concourseGossip(w: World, st: StationDef, rng: RNG): string[] {
   if ((p.stakes?.[st.id] ?? 0) >= 10) pool.push("'THAT CAPTAIN OWNS A PIECE OF THIS PLACE. MIND WHAT YOU SAY ABOUT THE BERTH FEES.'");
   const docks = dockingsAt(p, st.id);
   if (docks >= 6) pool.push("'THAT'S THE ONE WHO'S ALWAYS IN. THE REGULAR. HARBOURMASTER LIKES THEM.'");
+  for (const c of berthedCaptains(w, st.id)) pool.push(isRival(c) ? `'${c.name.toUpperCase()}'S IN. OFF THE ${c.ship.toUpperCase()}. KEEP THE TWO OF THEM APART, SOMEBODY.'` : `'THE ${c.ship.toUpperCase()} IS IN BAY TWO. ${c.name.split(" ")[0].toUpperCase()} BOUGHT THE WHOLE BAR A ROUND. AGAIN.'`);
+  { const r = hoursRate(st); if (r.label === "NIGHT RATE") pool.push("'YARD'S ON NIGHT RATE. FIFTEEN OVER. I'D WAIT FOR THE MORNING SHIFT IF SHE'LL HOLD.'"); else if (r.label === "EARLY SHIFT") pool.push("'EARLY SHIFT AT THE YARD. TEN UNDER. THEY'RE KEEN BEFORE ELEVEN.'"); }
+  if ((p.lostProperty ?? []).length) pool.push("'THE HARBOUR OFFICE HAS A LOST PROPERTY DRAWER. HALF OF IT'S GLOVES. ONE GLOVE. ALWAYS ONE.'");
+  pool.push("'THE DOCK-HAND ON BAY FOUR KNOWS EVERY HULL BY THE SOUND OF ITS THRUSTERS. IT'S UNSETTLING.'");
   if ((p.rescues ?? 0) >= 3) pool.push("'THAT CAPTAIN OVER THERE? PULLED A FREIGHTER OUT OF A FIGHT. I SAW THE WIRE.'");
   if ((p.discoveries ?? 0) >= 3) pool.push("'THEY'VE LOGGED SYSTEMS NOBODY HAD NAMES FOR. YOU CAN SEE IT ON THE MAP.'");
   if (isHome(p, st.id)) pool.push("'THAT'S ONE OF OURS. HOME PORT HERE. DON'T OVERCHARGE THEM.'");

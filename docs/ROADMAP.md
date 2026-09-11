@@ -891,4 +891,8 @@ Time passes for the people on the ship, and for the ship.
       or mead is poured after, the cook helps, the fares eat too; the chronicle
       counts meals and keepsakes
 
+## Milestone 134 — Talk of the Deck ✅ (Sep 2026)
+- [x] Crew chatter and concourse gossip cover keepsakes, lost property, the
+      dock-hand, berth neighbours, open requests and the yard's shift rate
+
 ## Later

@@ -47,6 +47,13 @@ export function crewChatter(w: World, a: CrewMember, b: CrewMember, rng: RNG): s
   if ((p.postRuns ?? 0) >= 1) pool.push("THERE'S A LETTER IN THE BAG FOR SOMEBODY CALLED 'DAD'. NO ADDRESS. I HOPE IT GETS THERE.");
   if ((p.convoys ?? 0) >= 1) pool.push("THOSE HAULERS FOLLOWING US TO THE GATE. LIKE DUCKLINGS. I NEARLY CRIED.");
   if (Object.keys(p.stakes ?? {}).length) pool.push("THE SKIPPER OWNS PART OF A STATION NOW. DOES THAT MAKE US MANAGEMENT?");
+  if ((p.keepsakes ?? []).length) { const k = p.keepsakes![p.keepsakes!.length - 1].split(",")[0].toUpperCase(); pool.push(`WHOSE IS ${k}? ... OURS NOW, APPARENTLY. THE SKIPPER KEPT IT.`, `I MOVED ${k} OFF THE SEAT. IT'S BACK ON THE SEAT. I'M NOT ASKING.`); }
+  if ((p.lostProperty ?? []).length) { const it = p.lostProperty![0]; pool.push(`${it.owner.toUpperCase()} LEFT ${it.name.toUpperCase().split(",")[0]} IN THE CABIN. SOMEBODY HAND IT IN BEFORE I GET ATTACHED.`); }
+  if ((p.mealsCooked ?? 0) >= 3) pool.push("REMEMBER THE DINNER WITH THE LUXURIES? I THINK ABOUT IT ON EVERY RATION BAR.", "WHO'S ON GALLEY TONIGHT? IF IT'S THE SKIPPER, I'M EATING EARLY.");
+  if (p.flags?.dockhand) pool.push("THE DOCK-HAND AT THE LAST PORT PATCHED US FOR NOTHING. DON'T TELL THE YARD, THEY SAID. WHO'D TELL THE YARD?");
+  if (p.flags?.neighbour) pool.push("SAW A CAPTAIN THE SKIPPER KNOWS ON THE PROMENADE. THEY HUGGED. I DIDN'T KNOW THE SKIPPER HUGGED.");
+  if (passengersAboard(p).some((m) => m.request && !m.requestMet)) pool.push("THE ONE IN THE LOUNGE ASKED FOR SOMETHING. A MEAL, A VIEW, QUIET. WE COULD MANAGE ONE OF THOSE.");
+  if (p.dockedAt) pool.push("NIGHT RATE AT THE YARD IF WE STAY TILL THE SHIFT TURNS. TELL THE SKIPPER. OR DON'T, IT'S THEIR MONEY.");
   if (p.regatta === 3) pool.push("WE'RE THE CHAMPIONS. I KEEP SAYING IT OUT LOUD TO SEE IF IT SOUNDS REAL. IT DOESN'T YET.");
   if (p.flags?.crewWed) pool.push("STILL CAN'T BELIEVE THE SKIPPER DID THE WEDDING IN THE GALLEY. WITH THE CAT ON THE TABLE.");
   if (a.morale < 30) pool.push("I'M THINKING ABOUT GOING HOME.", "SOME SHIPS PAY ON TIME, YOU KNOW.");

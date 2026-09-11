@@ -774,6 +774,18 @@ describe("station hours and the tannoy", () => {
     for (const st of sts.slice(0, 5)) { const lines = tannoyLines(w, st, new RNG(1), at); expect(lines.length).toBeGreaterThan(5); for (const l of lines) expect(l.length).toBeLessThanOrEqual(130); }
     w.player.postRuns = 10; expect(tannoyLines(w, sts[0], new RNG(2), at).some((l) => l.includes("THE POSTMAN"))).toBe(true);
   });
+  it("the crew and the concourse talk about keepsakes, lost property, the dock-hand and the night rate", () => {
+    const w = generateWorld(37, { realGalaxy: true }); const p = w.player;
+    const a = genCrewCandidate(new RNG(1)), b = genCrewCandidate(new RNG(2));
+    p.keepsakes = ["a scarf, left by Mara Quill"]; p.lostProperty = [{ name: "one glove", owner: "Rook", stationId: "x", t: 0, docks: 0 }]; p.flags = { dockhand: true, neighbour: true };
+    const seen = new Set<string>(); for (let i = 0; i < 80; i++) seen.add(crewChatter(w, a, b, new RNG(i)));
+    for (const key of ["A SCARF", "ONE GLOVE", "DOCK-HAND", "HUGGED"]) expect([...seen].some((l) => l.includes(key))).toBe(true);
+    const st = Object.values(w.systems).flatMap((s) => s.stations)[0];
+    const g = new Set<string>(); for (let i = 0; i < 80; i++) for (const l of concourseGossip(w, st, new RNG(i))) g.add(l);
+    expect([...g].some((l) => l.includes("LOST PROPERTY DRAWER"))).toBe(true);
+    expect([...g].some((l) => l.includes("DOCK-HAND"))).toBe(true);
+    for (const l of g) expect(l.length).toBeLessThanOrEqual(96);
+  });
   it("the galley cooks from what is aboard: dinner with luxuries, a pour after, and the fares eat too", () => {
     const w = generateWorld(36, { realGalaxy: true }); const p = w.player;
     p.crew = [genCrewCandidate(new RNG(1))]; p.crew[0].morale = 50; p.crew[0].trait = "cooks";
