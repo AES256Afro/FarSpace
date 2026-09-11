@@ -723,4 +723,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Seven in-game handbook sections for life aboard, the post, the race,
       stakes and the vote, the border, fleet and passage, the wire
 
+## Milestone 90 — The Convoy ✅ (Sep 2026)
+- [x] A real escort activity: three haulers form on your stern and pay at the
+      gate; SHEPHERD
+
 ## Later

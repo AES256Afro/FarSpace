@@ -229,6 +229,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## The convoy
+
+- Slow haulers would rather not cross a system alone. When they ask (a card
+  on the lanes, or sometimes right after you launch), FLY ALONGSIDE puts
+  three of them on your stern. Keep them within a few hundred metres, take
+  them to any gate and jump: whoever kept up comes through with you and pays,
+  more in pirate-heavy systems. Lose them for long and they give up on you.
+
 ## The week
 
 - W on the RECORD tab: the strategy layer on one page. Every faction's vote

@@ -502,7 +502,14 @@ export function updateNpcs(fs: FlightScene, g: Game, dt: number): void {
     n.fireCd -= dt;
     let tx = n.x, ty = n.y, wantFire = false, speed = 60;
     let fireHostile = true;
-    if (n.kind === "pirate") {
+    if (n.convoy) {
+      // form on the player's stern, staggered, and keep station
+      const idx = Math.max(0, fs.npcs.filter((o) => o.convoy && o.hull > 0).indexOf(n));
+      const back = Math.atan2(p.vy, p.vx) + Math.PI; const side = back + Math.PI / 2;
+      const behind = 70 + idx * 45, lateral = (idx % 2 ? 1 : -1) * (25 + 10 * Math.floor(idx / 2));
+      tx = p.x + Math.cos(back) * behind + Math.cos(side) * lateral; ty = p.y + Math.sin(back) * behind + Math.sin(side) * lateral;
+      speed = 160;
+    } else if (n.kind === "pirate") {
       const vs = variantStats(n);
       // low hull: break off and run for the belt; despawn once well away
       if (!n.fleeing && n.variant !== "captain" && n.hull < n.hullMax * 0.3) { n.fleeing = true; fleeLine(fs, n); }
@@ -620,7 +627,7 @@ export function updateNpcs(fs: FlightScene, g: Game, dt: number): void {
       else { tx = n.x + Math.cos(n.angle) * 100; ty = n.y + Math.sin(n.angle) * 100; }
     }
 
-    const maxs = n.kind === "pirate" ? variantStats(n).maxs * (n.fleeing ? 1.25 : 1) : n.kind === "drone" ? 300 : 130;
+    const maxs = n.convoy ? 190 : n.kind === "pirate" ? variantStats(n).maxs * (n.fleeing ? 1.25 : 1) : n.kind === "drone" ? 300 : 130;
     const dx = tx - n.x, dy = ty - n.y;
     const dd = Math.hypot(dx, dy) || 1;
     let desSpeed = Math.min(maxs, dd * 0.8);

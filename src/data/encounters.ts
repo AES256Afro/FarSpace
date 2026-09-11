@@ -286,7 +286,7 @@ export const ENCOUNTERS: Encounter[] = [
     id: "walkus", where: "space", weight: 2, title: "WALK US TO THE GATE",
     text: "A slow convoy of three, drive plumes ragged, hails on the open band. 'We're not asking for a fight. Just fly alongside as far as the gate. Pirates count hulls before they count guns.'",
     options: [
-      { label: "FLY ALONGSIDE", result: (g, rng) => { const c = rng.int(60, 140); p(g).credits += c; adjustRep(g.world, sys(g).factionId, 3); const x = crewXp(p(g), "pilot"); return `TWENTY QUIET MINUTES AT CONVOY SPEED. AT THE GATE THEY WIRE ${c}CR AND FLASH THEIR LIGHTS.${x ? " " + x : ""}`; } },
+      { label: "FLY ALONGSIDE", result: (g) => { const fs = g.scenes["flight"] as unknown as { startConvoy(g2: Game): void } | undefined; if (fs?.startConvoy) fs.startConvoy(g); return "THREE HAULERS FORM ON YOUR STERN, RAGGED BUT WILLING. THE LEAD FLASHES HER LIGHTS. 'LEAD ON. WE'LL PAY AT THE GATE.'"; } },
       { label: "NO TIME", result: () => "'UNDERSTOOD.' THEY CLOSE UP AND PLOD ON. YOU CHECK THE SCOPE FOR THEM TWICE BEFORE YOU JUMP." },
     ],
   },

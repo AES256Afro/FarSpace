@@ -28,6 +28,7 @@ export interface Npc {
   companion?: boolean; // a friend's ship flying alongside
   ghost?: string;      // another real pilot's ship, spawned from what they posted on the wire from this system
   mayday?: boolean;    // a real pilot stranded here with dry tanks, from their mayday on the wire
+  convoy?: boolean;    // a slow hauler following you to the gate for company
 }
 
 export interface Torpedo {

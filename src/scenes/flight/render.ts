@@ -328,6 +328,7 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
     ctx.fillRect(sx - 6, sy - 12, Math.round(12 * (n.hull / n.hullMax)), 1);
     if (n.companion && n.name) { const label = `${n.name.toUpperCase()} - WITH YOU`; drawText(ctx, label, sx - textWidth(label) / 2, sy - 20, PAL.gold); }
     else if (n.variant === "captain") drawText(ctx, n.name ?? "CAPTAIN", sx - textWidth(n.name ?? "CAPTAIN") / 2, sy - 20, PAL.danger);
+    else if (n.convoy) { drawText(ctx, "CONVOY", sx - textWidth("CONVOY") / 2, sy - 20, PAL.gold); }
     else if (n.ghost && n.name && dist(p.x, p.y, n.x, n.y) < 420) { const label = `${n.name.toUpperCase()} - ON THE WIRE`; drawText(ctx, label, sx - textWidth(label) / 2, sy - 20, PAL.info); }
     else if (n.kind === "trader" && n.name && dist(p.x, p.y, n.x, n.y) < 360) { const cap = captainByName(g.world, n.name); const label = cap ? `${cap.name.toUpperCase()}${isRival(cap) ? " - RIVAL" : isFriend(cap) ? " - FRIEND" : cap.helped ? " - OWES YOU" : ""}` : n.name.toUpperCase(); drawText(ctx, label, sx - textWidth(label) / 2, sy - 20, cap && isRival(cap) ? PAL.danger : cap && isFriend(cap) ? PAL.gold : PAL.grey); }
     else if (n.tag) { const lbl = `[${n.tag}] ${n.kind === "pirate" ? "RAIDER" : "CONVOY"}`; drawText(ctx, lbl, sx - textWidth(lbl) / 2, sy - 20, n.kind === "pirate" ? PAL.danger : PAL.info); }
@@ -619,6 +620,7 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
   }
 
   if (fs.scanMsg) drawText(ctx, fs.scanMsg, VW / 2 - textWidth(fs.scanMsg) / 2, 30, PAL.warn);
+  if (fs.convoy && !fs.race) { const alive = fs.convoy.ships.filter((s) => s.hull > 0 && fs.npcs.includes(s)); const near = alive.filter((s) => dist(s.x, s.y, p.x, p.y) < 700).length; const line = `CONVOY: ${near}/${alive.length} WITH YOU - TAKE THEM TO ANY GATE AND JUMP`; drawText(ctx, line, VW / 2 - textWidth(line) / 2, VH - 34, near === alive.length ? PAL.gold : PAL.warn); }
   if (fs.docking?.hold) { const line = `HOLDING SHORT OF BAY ${fs.docking.bay} - CONTROL WILL CALL YOU IN`; drawText(ctx, line, VW / 2 - textWidth(line) / 2, VH - 34, PAL.warn); }
   if (fs.race) { const r = fs.race; const line = r.started ? `RING RACE  ${r.idx}/${r.gates.length}  ${r.t.toFixed(1)}S  (PAR ${r.par}S)` : `RING RACE - FLY THROUGH RING 1 TO START THE CLOCK`; drawText(ctx, line, VW / 2 - textWidth(line) / 2, VH - 34, PAL.gold); }
   if (g.toastTimer > 0) drawText(ctx, g.toastMsg, VW / 2 - textWidth(g.toastMsg) / 2, 40, PAL.ui);

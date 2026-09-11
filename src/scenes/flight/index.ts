@@ -23,7 +23,7 @@ import { VW, VH } from "../../game";
 import { music } from "../../core/music";
 import * as wire from "../../core/wire";
 import { presence } from "../../core/presence";
-import { pickEncounter } from "../../data/encounters";
+import { pickEncounter, ENCOUNTERS } from "../../data/encounters";
 import { pickChatter } from "../../core/chatter";
 import { spawnGhost, spawnMayday } from "./ai";
 import { voteMods } from "../../data/votes";
@@ -64,6 +64,7 @@ export class FlightScene implements Scene {
   sos: Sos | null = null;
   escort: { trader: Npc; missionId: string } | null = null;
   race: { gates: { x: number; y: number }[]; idx: number; t: number; stationId: string; started: boolean; idle: number; par: number } | null = null;
+  convoy: { ships: Npc[]; reward: number; lost: number } | null = null;
   scanCharge = 0;      // deep-scan charge 0..1 (hold V)
   aim = 0;             // gun/laser direction; equals heading in keyboard mode
   mouseAim = false;
@@ -84,6 +85,7 @@ export class FlightScene implements Scene {
     this.cruise = false; this.autopilot = false;
     this.escort = null;
     this.race = null;
+    this.convoy = null;
     this.scanCharge = 0;
     this.torps = [];
     this.floaters = [];
@@ -97,6 +99,7 @@ export class FlightScene implements Scene {
       g.justUndocked = false;
       const p = g.world.player;
       this.startRace(g);
+      if (!p.racePending && !this.race && Math.random() < 0.12 && g.world.systems[p.systemId].jumpPoints.length) { const enc = ENCOUNTERS.find((e) => e.id === "walkus"); if (enc) setTimeout(() => { if (g.sceneName === "flight") (g.scenes["encounter"] as EncounterScene).open(g, enc, "flight", false); }, 2500); }
       const st = g.world.systems[p.systemId].stations.find((s) => dist(p.x, p.y, Math.cos(s.angle) * s.orbit, Math.sin(s.angle) * s.orbit) < 120);
       if (st) {
         const sx = Math.cos(st.angle) * st.orbit, sy = Math.sin(st.angle) * st.orbit;
@@ -425,6 +428,7 @@ export class FlightScene implements Scene {
     updateComms(this, g, dt);
     this.updateEscort(g, dt);
     this.updateRace(g, dt);
+    this.updateConvoy(g, dt);
     this.updateLaw(g, dt);
 
     this.spawnTimer -= dt;
@@ -499,6 +503,44 @@ export class FlightScene implements Scene {
     this.npcs.push(trader);
     this.escort = { trader, missionId: m.id };
     g.toast("ESCORT: KEEP THE FREIGHTER ALIVE UNTIL IT DOCKS");
+  }
+
+  // ---------- The convoy: slow haulers who'd rather not cross the system alone ----------
+  startConvoy(g: Game): void {
+    const p = g.world.player;
+    if (this.convoy) return;
+    const n = 3; const ships: Npc[] = [];
+    for (let i = 0; i < n; i++) {
+      const a = p.angle + Math.PI + (i - 1) * 0.5;
+      ships.push({ kind: "trader", x: p.x + Math.cos(a) * (90 + i * 30), y: p.y + Math.sin(a) * (90 + i * 30), vx: p.vx, vy: p.vy, angle: p.angle, hull: 60, hullMax: 60, fireCd: 0, targetIdx: 0, cargo: { id: "food", qty: 4 }, name: `CONVOY ${i + 1}`, convoy: true });
+    }
+    this.npcs.push(...ships);
+    this.convoy = { ships, reward: 220 + Math.round(g.world.systems[p.systemId].pirateActivity * 300), lost: 0 };
+    this.comms.push({ from: "CONVOY LEAD", text: "FORMING ON YOUR STERN. TAKE US TO ANY GATE AND JUMP; WE'LL FOLLOW YOU THROUGH. EASY ON THE THROTTLE.", life: 10, color: PAL.gold });
+    g.showHint("convoy", "CONVOY: KEEP THEM WITHIN A FEW HUNDRED METRES AND JUMP AT ANY GATE. THEY PAY ON THE OTHER SIDE");
+  }
+  updateConvoy(g: Game, dt: number): void {
+    const c = this.convoy; if (!c) return;
+    const p = g.world.player;
+    const alive = c.ships.filter((s) => s.hull > 0 && this.npcs.includes(s));
+    if (!alive.length) { this.convoy = null; this.comms.push({ from: "CONVOY LEAD", text: "...WE'RE DONE. THANKS FOR NOTHING.", life: 7, color: PAL.grey }); return; }
+    const far = alive.every((s) => dist(s.x, s.y, p.x, p.y) > 900);
+    c.lost = far ? c.lost + dt : 0;
+    if (c.lost > 40) { this.npcs = this.npcs.filter((s) => !s.convoy); this.convoy = null; this.comms.push({ from: "CONVOY LEAD", text: "WE'VE LOST YOU. WE'LL TAKE OUR CHANCES. NO HARD FEELINGS. SOME HARD FEELINGS.", life: 8, color: PAL.grey }); }
+  }
+  // At the gate: whoever kept up comes through with you and pays
+  settleConvoy(g: Game): void {
+    const c = this.convoy; if (!c) return;
+    const p = g.world.player;
+    const with_ = c.ships.filter((s) => s.hull > 0 && this.npcs.includes(s) && dist(s.x, s.y, p.x, p.y) < 700);
+    this.npcs = this.npcs.filter((s) => !s.convoy); this.convoy = null;
+    if (!with_.length) { g.toast("YOU JUMPED WITHOUT THE CONVOY. THEY'LL REMEMBER THAT TOO."); adjustRep(g.world, g.world.systems[p.systemId].factionId, -2); return; }
+    const pay = Math.round(c.reward * with_.length / c.ships.length);
+    p.credits += pay; ledger(p, "contracts", pay); adjustRep(g.world, g.world.systems[p.systemId].factionId, 3);
+    p.convoys = (p.convoys ?? 0) + 1; flag(g, "convoy");
+    { const up = crewXp(p, "pilot"); if (up) g.toast(up); }
+    g.toast(`${with_.length}/${c.ships.length} OF THE CONVOY CAME THROUGH WITH YOU. +${pay}CR, STANDING UP`);
+    void wire.post("trade", `walked a convoy of ${with_.length} through the gate`, g.world.systems[p.systemId].name);
   }
 
   // ---------- The ring race ----------
@@ -1351,6 +1393,7 @@ export class FlightScene implements Scene {
     const denied = permitDenied(g.world, targetId);
     if (denied) { g.toast(`${g.world.systems[targetId].name.toUpperCase()} IS PERMIT SPACE - ALLIED STANDING WITH ${factionDef(denied).name.toUpperCase()} REQUIRED`); sfx.alarm(); return; }
     const facId = g.world.systems[p.systemId].factionId;
+    if (this.convoy) this.settleConvoy(g);
     if (guarded) {
       const fac = faction(facId);
       const rep = p.rep?.[facId] ?? 0;
