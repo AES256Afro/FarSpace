@@ -760,7 +760,9 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - Your first hire brings a hint about what a crew makes possible: alerts,
   the briefing, the roster, the ready room.
 - Dock at a cadet's home rock and their mam is on the promenade.
-- After the singers' home, the board of ethics writes with a grant.
+- After the singers' home, the board of ethics writes with a grant, and the
+  office writes to say it has no form for this. Research tannoys have
+  opinions about your chart.
 - The service cutter calls a corsair on the scope and takes it.
 - In review week at a naval station there's a bar for seconds in command
   only. Send Number One (loyalty and morale up, one thing to report, and a

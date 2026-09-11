@@ -137,7 +137,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestones 1–377 are live (v0.226.0). See the [roadmap](docs/ROADMAP.md) for what's next.
+Milestones 1–380 are live (v0.227.0). See the [roadmap](docs/ROADMAP.md) for what's next.
 
 ```bash
 npm test         # vitest: world-gen, routing, economy, law, missions, save migrations

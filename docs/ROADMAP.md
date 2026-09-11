@@ -1873,6 +1873,15 @@ Time passes for the people on the ship, and for the ship.
 - [x] Standing counts landings with someone in the seat beside, and the
       freeman's name earned twice
 
+## Milestone 378 — No Form for This ✅ (Sep 2026)
+- [x] The office writes about the roll-call: form 41-A, Chorus, Unexplained
+
+## Milestone 379 — The Survey Is Failing ✅ (Sep 2026)
+- [x] Research tannoy lines about your chart and the recording
+
+## Milestone 380 — Groundside Help ✅ (Sep 2026)
+- [x] A help line for who comes down and shore leave
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
