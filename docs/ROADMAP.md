@@ -840,4 +840,8 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 120 — Convoy on the Board ✅ (Sep 2026)
 - [x] Convoy missions on station boards; accept and launch
 
+## Milestone 121 — Tidy II ✅ (Sep 2026)
+- [x] The title summary carries your name on the lanes; handbook lines for
+      the pacer, the wager and convoys on the board
+
 ## Later
