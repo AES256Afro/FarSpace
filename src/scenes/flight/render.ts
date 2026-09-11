@@ -4,7 +4,7 @@ import type { Game } from "../../game";
 import { VW, VH } from "../../game";
 import type { FlightScene } from "./index";
 import { drawText, textWidth } from "../../gfx/font";
-import { infraAt, infraLit, stormBlind, wondersIn, captainByName, isFriend, isRival, patientDeadline, ALERT_NAME } from "../../world";
+import { infraAt, infraLit, stormBlind, wondersIn, captainByName, isFriend, isRival, patientDeadline, ALERT_NAME, hasSpecialty } from "../../world";
 import * as wire from "../../core/wire";
 import { PAL } from "../../gfx/palette";
 import { clamp, TAU, angDiff, dist } from "../../core/mathx";
@@ -717,7 +717,8 @@ export function drawSystemMap(g: Game, ctx: CanvasRenderingContext2D): void {
     if (!an.discovered || an.claimed) continue;
     ctx.fillStyle = PAL.info;
     ctx.fillRect(Math.round(cx + an.x * sc) - 1, Math.round(cy + an.y * sc) - 1, 3, 3);
-    drawText(ctx, an.name, cx + an.x * sc + 4, cy + an.y * sc - 2, PAL.info);
+    const tag = hasSpecialty(p, "science") && (an.kind === "fold" || an.kind === "lens" || an.kind === "echo") ? ` (${an.kind.toUpperCase()})` : "";
+    drawText(ctx, an.name + tag, cx + an.x * sc + 4, cy + an.y * sc - 2, PAL.info);
   }
   for (const wd of wondersIn(g.world, sys.id)) {
     ctx.fillStyle = PAL.gold;

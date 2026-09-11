@@ -730,6 +730,11 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   rock. Sign it (200 credits from the council, the belt rate from then on, a
   deed, and a mark against you with the faction), buy the water and say
   nothing, or report the names to the faction (rep, and the belt hears).
+- Standing with the rocks adds up: a hopper helped, a spin restarted, a
+  register signed (one each), a water, ration, clinic or filter run delivered
+  (half). At three the belt calls you a freeman: every belt yard is fifteen
+  under for you, the tannoy says so when you're in, and it's a deed. The
+  harbour view shows the count.
 - Boards near the belt post the rock's needs in the rock's words: water runs,
   ration runs, clinic runs, filter runs, and nobody there forgets who brought
   it. Now and then a rock loses its spin as you clamp on (the floor stops

@@ -2,7 +2,7 @@
 // applies real effects and returns the line the player reads afterwards.
 
 import type { Game } from "../game";
-import { addCargo, removeCargo, adjustRep, hasIllegalCargo, cargoUsed, genCrewCandidate, adjustSynRep, passengersAboard, berthsUsed, adoptCat, CAT_NAMES, shiftBond, logSight, crewXp, bond, logEntry, passengerCap, infraAt, infraLit, wondersIn, parleyChance } from "../world";
+import { addCargo, removeCargo, adjustRep, hasIllegalCargo, cargoUsed, genCrewCandidate, adjustSynRep, passengersAboard, berthsUsed, adoptCat, CAT_NAMES, shiftBond, logSight, crewXp, bond, logEntry, passengerCap, infraAt, infraLit, wondersIn, parleyChance, beltGain } from "../world";
 import { hull } from "./hulls";
 import { RNG } from "../core/rng";
 import { addMaterials } from "./engineering";
@@ -419,7 +419,7 @@ export const ENCOUNTERS: Encounter[] = [
     id: "rockhopper", where: "space", weight: 3, title: "ROCK HOPPER OUT OF AIR",
     text: "A family skiff off the belt, scrubbers dead, four aboard and a child. The mother's voice is flat the way belt voices go when it's bad: 'WATER AND A FILTER, INNER. WE'LL SQUARE IT. WE ALWAYS SQUARE IT.'",
     options: [
-      { label: "PASS WATER AND A FILTER (1 WATER, 1 PART)", requires: (g) => (p(g).cargo.water ?? 0) >= 1 && (p(g).cargo.parts ?? 0) >= 1, result: (g) => { removeCargo(p(g), "water", 1); removeCargo(p(g), "parts", 1); p(g).rescues = (p(g).rescues ?? 0) + 1; p(g).lives = (p(g).lives ?? 0) + 4; adjustRep(g.world, sys(g).factionId, 2); (p(g).flags ??= {}).belt = true; logEntry(g.world, "Passed water and a scrubber filter to a rock hopper family off the belt"); return "THE FILTER GOES ACROSS ON A LINE, THEN THE WATER. THE CHILD WAVES THROUGH THE PORT. 'WE SQUARE IT, INNER. THE BELT REMEMBERS.' FOUR LIVES."; } },
+      { label: "PASS WATER AND A FILTER (1 WATER, 1 PART)", requires: (g) => (p(g).cargo.water ?? 0) >= 1 && (p(g).cargo.parts ?? 0) >= 1, result: (g) => { removeCargo(p(g), "water", 1); removeCargo(p(g), "parts", 1); p(g).rescues = (p(g).rescues ?? 0) + 1; p(g).lives = (p(g).lives ?? 0) + 4; adjustRep(g.world, sys(g).factionId, 2); const bl = beltGain(g.world, 1); logEntry(g.world, "Passed water and a scrubber filter to a rock hopper family off the belt"); if (bl) return bl + " " + "THE FILTER GOES ACROSS ON A LINE, THEN THE WATER. FOUR LIVES."; return "THE FILTER GOES ACROSS ON A LINE, THEN THE WATER. THE CHILD WAVES THROUGH THE PORT. 'WE SQUARE IT, INNER. THE BELT REMEMBERS.' FOUR LIVES."; } },
       { label: "SHARE YOUR AIR ON A LINE", hint: "Half an hour docked hull to hull", result: (g) => { for (const c of p(g).crew) c.morale = Math.max(0, c.morale - 2); p(g).rescues = (p(g).rescues ?? 0) + 1; p(g).lives = (p(g).lives ?? 0) + 4; logEntry(g.world, "Shared air with a rock hopper family, hull to hull"); return "YOU CLAMP ON AND OPEN THE LINE. HALF AN HOUR OF YOUR AIR AND THEIR SCRUBBERS CATCH. THE CREW GRUMBLE ABOUT THE HEADACHE. FOUR LIVES."; } },
       { label: "LEAVE THEM", result: (g) => { for (const c of p(g).crew) c.morale = Math.max(0, c.morale - 6); adjustRep(g.world, sys(g).factionId, -2); return "YOU BURN AWAY. THE CREW DON'T SAY ANYTHING. THAT'S THE PROBLEM. THE BELT REMEMBERS THAT TOO."; } },
     ],

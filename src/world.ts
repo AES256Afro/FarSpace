@@ -337,6 +337,7 @@ export interface PlayerState {
   voiceName?: string;                // what the ship asked to be called; its lines come from that name
   leg?: LegLog;                      // what happened since the last clamp, for the supplemental log
   envoys?: number;                   // treaties landed clean
+  beltStanding?: number;             // what the rocks owe you: hoppers helped, spins restarted, registers signed, runs made
   patients?: number;                 // patients landed in time
   numberOne?: string;                // a first officer chosen at review, by name; otherwise the longest-serving
   focus?: FocusKind | null;          // the senior staff's focus for this leg, set at the briefing, cleared at the clamp
@@ -1093,7 +1094,14 @@ export function alertMods(level: AlertLevel): { shield: number; dmg: number; mor
 }
 // The Belt: mining and refinery stations run on air, water and grudges. Share once and the belt remembers.
 export function isBeltStation(st: StationDef): boolean { return st.type === "mining" || st.type === "refinery"; }
-export function beltRate(p: PlayerState, st: StationDef): number { return isBeltStation(st) && p.flags?.belt ? 0.9 : 1; }
+export const BELT_FREEMAN_AT = 3;
+export function beltRate(p: PlayerState, st: StationDef): number { return isBeltStation(st) ? ((p.beltStanding ?? 0) >= BELT_FREEMAN_AT ? 0.85 : p.flags?.belt ? 0.9 : 1) : 1; }
+// Standing with the rocks, in small steps. At three the belt calls you a freeman and the yards go to 15% under.
+export function beltGain(w: World, n: number): string | null {
+  const p = w.player; const before = p.beltStanding ?? 0; p.beltStanding = Math.min(9, before + n); p.flags ??= {}; p.flags.belt = true;
+  if (before < BELT_FREEMAN_AT && p.beltStanding >= BELT_FREEMAN_AT) { p.flags.freeman = true; logEntry(w, "The belt calls me a freeman now"); return "THE BELT CALLS YOU A FREEMAN. EVERY ROCK'S YARD IS FIFTEEN UNDER FOR YOU FROM HERE ON, AND THE TANNOY WILL SAY SO."; }
+  return null;
+}
 // Senior staff: at the study, once a leg, each department reports and the captain picks a focus until the next dock.
 export type FocusKind = "engines" | "sickbay" | "tactical" | "helm";
 export const FOCUS_LABEL: Record<FocusKind, string> = { engines: "ENGINES: WEAR ACCRUES 20% SLOWER", sickbay: "SICKBAY: MORALE +4, THE SICK MEND FASTER", tactical: "TACTICAL: SHIELDS RECHARGE HALF AGAIN AS FAST", helm: "HELM: THE NEXT JUMPS COST 10% LESS FUEL" };
