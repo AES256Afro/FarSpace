@@ -428,6 +428,15 @@ export const ENCOUNTERS: Encounter[] = [
     ],
   },
   {
+    id: "village", where: "ground", weight: 2, title: "THE VILLAGE",
+    text: "Over the ridge, smoke from cookfires and a cluster of stone houses that the survey called 'geology'. People. Not many, not armed, not expecting a rover. A child has already seen you and is running back to tell everyone. The rule about this is very clear. The rule was written by somebody who wasn't here.",
+    options: [
+      { label: "BACK THE ROVER OUT, QUIETLY", hint: "The rule. Data for the survey; nothing else changes.", result: (g) => { p(g).expData = (p(g).expData ?? 0) + 50; (p(g).flags ??= {}).directiveKept = true; logEntry(g.world, "Found a village the survey called geology, and left it be"); return "YOU REVERSE OVER THE RIDGE BEFORE THE CHILD GETS BACK. FROM ORBIT YOU LOG IT AS GEOLOGY, WHICH IT ISN'T, AND FILE THE REAL READINGS UNDER A NAME NOBODY WILL SEARCH FOR. +50 DATA. THE CREW ARGUE ABOUT IT FOR A WEEK."; } },
+      { label: "GO DOWN AND SAY HELLO", hint: "Rep with nobody; a story with everybody", result: (g, rng) => { (p(g).flags ??= {}).directiveBroken = true; for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 5); if (rng.chance(0.5)) { addCargo(p(g), "food", 2); logEntry(g.world, "Went down to a village that had never seen a rover; came back with bread"); return "YOU GO DOWN WITH YOUR HANDS OPEN. THEY FEED YOU. NOBODY UNDERSTANDS A WORD AND EVERYBODY UNDERSTANDS THE BREAD. +2 PROVISIONS, MORALE UP, AND A THING YOU CAN NEVER PUT IN A REPORT."; } logEntry(g.world, "Went down to a village that had never seen a rover; they hid"); return "YOU GO DOWN WITH YOUR HANDS OPEN. THEY HIDE. EVERY DOOR SHUTS AT ONCE, LIKE A THING PRACTISED. YOU LEAVE A RATION TIN ON THE WALL AND GO. MORALE UP ANYWAY; THE CREW ARE GLAD YOU TRIED."; } },
+      { label: "HELP WITH THE FIRE", hint: "One of the houses is burning. Nobody asked.", result: (g) => { p(g).lives = (p(g).lives ?? 0) + 3; (p(g).flags ??= {}).directiveBroken = true; for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 8); logEntry(g.world, "Put out a fire in a village that had never seen a rover"); return "ONE OF THE HOUSES IS BURNING AND YOU HAVE A ROVER WITH A WATER TANK AND A RULE. THE RULE LOSES. THREE PEOPLE OUT OF THE SMOKE, A CROWD THAT DOESN'T KNOW WHETHER TO RUN, AND A LOG ENTRY THAT SAYS 'GEOLOGY'. THREE LIVES."; } },
+    ],
+  },
+  {
     id: "awayteam", where: "ground", weight: 3, title: "AN AWAY TEAM", when: (g) => p(g).crew.length >= 1,
     text: "A structure in the valley the survey didn't list: a door in the rock, a light behind it that shouldn't be on, and a reading the rover can't make sense of from here. Somebody has to walk in. The crew are looking at you. You are looking at the crew.",
     options: [

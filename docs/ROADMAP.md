@@ -1016,4 +1016,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] When morale sinks the crew meet you at the clamp: a bonus round, a
       night ashore, or your foot down (and maybe somebody walks)
 
+## Milestone 165 — The Village ✅ (Sep 2026)
+- [x] A prime-directive card on the ground: back out quietly, go down and
+      say hello, or help with the fire; What's New reflows as paragraphs
+
 ## Later

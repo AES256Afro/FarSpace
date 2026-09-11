@@ -16,6 +16,8 @@ const NOTES: [string, string[]][] = [
     "CONTROL READS BOTH OUT ON THE WAY IN. THE HAULERS GET NERVOUS AROUND A COMMODORE.",
     "RUN THE CREW LOW ENOUGH (TOO MANY ALERTS, TOO MANY BURNS, TOO LONG BETWEEN PORTS) AND THEY MEET YOU AT THE CLAMP:",
     "A BONUS ROUND, A NIGHT ASHORE ON YOU, OR YOUR FOOT DOWN. HALF THE TIME THEY RESPECT IT. HALF THE TIME SOMEBODY WALKS.",
+    "THE VILLAGE, ON THE GROUND: SMOKE FROM COOKFIRES WHERE THE SURVEY SAID GEOLOGY. BACK OUT QUIETLY (THE RULE),",
+    "GO DOWN WITH YOUR HANDS OPEN, OR HELP WITH THE FIRE. THE RULE WAS WRITTEN BY SOMEBODY WHO WASN'T THERE.",
   ]],
   ["0.147 - BRIDGE PROTOCOL", [
     "A THIRD SPECIALTY FOR MEDICS: SHIP'S COUNSELLOR. RED ALERT WEARS THE CREW HALF AS FAST AND REVIEWS LAND BETTER.",
@@ -560,7 +562,8 @@ function wrapLine(l: string): string[] {
   if (cur) out.push(cur);
   return out;
 }
-const WRAPPED: [string, string[]][] = NOTES.map(([t, lines]) => [t, lines.flatMap(wrapLine)]);
+// each entry reflows as one paragraph, so a long line never leaves an orphan word on its own row
+const WRAPPED: [string, string[]][] = NOTES.map(([t, lines]) => [t, wrapLine(lines.join(" "))]);
 
 export class WhatsNewScene implements Scene {
   touchMode = "menu" as const;

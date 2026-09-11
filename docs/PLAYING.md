@@ -845,6 +845,11 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   lives; otherwise two hulls come out from behind the hulk already talking),
   scan it first with a gunner or a discovery scanner, or fly on and take the
   mark.
+- The village, on the ground: smoke from cookfires where the survey said
+  geology, and a child already running to tell everyone. Back the rover out
+  quietly (the rule; data, and a deed), go down with your hands open (bread,
+  or shut doors), or help with the fire (three lives, and a log entry that
+  says geology). The crew argue about it either way.
 - On the ground, an away team: a door in the rock and a light that shouldn't
   be on. Send the engineer (the light means power), the medic (if something's
   alive in there), the gunner (who will shoot the light), or go yourself,
