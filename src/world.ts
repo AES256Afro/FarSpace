@@ -551,12 +551,21 @@ export function feuds(p: PlayerState): [CrewMember, CrewMember][] {
 }
 
 // ---------- The chronicle: a captain's career as text ----------
+// A stardate for the log: hours under way, to a tenth, on a base that looks the part.
+export function stardate(w: World): string { return (41000 + w.time / 360).toFixed(1); }
+// Number One: the longest-serving crew member, once there are two aboard and they have three dockings.
+export function firstOfficer(p: PlayerState): CrewMember | null {
+  if (p.crew.length < 2) return null;
+  const c = [...p.crew].sort((a, b) => (b.docks ?? 0) - (a.docks ?? 0) || b.skill - a.skill)[0];
+  return c && (c.docks ?? 0) >= 3 ? c : null;
+}
 export function chronicleText(w: World, callsign: string | null): string {
   const p = w.player;
   const h = Math.floor(w.time / 3600), m = Math.floor((w.time % 3600) / 60);
   const name = (p.captainName ?? callsign ?? "The Captain");
   const lines: string[] = [];
   lines.push(`FARSPACE CHRONICLE - ${(p.shipName ?? hull(p.hullId).name).toUpperCase()}`);
+  lines.push(`Captain's log, stardate ${stardate(w)}.${firstOfficer(p) ? ` First officer: ${firstOfficer(p)!.name}.` : ""}`);
   const nick = captainNickname(w);
   lines.push(`Captain: ${name}${nick ? `, called ${nick.toLowerCase()} on the lanes` : ""}. ${h}h ${m}m under way. ${p.credits} credits. ${w.realGalaxy ? "The real stars." : "An uncharted galaxy."}${p.homePort ? ` Home port: ${findStation(w, p.homePort)?.st.name ?? "?"}.` : ""}`);
   lines.push("");

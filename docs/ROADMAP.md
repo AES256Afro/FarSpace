@@ -916,4 +916,8 @@ Time passes for the people on the ship, and for the ship.
       contact, the quiet world, the rock hopper, hard burn, lounge night,
       the sim rig, the diplomat, the anomaly, the old temple, the outpost bar
 
+## Milestone 140 — Captain's Log and Number One ✅ (Sep 2026)
+- [x] The chronicle and the log open with a stardate; the longest-serving
+      crew member is Number One; bridge banter, a deadpan ship, belt gossip
+
 ## Later

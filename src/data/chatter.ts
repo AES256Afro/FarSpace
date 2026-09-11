@@ -4,7 +4,7 @@
 
 import type { World, Mission } from "../world";
 import type { CrewMember } from "./crew";
-import { bond, passengersAboard, captainNickname } from "../world";
+import { bond, passengersAboard, captainNickname, firstOfficer } from "../world";
 import { RNG } from "../core/rng";
 
 const ROLE_TALK: Record<string, string[]> = {
@@ -53,6 +53,8 @@ export function crewChatter(w: World, a: CrewMember, b: CrewMember, rng: RNG): s
   if (p.flags?.dockhand) pool.push("THE DOCK-HAND AT THE LAST PORT PATCHED US FOR NOTHING. DON'T TELL THE YARD, THEY SAID. WHO'D TELL THE YARD?");
   if (p.flags?.neighbour) pool.push("SAW A CAPTAIN THE SKIPPER KNOWS ON THE PROMENADE. THEY HUGGED. I DIDN'T KNOW THE SKIPPER HUGGED.");
   if (passengersAboard(p).some((m) => m.request && !m.requestMet)) pool.push("THE ONE IN THE LOUNGE ASKED FOR SOMETHING. A MEAL, A VIEW, QUIET. WE COULD MANAGE ONE OF THOSE.");
+  pool.push("I'M NOT SAYING THE SKIPPER'S BAD AT PARKING. THE DOCK-HAND IS SAYING IT. I'M JUST AGREEING.", "IF WE DIE OUT HERE I'M HAUNTING YOU FIRST. THEN THE SKIPPER. THEN THE CAT.", "WHO PUT 'TALENT NIGHT' ON THE WHITEBOARD? ... IT WAS YOU. IT'S ALWAYS YOU.", "THE SIM RIG'S GOT A NEW PROGRAM. IT'S A BEACH. THE BEACH HAS A HORSE. NOBODY KNOWS WHY.", "BRIDGE RULE: NO SINGING BEFORE THE SECOND COFFEE. I DON'T MAKE THE RULES. I MADE THAT ONE.");
+  { const fo = firstOfficer(p); if (fo && fo !== a && fo !== b) pool.push(`${fo.name.split(" ")[0].toUpperCase()} IS 'NUMBER ONE' NOW. THEY'VE STARTED SAYING 'CARRY ON'. TO THE CAT.`, `ASK NUMBER ONE. NUMBER ONE KNOWS WHERE THE SKIPPER KEEPS THE GOOD COFFEE.`); else if (fo === a || fo === b) pool.push(`${(fo === a ? B : a.name.split(" ")[0].toUpperCase())}, NUMBER ONE HAS THE DECK. WHICH MEANS I HAVE THE DECK. WHICH MEANS COFFEE.`); }
   if (p.dockedAt) pool.push("NIGHT RATE AT THE YARD IF WE STAY TILL THE SHIFT TURNS. TELL THE SKIPPER. OR DON'T, IT'S THEIR MONEY.");
   if (p.regatta === 3) pool.push("WE'RE THE CHAMPIONS. I KEEP SAYING IT OUT LOUD TO SEE IF IT SOUNDS REAL. IT DOESN'T YET.");
   if (p.flags?.crewWed) pool.push("STILL CAN'T BELIEVE THE SKIPPER DID THE WEDDING IN THE GALLEY. WITH THE CAT ON THE TABLE.");

@@ -719,6 +719,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - Every system has a line of history; the chart reads it on the band when
   you arrive. Every world has one too, under the orbit panel.
 
+## Captain's log and Number One
+
+- The chronicle opens with a captain's log line and a stardate (hours under
+  way, to a tenth, on a base that looks the part), and names your first
+  officer: the longest-serving crew member, once two are aboard and they've
+  three dockings. Number One is marked on the roster, and the corridors know
+  it. The ship, for its part, has decided it's Number One until then.
+
 ## The chronicle room
 
 - Read the whole chronicle in-game: C on the RECORD tab, THE CHRONICLE on
