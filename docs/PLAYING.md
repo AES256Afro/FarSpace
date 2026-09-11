@@ -814,6 +814,12 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   somebody built, and the outpost's one bar with its one board game.
 - They pay in data, rep, lives saved, morale and stories; a few of them cost
   something, and a couple leave a mark the crew remember.
+- On the ground, an away team: a door in the rock and a light that shouldn't
+  be on. Send the engineer (the light means power), the medic (if something's
+  alive in there), the gunner (who will shoot the light), or go yourself,
+  which everybody says not to. Each has its own way of going right or wrong:
+  data, a codex entry, a spare part, a bad fall, a rover dent, and a crew who
+  saw the captain walk in first.
 - Two more with people in them: the lounge at war (two fares who disagree
   about everything; seat them apart, hold a captain's dinner, or let them
   have it out while the crew take bets) and the inner and the belter (two of

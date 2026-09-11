@@ -980,4 +980,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Two cards: fares at war in the lounge (seat them apart, a captain's
       dinner, or let them have it out) and an inner and a belter in the crew
 
+## Milestone 156 — Away Team ✅ (Sep 2026)
+- [x] A ground card that asks who walks in: the engineer, the medic, the
+      gunner, or you; each has its own way of going right or wrong
+
 ## Later
