@@ -720,12 +720,13 @@ export class StationScene implements Scene {
       if (!addCargo(p, m.commodityId, m.qty)) { g.toast("NOT ENOUGH CARGO SPACE"); return; }
     }
     m.accepted = true;
-    if (m.kind === "passenger" && m.mood !== undefined && p.raceBeaten?.[st.id]) { m.mood = Math.min(100, m.mood + 5); g.toast(`${(m.passengerName ?? "YOUR FARE").toUpperCase()} HAS HEARD YOU HOLD THE RINGS HERE. THEY BOARD IMPRESSED.`); }
+    let impressed = "";
+    if (m.kind === "passenger" && m.mood !== undefined && p.raceBeaten?.[st.id]) { m.mood = Math.min(100, m.mood + 5); impressed = `${(m.passengerName ?? "YOUR FARE").toUpperCase()} HAS HEARD YOU HOLD THE RINGS HERE. THEY BOARD IMPRESSED.`; }
     p.missions.push(m);
     this.fares = this.fares.filter((f) => f !== m);
     if (m.kind === "passenger" && m.demand) g.toast(`${(m.passengerName ?? "").toUpperCase()} MENTIONS THEY'D APPRECIATE ${commodity(m.demand).name.toUpperCase()} ABOARD`);
     if (m.kind === "repair") { g.tenderMission = m; g.toast("SUITING UP - THE PLANT IS THROUGH THE YARD DOOR"); sfx.repair(); g.setScene("repair"); return; }
-    g.toast("MISSION ACCEPTED");
+    g.toast(impressed || "MISSION ACCEPTED");
     if (m.kind === "escort") g.showHint("escort", "THE FREIGHTER LAUNCHES WHEN YOU UNDOCK - STAY CLOSE");
     if (m.kind === "research") g.showHint("research", "IN THE TARGET SYSTEM, HOLD V TO DEEP-SCAN FOR THE SIGNAL");
     if (m.kind === "passenger") g.showHint("passenger", "YOUR PASSENGER IS IN THE BUNK ROOM - TALK TO THEM ABOARD (I)");
