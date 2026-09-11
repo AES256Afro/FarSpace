@@ -404,6 +404,14 @@ export const ENCOUNTERS: Encounter[] = [
     ],
   },
   {
+    id: "crewphoto", where: "space", weight: 2, title: "THE CREW PHOTO", when: (g) => p(g).crew.length >= 2 && !p(g).flags?.crewphoto,
+    text: "A photographer's skiff at the gate, the kind that makes a living off liners, hailing every hull that comes through: 'CREW PHOTO, CAPTAIN? THE WHOLE CREW ON THE BRIDGE, THE SHIP'S NAME ON THE PLATE, FORTY CREDITS AND IT'S ON THE WALL BY THE NEXT PORT. EVERYBODY SAYS NO. EVERYBODY REGRETS IT.'",
+    options: [
+      { label: "FORTY CREDITS. EVERYBODY ON THE BRIDGE", hint: "A keepsake; morale up; the mural gets company", requires: (g) => p(g).credits >= 40, result: (g) => { p(g).credits -= 40; (p(g).flags ??= {}).crewphoto = true; for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 4); (p(g).keepsakes ??= []).push(`the crew photo, ${p(g).crew.map((c) => c.name.split(" ")[0]).join(", ")} and the captain, ${sys(g).name}`); if (p(g).keepsakes!.length > 8) p(g).keepsakes!.shift(); logEntry(g.world, `Had the crew photo taken at the ${sys(g).name} gate`); return "EVERYBODY ON THE BRIDGE, THE CAT ON THE CONSOLE, THE ENGINEER STILL HOLDING A SPANNER BECAUSE NOBODY TOLD THEM. THE SKIFF FLASHES ONCE. IT'S ON THE WALL BY THE NEXT PORT AND NOBODY REGRETS IT. MORALE UP."; } },
+      { label: "NO, THANKS", hint: "Everybody says no", result: (g) => { (p(g).flags ??= {}).crewphoto = true; return "YOU SAY NO. THE SKIFF SAYS 'EVERYBODY SAYS NO' AND FLASHES ONCE ANYWAY, AND YOU'LL NEVER KNOW WHAT THAT ONE LOOKED LIKE."; } },
+    ],
+  },
+  {
     id: "longship", where: "space", weight: 2, title: "THE LONG SHIP", when: (g) => sys(g).stations.some((st) => isBeltStation(st)) && !p(g).flags?.longship,
     text: "Off the rock's far side, in a cradle of scaffold three kilometres long, a hull that will never dock anywhere: a generation ship, half-plated, being built by people who won't live to see it leave. A tight-beam from the scaffold: 'THE LONG SHIP TAKES DONATIONS. PARTS, WATER, OR AN HOUR OF YOUR ENGINEER. YOUR NAME GOES ON A PLATE INSIDE. NOBODY WILL READ IT FOR TWO HUNDRED YEARS. THAT'S THE POINT.'",
     options: [

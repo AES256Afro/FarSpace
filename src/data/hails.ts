@@ -3,7 +3,7 @@
 
 import type { World } from "../world";
 import type { Npc } from "../scenes/flight/types";
-import { captainNickname, isBeltStation, commandRank } from "../world";
+import { captainNickname, isBeltStation, commandRank, droughtAt, fleetReviewAt } from "../world";
 import { hull } from "./hulls";
 import { RNG, hashStr } from "../core/rng";
 import { stationHour } from "./tannoy";
@@ -35,6 +35,9 @@ export function passingHail(w: World, n: Npc, alert: number, rng: RNG): { from: 
     if (night) pool.push(`${hailCallsign(n, kind)}: NIGHT SHIFT OUT HERE TOO. WHOEVER'S AWAKE ON YOUR BRIDGE, THIS ONE'S FOR YOU: YOU'RE DOING FINE.`);
     if (alert === 2) pool.push(`${hailCallsign(n, kind)}: WHY ARE YOU AT RED ALERT. ... OH NO. WHY ARE YOU AT RED ALERT.`);
   }
+  { const dry = sys.stations.find((st) => droughtAt(w, st.id)); if (dry) pool.push(`${hailCallsign(n, kind)}: IF YOU'VE WATER IN THE HOLD, ${dry.name.toUpperCase()} IS ON RATION. THEY'LL REMEMBER THE HULL THAT BROUGHT IT. WE'RE CARRYING NONE. DON'T ASK.`); }
+  { const rev = sys.stations.find((st) => fleetReviewAt(w, st.id)); if (rev) pool.push(`${hailCallsign(n, kind)}: FLEET REVIEW OFF ${rev.name.toUpperCase()}. STAY CLEAR OF THE LINE UNLESS YOU'RE IN IT, ${ship}. THEY'RE VERY PARTICULAR ABOUT THE LINE.`); }
+  if (p.flags?.freeman && belt) pool.push(`${hailCallsign(n, kind)}: THAT'S THE FREEMAN'S HULL. KEEP THE WATER COLD, ${ship}. THE ROCK SAYS HELLO. THE ROCK DOESN'T SAY THAT TO INNERS.`);
   if (!pool.length) return null;
   return { from: hailCallsign(n, kind), text: rng.pick(pool).replace(/^(THIS IS )?(PATROL|LINER|HAULER) [A-Z]-\d+[:.] ?/, "") };
 }

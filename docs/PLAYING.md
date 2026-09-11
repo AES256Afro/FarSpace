@@ -752,6 +752,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- Fleet review: a galaxy event at a naval station. Captains with a rank are
+  signalled to take station at the end of the line (rep up, a ribbon, an
+  hour of ship time, the crew stand to), or dip the lights past (rep up a
+  little), or go round to the clamp and leave the end of the line empty.
+- Passing hails mention a drought in the system, a fleet review off a naval
+  station, and, on the rocks, the freeman's hull.
+- A photographer's skiff at the gate offers the crew photo for forty credits:
+  a keepsake with every name in it, and morale up.
 - Two crew with a strong bond may ask for the same leave at the clamp, once a
   week: grant it (loyalty and the bond up, two berths empty until you collect
   them), one at a time (morale down, both), or grant it on the ship's card.

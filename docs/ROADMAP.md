@@ -1481,6 +1481,18 @@ Time passes for the people on the ship, and for the ship.
 - [x] Arriving in a system where a syndicate war is on, tactical goes to
       yellow and says so
 
+## Milestone 273 — Fleet Review ✅ (Sep 2026)
+- [x] A galaxy event for naval stations: hulls in line abreast; captains with
+      a rank take station at the end of the line (rep, a ribbon, an hour),
+      dip the lights past, or go round to the clamp; tannoy lines
+
+## Milestone 274 — Hails That Know the Week ✅ (Sep 2026)
+- [x] Passing hails mention a drought, a fleet review, and the freeman's hull
+
+## Milestone 275 — The Crew Photo ✅ (Sep 2026)
+- [x] A photographer's skiff at the gate: forty credits, everybody on the
+      bridge, a keepsake with every name in it
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

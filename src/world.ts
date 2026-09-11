@@ -3759,7 +3759,10 @@ export function logEntry(w: World, text: string): void {
 }
 
 // ---------- Galaxy events (not wars): comets, flares, festivals, strikes ----------
-export type GalaxyEventKind = "comet" | "flare" | "festival" | "strike" | "storm" | "secession" | "drought";
+export type GalaxyEventKind = "comet" | "flare" | "festival" | "strike" | "storm" | "secession" | "drought" | "review";
+export function fleetReviewAt(w: World, stationId: string): GalaxyEvent | null {
+  const e = w.galaxyEvent; return e && e.kind === "review" && e.stationId === stationId && w.time < e.until ? e : null;
+}
 export function droughtAt(w: World, stationId: string): GalaxyEvent | null {
   const e = w.galaxyEvent; return e && e.kind === "drought" && e.stationId === stationId && w.time < e.until ? e : null;
 }
@@ -3788,15 +3791,17 @@ export function tickGalaxyEvents(w: World, rng: RNG): void {
   }
   if (w.galaxyEvent || !rng.chance(0.3)) return;
   const sys = rng.pick(Object.values(w.systems));
-  const kind = rng.pick(["comet", "flare", "festival", "strike", "storm", "secession", "drought"] as GalaxyEventKind[]);
+  const kind = rng.pick(["comet", "flare", "festival", "strike", "storm", "secession", "drought", "review"] as GalaxyEventKind[]);
   const belt = sys.stations.filter((s) => isBeltStation(s) && s.factionId !== "vex");
-  const st = kind === "secession" || kind === "drought" ? (belt.length ? rng.pick(belt) : null) : sys.stations.length ? rng.pick(sys.stations) : null;
-  if ((kind === "festival" || kind === "strike" || kind === "secession" || kind === "drought") && !st) return;
+  const naval = sys.stations.filter((s) => s.military);
+  const st = kind === "secession" || kind === "drought" ? (belt.length ? rng.pick(belt) : null) : kind === "review" ? (naval.length ? rng.pick(naval) : null) : sys.stations.length ? rng.pick(sys.stations) : null;
+  if ((kind === "festival" || kind === "strike" || kind === "secession" || kind === "drought" || kind === "review") && !st) return;
   w.galaxyEvent = { kind, systemId: sys.id, stationId: st?.id, until: w.time + 720 };
   if (kind === "comet") { for (const a of sys.asteroids) { a.rich = a.rich || rng.chance(0.5); a.ore += 4; } pushEvent(w, { t: w.time, kind: "discovery", systemId: sys.id, text: `A comet crosses ${sys.name}: the belt is seeded with rich ore for a while` }); }
   if (kind === "flare") pushEvent(w, { t: w.time, kind: "shock", systemId: sys.id, text: `Solar flare warning for ${sys.name}: hulls run hot, scanners struggle` });
   if (kind === "festival" && st) { for (const id of ["lux", "food"]) st.stock[id] = Math.max(0, Math.round((st.stock[id] ?? 0) * 0.3)); refreshPrices(st); pushEvent(w, { t: w.time, kind: "discovery", systemId: sys.id, text: `Festival week at ${st.name}: luxuries and provisions sell dear, tourists pay double` }); }
   if (kind === "strike" && st) { st.fuelPrice *= 2; st.repairPrice *= 2; pushEvent(w, { t: w.time, kind: "shock", systemId: sys.id, text: `Dock workers strike at ${st.name}: fuel and repairs cost double` }); }
+  if (kind === "review" && st) { pushEvent(w, { t: w.time, kind: "discovery", systemId: sys.id, text: `Fleet review at ${st.name} this week: the service's hulls in line abreast, and any captain with a rank is expected` }); }
   if (kind === "drought" && st) { st.stock.water = 0; refreshPrices(st); pushEvent(w, { t: w.time, kind: "shock", systemId: sys.id, text: `${st.name}'s ice line has failed: the rock is on ration until a tank comes in. Water pays, and the belt remembers who brings it` }); }
   if (kind === "storm") pushEvent(w, { t: w.time, kind: "shock", systemId: sys.id, text: `Ion storm over ${sys.name}: radar and charts are blind there unless a beacon holds the picture` });
   if (kind === "secession" && st) { for (const id of ["water", "food", "med"]) st.stock[id] = Math.max(0, Math.round((st.stock[id] ?? 0) * 0.4)); refreshPrices(st); pushEvent(w, { t: w.time, kind: "shock", systemId: sys.id, text: `${st.name} declares itself independent for the week: water, rations and medicine pay, the register is open, and the inners are not amused` }); }
