@@ -2001,7 +2001,7 @@ export function tickAlumniMail(w: World, rng: RNG): void {
   if (!al.length || !rng.chance(0.08)) return;
   const a = rng.pick(al);
   const home = findStation(w, a.stationId)?.st.name ?? "somewhere";
-  const text = a.role === "captain" ? rng.pick([`How's my ship? Don't tell me. Tell me the crew are eating.`, `The pension's fine. The quiet is worse. Fly her well.`]) : rng.pick([`${home} is quiet. I miss the reactor hum. Is the ${p.cat ? p.cat.name : "galley"} still on the console?`, `They asked me here who taught me. I said the ship did. Give my best to the wall.`, `Found this in my kit. It's yours by rights.`]);
+  const text = a.command ? rng.pick([`From the chair of ${a.command}: I said 'make it so' today, out loud, and the helm laughed. I'm keeping it. Tell the crew I'm keeping it.`, `${a.command} took a fare to a rock and the kids drew her. No dent. I'm thinking of adding one.`, `First red alert in my own chair. I heard your voice saying the thing about the klaxon. I said it. It worked. Thank you, and don't tell anyone I said thank you.`]) : a.role === "captain" ? rng.pick([`How's my ship? Don't tell me. Tell me the crew are eating.`, `The pension's fine. The quiet is worse. Fly her well.`]) : rng.pick([`${home} is quiet. I miss the reactor hum. Is the ${p.cat ? p.cat.name : "galley"} still on the console?`, `They asked me here who taught me. I said the ship did. Give my best to the wall.`, `Found this in my kit. It's yours by rights.`]);
   (w.mailQueue ??= []).push({ dueT: w.time + rng.int(120, 600), from: `${a.name}, ${home}`, text, gift: rng.chance(0.5) ? { credits: rng.int(60, 200) } : rng.chance(0.5) ? { parts: 1 } : undefined });
 }
 export function friendsAt(w: World, stationId: string): NpcCaptain[] {

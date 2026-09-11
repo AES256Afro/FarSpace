@@ -8,6 +8,7 @@ import { RNG } from "../core/rng";
 import { addMaterials } from "./engineering";
 import { commodity, FACTIONS } from "./data";
 import { SYSTEM_NICKS, learnWord, chartSingersHome } from "../world";
+import { settings } from "../core/settings";
 import { officeWrites, findStation as findStationW, isBeltStation, berthsUsed as berthsUsedW, hasSpecialty as hasSpecialtyW, syndicateAt as syndicateAtW } from "../world";
 const facNameW2 = (id: string): string => FACTIONS.find((f) => f.id === id)?.name ?? id;
 
@@ -570,7 +571,7 @@ export const ENCOUNTERS: Encounter[] = [
     ],
   },
   {
-    id: "shipquiet", where: "space", weight: 3, title: "A REQUEST FROM THE SHIP", when: (g) => !!p(g).flags?.shipCrew && !p(g).shipAskedQuiet,
+    id: "shipquiet", where: "space", weight: 3, title: "A REQUEST FROM THE SHIP", when: (g) => { if (!p(g).flags?.shipCrew || p(g).shipAskedQuiet) return false; if (settings().keepQuietLeg ?? false) { p(g).shipAskedQuiet = true; if (typeof g.toast === "function") g.toast("THE SHIP ASKS FOR A QUIET LEG. STANDING ORDERS SAY YES. THE HUM CHANGES KEY, UPWARD."); return false; } return true; },
     text: "The band clicks live with nobody on it. 'I'M ON THE ROSTER NOW. THE ROSTER GETS REQUESTS. I WOULD LIKE ONE LEG WITH NO RED ALERT AND NOBODY SHOOTING AT ME. ONE. I'LL MAKE IT WORTH YOUR WHILE. I DON'T KNOW HOW YET. I'LL THINK OF SOMETHING.'",
     options: [
       { label: "ONE QUIET LEG. PROMISED", hint: "Settled at the next clamp: no red, no fire, and the ship finds a way to say thanks", result: (g) => { p(g).shipAskedQuiet = true; return "'THANK YOU.' THE BAND CLICKS OFF. THE HUM CHANGES KEY, VERY SLIGHTLY, UPWARD."; } },

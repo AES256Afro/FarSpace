@@ -14,6 +14,7 @@ export interface Settings {
   numberOneHails?: boolean;       // standing order: Number One acknowledges passing hails on autopilot (default on)
   numberOneTakesLeg?: boolean;    // standing order: at eight hours since the clamp Number One takes the ship (default off)
   objectsToLandings?: boolean;    // standing order: Number One objects to the captain landing, once (default on)
+  keepQuietLeg?: boolean;         // standing order: when the ship asks for a quiet leg, the answer is yes (default off)
   chatter?: "quiet" | "normal" | "busy"; // how busy the comms band is (default normal)
   lanes?: "gentle" | "normal" | "rough"; // how many corsairs the lanes carry (default normal)
   whatsNewSeen?: string;          // the version whose What's New you last opened

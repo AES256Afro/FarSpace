@@ -1882,6 +1882,15 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 380 — Groundside Help ✅ (Sep 2026)
 - [x] A help line for who comes down and shore leave
 
+## Milestone 381 — Letters From the Chair ✅ (Sep 2026)
+- [x] Alumni who command their own ship write about it
+
+## Milestone 382 — Standing Orders III ✅ (Sep 2026)
+- [x] ORDERS: THE SHIP'S QUIET LEG — always yes, or asks
+
+## Milestone 383 — Orders in the Help ✅ (Sep 2026)
+- [x] A help line pointing at the standing orders in settings
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
