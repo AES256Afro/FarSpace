@@ -32,6 +32,8 @@ export function pickShipLine(g: Game, rng: RNG): string | null {
   if (Object.keys(p.stakes ?? {}).length) pool.push("YOU OWN A PIECE OF A STATION. I FEEL THIS SHOULD COME WITH A BETTER BERTH.");
   if (p.catAway) pool.push("THE CAT IS NOT ABOARD. I HAVE CHECKED EVERY VENT TWICE. I WILL CHECK AGAIN.");
   if ((p.guestbook ?? []).length >= 3) pool.push("THREE PEOPLE HAVE WRITTEN NICE THINGS ABOUT ME IN THE BOOK. I READ THEM WHEN NOBODY'S LOOKING.");
+  if ((p.mail ?? []).some((m) => m.replied)) pool.push("YOU WRITE BACK TO PEOPLE. NOT EVERY SHIP'S CAPTAIN DOES. I NOTICE THESE THINGS.");
+  if (p.crew.some((c) => c.home)) pool.push("HALF MY CREW HAVE PEOPLE AT SOME PORT OR OTHER. I TRY TO FLY LIKE IT.");
   if (p.mayday) pool.push("MY TANKS ARE DRY AND MY MAYDAY IS OUT THERE. SOMEBODY WILL COME. SOMEBODY ALWAYS COMES. USUALLY.");
   const deck = hull(p.hullId).deck;
   if (deck === "scout") pool.push("I'M SMALL. I'M FAST. I'M NOT CARRYING THAT MANY CRATES AGAIN.", "SCOUT HULLS DON'T GET STATUES. WE GET THERE FIRST, THOUGH.");

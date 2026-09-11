@@ -802,4 +802,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] A grouped contents block at the top of the player's guide; border
       results with your push go to the wire
 
+## Milestone 111 — Tidy ✅ (Sep 2026)
+- [x] Handbook lines for scrapping and writing back; ship's voice on family
+      and letters; a header for the block in What's New
+
 ## Later
