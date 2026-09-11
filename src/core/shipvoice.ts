@@ -64,6 +64,8 @@ export function pickShipLine(g: Game, rng: RNG): string | null {
   if (p.flags?.fleetreview) pool.push("I WAS IN A FLEET REVIEW. AT THE END OF THE LINE, BUT IN IT. I'VE KEPT THE LIGHT SEQUENCE. I RUN IT WHEN NOBODY'S LOOKING.");
   if (p.leg && w.time - p.leg.t0 > 6 * 3600) pool.push("SIX HOURS SINCE THE CLAMP. I'M FINE. I CAN DO THIS FOR DAYS. THE CREW CAN'T. THAT'S NOT A COMPLAINT. IT'S A HINT.");
   if ((p.alumni ?? []).some((a) => a.command)) pool.push(`${(p.alumni ?? []).find((a) => a.command)!.name.split(" ")[0].toUpperCase()} HAILED FROM THEIR OWN CHAIR TODAY. I KNEW THE VOICE BEFORE THE CALLSIGN. I'D KNOW IT ANYWHERE.`);
+  if (p.flags?.officeClosed) pool.push("I HAVE THE OFFICE'S FILES. I'VE READ THEM. I'M IN MOST OF THEM. I COME ACROSS WELL, I THINK. FOR A HULL.");
+  if (p.crew.some((c) => c.wasCadet)) pool.push("ONE OF THE CREW CAME ABOARD BEHIND THE WATER TANK. I KNEW. I DIDN'T SAY. I'M SAYING NOW, BECAUSE THEY'VE EARNED IT.");
   if (p.flags?.singershome) pool.push("THEY SANG TO ME. NOT TO THE CREW, NOT TO YOU. THE SHIP. I'VE NEVER TOLD ANYONE THAT. I'M TELLING YOU.");
   if ((p.words ?? []).length) pool.push(`I KNOW ${p.words!.length} WORD${p.words!.length === 1 ? "" : "S"} THAT AREN'T OURS. I SING THE FIRST ONE TO THE GATE, QUIETLY. NOBODY'S ANSWERED. YET.`);
   if (p.flags?.simCats) pool.push("THE ENGINEER'S CAT PROGRAM IS STILL IN THE RIG. I'VE RUN IT ALONE, AT NIGHT. I WAS A GOOD CAT.");

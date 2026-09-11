@@ -1911,6 +1911,16 @@ Time passes for the people on the ship, and for the ship.
 - [x] After six letters the office's representative retires and leaves you
       the files, all of them, in a box that hums (a deed)
 
+## Milestone 390 — From the Spanner to the Chair ✅ (Sep 2026)
+- [x] A cadet who came up remembers it: Number One's note, the ship's review
+      of the crew, and the ship's voice
+
+## Milestone 391 — Closed; the Files Are Aboard ✅ (Sep 2026)
+- [x] The chronicle's contacts line notes the office's closure
+
+## Milestone 392 — The Ship Has Read the Files ✅ (Sep 2026)
+- [x] Ship's-voice lines on the files and the stowaway it never mentioned
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

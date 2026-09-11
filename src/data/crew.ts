@@ -4,6 +4,7 @@ export type CrewRole = "engineer" | "gunner" | "pilot" | "medic";
 
 export interface CrewMember {
   cadet?: boolean;  // signed on at cadet rate; crew proper at ten dockings
+  wasCadet?: boolean; // came up from cadet; the note and the chronicle remember
   name: string;
   role: CrewRole;
   skill: number;   // 1..3

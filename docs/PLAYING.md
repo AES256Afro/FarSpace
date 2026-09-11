@@ -757,6 +757,8 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   Send them (they become a friendly captain in the lanes, write from the
   chair, and the chronicle says who they command), ask them to stay plainly
   (loyalty up a lot), or leave it to them and a coin.
+- A cadet who rises to Number One remembers the spanner: in their note, in
+  the ship's review of the crew, and in the ship's voice.
 - The galley wedding leaves the borrowed ring aboard, and a named ship dims
   the lights for it. An old shipmate may name a child after the ship. And
   after six letters the office's representative retires and sends you the
