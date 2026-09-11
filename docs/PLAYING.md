@@ -1966,3 +1966,21 @@ saves. Flight in other systems consumes remaining time, while menus, docking
 and time spent inside the ship do not. Protection applies in the system where
 the agreement was made. Veil standing of 40 or more also keeps corsairs and
 Veil platforms peaceful and prevents automatic gunners from attacking them.
+
+## The fleet register
+
+The station **Ships** tab scrolls through the hull market, local parked ships,
+remote ships and working charters. Use Up/Down or the wheel. The selected row's
+fitted capacity, price, location and actions stay in the right column.
+
+- Market hull: Enter buys with trade-in; K buys and parks the current hull.
+- Parked here: Enter boards that hull; W offers a hired crew; X quotes scrap.
+- Remote hull: Enter or L quotes liner passage to that selected ship. Existing
+  passenger, cargo and berth requirements still apply.
+- Working charter: R asks to release that selected charter and settle its till.
+  An owned hull returns to its home depot, shown in the details. Other charters
+  continue working.
+
+Pointer clicks use the visible row even after scrolling. The shipyard's
+scrolled equipment list uses the same exact row mapping. Clicking either
+screen's details column does not activate a purchase or hull transfer.

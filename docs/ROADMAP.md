@@ -2115,3 +2115,12 @@ The decision between service orders and booked fares is covered by M402.
 - Withdraw outstanding player, escort and hostile corsair projectiles when the
   agreement starts. Subsequent player gun or torpedo hits end temporary passage.
 - Guard parley participants, world, system, eligibility and one-time resolution.
+
+### M407: Every Hull on the Register
+
+- Scroll every market, parked, remote and working hull into view, with fitted
+  capacity and applicable actions in a separate details column.
+- Liner travel targets the selected remote ship. R releases the selected
+  working charter, settles its till once, and states the owned hull's depot.
+- Keep pointer hit areas aligned with their actual indices after shipyard
+  scrolling; prevent details-column clicks from activating list actions.
