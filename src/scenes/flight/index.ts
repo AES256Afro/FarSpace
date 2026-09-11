@@ -637,6 +637,8 @@ export class FlightScene implements Scene {
     if (st.military && rep < -20) { g.toast("DOCKING DENIED - YOUR RECORD PRECEDES YOU"); return false; }
     if (rep < -60) { g.toast("DOCKING DENIED - PERSONA NON GRATA"); return false; }
     if (this.docking) return true;
+    if (this.convoy) { const c = this.convoy; this.npcs = this.npcs.filter((s) => !s.convoy); this.convoy = null; if (c.missionId) p.missions = p.missions.filter((x) => x.id !== c.missionId); this.comms.push({ from: "CONVOY LEAD", text: "DOCKING? RIGHT. WE'LL FIND ANOTHER WAY TO THE GATE. NO HARD FEELINGS.", life: 7, color: PAL.grey }); }
+    if (this.race) { this.race = null; this.comms.push({ from: "MARSHAL", text: "DOCKING MID-RACE. CLOCK STOPPED. THE RINGS WILL KEEP.", life: 7, color: PAL.grey }); }
     // the approach: control talks you in, the ship glides to the bay, then the deck
     const bay = 1 + (st.id.length * 7 + Math.floor(g.world.time)) % 6;
     const sx = Math.cos(st.angle) * st.orbit, sy = Math.sin(st.angle) * st.orbit;

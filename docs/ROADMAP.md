@@ -855,4 +855,7 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 124 — Pictures in the Museum ✅ (Sep 2026)
 - [x] Picture jobs turned in at research stations hang in the museum
 
+## Milestone 125 — Convoy Manners ✅ (Sep 2026)
+- [x] Docking with a convoy or a race running ends it with a word on the band
+
 ## Later
