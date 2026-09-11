@@ -7,15 +7,27 @@ import { settings, saveSettings, ACTIONS, keyLabel, toggleFullscreen } from "../
 import { music } from "../core/music";
 import { sfx, applySfxVolume } from "../core/sfx";
 
-interface Row { label: string; value: string; act: () => void; adj?: (dir: number) => void }
+interface Row { label: string; value: string; act: () => void; adj?: (dir: number) => void; keyBinding?: boolean }
 
-const FIXED = 6; // rows before the key-binding list
+const PAGE_ROWS = 14;
+const LIST_LEFT = 8, LIST_RIGHT = VW - 20;
 
 export class SettingsScene implements Scene {
   touchMode = "menu" as const;
   cursor = 0;
+  top = 0;
   binding: string | null = null; // action key waiting for a physical key
   rowBoxes: [number, number][] = [];
+
+  enter(): void { this.binding = null; this.rowBoxes = []; }
+
+  // Keep actual row indices for pointer actions, even when most rows are hidden.
+  window(count: number): [number, number] {
+    this.cursor = Math.max(0, Math.min(count - 1, this.cursor));
+    this.top = Math.max(0, Math.min(this.top, this.cursor, count - PAGE_ROWS));
+    if (this.cursor >= this.top + PAGE_ROWS) this.top = this.cursor - PAGE_ROWS + 1;
+    return [this.top, Math.min(count, this.top + PAGE_ROWS)];
+  }
 
   rows(): Row[] {
     const s = settings();
@@ -43,17 +55,20 @@ export class SettingsScene implements Scene {
     ];
     for (const a of ACTIONS) {
       const physical = Object.entries(s.keymap).find(([, v]) => v === a.key)?.[0] ?? a.key;
-      rows.push({ label: a.label, value: this.binding === a.key ? "PRESS A KEY..." : keyLabel(physical), act: () => { this.binding = a.key; } });
+      rows.push({ label: a.label, value: this.binding === a.key ? "PRESS A KEY..." : keyLabel(physical), keyBinding: true, act: () => { this.binding = a.key; } });
     }
-    rows.push({ label: "RESET KEY BINDINGS", value: "", act: () => saveSettings({ keymap: {} }) });
+    rows.push({ label: "RESET KEY BINDINGS", value: "", keyBinding: true, act: () => saveSettings({ keymap: {} }) });
     return rows;
   }
 
   update(g: Game, dt: number): void {
     const inp = g.input;
+    const backClick = inp.mousePressed && inp.mouseX >= VW - 72 && inp.mouseX < VW - 8 && inp.mouseY >= 4 && inp.mouseY < 18;
     if (this.binding) {
       const raw = inp.lastRawKey;
-      if (raw && raw !== "Escape") {
+      if (raw === "Escape" || backClick) {
+        this.binding = null; inp.lastRawKey = null; inp.flush();
+      } else if (raw) {
         const map = { ...settings().keymap };
         for (const k of Object.keys(map)) if (map[k] === this.binding) delete map[k];
         if (raw !== this.binding) map[raw] = this.binding;
@@ -62,15 +77,26 @@ export class SettingsScene implements Scene {
         inp.lastRawKey = null;
         inp.flush();
         sfx.select();
-      } else if (raw === "Escape") { this.binding = null; inp.lastRawKey = null; }
+      }
       return;
     }
-    if (inp.wasPressed("Escape")) { const back = g.settingsReturn; g.settingsReturn = "title"; g.setScene(back); return; }
+    if (inp.wasPressed("Escape") || backClick) { const back = g.settingsReturn; g.settingsReturn = "title"; g.setScene(back); return; }
     const rows = this.rows();
+    this.window(rows.length);
+    // Resolve clicks against the frame the player saw, before moving the window.
+    const row = inp.mouseX >= LIST_LEFT && inp.mouseX < LIST_RIGHT
+      ? this.rowBoxes.findIndex(([y0, y1]) => inp.mouseY >= y0 && inp.mouseY < y1) : -1;
     if (inp.wasPressed("ArrowUp")) { this.cursor = (this.cursor + rows.length - 1) % rows.length; sfx.blip(); }
     if (inp.wasPressed("ArrowDown")) { this.cursor = (this.cursor + 1) % rows.length; sfx.blip(); }
-    const row = this.rowBoxes.findIndex(([y0, y1]) => inp.mouseY >= y0 && inp.mouseY <= y1);
-    if (row >= 0 && inp.mouseX > 40 && inp.mouseX < VW - 40) this.cursor = row;
+    if (inp.wheel) this.cursor = Math.max(0, Math.min(rows.length - 1, this.cursor + Math.sign(inp.wheel)));
+    const footerClick = inp.mousePressed && inp.mouseY >= 236 && inp.mouseY < 252;
+    const page = inp.wasPressed("PageUp") || (footerClick && inp.mouseX >= 12 && inp.mouseX < 76) ? -1
+      : inp.wasPressed("PageDown") || (footerClick && inp.mouseX >= 84 && inp.mouseX < 148) ? 1 : 0;
+    if (page) { this.cursor += page * PAGE_ROWS; this.top += page * PAGE_ROWS; }
+    if (inp.wasPressed("Home")) this.cursor = 0;
+    if (inp.wasPressed("End")) this.cursor = rows.length - 1;
+    if (inp.mousePressed && row >= 0) this.cursor = row;
+    this.window(rows.length);
     const adj = rows[this.cursor].adj;
     if (adj && inp.wasPressed("ArrowLeft")) adj(-1);
     if (adj && inp.wasPressed("ArrowRight")) adj(1);
@@ -79,22 +105,36 @@ export class SettingsScene implements Scene {
   }
 
   draw(g: Game, ctx: CanvasRenderingContext2D): void {
-    this.rowBoxes = [];
     ctx.fillStyle = PAL.uiPanel;
     ctx.fillRect(0, 0, VW, VH);
     drawText(ctx, "SETTINGS", 12, 8, PAL.white);
-    const help = "UP/DOWN OR CLICK - ENTER CHANGE - LEFT/RIGHT VOLUME - ESC BACK";
-    drawText(ctx, help, VW - textWidth(help) - 12, 8, PAL.greyDark);
+    ctx.fillStyle = "#13203a"; ctx.fillRect(VW - 72, 4, 64, 14);
+    drawText(ctx, this.binding ? "ESC CANCEL" : "ESC BACK", VW - 66, 8, PAL.ui);
+    drawText(ctx, this.binding ? "PRESS A KEY TO BIND - ESC OR CANCEL KEEPS THE CURRENT KEY"
+      : "WHEEL/ARROWS SCROLL - ENTER/CLICK CHANGE - LEFT/RIGHT VOLUME", 12, 22, PAL.grey);
     const rows = this.rows();
-    let y = 24;
-    rows.forEach((r, i) => {
-      if (i === FIXED) { drawText(ctx, "KEY BINDINGS (FLIGHT)", 12, y, PAL.greyDark); y += 10; }
-      this.rowBoxes.push([y - 2, y + 8]);
-      if (i === this.cursor) { ctx.fillStyle = "#13203a"; ctx.fillRect(8, y - 2, VW - 16, 10); }
-      drawText(ctx, r.label, 12, y, i === this.cursor ? PAL.white : PAL.grey);
-      drawText(ctx, r.value, i < FIXED ? 190 : 150, y, this.binding && r.value.startsWith("PRESS") ? PAL.gold : PAL.ui);
-      y += i < FIXED - 1 ? 11 : 9;
-    });
-    if (g.toastTimer > 0) drawText(ctx, g.toastMsg, VW / 2 - textWidth(g.toastMsg) / 2, VH - 10, PAL.ui);
+    const [start, end] = this.window(rows.length);
+    this.rowBoxes = rows.map(() => [NaN, NaN]);
+    let y = 34;
+    for (let i = start; i < end; i++) {
+      const r = rows[i];
+      if (i === start || r.keyBinding !== rows[i - 1].keyBinding) {
+        drawText(ctx, r.keyBinding ? "KEY BINDINGS (FLIGHT)" : "SHIP & FLIGHT OPTIONS", 12, y, PAL.greyDark); y += 12;
+      }
+      this.rowBoxes[i] = [y, y + 11];
+      if (i === this.cursor) { ctx.fillStyle = "#13203a"; ctx.fillRect(LIST_LEFT, y, LIST_RIGHT - LIST_LEFT, 11); }
+      drawText(ctx, r.label, 12, y + 3, i === this.cursor ? PAL.white : PAL.grey);
+      drawText(ctx, r.value, 190, y + 3, this.binding && r.value.startsWith("PRESS") ? PAL.gold : PAL.ui);
+      y += 12;
+    }
+    ctx.fillStyle = "#13203a"; ctx.fillRect(VW - 12, 34, 3, 192);
+    ctx.fillStyle = PAL.ui; ctx.fillRect(VW - 12, 34 + Math.round(192 * start / rows.length), 3, Math.max(6, Math.round(192 * (end - start) / rows.length)));
+    for (const [x, label, enabled] of [[12, "PAGE UP", start > 0], [84, "PAGE DOWN", end < rows.length]] as const) {
+      ctx.fillStyle = "#13203a"; ctx.fillRect(x, 236, 64, 16);
+      drawText(ctx, label, x + 8, 242, enabled ? PAL.ui : PAL.greyDark);
+    }
+    drawText(ctx, `${start + 1}-${end} OF ${rows.length}  -  HOME/END FIRST/LAST`, 160, 242, PAL.grey);
+    const footer = g.toastTimer > 0 ? g.toastMsg : "CHANGES SAVE AUTOMATICALLY";
+    drawText(ctx, footer, VW / 2 - textWidth(footer) / 2, VH - 10, PAL.ui);
   }
 }

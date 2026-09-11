@@ -2181,3 +2181,14 @@ The decision between service orders and booked fares is covered by M402.
 - Display drive exhaust only during actual thrust and reverse jets during
   retro thrust. Preserve handling, collision sizes and saved hull statistics.
 - Orient the player's system-map arrow along the current ship heading.
+
+### M415: All the Settings
+
+- Scroll every option and flight binding within the canvas, including reset.
+  Keep selection stable through pointer movement and use actual row indices
+  for actions after scrolling.
+- Support wheel, arrows, page keys, Home/End and pointer page controls, with
+  a visible range count and section headings at their actual boundaries.
+- Preserve volume adjustment, key rebinding and the caller's return scene.
+  Keep margin and information clicks inert; allow pointer cancellation of
+  a pending binding without changing its key.

@@ -163,6 +163,12 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 
 - ESC in flight pauses the galaxy: resume, save, settings, controls, the handbook, or
   save and quit to the title. Settings, controls and the handbook come back to flight.
+- Settings: wheel or Up/Down selects any option or flight key binding. Page
+  Up/Down or the page buttons move a page; Home/End reaches the first/last
+  option. The range count and scroll indicator show your place. Pointer
+  motion preserves selection. Enter or click changes that row; Left/Right
+  adjusts volume. When rebinding, Esc or Cancel keeps the previous key.
+  Reset key bindings is at the bottom. Esc or Back closes Settings.
 - The wonders have voices: a pulsar ticks on the band as you close, the
   cathedral and the twins hum.
 
