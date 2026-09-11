@@ -972,4 +972,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] A fourth lounge request: take them near the star; a card that repeats
       the same minute until you do something different
 
+## Milestone 154 — Reviews ✅ (Sep 2026)
+- [x] V on the roster: a review in the study once a week per crew member;
+      commend, counsel, or make them Number One
+
 ## Later

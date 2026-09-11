@@ -5,7 +5,10 @@ import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 import { ROLE_INFO, XP_STEPS_LABEL, SPECIALTIES } from "../data/crew";
-import { bond, bondLabel, findStation, ledger, XP_STEPS, onWatch, captainNickname, firstOfficer } from "../world";
+import { bond, bondLabel, findStation, ledger, XP_STEPS, onWatch, captainNickname, firstOfficer, reviewDue, reviewCrew } from "../world";
+import type { Encounter } from "../data/encounters";
+import type { EncounterScene } from "./encounter";
+import { flag } from "../core/achievements";
 import { arcObjective } from "../core/crewarcs";
 import { sfx } from "../core/sfx";
 
@@ -21,6 +24,21 @@ export class RosterScene implements Scene {
     if (!n) return;
     if (g.input.wasPressed("ArrowDown")) { this.cursor = (this.cursor + 1) % n; sfx.blip(); }
     if (g.input.wasPressed("ArrowUp")) { this.cursor = (this.cursor + n - 1) % n; sfx.blip(); }
+    if (g.input.wasPressed("v")) {
+      const c = p.crew[this.cursor];
+      if (!reviewDue(p, c)) { g.toast(`${c.name.toUpperCase()} HAD THEIR REVIEW THIS WEEK. NEXT WEEK.`); return; }
+      const fo = firstOfficer(p);
+      const enc: Encounter = { id: "review", where: "space", title: `REVIEW: ${c.name.toUpperCase()}`, weight: 0,
+        text: `${c.name}, ${ROLE_INFO[c.role].label.toLowerCase()}, ${c.docks ?? 0} docking${(c.docks ?? 0) === 1 ? "" : "s"} aboard, morale ${Math.round(c.morale)}, loyalty ${(c.loyalty ?? 0).toFixed(1)}.${fo === c ? " Number One." : ""} A chair in the study, the door shut, the kettle on. They know what this is.`,
+        options: [
+          { label: "COMMEND THEM", hint: "Morale +8, loyalty +0.5, a line in the log", result: (g2) => { sfx.pickup(); flag(g2, "review"); return reviewCrew(g2.world, c, "commend"); } },
+          { label: "COUNSEL THEM", hint: "Morale -3, a step toward the next skill", result: (g2) => { sfx.select(); flag(g2, "review"); return reviewCrew(g2.world, c, "counsel"); } },
+          ...(fo !== c && p.crew.length >= 2 ? [{ label: "MAKE THEM NUMBER ONE", hint: "The deck when you don't have it; the crew will hear", result: (g2: Game) => { sfx.pickup(); flag(g2, "review"); return reviewCrew(g2.world, c, "numberone"); } }] : []),
+          { label: "JUST THE KETTLE", result: () => "YOU TALK ABOUT NOTHING FOR TEN MINUTES, WHICH IS ALSO A KIND OF REVIEW." },
+        ] };
+      (g.scenes["encounter"] as EncounterScene).open(g, enc, "roster", true);
+      return;
+    }
     if (g.input.wasPressed("Enter")) {
       const c = p.crew[this.cursor];
       if (p.credits < 100) { g.toast("NOT ENOUGH CREDITS FOR A BONUS"); return; }
@@ -31,7 +49,7 @@ export class RosterScene implements Scene {
   draw(g: Game, ctx: CanvasRenderingContext2D): void {
     const p = g.world.player; const w = g.world;
     ctx.fillStyle = PAL.uiPanel; ctx.fillRect(0, 0, VW, VH);
-    drawText(ctx, `THE ROSTER - ${p.crew.length} ABOARD${(p.shoreCrew ?? []).length ? `, ${(p.shoreCrew ?? []).length} ON LEAVE` : ""} - ENTER: 100CR BONUS - ESC BACK`, 12, 8, PAL.white);
+    drawText(ctx, `THE ROSTER - ${p.crew.length} ABOARD${(p.shoreCrew ?? []).length ? `, ${(p.shoreCrew ?? []).length} ON LEAVE` : ""} - ENTER: 100CR BONUS - V REVIEW - ESC BACK`, 12, 8, PAL.white);
     if (!p.crew.length) { drawText(ctx, "NOBODY ABOARD BUT YOU. THE LOUNGE AT ANY STATION HAS PEOPLE LOOKING FOR A BERTH.", 12, 30, PAL.greyDark); }
     let y = 24;
     p.crew.forEach((c, i) => {

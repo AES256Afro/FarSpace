@@ -331,6 +331,7 @@ export interface PlayerState {
   catAway?: string | null;           // station id where the cat got left behind; she turns up again
   juice?: number;                    // doses of burn juice from a clinic: one hard burn each
   voiceName?: string;                // what the ship asked to be called; its lines come from that name
+  numberOne?: string;                // a first officer chosen at review, by name; otherwise the longest-serving
   focus?: FocusKind | null;          // the senior staff's focus for this leg, set at the briefing, cleared at the clamp
   briefed?: boolean;                 // the briefing has been held this leg
   simUsed?: boolean;                 // the sim rig has run this leg
@@ -562,6 +563,7 @@ export function stardate(w: World): string { return (41000 + w.time / 360).toFix
 // Number One: the longest-serving crew member, once there are two aboard and they have three dockings.
 export function firstOfficer(p: PlayerState): CrewMember | null {
   if (p.crew.length < 2) return null;
+  if (p.numberOne) { const chosen = p.crew.find((c) => c.name === p.numberOne); if (chosen) return chosen; }
   const c = [...p.crew].sort((a, b) => (b.docks ?? 0) - (a.docks ?? 0) || b.skill - a.skill)[0];
   return c && (c.docks ?? 0) >= 3 ? c : null;
 }
@@ -964,6 +966,17 @@ export function settlePassengers(p: PlayerState): string[] {
   }
   settleRequests(p, out);
   return out;
+}
+// Reviews: once a week per crew member, a word in the study. Commend them, counsel them, or make them Number One.
+export type ReviewKind = "commend" | "counsel" | "numberone";
+export function reviewDue(p: PlayerState, c: CrewMember, now = Date.now()): boolean { return !(p.flags ?? {})[`review:${c.name}:${weekKey(now)}`]; }
+export function reviewCrew(w: World, c: CrewMember, kind: ReviewKind, now = Date.now()): string {
+  const p = w.player; (p.flags ??= {})[`review:${c.name}:${weekKey(now)}`] = true;
+  const first = c.name.split(" ")[0].toUpperCase();
+  if (kind === "commend") { c.morale = Math.min(100, c.morale + 8); c.loyalty = (c.loyalty ?? 0) + 0.5; logEntry(w, `Commended ${c.name} at review`); return `YOU TELL ${first} WHAT THEY DID RIGHT, SPECIFICALLY, AND WATCH THEM NOT KNOW WHERE TO LOOK. IT GOES IN THE LOG. MORALE AND LOYALTY UP.`; }
+  if (kind === "counsel") { c.morale = Math.max(0, c.morale - 3); const x = crewXp(p, c.role, 2); logEntry(w, `Counselled ${c.name} at review`); return `YOU TELL ${first} WHAT THEY COULD DO BETTER, SPECIFICALLY. THEY TAKE IT THE WAY PEOPLE DO, AND THEN THEY TAKE IT.${x ? " " + x : ""} MORALE DIPS A LITTLE; THE WORK WON'T.`; }
+  p.numberOne = c.name; c.morale = Math.min(100, c.morale + 6); c.loyalty = (c.loyalty ?? 0) + 1; logEntry(w, `Made ${c.name} Number One`);
+  return `"${first}, YOU HAVE THE DECK WHEN I DON'T." A LONG PAUSE. "AYE." THE REST OF THE CREW FIND OUT WITHIN THE MINUTE AND START CALLING THEM NUMBER ONE TO THEIR FACE. MORALE AND LOYALTY UP.`;
 }
 // The ship's own name: what its voice signs its lines with. Until it's asked, it's the hull's name.
 export function shipVoiceName(p: PlayerState): string { return (p.voiceName ?? p.shipName ?? hull(p.hullId).name).toUpperCase(); }

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  weekKey, genCrewCandidate, nameTheShip, shipVoiceName, receptionHeld, receptionDue, ALERT_NAME, alertMods, beltRate, isBeltStation, FURNISHINGS, runSim, setFocus, briefingReports, patientDeadline, patientOutcome, takeJuice, buyJuice, envoyOutcome, firstOfficer, stardate, cookMeal, LOST_KEEP_AFTER, LOST_REWARD, tickLostProperty, handInLostItem, leaveLostItem, passengersTookFire, passengersFed, askPassengerRequest, findStation, berthedCaptains, generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
+  weekKey, genCrewCandidate, reviewCrew, reviewDue, nameTheShip, shipVoiceName, receptionHeld, receptionDue, ALERT_NAME, alertMods, beltRate, isBeltStation, FURNISHINGS, runSim, setFocus, briefingReports, patientDeadline, patientOutcome, takeJuice, buyJuice, envoyOutcome, firstOfficer, stardate, cookMeal, LOST_KEEP_AFTER, LOST_REWARD, tickLostProperty, handInLostItem, leaveLostItem, passengersTookFire, passengersFed, askPassengerRequest, findStation, berthedCaptains, generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
   missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn, captainByName, helpCaptain, isFriend, friendsAt, tickMail, pickCaptainFor, canUpgradeInfra, upgradeInfra, rivalOf, isRival, rivalTakesFare, rivalBeatsYouTo, askRideAlong, tickRideAlong, setHomePort, isHome, donateRelic, hullHistoryFor, notableById, notableOutcome, canFundProject, fundProject, PROJECTS, settlementNeeds, ledger, ledgerAround, LEDGER_LABELS, catGift, stationBulletin, dockingsAt } from "../src/world";
 import { occasionFor, OCCASIONS } from "../src/data/occasions";
@@ -774,6 +774,17 @@ describe("station hours and the tannoy", () => {
     expect(stationHour(sts[0], at)).toEqual(stationHour(sts[0], at));
     for (const st of sts.slice(0, 5)) { const lines = tannoyLines(w, st, new RNG(1), at); expect(lines.length).toBeGreaterThan(5); for (const l of lines) expect(l.length).toBeLessThanOrEqual(130); }
     w.player.postRuns = 10; expect(tannoyLines(w, sts[0], new RNG(2), at).some((l) => l.includes("THE POSTMAN"))).toBe(true);
+  });
+  it("reviews: commend, counsel, or choose Number One, once a week each", () => {
+    const w = generateWorld(50, { realGalaxy: true }); const p = w.player;
+    p.crew = [genCrewCandidate(new RNG(1)), genCrewCandidate(new RNG(2))]; p.crew[0].docks = 9; p.crew[1].docks = 1; for (const c of p.crew) { c.morale = 50; c.loyalty = 0; }
+    expect(firstOfficer(p)).toBe(p.crew[0]);
+    expect(reviewDue(p, p.crew[1])).toBe(true);
+    expect(reviewCrew(w, p.crew[1], "numberone")).toContain("NUMBER ONE"); expect(firstOfficer(p)).toBe(p.crew[1]); expect(p.crew[1].loyalty).toBe(1);
+    expect(reviewDue(p, p.crew[1])).toBe(false); expect(reviewDue(p, p.crew[0])).toBe(true);
+    expect(reviewCrew(w, p.crew[0], "commend")).toContain("MORALE AND LOYALTY UP"); expect(p.crew[0].morale).toBe(58);
+    const w2 = generateWorld(51, { realGalaxy: true }); const c = genCrewCandidate(new RNG(3)); c.morale = 50; w2.player.crew = [c];
+    expect(reviewCrew(w2, c, "counsel")).toContain("MORALE DIPS"); expect(c.morale).toBe(47);
   });
   it("a fare who wants the star up close, and a loop that breaks on the third try", () => {
     const w = generateWorld(49, { realGalaxy: true }); const p = w.player;
