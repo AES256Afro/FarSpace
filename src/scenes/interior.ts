@@ -501,6 +501,7 @@ export class InteriorScene implements Scene {
     { const nick = captainNickname(g.world); if (nick) lines.push(`THE LANES CALL THIS SHIP'S CAPTAIN ${nick}.`); }
     { const bests = Object.entries(p.raceBest ?? {}).slice(0, 3).map(([id, t]) => `${(findStation(g.world, id)?.st.name ?? "?").toUpperCase()} ${t.toFixed(1)}S`); if (bests.length || p.regatta === 3) lines.push(`${p.regatta === 3 ? "REGATTA CHAMPION. " : ""}${bests.length ? `RING TIMES: ${bests.join(", ")}` : ""}`.trim()); }
     lines.push(`PLAQUE: ${dedication(g.world)}`.slice(0, 118));
+    if (p.words?.length) lines.push(`WORDS LEARNED: ${p.words.map((x) => x.toUpperCase().split(":")[0].split(" (")[0]).join("; ")}`.slice(0, 118));
     if (p.keepsakes?.length) lines.push(`KEPT ABOARD: ${p.keepsakes.slice(-4).map((k) => k.toUpperCase()).join("; ")}`.slice(0, 118));
     if (p.lost?.length) lines.push(`LOST WITH THEIR SHIP: ${p.lost.slice(-4).map((l) => `${l.name.toUpperCase()} (${l.role.toUpperCase()}, OFF ${l.where.toUpperCase()})`).join("; ")}`.slice(0, 118));
     if (p.wrecksOfMine?.length) lines.push(`${p.wrecksOfMine.length} SHIP${p.wrecksOfMine.length > 1 ? "S" : ""} OF YOURS STILL OUT THERE, WHERE ${p.wrecksOfMine.length > 1 ? "THEY" : "IT"} FELL.`);

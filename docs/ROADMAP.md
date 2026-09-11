@@ -1752,6 +1752,16 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 344 — Rings in the Handbook ✅ (Sep 2026)
 - [x] A handbook line for racing at a rock
 
+## Milestone 345 — Not Ours ✅ (Sep 2026)
+- [x] The singers and the quiet ones teach a word per contact; the ship keeps
+      them (deed "not ours")
+
+## Milestone 346 — Words on the Wall ✅ (Sep 2026)
+- [x] The wall of record lists the words learned; the chronicle keeps them
+
+## Milestone 347 — The Ship Sings One ✅ (Sep 2026)
+- [x] A ship's-voice line: it sings the first word to the gate, quietly
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

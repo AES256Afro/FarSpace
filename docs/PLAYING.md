@@ -752,6 +752,9 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- The singers and the quiet ones teach a word with each contact. The wall of
+  record lists them, the chronicle keeps them, and the ship sings the first
+  one to the gate.
 - Run a rock's rings under par or for the record and the rock's kids cheer
   on the band, belt standing goes up, and the tannoy reads your time.
 - Every fresh landing with fit crew asks who comes down. An engineer makes

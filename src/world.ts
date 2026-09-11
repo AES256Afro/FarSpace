@@ -363,6 +363,7 @@ export interface PlayerState {
   ruleKept?: number;                 // first contacts left as found
   ruleBroken?: number;               // first contacts made, kindly or otherwise
   hearings?: number;                 // hearings sat through over the rule, one per contact broken
+  words?: string[];                  // words learned from the singers and the quiet ones
   motto?: string;                    // the line on the dedication plaque by the airlock
   prisoners?: number;                // prisoners delivered to a brig
   evacuated?: number;                // people carried out of a bad week
@@ -618,6 +619,11 @@ export function legSummary(w: World): string | null {
   return (head + " " + close).length <= 118 ? head + " " + close : head.slice(0, 118);
 }
 // Strange readings: the phenomena among the anomalies. Each does something when you reach it.
+// Words: what the singers and the quiet ones have taught the ship, one contact at a time.
+export function learnWord(p: PlayerState, word: string): string | null {
+  const w = (p.words ??= []); if (w.includes(word)) return null; w.push(word); (p.flags ??= {}).words = true;
+  return `A WORD LEARNED: ${word.toUpperCase()}. THE SHIP KEEPS IT.`;
+}
 // The office: every fold, echo and loop gets a letter from a department nobody has met, asking for a form.
 export function officeWrites(w: World, what: string): void {
   const p = w.player; const n = (p.officeLetters ?? 0) + 1; p.officeLetters = n;
@@ -708,6 +714,7 @@ export function chronicleText(w: World, callsign: string | null): string {
     if (holdings.length) parts.push(`Holdings: ${holdings.join(", ")}.`);
     if ((p.keepsakes ?? []).length) parts.push(`Kept aboard: ${(p.keepsakes ?? []).slice(-3).join("; ")}.`);
     if (p.motto) parts.push(`The plaque by the airlock reads "${p.motto}".`);
+    if (p.words?.length) parts.push(`Words learned from the ones who don't use ours: ${p.words.join("; ")}.`);
     if (p.commissionedAt !== undefined) parts.push(`Commissioned stardate ${(41000 + p.commissionedAt / 360).toFixed(1)}, ${Math.floor((w.time - p.commissionedAt) / 3600)} hours under way since.`);
     if ((p.mealsCooked ?? 0) > 0) parts.push(`${p.mealsCooked} meals cooked in the galley.`);
     const bests = Object.entries(p.raceBest ?? {}).slice(0, 4).map(([id, t]) => `${findStation(w, id)?.st.name ?? "?"} ${t.toFixed(1)}s`);
