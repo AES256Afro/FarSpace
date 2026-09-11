@@ -115,5 +115,6 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "tipped", title: "GOOD SERVICE", desc: "A passenger tipped for a request you met", check: (w) => !!w.player.flags?.tipped },
   { id: "neighbour", title: "BERTH NEIGHBOURS", desc: "Meet a captain you know on the promenade", check: (w) => !!w.player.flags?.neighbour },
   { id: "nightowl", title: "NIGHT OWL", desc: "Dock on a station's night shift", check: (w) => !!w.player.flags?.nightowl },
+  { id: "treaty", title: "THE TREATY HOLDS", desc: "Land an envoy in time and unshot", check: (w) => !!w.player.flags?.treaty },
   { id: "elite", title: "ELITE", desc: "Top any career ladder", check: (w) => (["explorer", "trader", "miner"] as const).some((k) => rankOf(w.player, k).idx >= 8) },
 ];

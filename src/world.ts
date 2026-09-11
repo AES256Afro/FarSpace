@@ -156,7 +156,8 @@ export interface Mission {
   done: boolean;
   escortDone?: boolean;
   passengerName?: string;
-  passengerKind?: "vip" | "refugee" | "fugitive" | "tourist" | "courier";
+  passengerKind?: "vip" | "refugee" | "fugitive" | "tourist" | "courier" | "envoy";
+  treaty?: { a: string; b: string };  // an envoy between two factions: land them unshot and on time
   sightPlanetIdx?: number;  // tourists want to orbit this planet in the target system first
   sightSeen?: boolean;
   sightKind?: SightKind;    // what the tourists booked to see
@@ -879,6 +880,24 @@ export function genFares(w: World, station: StationDef, rng: RNG): Mission[] {
       repReward: pk === "refugee" ? 6 : pk === "tourist" ? 4 : 3,
     });
   }
+  // an envoy: a treaty between this station's faction and the target's, on a deadline, and no fire taken
+  if (rng.chance(0.3)) {
+    const target = rng.pick(pool.filter((s) => s.factionId !== sys.factionId && s.factionId !== "vex")) ?? null;
+    if (target) {
+      const tStation = rng.pick(target.stations); const name = genPersonName(rng); const hops = one.includes(target) ? 1 : 2;
+      fares.push({
+        id: `fare-${station.id}-${w.missionCounter++}`, kind: "passenger", accepted: false, done: false, tier: 0,
+        title: `Envoy: ${name}`,
+        desc: `${name} carries a treaty between the ${facNameW(sys.factionId)} and the ${facNameW(target.factionId)} to ${tStation.name}, ${target.name}. Late (more than ${hops + 1} dockings) or shot at on the way, and the talks fail. Land it clean and both sides remember.`,
+        fromStationId: station.id, targetSystemId: target.id, targetStationId: tStation.id,
+        passengerName: name, passengerKind: "envoy", sightSeen: false, sights: [],
+        mood: 60, demand: null, patience: hops + 1, docksAboard: 0, party: 1,
+        treaty: { a: sys.factionId, b: target.factionId },
+        reward: Math.round((900 + rng.int(0, 400)) * (hops === 2 ? 1.4 : 1)),
+        repReward: 4,
+      });
+    }
+  }
   // a happy passenger comes back and asks for you by name
   const happy = (w.player.guestbook ?? []).filter((e) => e.mood >= 75 && !passengersAboard(w.player).some((m) => m.passengerName === e.name));
   if (happy.length && fares.length && rng.chance(0.35)) {
@@ -897,7 +916,8 @@ export function settlePassengers(p: PlayerState): string[] {
     const name = (m.passengerName ?? "YOUR PASSENGER").toUpperCase();
     m.mood ??= 60; m.docksAboard = (m.docksAboard ?? 0) + 1;
     if (m.demand && (p.cargo[m.demand] ?? 0) > 0) { removeCargo(p, m.demand, 1); m.mood = Math.min(100, m.mood + 30); out.push(`${name} NOTICES THE ${(COMMODITIES.find((c) => c.id === m.demand)?.name ?? m.demand).toUpperCase()}. MOOD UP.`); m.demand = null; }
-    if (m.docksAboard > (m.patience ?? 4)) { m.mood = Math.max(0, m.mood - 12); out.push(`${name} ASKS, AGAIN, HOW MUCH LONGER.`); }
+    if (m.docksAboard > (m.patience ?? 4)) { m.mood = Math.max(0, m.mood - 12); out.push(m.treaty ? `${name} SAYS THE OTHER DELEGATION WON'T WAIT. THE TREATY IS ALREADY LATE.` : `${name} ASKS, AGAIN, HOW MUCH LONGER.`); }
+    else if (m.treaty && m.docksAboard === (m.patience ?? 2)) out.push(`${name} CHECKS THE CASE AND THE CLOCK. ONE MORE DOCKING AND THE TALKS ARE OFF.`);
     if (p.hull < p.hullMax * 0.4) { m.mood = Math.max(0, m.mood - 10); out.push(`${name} HAS SEEN THE HULL READOUT. NOT HAPPY.`); }
   }
   settleRequests(p, out);
@@ -930,6 +950,18 @@ export function handInLostItem(w: World, it: LostItem, stationId: string): strin
   p.credits += home ? LOST_REWARD : LOST_FORWARD;
   logEntry(w, `Handed in ${it.name} that ${it.owner} left aboard, at ${findStation(w, stationId)?.st.name ?? "a harbour office"}`);
   return home ? `THE HARBOUR OFFICE HAS ${it.owner.toUpperCase()} ON FILE. THEY'LL GET ${it.name.toUpperCase().split(",")[0]} BACK. +${LOST_REWARD}CR FOR YOUR TROUBLE.` : `THEY'LL FORWARD IT. IT'LL TAKE A WHILE. +${LOST_FORWARD}CR, AND A NOD.`;
+}
+const facNameW = (id: string): string => FACTIONS.find((f) => f.id === id)?.name ?? id;
+// The envoy lands: on time and unshot, the treaty holds and both factions remember; otherwise the talks fail.
+export function envoyOutcome(w: World, m: Mission): { ok: boolean; lines: string[] } {
+  const t = m.treaty; if (!t) return { ok: true, lines: [] };
+  const late = (m.docksAboard ?? 0) > (m.patience ?? 2);
+  const ok = !late && !m.tookFire;
+  const name = (m.passengerName ?? "THE ENVOY").toUpperCase();
+  if (ok) { adjustRep(w, t.a, 4); adjustRep(w, t.b, 4); m.mood = Math.min(100, (m.mood ?? 60) + 25); logEntry(w, `Landed the envoy ${m.passengerName ?? ""} in time and unshot; the treaty between the ${facNameW(t.a)} and the ${facNameW(t.b)} holds`); return { ok, lines: [`${name} WALKS DOWN THE GANGWAY WITH THE CASE AND THE TALKS BEGIN ON TIME. REP UP WITH THE ${facNameW(t.a).toUpperCase()} AND THE ${facNameW(t.b).toUpperCase()}.`] }; }
+  adjustRep(w, t.a, -2); adjustRep(w, t.b, -2); m.mood = Math.max(0, (m.mood ?? 60) - 30);
+  logEntry(w, `The envoy ${m.passengerName ?? ""} arrived ${late ? "late" : "shot at"}; the talks failed`);
+  return { ok, lines: [late ? `${name} IS TOO LATE. THE OTHER DELEGATION HAS GONE HOME. THE TREATY GOES BACK IN THE CASE. REP DOWN ON BOTH SIDES.` : `${name} ARRIVES WITH SCORCH ON THE HULL BEHIND THEM AND THE TALKS COLLAPSE BEFORE THEY START. 'THEY SHOT AT A TREATY.' REP DOWN ON BOTH SIDES.`] };
 }
 // Passenger requests: somebody in the lounge wants something on this leg. Meet it and they tip at the end.
 export type PaxRequest = "meal" | "quiet" | "view";

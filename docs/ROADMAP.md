@@ -920,4 +920,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] The chronicle and the log open with a stardate; the longest-serving
       crew member is Number One; bridge banter, a deadpan ship, belt gossip
 
+## Milestone 141 — Envoy Fares ✅ (Sep 2026)
+- [x] Envoys carry treaties between two factions on a deadline; land them in
+      time and unshot for rep on both sides, or the talks fail
+
 ## Later
