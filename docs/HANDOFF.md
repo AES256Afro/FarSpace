@@ -33,8 +33,14 @@ parts or recover the hull for keeping or selling.
   The production build also completed recovery through the docking animation.
   Fixtures used memory storage and disabled online requests. Physical touch
   and gamepad checks remain unperformed.
-- Release publication and hosted verification are pending. The release
-  manifest targets 0.260.0. Bigbox and the BoxPilot catalog PR are unchanged.
+- Published as `d7a4ea3696832fa382f9bf723ce2d03806ac7939`, tag `v0.260.0`.
+  CI `34659401991` passed, including the actual Cloudflare deploy step.
+  Container run `34659402122` passed. The hosted title displays v0.260.0;
+  live JS and CSS hashes match the tested build and health returned ok.
+- JavaScript: `index-D8tVguXP.js`. CSS: `index-DLwGHPCy.css`. The work log
+  records hashes and browser evidence. Dev5199 runs v0.260.0. Temporary
+  fixtures and preview 5198 are closed. The release manifest targets 0.260.0.
+  Bigbox and the BoxPilot catalog PR are unchanged.
 
 ## Previous checkpoint: v0.259.0
 
