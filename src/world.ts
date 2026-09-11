@@ -137,7 +137,7 @@ export interface SystemDef {
   permit?: boolean; // entry needs ALLIED standing with the owning faction
 }
 
-export type MissionKind = "delivery" | "bounty" | "mining" | "escort" | "passenger" | "research" | "arc" | "ground" | "repair" | "post" | "photo" | "convoy";
+export type MissionKind = "delivery" | "bounty" | "mining" | "escort" | "passenger" | "research" | "arc" | "ground" | "repair" | "post" | "photo" | "convoy" | "patrol";
 
 export interface Mission {
   id: string;
@@ -158,6 +158,9 @@ export interface Mission {
   passengerName?: string;
   passengerKind?: "vip" | "refugee" | "fugitive" | "tourist" | "courier" | "envoy" | "patient";
   treaty?: { a: string; b: string };  // an envoy between two factions: land them unshot and on time
+  patrolT?: number;                   // seconds held on station in the target system
+  patrolNeed?: number;
+  patrolDone?: boolean;
   riteDone?: boolean;                 // the envoy's rite has been offered a room
   sightPlanetIdx?: number;  // tourists want to orbit this planet in the target system first
   sightSeen?: boolean;
@@ -2706,6 +2709,7 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
   if (tier >= 1) kinds.push("research", "research");
   if (station.type === "research") kinds.push("ground");
   if (station.military) kinds.push("bounty", "bounty");
+  if (station.military && commandRank(world.player) !== "SKIPPER") kinds.push("patrol", "patrol");
   // a picture wanted: a magazine, a museum, a family; a postcard (F7) taken in the right place
   if (!station.military && (station.type === "research" || station.type === "trade") && rng.chance(0.5)) {
     const pool: { systemId: string; wonderId?: string; planetIdx?: number; label: string }[] = [];
@@ -2795,6 +2799,17 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
         killsNeeded: kills, kills: 0,
         reward: Math.round((250 * kills + rng.int(0, 200)) * payMult),
         repReward: 4,
+      });
+    } else if (kind === "patrol") {
+      // standing orders for a captain with a rank: hold station in a system and show the flag
+      const target = linked.length && rng.chance(0.7) ? rng.pick(linked) : sys;
+      const need = 90 + tier * 30;
+      missions.push({
+        id: idn, kind, accepted: false, done: false, tier,
+        title: `Patrol: ${target.name}`,
+        desc: `Orders from the ${station.name} watch: hold station in ${target.name} for ${need} seconds, no cruise, and show the flag. Report back here. The lanes are quieter for a hull that's seen.`,
+        fromStationId: station.id, targetSystemId: target.id,
+        patrolT: 0, patrolNeed: need, reward: Math.round((300 + tier * 150 + rng.int(0, 120)) * payMult), repReward: 4,
       });
     } else if (kind === "mining") {
       const qty = rng.int(6, 14);
@@ -3554,6 +3569,7 @@ export function missionDeliverable(world: World, m: Mission, station: StationDef
   if (m.kind === "ground") return m.targetStationId === station.id && (m.groundDone ?? 0) >= (m.groundNeed ?? 1);
   if (m.kind === "repair") return m.targetStationId === station.id && !!m.tenderDone;
   if (m.kind === "post") return m.targetStationId === station.id;
+  if (m.kind === "patrol") return m.fromStationId === station.id && (m.patrolT ?? 0) >= (m.patrolNeed ?? 90);
   if (m.kind === "photo") return !!m.photoDone && m.fromStationId === station.id;
   if (m.kind === "convoy") return false; // settled at the gate, never turned in
   if (m.targetStationId !== station.id) return false;

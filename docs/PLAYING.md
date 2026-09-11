@@ -901,6 +901,11 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   registry too, FS and four digits. Control reads both out on the way in, the
   chronicle opens with them, the harbour view shows them, and the passing
   haulers get nervous around a commodore.
+- Once you hold a rank (lieutenant and up), military stations post patrol
+  orders on the board: hold station in a system for a minute and a half or
+  more, off cruise, and report back to the watch that sent you. The HUD
+  counts the seconds on the mission line; a toast says when the flag's been
+  shown. Rep and credits on return.
 - With the autopilot flying and a Number One aboard, they take the conn:
   passing hails get acknowledged in their name, the captain being below. And
   when cruise engages with a pilot aboard, the helm answers. Aye, captain.

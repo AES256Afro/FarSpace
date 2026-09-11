@@ -775,6 +775,17 @@ describe("station hours and the tannoy", () => {
     for (const st of sts.slice(0, 5)) { const lines = tannoyLines(w, st, new RNG(1), at); expect(lines.length).toBeGreaterThan(5); for (const l of lines) expect(l.length).toBeLessThanOrEqual(130); }
     w.player.postRuns = 10; expect(tannoyLines(w, sts[0], new RNG(2), at).some((l) => l.includes("THE POSTMAN"))).toBe(true);
   });
+  it("patrol orders: military stations post them for a ranked captain; hold station to complete", () => {
+    const w = generateWorld(57, { realGalaxy: true }); const p = w.player;
+    const mil = Object.values(w.systems).flatMap((s) => s.stations).find((s) => s.military)!;
+    p.rep[mil.factionId] = 40;
+    expect([...Array(10).keys()].some((i) => genMissionsFor(w, mil, new RNG(i)).some((m) => m.kind === "patrol"))).toBe(false);
+    p.achievements = Array.from({ length: 12 }, (_, i) => `a${i}`);
+    let pm: Mission | undefined; for (let i = 0; i < 20 && !pm; i++) pm = genMissionsFor(w, mil, new RNG(i)).find((m) => m.kind === "patrol");
+    expect(pm).toBeDefined(); expect(pm!.title).toMatch(/^Patrol: /); expect(pm!.patrolNeed).toBeGreaterThanOrEqual(90);
+    const m = { ...pm!, accepted: true } as Mission;
+    expect(missionDeliverable(w, m, mil)).toBe(false); m.patrolT = m.patrolNeed; expect(missionDeliverable(w, m, mil)).toBe(true);
+  });
   it("strange readings: folds skip the clock, lenses light the system, echoes play the log back", () => {
     const w = generateWorld(56, { realGalaxy: true }); const p = w.player;
     const all = Object.values(w.systems).flatMap((s) => s.anomalies);

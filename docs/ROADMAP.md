@@ -1028,4 +1028,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Three new anomaly kinds among the signals: a fold that skips the clock,
       a lens that lights the whole system, an echo that plays the log back
 
+## Milestone 168 — Patrol Orders ✅ (Sep 2026)
+- [x] Military stations post patrol orders to ranked captains: hold station
+      in a system off cruise, show the flag, report back
+
 ## Later
