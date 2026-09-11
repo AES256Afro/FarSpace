@@ -687,4 +687,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] W on a parked hull: it runs your best known route as a charter; release
       returns the hull
 
+## Milestone 81 — Holding Short ✅ (Sep 2026)
+- [x] Docking behind traffic: control holds you short of the bay, then calls
+      you in
+
 ## Later

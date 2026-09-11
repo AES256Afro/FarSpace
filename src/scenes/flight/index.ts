@@ -580,9 +580,13 @@ export class FlightScene implements Scene {
     if (this.docking) return true;
     // the approach: control talks you in, the ship glides to the bay, then the deck
     const bay = 1 + (st.id.length * 7 + Math.floor(g.world.time)) % 6;
-    this.docking = { st, t: 0, x0: p.x, y0: p.y, bay };
+    const sx = Math.cos(st.angle) * st.orbit, sy = Math.sin(st.angle) * st.orbit;
+    const traffic = this.npcs.filter((n) => n.kind === "trader" && n.hull > 0 && dist(n.x, n.y, sx, sy) < 320).length;
+    const hold = traffic > 0 || Math.random() < 0.15 ? 3 + Math.random() * 4 : 0;
+    this.docking = { st, t: 0, x0: p.x, y0: p.y, bay, hold: hold || undefined };
     g.lastBay = bay;
     this.cruise = false; this.autopilot = false;
+    if (hold) { this.comms.push({ from: `${st.name.toUpperCase()} CONTROL`, text: `${(p.shipName ?? "VESSEL").toUpperCase()}, HOLD SHORT OF THE BAY. ${traffic ? "TRAFFIC ON THE APPROACH" : "BAY IS CYCLING"}. WE'LL CALL YOU IN.`, life: 8, color: PAL.warn }); sfx.blip(); return true; }
     this.comms.push({ from: `${st.name.toUpperCase()} CONTROL`, text: `${(p.shipName ?? "VESSEL").toUpperCase()}, CLEARED FOR BAY ${bay}. FOLLOW THE LIGHTS, WE HAVE YOU.`, life: 6, color: PAL.ui });
     sfx.blip();
     return true;
@@ -590,6 +594,12 @@ export class FlightScene implements Scene {
   updateDocking(g: Game, dt: number): boolean {
     const d = this.docking; if (!d) return false;
     const p = g.world.player;
+    if (d.hold && d.hold > 0) {
+      // holding short: sit off the bay with the engines idling while control works the traffic
+      d.hold -= dt; p.vx *= 1 - Math.min(1, dt * 2); p.vy *= 1 - Math.min(1, dt * 2); p.x += p.vx * dt; p.y += p.vy * dt;
+      if (d.hold <= 0) { d.hold = undefined; d.x0 = p.x; d.y0 = p.y; d.t = 0; this.comms.push({ from: `${d.st.name.toUpperCase()} CONTROL`, text: `${(p.shipName ?? "VESSEL").toUpperCase()}, THANKS FOR HOLDING. CLEARED FOR BAY ${d.bay}. FOLLOW THE LIGHTS.`, life: 8, color: PAL.info }); sfx.blip(); }
+      return true;
+    }
     d.t += dt;
     const k = Math.min(1, d.t / 1.6);
     const ease = k * k * (3 - 2 * k);
@@ -890,7 +900,7 @@ export class FlightScene implements Scene {
   faultTimer = 40;
   wonderSeen = new Set<string>();
   loreSeen = new Set<string>();
-  docking: { st: StationDef; t: number; x0: number; y0: number; bay: number } | null = null;
+  docking: { st: StationDef; t: number; x0: number; y0: number; bay: number; hold?: number } | null = null;
   launching = 0;
   // the comms log: everything said on the band this session, L to read back
   paused = false;

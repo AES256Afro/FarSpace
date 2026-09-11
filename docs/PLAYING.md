@@ -229,6 +229,12 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Holding short
+
+- Dock behind traffic and control holds you short of the bay for a few
+  seconds while they work the approach, then calls you in. The HUD says so.
+  Sit still; the engines idle.
+
 ## Fleet at work
 
 - A hull parked at a station can earn its keep. On the SHIPS tab, W on a
