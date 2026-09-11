@@ -7,6 +7,7 @@ import { crisisAt, galaxyEventAt, wondersIn, dockingsAt, friendsAt, rivalOf, isH
 import { commodity, faction } from "./data";
 import { RNG } from "../core/rng";
 import { stationHour } from "./tannoy";
+import { weeklyIssue, voteResult } from "./votes";
 
 const STATION_LIFE: Record<string, string[]> = {
   trade: ["'BERTH FEES UP AGAIN. THEY'LL CHARGE FOR AIR NEXT.'", "'THE THIRD RING SMELLS OF FISH. NOBODY SELLS FISH.'", "'MY COUSIN GOT A JOB ON A HAULER. GOOD MONEY. NEVER HOME.'"],
@@ -58,6 +59,7 @@ export function concourseGossip(w: World, st: StationDef, rng: RNG): string[] {
   if (shore) pool.push(`'${shore.member.name.toUpperCase()} FROM THAT SHIP IS ON LEAVE HERE. GOOD COMPANY. TERRIBLE AT CARDS.'`);
   const home = p.homePort && p.homePort !== st.id ? findStation(w, p.homePort)?.st.name : null;
   if (home) pool.push(`'THAT CAPTAIN'S FROM ${home.toUpperCase()}, THEY SAY. LONG WAY FROM HOME.'`);
+  if (st.factionId !== "vex") { const issue = weeklyIssue(w, st.factionId); const r = voteResult(w, st.factionId); pool.push(`'${issue.title}? ${r.passed ? "IT'LL PASS. THE HOUSE WANTS IT." : "IT'LL FAIL. NOBODY WANTS TO PAY FOR IT."} HAVE YOU VOTED?'`); }
   const hr = stationHour(st);
   if (hr.night) pool.push("'NIGHT SHIFT. YOU GET THE GOOD SILENCE AND THE BAD COFFEE.'", "'WHO DOCKS AT THIS HOUR? SOMEBODY WHO DOESN'T WANT TO BE SEEN DOCKING.'");
   else if (hr.h < 11) pool.push("'MORNING. DON'T TALK TO ME UNTIL THE SECOND CUP.'");

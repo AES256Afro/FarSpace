@@ -670,4 +670,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Buy shares in stations; dividends on docking; holdings on NEWS;
       SHAREHOLDER
 
+## Milestone 77 — The Vote ✅ (Sep 2026)
+- [x] A weekly question per faction on the NEWS tab; standing-weighted votes;
+      results change patrols, yard prices and night promenades
+
 ## Later

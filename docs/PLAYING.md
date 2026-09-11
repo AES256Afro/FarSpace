@@ -229,6 +229,15 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## The week's vote
+
+- Every faction puts one question to its captains each week: a patrol levy,
+  a yard subsidy, a night curfew, a gate toll. The NEWS tab at any of their
+  stations shows it; Y votes for, N against. Your standing is your weight in
+  the house. Whatever passes shapes the lanes until Monday: fewer corsairs,
+  cheaper yards, quieter promenades. Voting with the house earns standing;
+  turning up at all earns a little.
+
 ## Stakes
 
 - I on the MARKET tab buys a share in the station (Shift: ten). Shares cost

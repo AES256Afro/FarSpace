@@ -23,6 +23,7 @@ import { ENCOUNTERS, pickEncounter } from "../src/data/encounters";
 import { crewChatter, soloChatter, passengerChatter } from "../src/data/chatter";
 import { concourseGossip } from "../src/data/gossip";
 import { stationHour, tannoyLines } from "../src/data/tannoy";
+import { weeklyIssue, castVote, voteResult, voteMods, myVote } from "../src/data/votes";
 import { STORY, storyObjective, CONVOY, convoyObjective } from "../src/core/story";
 import { homesteadYield, settleHomestead, HOMESTEAD_CAP, tickCrisis, crisisAt, tickGalaxyEvents, galaxyEventAt, rescuePoints, logEntry, embargoed, hasCharter } from "../src/world";
 import { genGround, groundKey, passable, GW, GH } from "../src/ground";
@@ -840,6 +841,27 @@ describe("stakes", () => {
     p.credits = 10; expect(buyStake(w, st, 1)).toContain("SHORT");
     const mil = Object.values(w.systems).flatMap((s) => s.stations).find((x) => x.military);
     if (mil) expect(buyStake(w, mil, 1)).toContain("NAVY");
+  });
+});
+
+describe("the week's vote", () => {
+  it("one question a week per faction; your standing weighs; results shape the lanes", () => {
+    const w = generateWorld(34, { realGalaxy: true });
+    const at = Date.UTC(2026, 8, 9, 12);
+    const fac = Object.values(w.systems).map((s) => s.factionId).find((f) => f !== "vex")!;
+    const issue = weeklyIssue(w, fac, at);
+    expect(weeklyIssue(w, fac, at + 3600_000).id).toBe(issue.id);
+    expect(myVote(w, fac, at)).toBeNull();
+    w.player.rep[fac] = 40;
+    const r0 = voteResult(w, fac, at);
+    expect(r0.weight).toBeCloseTo(0.3);
+    const line = castVote(w, fac, true, at);
+    expect(line).toMatch(/PASSED|FAILED/);
+    expect(myVote(w, fac, at)).toBe("yes");
+    expect(castVote(w, fac, false, at)).toContain("ALREADY".replace("ALREADY", "VOTED"));
+    const mods = voteMods(w, fac, at);
+    expect(mods.patrol > 0 && mods.yard > 0).toBe(true);
+    expect(voteMods(w, "vex", at)).toEqual({ patrol: 1, yard: 1, curfew: false });
   });
 });
 

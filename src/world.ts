@@ -306,6 +306,7 @@ export interface PlayerState {
   guestbook?: GuestEntry[];          // the last dozen passengers and what they wrote on the way out
   lost?: { name: string; role: string; where: string; t: number }[]; // crew who didn't make it to the pod
   stakes?: Record<string, number>;   // station id -> shares held; they pay a dividend every time you dock there
+  votes?: Record<string, "yes" | "no">; // "<week>:<faction>" -> how you voted
   regatta?: number;                  // the regatta: 0 entered, 1 first course won, 2 second, 3 champion
   regattaCourse?: string[];          // the three stations of your regatta, set when you're entered
   wrecksOfMine?: string[];           // wreck ids of ships you lost; they stay where they fell

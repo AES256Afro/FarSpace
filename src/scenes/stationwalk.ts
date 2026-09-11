@@ -14,6 +14,7 @@ import { faction, genPersonName } from "../data/data";
 import { StationScene } from "./station";
 import { concourseGossip } from "../data/gossip";
 import { stationHour, clockText, tannoyLines } from "../data/tannoy";
+import { voteMods } from "../data/votes";
 import { hull } from "../data/hulls";
 import * as spriteMod from "../gfx/sprites";
 
@@ -85,7 +86,8 @@ export class StationWalkScene implements Scene {
     const rng = new RNG(hashStr(this.station.id) ^ 0x9a7b);
     this.npcs = [];
     const night = stationHour(this.station).night;
-    const n = (this.station.military ? 4 : 6) - (night ? 2 : 0);
+    const curfew = night && voteMods(g.world, this.station.factionId).curfew;
+    const n = (this.station.military ? 4 : 6) - (night ? 2 : 0) - (curfew ? 2 : 0);
     for (let i = 0; i < n; i++) {
       const spot = this.randomFloor(rng);
       this.npcs.push({

@@ -28,6 +28,7 @@ import { isOccasion, occasionFor } from "../data/occasions";
 import { sfx } from "../core/sfx";
 import * as wire from "../core/wire";
 import { stationHour, clockText } from "../data/tannoy";
+import { weeklyIssue, myVote, voteResult, castVote, voteMods } from "../data/votes";
 import { drawTutorial } from "../core/tutorial";
 import { music } from "../core/music";
 
@@ -552,6 +553,7 @@ export class StationScene implements Scene {
       }
       case "NEWS":
         this.cursor = clamp(this.cursor, 0, g.world.news.length - 1);
+        if (!st.military && st.factionId !== "vex" && (inp.wasPressed("y") || inp.wasPressed("n"))) { g.toast(castVote(g.world, st.factionId, inp.wasPressed("y"))); sfx.select(); }
         break;
       case "WIRE":
         if (!this.wireLoaded) { this.wireLoaded = true; void this.loadWire(); }
@@ -909,7 +911,7 @@ export class StationScene implements Scene {
     } });
     const sysDamaged = p.systems.filter((s) => s.health < 100);
     if ((p.wear ?? 0) >= WEAR_SERVICE_FROM) {
-      const price = servicePrice(p, patronHere ? 0.7 : 1);
+      const price = servicePrice(p, (patronHere ? 0.7 : 1) * voteMods(g.world, st.factionId).yard);
       opts.push({ label: `YARD SERVICE (WEAR ${Math.round(p.wear ?? 0)}%)${patronHere ? " - PATRON RATE" : ""}`, sub: `${price}CR`, action: () => {
         if (p.credits < price) { g.toast("NOT ENOUGH CREDITS"); return; }
         p.credits -= price; serviceHull(p, st.id, g.world.time, price);
@@ -1788,6 +1790,11 @@ export class StationScene implements Scene {
       top += 29 + Math.min(4, bl.length) * 8 + 6;
     }
     { const oc = occasionFor(); drawText(ctx, `TODAY: ${oc.name} - ${oc.effect}`, 8, top, PAL.gold); top += 9; }
+    if (!this.station.military && this.station.factionId !== "vex") {
+      const issue = weeklyIssue(g.world, this.station.factionId); const mine = myVote(g.world, this.station.factionId); const r = voteResult(g.world, this.station.factionId);
+      drawText(ctx, `THE WEEK'S VOTE - ${issue.title}: ${issue.text}`.slice(0, 112).toUpperCase(), 8, top, PAL.info); top += 9;
+      drawText(ctx, mine ? `YOU VOTED ${mine.toUpperCase()}. ${r.passed ? "PASSED" : "FAILED"}: ${(r.passed ? issue.yes : issue.no).toUpperCase()}`.slice(0, 112) : `Y FOR, N AGAINST. YOUR WEIGHT: ${Math.round(r.weight * 100)}% OF THE HOUSE. THE HOUSE LEANS ${r.lean >= 0.5 ? "FOR" : "AGAINST"}.`, 8, top, mine ? PAL.gold : PAL.grey); top += 9;
+    }
     if (totalShares(g.world.player)) { const p2 = g.world.player; drawText(ctx, `YOUR HOLDINGS: ${Object.entries(p2.stakes ?? {}).map(([id, n]) => `${(findStation(g.world, id)?.st.name ?? "?").toUpperCase()} ${n}`).join(", ")} (${totalShares(p2)} SHARES)`.slice(0, 112), 8, top, PAL.gold); top += 9; }
     if (this.station.museum?.length) { const m = this.station.museum[this.station.museum.length - 1]; drawText(ctx, `MUSEUM: ${this.station.museum.length} PIECE${this.station.museum.length > 1 ? "S" : ""} - LATEST ${m.item.toUpperCase()}, DONATED BY ${m.by.toUpperCase()}`.slice(0, 112), 8, top, PAL.gold); top += 9; }
     const mail = g.world.player.mail ?? [];

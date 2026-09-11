@@ -26,6 +26,7 @@ import { presence } from "../../core/presence";
 import { pickEncounter } from "../../data/encounters";
 import { pickChatter } from "../../core/chatter";
 import { spawnGhost } from "./ai";
+import { voteMods } from "../../data/votes";
 import { pickShipLine } from "../../core/shipvoice";
 import { keeperScan, KEEPER_OWNER } from "../../core/keeper";
 import { isOccasion } from "../../data/occasions";
@@ -425,7 +426,7 @@ export class FlightScene implements Scene {
     if (this.spawnTimer <= 0) {
       this.spawnTimer = 20 + Math.random() * 25;
       const alive = this.npcs.filter((n) => n.kind === "pirate").length;
-      if (alive < sys.pirateActivity * 6) spawnPirateNearBelt(this, g);
+      if (alive < sys.pirateActivity * 6 * voteMods(g.world, sys.factionId).patrol) spawnPirateNearBelt(this, g);
       // somebody real was here lately: their ship is on the lanes
       if (g.world.realGalaxy && !this.npcs.some((n) => n.ghost) && Math.random() < 0.35) {
         const me = wire.getCallsign();
