@@ -1145,6 +1145,10 @@ Time passes for the people on the ship, and for the ship.
 - [x] The harbour view lists the systems the yard would like a word about;
       the HUD's top-left warnings already flag anything under forty
 
+## Milestone 195 — Through the Lines ✅ (Sep 2026)
+- [x] An envoy bound for a system at war pays half again and the rep is
+      better; a ship on the roster reviews the captain at the wall of record
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

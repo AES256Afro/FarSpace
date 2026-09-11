@@ -405,6 +405,7 @@ export class InteriorScene implements Scene {
     const opts: Encounter["options"] = [{ label: "CLOSE", result: () => "" }];
     if (!p.voiceName) opts.push({ label: "ASK THE SHIP WHAT IT WANTS TO BE CALLED", hint: "It has had a name for a while. Nobody asked.", result: (g2) => { const name = ask("The band goes quiet. The ship spells something, slowly, letter by letter. What did it say?", ""); if (!name) return "THE BAND STAYS QUIET. ANOTHER TIME."; const l = nameTheShip(g2.world, name); if (g2.world.player.voiceName) { flag(g2, "shipnamed"); sfx.select(); } return l; } });
     else lines.push(`THE SHIP CALLS ITSELF ${p.voiceName.toUpperCase()}. IT SIGNS ITS LINES THAT WAY NOW.`);
+    if (p.flags?.shipCrew) { const wear = Math.round(p.wear ?? 0); const verdict = wear > 70 ? "YOU RUN ME HARD. I'D LIKE THAT NOTED, AND A YARD." : (p.rescues ?? 0) > (p.kills ?? 0) ? "MORE PEOPLE PULLED OUT THAN PUT DOWN. I'M PROUD OF THAT. I'M ALLOWED." : (p.kills ?? 0) >= 25 ? "YOU FIGHT WELL. I WISH YOU DIDN'T HAVE TO. I'M GLAD IT'S YOU." : "STEADY HANDS, MOST DAYS. THE OTHER DAYS I DON'T MENTION."; lines.push(`THE SHIP'S REVIEW OF THE CAPTAIN: "${verdict}"`); }
     const why = canRetireCaptain(g.world);
     if (!why) opts.push({ label: "RETIRE THIS CAPTAIN...", hint: "Hand the ship on; the galaxy carries on", result: (g2) => { this.retireMenu(g2); return ""; } });
     else if (g.world.time >= RETIRE_AFTER / 2) opts.push({ label: "RETIRE THIS CAPTAIN", hint: why, result: () => why });

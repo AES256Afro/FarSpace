@@ -987,16 +987,17 @@ export function genFares(w: World, station: StationDef, rng: RNG): Mission[] {
     const target = rng.pick(pool.filter((s) => s.factionId !== sys.factionId && s.factionId !== "vex")) ?? null;
     if (target) {
       const tStation = rng.pick(target.stations); const name = genPersonName(rng); const hops = one.includes(target) ? 1 : 2;
+      const war = (w.wars ?? []).some((x) => x.systemId === target.id && w.time < x.until);
       fares.push({
         id: `fare-${station.id}-${w.missionCounter++}`, kind: "passenger", accepted: false, done: false, tier: 0,
-        title: `Envoy: ${name}`,
-        desc: `${name} carries a treaty between the ${facNameW(sys.factionId)} and the ${facNameW(target.factionId)} to ${tStation.name}, ${target.name}. Late (more than ${hops + 1} dockings) or shot at on the way, and the talks fail. Land it clean and both sides remember.`,
+        title: `Envoy${war ? " through the lines" : ""}: ${name}`,
+        desc: `${name} carries a treaty between the ${facNameW(sys.factionId)} and the ${facNameW(target.factionId)} to ${tStation.name}, ${target.name}. Late (more than ${hops + 1} dockings) or shot at on the way, and the talks fail. Land it clean and both sides remember.${war ? ` ${target.name} is at war this week: the treaty matters more, the lanes are worse, and the fare is half again.` : ""}`,
         fromStationId: station.id, targetSystemId: target.id, targetStationId: tStation.id,
         passengerName: name, passengerKind: "envoy", sightSeen: false, sights: [],
         mood: 60, demand: null, patience: hops + 1, docksAboard: 0, party: 1,
         treaty: { a: sys.factionId, b: target.factionId },
-        reward: Math.round((900 + rng.int(0, 400)) * (hops === 2 ? 1.4 : 1)),
-        repReward: 4,
+        reward: Math.round((900 + rng.int(0, 400)) * (hops === 2 ? 1.4 : 1) * (war ? 1.5 : 1)),
+        repReward: war ? 6 : 4,
       });
     }
   }
