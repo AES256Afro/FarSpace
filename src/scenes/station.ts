@@ -1,4 +1,6 @@
 import { loanHullChangeReason, loanReturnReason, loanSummary, plotLoanDepot, returnServiceCutter } from "../core/serviceloan";
+import { beginDockVisit, currentDockVisit, type DockVisit } from "../core/docking";
+import type { World } from "../world";
 import { plotServiceOrder, recordServiceFareDelivery, serviceAudienceAt, serviceObjective, syncServiceFares } from "../core/service";
 // Station scene: docked services — market, shipyard, ships, missions, bar (crew), storage, news.
 
@@ -56,14 +58,18 @@ export class StationScene implements Scene {
   returnTo: "flight" | "stationwalk" = "flight";
   rowBoxes: [number, number][] = [];
   mailRows: { y0: number; y1: number; index: number }[] = [];
-  arrivedOnce = "";
+  visit: DockVisit | null = null;
+  visitWorld: World | null = null;
   wireEvents: wire.WireEvent[] = [];
   boards: Record<string, wire.BoardEntry[]> = {};
   wireLoaded = false;
 
   enter(g: Game): void {
     const found = findStation(g.world, g.world.player.dockedAt!);
-    if (!found) { g.setScene("flight"); return; }
+    const visit = currentDockVisit(g.world);
+    if (!found || !visit) { g.setScene("flight"); return; }
+    if (this.visitWorld === g.world && this.visit === visit && this.station === found.st) return;
+    this.visitWorld = g.world; this.visit = visit;
     this.station = found.st;
     if (serviceAudienceAt(g.world, this.station.id)) g.showHint(`service-office:${this.station.id}`, "SERVICE LIAISON: P WALKS THE DECK; E AT THE HARBOURMASTER COLLECTS THE ACCOUNT.");
     if (this.station.military && this.station.factionId !== "vex") g.showHint("service-office", "SERVICE CAREERS: P WALKS THE DECK. THE SERVICE OFFICE IS BETWEEN MARKET AND HARBOURMASTER.");
@@ -72,7 +78,7 @@ export class StationScene implements Scene {
     this.cursor = 0;
     this.returnTo = "flight";
     const p = g.world.player;
-    const rng = new RNG((g.world.seed ^ this.station.id.length * 2711 ^ Math.floor(g.world.time / 60)) >>> 0);
+    const rng = new RNG((g.world.seed ^ this.station.id.length * 2711 ^ Math.floor(visit.startedAt / 60)) >>> 0);
     this.boardMissions = genMissionsFor(g.world, this.station, rng);
     // today's galaxy-wide contract, unless already done or already carried
     const daily = dailyContract(g.world);
@@ -82,12 +88,15 @@ export class StationScene implements Scene {
     for (let i = 0; i < rng.int(1, 3); i++) this.candidates.push(genCrewCandidate(rng.fork(i + 1)));
     { const role = serialRecruitFor(g.world, this.station.id); if (role && !p.flags?.[`serialHire:${this.station.id}`]) { const c = genCrewCandidate(rng.fork(99)); c.role = role; c.skill = 3; c.loyalty = 2; c.wage = ROLE_INFO[role].baseWage * 3; c.trait = "tells stories about the Steady Hand"; this.candidates.unshift(c); } }
     this.fares = genFares(g.world, this.station, rng.fork(77));
-    { const line = rivalTakesFare(g.world, this.fares, rng.fork(78)); if (line) g.toast(line); }
+    if (!visit.settled) { const line = rivalTakesFare(g.world, this.fares, rng.fork(78)); if (line) g.toast(line); }
     for (const fr of friendsAt(g.world, this.station.id)) if (!this.station.barPatrons.includes(fr.name)) this.station.barPatrons = [fr.name, ...this.station.barPatrons].slice(0, 4);
     this.barLine = "";
-    if (isOccasion("market") && (p.flags ?? {})[`marketday:${this.station.id}:${dailyKey()}`] !== true) { (p.flags ??= {})[`marketday:${this.station.id}:${dailyKey()}`] = true; for (const id of Object.keys(this.station.stock)) if (!id.startsWith("r_")) this.station.stock[id] = Math.round((this.station.stock[id] ?? 0) * 1.25); }
+    if (!visit.settled && isOccasion("market") && (p.flags ?? {})[`marketday:${this.station.id}:${dailyKey()}`] !== true) { (p.flags ??= {})[`marketday:${this.station.id}:${dailyKey()}`] = true; for (const id of Object.keys(this.station.stock)) if (!id.startsWith("r_")) this.station.stock[id] = Math.round((this.station.stock[id] ?? 0) * 1.25); }
     refreshPrices(this.station);
     void wire.fetchSquadronData();
+    this.loadPortData(g);
+    if (visit.settled) return;
+    visit.settled = true;
     if (p.ious?.length) { for (const iou of p.ious) { p.credits += iou.credits; g.toast(iou.text); } p.ious = []; sfx.pickup(); }
     { const bl = resolveBorder(g.world); if (bl) { g.toast(bl); sfx.select(); const last = (g.world.borderLog ?? []).slice(-1)[0]; if (last && last.yours > 0) void wire.post("politics", `${last.flipped ? "helped flip" : "helped hold"} ${g.world.systems[last.systemId]?.name ?? "a system"} on the border (push ${last.yours})`, g.world.systems[p.systemId].name); } }
     if (p.cat && p.catAway && p.catAway !== this.station.id && Math.random() < 0.3) { const from = findStation(g.world, p.catAway)?.st.name ?? "somewhere"; p.catAway = null; g.toast(`A HAULER OUT OF ${from.toUpperCase()} HANDS OVER A CRATE WITH AIR HOLES. ${p.cat.name.toUpperCase()} IS NOT SPEAKING TO YOU.`); logEntry(g.world, `${p.cat.name} came home in a crate from ${from}`); sfx.purr(); }
@@ -101,15 +110,10 @@ export class StationScene implements Scene {
       if (fs.towing && fs.towing.hull > 0 && Math.hypot(fs.towing.x - sx, fs.towing.y - sy) < 260) { p.credits += 550; adjustRep(g.world, st.factionId, 6); p.tows = (p.tows ?? 0) + 1; { const l = helpCaptain(g.world, (fs.towing as { name?: string }).name, "tow", new RNG((g.world.seed ^ Math.floor(g.world.time * 59)) >>> 0)); if (l) g.toast(l); } g.toast("TOW COMPLETE - THE YARD TAKES THE FREIGHTER +550CR"); flag(g, "tug"); void wire.post("rescue", "towed a disabled freighter into dock", g.world.systems[p.systemId].name); }
       fs.towing = null;
     }
-    this.base = null; this.baseLoaded = false;
-    this.raceRecords = null;
-    if (g.world.realGalaxy && !this.station.military) { const name = this.station.name; void wire.fetchRaceRecords(name).then((r) => { if (this.station?.name === name) this.raceRecords = r; }); }
     if (p.warPayout && p.warPayout.value > 0) {
       const wp = p.warPayout; p.warPayout = null;
       void wire.baseActionFor(wp.tag, "war", { value: wp.value }).then((ok) => { if (ok) g.toast(`WAR SPOILS: +${wp.value}CR TO THE [${wp.tag}] TREASURY`); });
     }
-    void wire.fetchBases().then(() => { this.baseOwner = wire.baseAt(this.station.id)?.tag ?? null; });
-    if (wire.getSquadron()) { void wire.fetchBase(wire.getSquadron()!).then((b) => { this.base = b; this.baseLoaded = true; if (!b?.stationId && !this.station.military) g.showHint("base", "BASE TAB: POOL CREDITS WITH YOUR SQUADRON AND BUY A STATION AS YOUR BASE"); }); } else this.baseLoaded = true;
     {
       const rep0 = p.rep[this.station.factionId] ?? 0;
       const seen: Record<string, [number, number]> = {};
@@ -117,14 +121,8 @@ export class StationScene implements Scene {
       (p.marketMemory ??= {})[this.station.id] = { t: g.world.time, systemId: p.systemId, prices: seen };
     }
     p.oxygen = p.oxygenMax;
-    // docking is where the crew gets paid and fed — once per docking event
-    const dockKey = `${this.station.id}:${Math.floor(g.world.time)}`;
-    if (this.arrivedOnce !== dockKey) {
-      this.arrivedOnce = dockKey;
-      this.settleCrew(g);
-    }
+    this.settleCrew(g);
     g.showHint("station", "ARROWS/CLICK TO BROWSE - ENTER TO ACT - ESC UNDOCKS - P WALKS THE DECK");
-    g.autosave();
     const bay = g.lastBay || (1 + (this.station.id.length * 7 + Math.floor(g.world.time)) % 6);
     const allElite = (["explorer", "trader", "miner", "rescuer"] as const).every((k) => rankOf(p, k).title === "ELITE");
     if (allElite && !p.flags?.master) { flag(g, "master"); logEntry(g.world, "Elite in every trade: master of the lanes"); void wire.post("achievement", "is Elite in every trade: master of the lanes", g.world.systems[p.systemId].name); }
@@ -166,6 +164,22 @@ export class StationScene implements Scene {
     else if (grievanceDue(g.world)) this.grievance(g);
     else if (spinOutageDue(g.world, this.station)) this.spinOutage(g);
     else { const sec = secessionAt(g.world, this.station.id); if (sec && !(p.flags ?? {})[`register:${this.station.id}:${Math.round(sec.until)}`]) this.register(g, sec); else { const cr = crisisAt(g.world, this.station.id); if (cr && cr.commodityId === "med" && !(p.flags ?? {})[`overrun:${this.station.id}:${weekKey()}`]) this.overrun(g); } }
+    g.autosave();
+  }
+
+  loadPortData(g: Game): void {
+    const world = g.world, visit = this.visit, station = this.station;
+    const current = () => g.world === world && this.visitWorld === world && this.visit === visit && this.station === station;
+    this.base = null; this.baseLoaded = false; this.baseOwner = null; this.raceRecords = null;
+    if (world.realGalaxy && !station.military) void wire.fetchRaceRecords(station.name).then(r => { if (current()) this.raceRecords = r; });
+    void wire.fetchBases().then(() => { if (current()) this.baseOwner = wire.baseAt(station.id)?.tag ?? null; });
+    const squadron = wire.getSquadron();
+    if (squadron) void wire.fetchBase(squadron).then(b => {
+      if (!current()) return;
+      this.base = b; this.baseLoaded = true;
+      if (!b?.stationId && !station.military) g.showHint("base", "BASE TAB: POOL CREDITS WITH YOUR SQUADRON AND BUY A STATION AS YOUR BASE");
+    });
+    else this.baseLoaded = true;
   }
 
   settleCrew(g: Game): void {
@@ -970,7 +984,7 @@ export class StationScene implements Scene {
     for (let i = 0; i < secs; i++) tickWorld(w, 1);
     w.time += secs;
     for (const c of p.crew) c.morale = Math.min(100, c.morale + 4);
-    p.systemId = dest.sys.id; p.dockedAt = dest.st.id;
+    p.systemId = dest.sys.id; beginDockVisit(w, dest.st.id);
     p.x = Math.cos(dest.st.angle) * dest.st.orbit; p.y = Math.sin(dest.st.angle) * dest.st.orbit; p.vx = 0; p.vy = 0;
     logEntry(w, `Took the liner to ${dest.st.name} to pick up the ${f.name ?? h.name}`);
     flag(g, "liner");

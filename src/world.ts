@@ -1,4 +1,5 @@
 import type { ServiceRecord } from "./core/service";
+import type { DockVisit } from "./core/docking";
 import type { ShipSimState } from "./core/shipsim";
 import type { CouncilState } from "./core/council";
 // World model + procedural galaxy generation + world simulation rules.
@@ -256,6 +257,7 @@ export interface PlayerState {
   systems: ShipSystem[];
   missions: Mission[];
   dockedAt: string | null;
+  dockVisit?: DockVisit;
   kills: number;
   wanted: number;
   navTarget?: string | null;

@@ -2046,6 +2046,16 @@ Time passes for the people on the ship, and for the ship.
       File the decision and distinguish arrived, aboard and missing fares.
 - [x] Keep existing passenger conditions and add no journey deadline.
 
+## Milestone 403: One Visit to Port (Sep 2026)
+- [x] Replace elapsed-second arrival keys with a persisted port visit started
+      by a completed approach, emergency recovery or liner trip.
+- [x] Settle wages, food, passenger stops, crew dock counts and leg resets once.
+      Preserve sim, counselling and briefing state through menu re-entry.
+- [x] Keep port offers and the selected tab through promenade and card returns.
+      Preserve kiosk Escape to deck and deck Escape to launch services.
+- [x] Treat older docked saves as already settled and save after arrival resets.
+      Reject delayed port data from another visit or world.
+
 ## Later: Trek / Expanse / Orville (the fourth sitting)
 
 The third sitting shipped everything on the last list (M330–M386): the

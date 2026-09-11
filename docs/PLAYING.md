@@ -1882,3 +1882,20 @@ A passenger delivered at the booked station or singers' berth counts as
 arrived even after the completed mission leaves the manifest. An abandoned
 or otherwise missing fare is recorded as leaving without a delivery receipt;
 the service order can resume, but it does not claim that passage was completed.
+
+
+## One visit to port
+
+Crew wages and food, passenger stops and crew docking experience settle once
+when an approach, rescue or liner trip brings you into port. Walking the
+promenade, opening its kiosks, returning from a conversation and loading a
+docked save all keep the same visit. They do not charge another wage or reset
+a sim session, counselling or briefing completed during that visit.
+
+The services menu keeps its offers and selected tab during a walk. Escape
+from a kiosk returns to the promenade. Escape from the promenade returns to
+the docked services menu, where Escape launches the ship. The next completed
+arrival settles the next visit, even if you return to the same station.
+
+Older saves without a port-visit record are treated as already settled when
+loaded while docked. Arrival autosaves now include the completed leg reset.

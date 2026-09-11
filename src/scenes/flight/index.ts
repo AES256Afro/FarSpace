@@ -1,4 +1,5 @@
 import { tickServiceOrder } from "../../core/service";
+import { beginDockVisit } from "../../core/docking";
 // Flight scene: player controls, interactions (dock/jump/orbit/board), law.
 import { FACTIONS } from "../../data/data";
 // Simulation lives in ./ai, rendering in ./render.
@@ -820,7 +821,7 @@ export class FlightScene implements Scene {
     p.angle += angDiff(p.angle, Math.atan2(ty - d.y0, tx - d.x0)) * Math.min(1, dt * 4);
     if (k >= 1) {
       this.docking = null;
-      p.dockedAt = d.st.id; p.vx = 0; p.vy = 0;
+      beginDockVisit(g.world, d.st.id); p.vx = 0; p.vy = 0;
       sfx.dock();
       g.setScene("station");
     }
@@ -1707,7 +1708,7 @@ export class FlightScene implements Scene {
     const sys = g.world.systems[p.systemId];
     if (g.world.realGalaxy) void wire.postLight(sys.name, "wreck", false);
     const st = sys.stations[0];
-    if (st) { p.dockedAt = st.id; g.setScene("station"); }
+    if (st) { beginDockVisit(g.world, st.id); g.setScene("station"); }
     else { p.x = 0; p.y = -600; p.vx = 0; p.vy = 0; }
   }
 

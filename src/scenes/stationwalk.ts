@@ -324,6 +324,7 @@ export class StationWalkScene implements Scene {
     if (inp.wasPressed("Escape")) {
       // back to the docked services screen
       g.setScene("station");
+      (g.scenes.station as StationScene).returnTo = "flight";
       return;
     }
     if (inp.wasPressed("F5")) g.save();
