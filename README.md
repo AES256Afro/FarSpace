@@ -89,6 +89,19 @@ weighted votes and felt on the lanes until Monday; one contested seam system a
 week where deliveries, votes, stakes and rally runs push, and Monday can flip
 the system, stations and all; and a page on the record that shows the week.
 
+**On the bridge.** A captain's log with a stardate and a supplemental entry
+at every clamp, a Number One, a command rank from deeds and a registry that
+control reads out, alert status on Y with a klaxon and the crew calling
+stations, parley with corsairs before anyone fires, senior staff briefings
+that set a focus for the leg, reviews in the study, a counsellor, a ship that
+signs its lines with the name it asked for. Envoys with treaties on a
+deadline, patients for the clinic over the next gate, patrol orders for a
+ranked captain, the belt's water and filter runs, a hard burn on the juice.
+Away teams, a quiet world, a village where the survey said geology, a hull
+that sings in no known tongue, a visitor on the bridge, a loop, a sim rig
+stuck on a western, talent night, the lounge at war. The unnamed traffic hails
+as it passes and everybody has a word about the cat.
+
 **Keeping.** Postcards on F7, a chronicle you can read in-game or export,
 achievements and four career ladders to ELITE, a home port, museums that take
 your relics with your name, wrecks that stay where your ships fell, and a line

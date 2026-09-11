@@ -1045,4 +1045,16 @@ Time passes for the people on the ship, and for the ship.
 - [x] A counsellor aboard takes a low crew member into the study once a leg;
       the helm calls the flip and burn; the cat has the conn
 
+## Later: Trek / Expanse / Orville
+
+- A second story arc per faction (first contact proper: the singers' home)
+- A science officer role, or a science specialty for pilots: better scans,
+  anomaly readings on the HUD
+- Shore leave on the ground with the crew: a beach that isn't a sim
+- A second contact on the ground (the quiet ones: trade in light)
+- Belt politics: a rock that goes independent, and what the inners do
+- The ship's AI as crew: a seat on the roster, an opinion at the briefing
+- Talent night II: the band tours the promenade at night
+- A hostage negotiation card; a boarding party with a chosen crew member
+
 ## Later
