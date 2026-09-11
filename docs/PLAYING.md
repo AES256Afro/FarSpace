@@ -752,6 +752,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- At a naval station, with a commander's rank or better, the service offers
+  a Number One with twelve dockings and real loyalty a cutter of their own.
+  Send them (they become a friendly captain in the lanes, write from the
+  chair, and the chronicle says who they command), ask them to stay plainly
+  (loyalty up a lot), or leave it to them and a coin.
+- Cadets become crew proper at ten dockings: full wage, a skill up, and the
+  crew mostly stop calling them the new one.
 - Freemen who let their belt standing fall too far lose the name at the next
   clamp, with a letter and the inners' yard rate. Earn it back and the belt
   says twice is rarer than once.

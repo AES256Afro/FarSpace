@@ -1806,6 +1806,19 @@ Time passes for the people on the ship, and for the ship.
 - [x] The chronicle's Standing paragraph: rank by deeds, belt standing,
       ribbons, boards, hearings, prisoners, people carried out
 
+## Milestone 360 — A Command of Their Own ✅ (Sep 2026)
+- [x] At a naval station the service offers a long-serving, loyal Number One
+      a cutter: send them (a friendly captain in the lanes who knows your
+      hull, a letter, rep), ask them to stay plainly (loyalty), or leave it
+      to them (a coin)
+
+## Milestone 361 — Cadet No Longer ✅ (Sep 2026)
+- [x] Cadets become crew proper at ten dockings: full wage, a skill, a deed
+
+## Milestone 362 — Now Commanding ✅ (Sep 2026)
+- [x] The chronicle's "served and went home" notes who commands their own
+      ship now
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

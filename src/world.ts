@@ -514,7 +514,7 @@ export function beaconDiscount(w: World, fromId: string, toId: string): number {
 }
 
 export interface ShoreLeave { member: CrewMember; stationId: string; docks: number }
-export interface Alumnus { name: string; role: CrewRole | "captain"; docks: number; stationId: string; t: number }
+export interface Alumnus { name: string; role: CrewRole | "captain"; docks: number; stationId: string; t: number; command?: string }
 export interface Captain { name: string; from: number; to: number; stationId: string; credits: number; deeds: number }
 
 // ---------- The ledger: where the money comes from and goes ----------
@@ -750,7 +750,7 @@ export function chronicleText(w: World, callsign: string | null): string {
   if ((p.log ?? []).length) { lines.push(""); lines.push("Captain's log, last entries:"); for (const e of (p.log ?? []).slice(-5).reverse()) lines.push(`  ${e.text}`); }
   if ((p.guestbook ?? []).length) { lines.push(""); lines.push("Guestbook, last signatures:"); for (const e of (p.guestbook ?? []).slice(-5).reverse()) lines.push(`  ${e.name} (${e.kind}), ${e.from} to ${e.to}: "${e.line}"`); }
   if (p.crew.length) { lines.push(""); lines.push("Crew aboard:"); for (const c of p.crew) lines.push(`  ${c.name}, ${ROLE_INFO[c.role].label.toLowerCase()}${c.specialty ? ` (${(SPECIALTIES[c.role].find((x) => x.id === c.specialty)?.name ?? c.specialty).toLowerCase()})` : ""}, skill ${c.skill}, ${c.docks ?? 0} dockings${c.trait ? `, ${c.trait}` : ""}.`); }
-  if (p.alumni?.length) { lines.push(""); lines.push("Served and went home:"); for (const a of p.alumni) lines.push(`  ${a.name}, ${a.role}, ${a.docks} dockings, at ${findStation(w, a.stationId)?.st.name ?? "a station"}.`); }
+  if (p.alumni?.length) { lines.push(""); lines.push("Served and went home:"); for (const a of p.alumni) lines.push(`  ${a.name}, ${a.role}, ${a.docks} dockings${a.command ? `, now commanding ${a.command}` : ""}, at ${findStation(w, a.stationId)?.st.name ?? "a station"}.`); }
   if (p.cat) { lines.push(""); lines.push(`Ship's cat: ${p.cat.name}.`); }
   if (w.infra?.length) { lines.push(""); lines.push("Structures:"); for (const i of w.infra) lines.push(`  ${i.kind} in ${w.systems[i.systemId]?.name ?? "?"}, ${i.health}%, ${i.earned} credits earned.`); }
   if (p.achievements?.length) { lines.push(""); lines.push(`Achievements (${p.achievements.length}): ${p.achievements.join(", ")}.`); }
@@ -1258,6 +1258,13 @@ export function leavePair(w: World, now = Date.now()): [CrewMember, CrewMember] 
   const p = w.player; if (p.crew.length < 3 || (p.flags ?? {})[`leavepair:${weekKey(now)}`]) return null;
   for (let i = 0; i < p.crew.length; i++) for (let j = i + 1; j < p.crew.length; j++) { const a = p.crew[i], b = p.crew[j]; if (!a.sick && !b.sick && bond(a, b) >= 2) return [a, b]; }
   return null;
+}
+// A command of their own: the service offers a long-serving, loyal Number One a ship, at a naval station, once.
+export function commandOffer(w: World): CrewMember | null {
+  const p = w.player; const fo = firstOfficer(p); if (!fo) return null;
+  const rk = commandRank(p); if (rk === "SKIPPER" || rk === "LIEUTENANT") return null;
+  if ((fo.docks ?? 0) < 12 || (fo.loyalty ?? 0) < 2 || (p.flags ?? {})[`offer:${fo.name}`]) return null;
+  return fo;
 }
 // A transfer request: a crew member with a long record and a low mood asks, at a naval station, for a posting ashore.
 export function transferRequest(w: World): CrewMember | null {
