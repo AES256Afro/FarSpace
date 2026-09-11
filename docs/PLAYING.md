@@ -752,6 +752,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- A mayday from sunward: a survey cutter falling into the corona. Go in
+  (hull down twelve, three lives, rep up), send the engineer's drone with a
+  tow line (a part, two of three), or call it in and read about it later.
+- A stowaway behind the water tank. Sign them on as a cadet (a berth, a
+  cadet's wage, no dockings, and the crew will send them for a spanner), put
+  them ashore fed at the next port, or hand them to the marines.
+- Choose the word you give on undock at the wall of record. The helm answers
+  it on the band; with no pilot, Number One does; with neither, the ship.
 - A fresh hire with no dockings gets sent for a left-handed spanner. Let it
   run (morale up, bonds form), call it off, or go aft and help them look (they
   will follow you anywhere).

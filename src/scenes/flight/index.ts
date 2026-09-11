@@ -101,6 +101,7 @@ export class FlightScene implements Scene {
       // launch sequence: out of the bay along your nose, control on the band
       g.justUndocked = false;
       const p = g.world.player;
+      if (p.catchphrase) { const pil = p.crew.find((c) => c.role === "pilot" && !c.sick); const fo = firstOfficer(p); const who = pil ?? fo; this.comms.push({ from: "YOU", text: `${p.catchphrase.toUpperCase()}.`, life: 6, color: PAL.gold }); if (who) this.comms.push({ from: who.name.split(" ")[0].toUpperCase(), text: pil ? "AYE. CLAMP'S AWAY. COURSE IS YOURS." : "AYE, CAPTAIN. THE BRIDGE HEARD.", life: 6, color: PAL.grey }); else if (p.voiceName) this.comms.push({ from: p.voiceName.toUpperCase(), text: "AYE. I HEARD. I ALWAYS HEAR.", life: 6, color: PAL.grey }); }
       this.startRace(g);
       if (p.convoyPending) { const m = p.missions.find((x) => x.id === p.convoyPending); p.convoyPending = null; if (m) { const cv = this.startConvoy(g); if (cv) { cv.reward = m.reward; cv.missionId = m.id; } } }
       if (!p.racePending && !this.race && !this.convoy && Math.random() < 0.12 && g.world.systems[p.systemId].jumpPoints.length) { const enc = ENCOUNTERS.find((e) => e.id === "walkus"); if (enc) setTimeout(() => { if (g.sceneName === "flight") (g.scenes["encounter"] as EncounterScene).open(g, enc, "flight", false); }, 2500); }

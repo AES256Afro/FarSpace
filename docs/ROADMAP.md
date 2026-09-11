@@ -1342,6 +1342,20 @@ Time passes for the people on the ship, and for the ship.
 - [x] Concourse gossip about you: the plaque, Number One, prisoners fed, the
       board, the warning shot, the minutes, the captain's table, the drought
 
+## Milestone 240 — A Hull in the Corona ✅ (Sep 2026)
+- [x] A mayday from sunward: go in (hull -12, three lives, rep), send the
+      engineer's drone with a line (a part, two lives), or call it in
+
+## Milestone 241 — Cadet Rate ✅ (Sep 2026)
+- [x] A stowaway behind the water tank: sign them on as a cadet (a berth, a
+      cadet's wage, no dockings, and the crew's spanner), put them ashore fed,
+      or hand them to the marines
+
+## Milestone 242 — The Word ✅ (Sep 2026)
+- [x] Choose the word you give on undock at the wall of record; the helm, or
+      Number One, or the ship answers it on the band; cards must have unique
+      ids (a test)
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

@@ -7,7 +7,7 @@ import { hull } from "./hulls";
 import { RNG } from "../core/rng";
 import { addMaterials } from "./engineering";
 import { commodity, FACTIONS } from "./data";
-import { officeWrites, findStation as findStationW, isBeltStation } from "../world";
+import { officeWrites, findStation as findStationW, isBeltStation, berthsUsed as berthsUsedW } from "../world";
 const facNameW2 = (id: string): string => FACTIONS.find((f) => f.id === id)?.name ?? id;
 
 export interface EncounterOption {
@@ -400,6 +400,24 @@ export const ENCOUNTERS: Encounter[] = [
       { label: "ALL HANDS TO THE VENTS", hint: "Morale up; an hour lost; the envoy is grateful", result: (g) => { const env = passengersAboard(p(g)).find((m) => m.passengerKind === "envoy"); if (env) env.mood = Math.min(100, (env.mood ?? 60) + 15); for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 4); g.world.time += 600; logEntry(g.world, "All hands to the vents for an envoy's escaped companion"); return "AN HOUR OF THE WHOLE CREW ON THEIR KNEES AT DUCT GRILLES MAKING NOISES. IT COMES OUT FOR THE ENGINEER, FOR SOME REASON. THE ENVOY WEEPS. MORALE UP, THEIRS AND EVERYBODY'S."; } },
       { label: "LET THE CAT HANDLE IT", hint: "The cat finds it in a minute; the cat is unbearable after", requires: (g) => !!p(g).cat && !p(g).catAway, result: (g) => { const env = passengersAboard(p(g)).find((m) => m.passengerKind === "envoy"); if (env) env.mood = Math.min(100, (env.mood ?? 60) + 10); logEntry(g.world, `${p(g).cat!.name} found an envoy's escaped companion in the vents`); return `${p(g).cat!.name.toUpperCase()} GOES INTO DUCT FOUR AND COMES OUT OF DUCT ONE WITH THE THING WALKING BEHIND, CHASTENED. NOBODY KNOWS WHAT WAS SAID. THE ENVOY IS GRATEFUL. THE CAT IS INSUFFERABLE FOR A WEEK.`; } },
       { label: "SEAL THE VENTS AND WAIT", hint: "The envoy's mood falls; it comes out at the gate, eventually", result: (g) => { const env = passengersAboard(p(g)).find((m) => m.passengerKind === "envoy"); if (env) env.mood = Math.max(0, (env.mood ?? 60) - 15); return "IT COMES OUT AT THE GATE, THIN AND FURIOUS, AND SO IS THE ENVOY. THE TREATY, IF THERE IS ONE, WILL BE COLDER FOR IT."; } },
+    ],
+  },
+  {
+    id: "corona", where: "space", weight: 2, title: "A HULL IN THE CORONA",
+    text: "A mayday from sunward, where nobody flies on purpose: a survey cutter with a dead drive, falling into the star's outer corona a little faster every minute. Three aboard. The scanner paints the heat between you and them in a colour it doesn't usually use.",
+    options: [
+      { label: "GO IN AND GET THEM", hint: "Hull -12 from the heat; three lives; rep +5", requires: (g) => p(g).hull > 20, result: (g) => { p(g).hull = Math.max(5, p(g).hull - 12); p(g).lives = (p(g).lives ?? 0) + 3; p(g).rescues = (p(g).rescues ?? 0) + 1; adjustRep(g.world, sys(g).factionId, 5); for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 4); logEntry(g.world, `Went into the corona of ${sys(g).name} for a survey cutter; three out`); (p(g).flags ??= {}).corona = true; return "YOU GO IN WITH THE SHIELDS FORWARD AND THE HULL TICKING LIKE A KETTLE, AND COME OUT WITH THREE PEOPLE AND PAINT THAT ISN'T THE COLOUR IT WAS. HULL DOWN. THREE LIVES. THE CREW DON'T SAY ANYTHING FOR A MINUTE, AND THEN ALL AT ONCE."; } },
+      { label: "SEND THE ENGINEER'S DRONE WITH A TOW LINE", hint: "Slower and safer; two of three, and a part spent", requires: (g) => (p(g).cargo.parts ?? 0) >= 1 && p(g).crew.some((c) => c.role === "engineer" && !c.sick), result: (g) => { removeCargo(p(g), "parts", 1); p(g).lives = (p(g).lives ?? 0) + 2; adjustRep(g.world, sys(g).factionId, 3); const x = crewXp(p(g), "engineer", 2); logEntry(g.world, `Towed a survey cutter out of the corona of ${sys(g).name} on a drone line; two out`); return `THE ENGINEER FLIES THE DRONE IN BY EYE WITH A LINE ON IT AND GETS IT ON THEIR LOCK ON THE SECOND PASS. THE THIRD PASS WOULD HAVE BEEN TOO LATE, AND SO IT WAS. TWO LIVES.${x ? " " + x : ""}`; } },
+      { label: "CALL IT IN. THAT'S A CUTTER'S JOB", hint: "Rep +1; you'll read about it", result: (g) => { adjustRep(g.world, sys(g).factionId, 1); for (const c of p(g).crew) c.morale = Math.max(0, c.morale - 3); return "YOU RELAY THE MAYDAY TO THE PATROL BAND AND HOLD STATION WHERE IT'S COOL. A CUTTER COMES. YOU READ ABOUT IT AT THE NEXT PORT AND DON'T FINISH THE ARTICLE. MORALE DOWN."; } },
+    ],
+  },
+  {
+    id: "stowawaycadet", where: "space", weight: 2, title: "A STOWAWAY, AGAIN", when: (g) => p(g).crew.length > 0 && !p(g).flags?.cadet,
+    text: "The medic finds them behind the water tank: sixteen, maybe, in a jacket two sizes up and boots that were somebody's. They've been aboard since the last clamp, eating from the galley at night, and they know the ship's name, the crew's names, and the words to the song the engineer sings under the deck plates. They'd like to stay. They'll do anything. They've done the washing-up already.",
+    options: [
+      { label: "SIGN THEM ON AS A CADET", hint: "A berth, a wage, no dockings; the crew will send them for a spanner", requires: (g) => berthsUsedW(p(g)) < hull(p(g).hullId).crewSlots, result: (g, rng) => { const c = genCrewCandidate(rng); c.docks = 0; c.skill = Math.max(1, c.skill - 1); c.wage = Math.max(10, Math.round(c.wage * 0.6)); c.morale = 90; c.loyalty = 1; p(g).crew.push(c); (p(g).flags ??= {}).cadet = true; logEntry(g.world, `Signed a stowaway on as a cadet: ${c.name}, ${c.role}`); return `THEY PICK A NAME THAT MIGHT BE THEIRS, ${c.name.toUpperCase()}, AND A JOB THEY SAY THEY CAN DO, WHICH IS ${c.role.toUpperCase()}, AND YOU BELIEVE ABOUT HALF OF IT. A BERTH, A WAGE AT CADET RATE, AND THE CREW ALREADY PLANNING SOMETHING WITH A SPANNER.`; } },
+      { label: "PUT THEM ASHORE AT THE NEXT PORT, FED", hint: "Morale up; a name in the log", result: (g) => { for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 2); logEntry(g.world, "Found a stowaway behind the water tank; put ashore at the next port, fed"); return "THEY RIDE TO THE NEXT CLAMP IN THE LOUNGE WITH A BLANKET AND TWO MEALS, AND GO DOWN THE GANGWAY WITHOUT LOOKING BACK, WHICH IS HOW YOU KNOW THEY'LL BE ALL RIGHT. THE CREW WATCH THEM GO."; } },
+      { label: "HAND THEM TO THE MARINES AT THE NEXT NAVAL STATION", hint: "The rule; the crew don't like the rule", result: (g) => { for (const c of p(g).crew) c.morale = Math.max(0, c.morale - 5); adjustRep(g.world, sys(g).factionId, 1); return "THE RULE IS THE RULE. THE MARINES ARE KIND ABOUT IT, WHICH DOESN'T HELP. THE CREW DON'T SPEAK TO YOU UNTIL THE GATE, AND THE ENGINEER DOESN'T SING."; } },
     ],
   },
   {

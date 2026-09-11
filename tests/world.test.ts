@@ -628,6 +628,10 @@ describe("squadrons at war", () => {
 });
 
 describe("encounters", () => {
+  it("every card has a unique id", () => {
+    const ids = ENCOUNTERS.map((e) => e.id);
+    expect(ids.filter((id, i) => ids.indexOf(id) !== i)).toEqual([]);
+  });
   it("every option resolves to a line, and repeats are weighted down", () => {
     const w = generateWorld(21, { realGalaxy: true });
     w.player.credits = 5000; w.player.fuel = 100; w.player.cargo = { food: 5, parts: 2 };

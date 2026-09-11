@@ -356,6 +356,7 @@ export interface PlayerState {
   evacuated?: number;                // people carried out of a bad week
   hailsAnswered?: number;            // passing hails answered with a civil word
   waterToBelt?: number;              // units of water sold to belt rocks; the belt keeps count
+  catchphrase?: string;              // the word the captain gives on undock; the helm answers
   shipAskedQuiet?: boolean;          // the ship asked for one quiet leg; settled at the next clamp
   officeLetters?: number;            // letters from the office of anomalous incidents; three and they open a file
   commissionedAt?: number;           // world time this captain took the ship; stardate on the plaque
