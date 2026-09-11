@@ -752,6 +752,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- A parley has a new option: one across their bow. A gunner and a record
+  help; fail and they open up before the channel's closed.
+- Once the ship has a name or a roster line, the wall of record has THE
+  GALLEY DOOR: the ship's newsletter, with card night, the band, who the
+  captain sat with, moods of the week, the office, and the last log lines.
+- Freemen of the belt see rock-to-rock runs at a freeman's rate, forty
+  percent over. Inners need not apply.
 - With a Number One aboard the chronicle carries their note on the captain:
   rescues against fights, how the crew are holding, the boards you've stood
   before.

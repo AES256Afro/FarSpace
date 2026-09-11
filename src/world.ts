@@ -1148,6 +1148,26 @@ export function grievanceDue(w: World, now = Date.now()): boolean {
   const avg = p.crew.reduce((a, c) => a + c.morale, 0) / p.crew.length;
   return avg < 32 && !(p.flags ?? {})[`grievance:${weekKey(now)}`];
 }
+// The ship's newsletter: what the ship would put on the galley door if it had a galley door and a printer.
+export function shipNewsletter(w: World): string[] {
+  const p = w.player; const out: string[] = []; const week = weekKey();
+  const flagsThisWeek = Object.keys(p.flags ?? {}).filter((k) => k.endsWith(`:${week}`));
+  out.push(`${shipVoiceName(p)} - THE GALLEY DOOR - STARDATE ${stardate(w)}`);
+  const cards = flagsThisWeek.some((k) => k.startsWith("cards:")); const band = flagsThisWeek.some((k) => k.startsWith("band:")); const dine = flagsThisWeek.filter((k) => k.startsWith("dine:")).map((k) => k.split(":")[1].split(" ")[0]);
+  if (cards) out.push("CARD NIGHT HAPPENED. THE EDITOR DECLINES TO SAY WHO WON. THE EDITOR WAS DEALT IN.");
+  if (band) out.push("THE BAND WAS ON THE PROMENADE AND SOMEBODY FROM THIS SHIP STAYED FOR THE ENCORE. AGAIN.");
+  if (dine.length) out.push(`THE CAPTAIN SAT WITH ${dine.map((n) => n.toUpperCase()).join(" AND ")} AT MESS. FAVOURITISM IS NOTED. FAVOURITISM IS FINE.`);
+  const bday = Object.keys(p.flags ?? {}).filter((k) => k.startsWith("bday:")).slice(-1)[0]; if (bday) out.push(`A BIRTHDAY WAS CELEBRATED WITH RATION SUGAR. THE SUGAR IS STILL ON THE DECK. THE EDITOR HAS OPINIONS.`);
+  const low = [...p.crew].sort((a, b) => a.morale - b.morale)[0]; const high = [...p.crew].sort((a, b) => b.morale - a.morale)[0];
+  if (p.crew.length >= 2 && high && low && high !== low) out.push(`MOOD OF THE WEEK: ${high.name.split(" ")[0].toUpperCase()} (UP). ${low.name.split(" ")[0].toUpperCase()} WOULD LIKE A PORT, A MEAL, OR BOTH.`);
+  if (p.prankUntil !== undefined) out.push("THE VOICE SETTINGS REMAIN 'ADJUSTED'. THE EDITOR IS THE VOICE. THE EDITOR IS ENJOYING THIS.");
+  if ((p.officeLetters ?? 0) > 0) out.push(`LETTERS FROM THE OFFICE: ${p.officeLetters}. FORMS RETURNED: 0. THE EDITOR IS NOT WORRIED. THE EDITOR IS A LITTLE WORRIED.`);
+  if ((p.hailsAnswered ?? 0) > 0) out.push(`HAILS ANSWERED CIVILLY THIS CAREER: ${p.hailsAnswered}. THE LANES ARE KEEPING COUNT TOO.`);
+  const last = (p.log ?? []).slice(-3).reverse().map((e) => e.text); for (const t of last) out.push(`FROM THE LOG: ${t.toUpperCase()}`.slice(0, 118));
+  if (out.length === 1) out.push("NOTHING HAPPENED THIS WEEK. THE EDITOR WOULD LIKE SOMETHING TO HAPPEN. NOT A FIRE.");
+  out.push("CORRECTIONS: NONE. THE EDITOR IS NEVER WRONG. THE EDITOR IS THE SHIP.");
+  return out;
+}
 // Birthdays: every crew member has one every thirty ship-days, and the galley notices. Once each.
 export function birthdaysDue(w: World): string[] {
   const p = w.player; const day = Math.floor(w.time / 86400); const period = Math.floor(day / 30); const out: string[] = [];
@@ -2949,18 +2969,20 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
       const tStation = target.stations.length ? rng.pick(target.stations) : null;
       if (!tStation) continue;
       const beltRun = isBeltStation(tStation) && rng.chance(0.6);
+      const freemanRun = beltRun && !!world.player.flags?.freeman && isBeltStation(station);
       const beltNeed = rng.pick(["water", "food", "med", "parts"]);
       const com = beltRun ? (COMMODITIES.find((c) => c.id === beltNeed) ?? COMMODITIES[0]) : rng.pick(COMMODITIES.filter((c) => !c.rare && (!c.illegal || rng.chance(0.15))));
       const qty = rng.int(3, 10);
       missions.push({
         id: idn, kind, accepted: false, done: false, tier,
-        title: beltRun ? `${com.id === "water" ? "Water" : com.id === "food" ? "Ration" : com.id === "med" ? "Clinic" : "Filter"} run: ${qty} ${com.name}` : `Deliver ${qty} ${com.name}`,
+        title: beltRun ? `${freemanRun ? "Freeman's " : ""}${com.id === "water" ? "Water" : com.id === "food" ? "Ration" : com.id === "med" ? "Clinic" : "Filter"} run: ${qty} ${com.name}` : `Deliver ${qty} ${com.name}`,
         desc: beltRun ? `${tStation.name} in ${target.name} is a rock, and the rock is ${com.id === "water" ? "dry" : com.id === "food" ? "hungry" : com.id === "med" ? "coughing" : "breathing through old filters"}. ${qty}x ${com.name}, and nobody there will forget who brought it.` : `Take ${qty}x ${com.name} to ${tStation.name} in ${target.name}.${com.illegal ? " Discreetly. Avoid gate scans." : ""}`,
         fromStationId: station.id, targetSystemId: target.id, targetStationId: tStation.id,
         commodityId: com.id, qty,
-        reward: Math.round((com.base * qty * 1.6 + 120 + (com.illegal ? 400 : 0)) * payMult),
+        reward: Math.round((com.base * qty * 1.6 + 120 + (com.illegal ? 400 : 0)) * payMult * (freemanRun ? 1.4 : 1)),
         repReward: 3,
       });
+      if (freemanRun) missions[missions.length - 1].desc += " Rock to rock, freeman's rate: inners need not apply.";
     } else if (kind === "bounty") {
       const target = linked.length && rng.chance(0.6) ? rng.pick(linked) : sys;
       const kills = rng.int(2, 4) + tier;

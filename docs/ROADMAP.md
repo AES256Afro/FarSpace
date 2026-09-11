@@ -1317,6 +1317,19 @@ Time passes for the people on the ship, and for the ship.
 - [x] A card: an officer from the far side of a border in a failing pod;
       bring them aboard (rep with their people), tow the pod sealed, or log it
 
+## Milestone 234 — Across the Bow ✅ (Sep 2026)
+- [x] A parley option: one warning shot; a gunner and a record help; fail and
+      they open up early
+
+## Milestone 235 — The Galley Door ✅ (Sep 2026)
+- [x] The ship keeps a newsletter (wall of record, once it has a name or a
+      roster line): card night, the band, who the captain sat with, moods,
+      the office, hails, the last log lines, corrections none
+
+## Milestone 236 — Freeman's Runs ✅ (Sep 2026)
+- [x] Freemen see rock-to-rock runs at a freeman's rate (+40%); inners need
+      not apply
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
