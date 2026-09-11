@@ -145,6 +145,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "inspection", title: "A GOOD SHIP", desc: "Pass an inspection with three marks of four", check: (w) => !!w.player.flags?.inspection },
   { id: "freeman", title: "FREEMAN OF THE BELT", desc: "Earn a standing of three with the rocks", check: (w) => !!w.player.flags?.freeman },
   { id: "requisition", title: "COURTESY OF THE SERVICE", desc: "Requisition a full service at a naval station", check: (w) => !!w.player.flags?.requisition },
+  { id: "motto", title: "A LINE BY THE AIRLOCK", desc: "Have the dedication plaque engraved", check: (w) => !!w.player.flags?.motto },
   { id: "inquiry", title: "NO FAULT", desc: "Sit through a board of inquiry for a lost crew member", check: (w) => !!w.player.flags?.inquiry },
   { id: "cards", title: "THE SIXES WERE MARKED", desc: "Play card night in the galley", check: (w) => !!w.player.flags?.cards },
   { id: "company", title: "COMPANY", desc: "Sit with a crew member at mess", check: (w) => !!w.player.flags?.company },

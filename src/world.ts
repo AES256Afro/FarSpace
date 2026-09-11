@@ -346,6 +346,9 @@ export interface PlayerState {
   lostProperty?: LostItem[];         // what fares left in the cabin; hand it in, or keep it
   keepsakes?: string[];              // small things that stayed aboard: unclaimed lost property
   inquiries?: number;                // boards of inquiry sat through, one per crew member lost
+  motto?: string;                    // the line on the dedication plaque by the airlock
+  commissionedAt?: number;           // world time this captain took the ship; stardate on the plaque
+  prankUntil?: number;               // somebody reprogrammed the ship's voice; it's insufferable until then
   regatta?: number;                  // the regatta: 0 entered, 1 first course won, 2 second, 3 champion
   regattaCourse?: string[];          // the three stations of your regatta, set when you're entered
   wrecksOfMine?: string[];           // wreck ids of ships you lost; they stay where they fell
@@ -616,6 +619,16 @@ export function commandRank(p: PlayerState): string {
   for (const [at, name] of COMMAND_RANKS) if (n >= at) r = name;
   return r;
 }
+export const MOTTOS = [
+  "Bring them home.", "Further out, and back.", "No hand left on the hull.", "The hum is the promise.", "Every light we leave stays lit.",
+  "Slow is smooth.", "Ask the belt.", "Not all who drift are lost.", "We answer hails.", "First to the wreck, last to leave it.",
+  "A ship is a place.", "Doors open both ways.", "Somebody has to.", "Steady as she hums.", "Water, air, and each other.",
+];
+// The dedication plaque by the airlock: name, registry, when, and the motto.
+export function dedication(w: World): string {
+  const p = w.player; const name = (p.shipName ?? hull(p.hullId).name).toUpperCase();
+  return `${name} - ${registry(w)} - COMMISSIONED SD ${(41000 + (p.commissionedAt ?? 0) / 360).toFixed(1)}${p.motto ? ` - "${p.motto.toUpperCase()}"` : ""}`;
+}
 export function registry(w: World): string { return `FS-${1000 + hashStr(`reg:${w.seed}:${w.player.hullId}:${w.player.shipName ?? ""}`) % 9000}`; }
 // A stardate for the log: hours under way, to a tenth, on a base that looks the part.
 export function stardate(w: World): string { return (41000 + w.time / 360).toFixed(1); }
@@ -651,6 +664,7 @@ export function chronicleText(w: World, callsign: string | null): string {
     const holdings = Object.entries(p.stakes ?? {}).map(([id, n]) => `${findStation(w, id)?.st.name ?? "?"} ${n}`);
     if (holdings.length) parts.push(`Holdings: ${holdings.join(", ")}.`);
     if ((p.keepsakes ?? []).length) parts.push(`Kept aboard: ${(p.keepsakes ?? []).slice(-3).join("; ")}.`);
+    if (p.motto) parts.push(`The plaque by the airlock reads "${p.motto}".`);
     if ((p.mealsCooked ?? 0) > 0) parts.push(`${p.mealsCooked} meals cooked in the galley.`);
     const bests = Object.entries(p.raceBest ?? {}).slice(0, 4).map(([id, t]) => `${findStation(w, id)?.st.name ?? "?"} ${t.toFixed(1)}s`);
     if (bests.length) parts.push(`Ring times: ${bests.join(", ")}${p.regatta === 3 ? "; regatta champion" : p.regatta !== undefined ? `; regatta ${p.regatta}/3` : ""}.`);

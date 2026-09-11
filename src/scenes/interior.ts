@@ -4,7 +4,7 @@
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond, onWatch, watchIndex, captainNickname, borderStanding, passengersFed, cookMeal, briefingReports, setFocus, runSim, SIM_PROGRAMS, nameTheShip, weekKey } from "../world";
+import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond, onWatch, watchIndex, captainNickname, borderStanding, passengersFed, cookMeal, briefingReports, setFocus, runSim, SIM_PROGRAMS, nameTheShip, weekKey, dedication, MOTTOS } from "../world";
 import { commodity, faction } from "../data/data";
 import { crewChatter, soloChatter, MESS_LINES, passengerChatter } from "../data/chatter";
 import { RNG } from "../core/rng";
@@ -203,6 +203,20 @@ export class InteriorScene implements Scene {
         else this.say("YOU EAT WITH THE CREW. MORALE UP.");
       }
     }
+  }
+  // the dedication plaque: four mottos off the yard's list, or your own
+  mottoMenu(g: Game): void {
+    const p = g.world.player; const rng = new RNG(Math.floor(g.world.time * 7) + 17);
+    const rest = [...MOTTOS]; const picks: string[] = [];
+    while (picks.length < 4 && rest.length) picks.push(rest.splice(rng.int(0, rest.length - 1), 1)[0]);
+    const set = (g2: Game, m: string) => { p.motto = m; flag(g2, "motto"); logEntry(g2.world, `Had the plaque by the airlock engraved: "${m}"`); return `THE YARD'S ENGRAVER TAKES A DAY AND CHARGES NOTHING, WHICH IS HOW YOU KNOW THEY LIKED IT. THE PLAQUE READS: ${dedication(g2.world)}`; };
+    const enc: Encounter = { id: "motto", where: "space", title: "THE PLAQUE", text: "A brass plate by the airlock with the name and the registry on it, and a blank line under them that every yard leaves blank on purpose. The engraver's list is pinned beside it, and there's a pencil.",
+      weight: 0, options: [
+        ...picks.map((m: string) => ({ label: `"${m.toUpperCase()}"`, result: (g2: Game) => set(g2, m) })),
+        { label: "WRITE YOUR OWN", hint: "Up to forty characters", result: (g2) => { const m = (ask("The engraver waits with the pencil. What goes on the plaque?", p.motto ?? "") ?? "").trim().slice(0, 40); if (!m) return "THE LINE STAYS BLANK. THE ENGRAVER SAYS THAT'S A CHOICE TOO."; return set(g2, m); } },
+        { label: "LEAVE IT BLANK", result: () => "YOU LEAVE IT. THE ENGRAVER NODS LIKE MOST DO." },
+      ] };
+    (g.scenes["encounter"] as EncounterScene).open(g, enc, "interior", true);
   }
   // card night: once a week the crew deal at the galley table, and the captain is either in or watching
   cardNight(g: Game): void {
@@ -413,6 +427,7 @@ export class InteriorScene implements Scene {
     if (p.hullHistory) lines.push(`THIS HULL WAS ${p.hullHistory.previous.toUpperCase()}'S. THEY LEFT ${p.hullHistory.quirk.toUpperCase()}.`);
     { const nick = captainNickname(g.world); if (nick) lines.push(`THE LANES CALL THIS SHIP'S CAPTAIN ${nick}.`); }
     { const bests = Object.entries(p.raceBest ?? {}).slice(0, 3).map(([id, t]) => `${(findStation(g.world, id)?.st.name ?? "?").toUpperCase()} ${t.toFixed(1)}S`); if (bests.length || p.regatta === 3) lines.push(`${p.regatta === 3 ? "REGATTA CHAMPION. " : ""}${bests.length ? `RING TIMES: ${bests.join(", ")}` : ""}`.trim()); }
+    lines.push(`PLAQUE: ${dedication(g.world)}`.slice(0, 118));
     if (p.keepsakes?.length) lines.push(`KEPT ABOARD: ${p.keepsakes.slice(-4).map((k) => k.toUpperCase()).join("; ")}`.slice(0, 118));
     if (p.lost?.length) lines.push(`LOST WITH THEIR SHIP: ${p.lost.slice(-4).map((l) => `${l.name.toUpperCase()} (${l.role.toUpperCase()}, OFF ${l.where.toUpperCase()})`).join("; ")}`.slice(0, 118));
     if (p.wrecksOfMine?.length) lines.push(`${p.wrecksOfMine.length} SHIP${p.wrecksOfMine.length > 1 ? "S" : ""} OF YOURS STILL OUT THERE, WHERE ${p.wrecksOfMine.length > 1 ? "THEY" : "IT"} FELL.`);
@@ -421,6 +436,7 @@ export class InteriorScene implements Scene {
     if (!p.voiceName) opts.push({ label: "ASK THE SHIP WHAT IT WANTS TO BE CALLED", hint: "It has had a name for a while. Nobody asked.", result: (g2) => { const name = ask("The band goes quiet. The ship spells something, slowly, letter by letter. What did it say?", ""); if (!name) return "THE BAND STAYS QUIET. ANOTHER TIME."; const l = nameTheShip(g2.world, name); if (g2.world.player.voiceName) { flag(g2, "shipnamed"); sfx.select(); } return l; } });
     else lines.push(`THE SHIP CALLS ITSELF ${p.voiceName.toUpperCase()}. IT SIGNS ITS LINES THAT WAY NOW.`);
     if (p.flags?.shipCrew) { const wear = Math.round(p.wear ?? 0); const verdict = wear > 70 ? "YOU RUN ME HARD. I'D LIKE THAT NOTED, AND A YARD." : (p.rescues ?? 0) > (p.kills ?? 0) ? "MORE PEOPLE PULLED OUT THAN PUT DOWN. I'M PROUD OF THAT. I'M ALLOWED." : (p.kills ?? 0) >= 25 ? "YOU FIGHT WELL. I WISH YOU DIDN'T HAVE TO. I'M GLAD IT'S YOU." : "STEADY HANDS, MOST DAYS. THE OTHER DAYS I DON'T MENTION."; lines.push(`THE SHIP'S REVIEW OF THE CAPTAIN: "${verdict}"`); }
+    opts.push({ label: p.motto ? "CHANGE THE MOTTO ON THE PLAQUE" : "CHOOSE A MOTTO FOR THE PLAQUE", hint: "Every ship gets a line by the airlock. Most captains never pick it.", result: (g2) => { this.mottoMenu(g2); return ""; } });
     const why = canRetireCaptain(g.world);
     if (!why) opts.push({ label: "RETIRE THIS CAPTAIN...", hint: "Hand the ship on; the galaxy carries on", result: (g2) => { this.retireMenu(g2); return ""; } });
     else if (g.world.time >= RETIRE_AFTER / 2) opts.push({ label: "RETIRE THIS CAPTAIN", hint: why, result: () => why });

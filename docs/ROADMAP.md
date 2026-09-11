@@ -1182,6 +1182,20 @@ Time passes for the people on the ship, and for the ship.
 - [x] Once a week, with two crew fit, the galley table is a card table: deal
       in for fifty, play for matches, watch who bluffs, or cook instead
 
+## Milestone 204 — The Plaque ✅ (Sep 2026)
+- [x] A dedication plaque by the airlock (name, registry, commissioning
+      stardate) with a motto chosen at the wall of record: four off the yard's
+      list or your own; the chronicle quotes it (deed "a line by the airlock")
+
+## Milestone 205 — The Voice Settings ✅ (Sep 2026)
+- [x] Somebody reprograms the ship's voice: let it run a leg (insufferable
+      lines on the band until the timer runs out), find out who, or reset it
+
+## Milestone 206 — Quarantine, the Fold, the Envoy's Companion ✅ (Sep 2026)
+- [x] Three cards: a freighter with a fever that's really a quarantine (a line,
+      a suit, an escort, or no); a ship like yours out of a fold with a line
+      from a day you haven't had; an envoy's companion loose in the vents
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

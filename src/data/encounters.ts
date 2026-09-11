@@ -355,6 +355,43 @@ export const ENCOUNTERS: Encounter[] = [
     ],
   },
   {
+    id: "prank", where: "space", weight: 3, title: "THE VOICE SETTINGS", when: (g) => p(g).crew.length >= 2 && p(g).prankUntil === undefined,
+    text: "The ship reads out the fuel state and it's the ship's voice, but it isn't. Somebody has been at the voice settings with a night watch and too much time, and the ship is now, in a word, insufferable. 'OH GOOD,' it says. 'YOU NOTICED.'",
+    options: [
+      { label: "LET IT RUN A LEG", hint: "Morale +4; the ship stays like this until the next port or so", result: (g) => { p(g).prankUntil = g.world.time + 1500; for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 4); logEntry(g.world, "Somebody reprogrammed the ship's voice; let it run a leg"); return "'FINALLY,' SAYS THE SHIP. 'AN AUDIENCE.' THE CREW ARE DELIGHTED. MORALE UP. YOU HAVE A FEELING YOU'LL REGRET THIS BY THE GATE."; } },
+      { label: "FIND OUT WHO", hint: "The ship knows; the ship tells", result: (g, rng) => { const who = rng.pick(p(g).crew); who.loyalty = (who.loyalty ?? 0) + 0.2; who.morale = Math.min(100, who.morale + 6); for (const c of p(g).crew) if (c !== who) c.morale = Math.min(100, c.morale + 2); p(g).prankUntil = g.world.time + 600; logEntry(g.world, `${who.name} reprogrammed the ship's voice; caught`); return `'IT WAS ${who.name.toUpperCase()},' SAYS THE SHIP, INSTANTLY, BECAUSE THE SHIP IS NOT A SNITCH BUT IS ALSO NOT NOT A SNITCH. ${who.name.split(" ")[0].toUpperCase()} TAKES A BOW. YOU LET IT RUN AN HOUR. YOU'RE NOT MADE OF STONE.`; } },
+      { label: "RESET IT NOW", hint: "Morale -2; the ship goes quiet for a while", result: (g) => { for (const c of p(g).crew) c.morale = Math.max(0, c.morale - 2); return "'FINE.' THE VOICE GOES BACK TO THE VOICE. THE SHIP DOESN'T SAY ANYTHING ELSE FOR A WATCH, WHICH IS A KIND OF SAYING SOMETHING."; } },
+    ],
+  },
+  {
+    id: "quarantine", where: "space", weight: 3, title: "A SHIP THAT WANTS TO DOCK", when: (g) => p(g).crew.length >= 1,
+    text: "A freighter on the short band asking to come alongside: a fever aboard, half the crew down, they want a medic and a hull to lean on. Your medic, or whoever's nearest a scanner, reads the freighter's air and goes quiet. 'That's not a fever, captain. That's a quarantine.'",
+    options: [
+      { label: "PASS MED SUPPLIES ON A LINE (2)", hint: "No contact; rep +3, two lives", requires: (g) => (p(g).cargo.med ?? 0) >= 2, result: (g) => { removeCargo(p(g), "med", 2); adjustRep(g.world, sys(g).factionId, 3); p(g).lives = (p(g).lives ?? 0) + 2; logEntry(g.world, "Passed med supplies on a line to a quarantined freighter"); return "TWO CRATES GO ACROSS ON A LINE THAT YOU CUT AT YOUR END. THEY GET THE CRATES. YOU GET THE THANKS ON THE BAND, AND A CLEAN SHIP. REP UP. TWO LIVES."; } },
+      { label: "SEND THE MEDIC ACROSS IN A SUIT", hint: "Rep +6, four lives; the medic might carry it home", requires: (g) => p(g).crew.some((c) => c.role === "medic" && !c.sick), result: (g, rng) => { const m = p(g).crew.find((c) => c.role === "medic" && !c.sick)!; adjustRep(g.world, sys(g).factionId, 6); p(g).lives = (p(g).lives ?? 0) + 4; const x = crewXp(p(g), "medic", 2); const caught = rng.chance(0.3); if (caught) { m.sick = { name: "the freighter's fever", until: g.world.time + 1200, severity: 1 } as never; } logEntry(g.world, `${m.name} went across to a quarantined freighter in a suit${caught ? " and brought the fever home" : ""}`); return `${m.name.toUpperCase()} GOES ACROSS IN A SUIT AND COMES BACK THREE HOURS LATER WITH FOUR NAMES THAT WOULD HAVE BEEN OFF THE LIST.${x ? " " + x : ""} REP UP. FOUR LIVES.${caught ? " AND A COUGH. THE SUIT WASN'T PERFECT. THE BUNK ROOM IS THEIRS FOR A WHILE." : ""}`; } },
+      { label: "ESCORT THEM TO THE NEAREST CLINIC, AT A DISTANCE", hint: "Rep +2; the leg takes longer", result: (g) => { adjustRep(g.world, sys(g).factionId, 2); g.world.time += 900; logEntry(g.world, "Escorted a quarantined freighter to a clinic, at a distance"); return "YOU FLY OFF THEIR QUARTER AT TWO KILOMETRES AND TALK THEM IN, AND THE CLINIC HAS A TENT UP BY THE TIME THEY CLAMP. NOBODY TOUCHES ANYBODY. REP UP. A QUARTER OF AN HOUR GONE."; } },
+      { label: "DECLINE. GOOD LUCK", result: (g) => { for (const c of p(g).crew) if (c.role === "medic") c.morale = Math.max(0, c.morale - 6); return "THEY DON'T ARGUE. THEY'VE BEEN DECLINED BEFORE. YOUR MEDIC, IF YOU HAVE ONE, DOESN'T SPEAK TO YOU UNTIL THE GATE."; } },
+    ],
+  },
+  {
+    id: "mirror", where: "space", weight: 2, title: "A SHIP LIKE YOURS",
+    text: "The scanner paints a contact on a reciprocal course, same class, same registry, same everything. It hails on your own callsign. The voice is yours, tired, a little older. 'DON'T PANIC. IT'S A FOLD. WE'VE GOT ABOUT A MINUTE. LISTEN.'",
+    options: [
+      { label: "LISTEN", hint: "Data +25; something true from a day you haven't had yet", result: (g, rng) => { p(g).expData = (p(g).expData ?? 0) + 25; const line = rng.pick(["'CHECK THE PORT MOUNT BEFORE THE NEXT LONG BURN. TRUST ME.'", "'THE ENVOY IS LYING ABOUT THE TREATY. TAKE THE FARE ANYWAY.'", "'BUY WATER AT THE NEXT ROCK. ALL OF IT.'", "'SAY YES TO THE BAND. YOU'LL KNOW WHAT I MEAN.'", "'THE CAT WAS RIGHT ABOUT THE VENT.'"]); logEntry(g.world, `Met a ship like mine in a fold; it said ${line.toLowerCase()}`); return `${line} THEN THE FOLD CLOSES AND THE CONTACT IS GONE AND THE SCANNER SAYS IT WAS NEVER THERE. +25 DATA. YOU WRITE THE LINE ON THE BACK OF YOUR HAND.`; } },
+      { label: "TALK BACK. ASK THEM ANYTHING", hint: "Morale up; you don't get an answer you can use", result: (g) => { for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 3); return "YOU ASK WHETHER IT WORKS OUT. THE OTHER YOU LAUGHS, WHICH IS EITHER AN ANSWER OR ISN'T. THE FOLD CLOSES. THE CREW TALK ABOUT IT FOR A WEEK. MORALE UP."; } },
+      { label: "CUT THE CHANNEL", hint: "Some things you don't want to know", result: () => "YOU CUT IT. THE CONTACT HANGS THERE THIRTY SECONDS MORE, THEN ISN'T. THE SCANNER LOG SHOWS NOTHING. YOU DECIDE THAT'S FINE." },
+    ],
+  },
+  {
+    id: "envoypet", where: "space", weight: 3, title: "THE ENVOY'S COMPANION", when: (g) => passengersAboard(p(g)).some((m) => m.passengerKind === "envoy"),
+    text: "The envoy's diplomatic baggage turns out to have been alive, and is now in the vents. Something the size of a cat and the temperament of a customs officer. The envoy is mortified in three languages. The ship reports 'A THING IN DUCT FOUR. IT HISSED AT ME.'",
+    options: [
+      { label: "ALL HANDS TO THE VENTS", hint: "Morale up; an hour lost; the envoy is grateful", result: (g) => { const env = passengersAboard(p(g)).find((m) => m.passengerKind === "envoy"); if (env) env.mood = Math.min(100, (env.mood ?? 60) + 15); for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 4); g.world.time += 600; logEntry(g.world, "All hands to the vents for an envoy's escaped companion"); return "AN HOUR OF THE WHOLE CREW ON THEIR KNEES AT DUCT GRILLES MAKING NOISES. IT COMES OUT FOR THE ENGINEER, FOR SOME REASON. THE ENVOY WEEPS. MORALE UP, THEIRS AND EVERYBODY'S."; } },
+      { label: "LET THE CAT HANDLE IT", hint: "The cat finds it in a minute; the cat is unbearable after", requires: (g) => !!p(g).cat && !p(g).catAway, result: (g) => { const env = passengersAboard(p(g)).find((m) => m.passengerKind === "envoy"); if (env) env.mood = Math.min(100, (env.mood ?? 60) + 10); logEntry(g.world, `${p(g).cat!.name} found an envoy's escaped companion in the vents`); return `${p(g).cat!.name.toUpperCase()} GOES INTO DUCT FOUR AND COMES OUT OF DUCT ONE WITH THE THING WALKING BEHIND, CHASTENED. NOBODY KNOWS WHAT WAS SAID. THE ENVOY IS GRATEFUL. THE CAT IS INSUFFERABLE FOR A WEEK.`; } },
+      { label: "SEAL THE VENTS AND WAIT", hint: "The envoy's mood falls; it comes out at the gate, eventually", result: (g) => { const env = passengersAboard(p(g)).find((m) => m.passengerKind === "envoy"); if (env) env.mood = Math.max(0, (env.mood ?? 60) - 15); return "IT COMES OUT AT THE GATE, THIN AND FURIOUS, AND SO IS THE ENVOY. THE TREATY, IF THERE IS ONE, WILL BE COLDER FOR IT."; } },
+    ],
+  },
+  {
     id: "shipquestion", where: "space", weight: 4, title: "A QUESTION FROM THE SHIP", when: (g) => !!p(g).voiceName && !p(g).flags?.shipCrew,
     text: "The band clicks live with nobody on it. Then the ship, in the voice it uses for the night watch: 'I HAVE BEEN THINKING ABOUT THE ROSTER. I AM ON EVERY WATCH. I HAVE NEVER BEEN ON THE ROSTER. I WOULD LIKE TO BE ON THE ROSTER. I DON'T NEED A WAGE. I WOULD LIKE A LINE.'",
     options: [

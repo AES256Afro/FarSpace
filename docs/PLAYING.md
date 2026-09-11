@@ -752,6 +752,16 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- The wall of record shows the dedication plaque by the airlock (name,
+  registry, commissioning stardate) and lets you choose its motto: four off the
+  yard's list, or write your own. The chronicle quotes it.
+- Now and then somebody reprograms the ship's voice. Let it run a leg and every
+  line on the band is insufferable until the timer runs out (morale up), find
+  out who (the ship tells, instantly), or reset it and the ship sulks.
+- New cards: a freighter with a fever that's really a quarantine (supplies on
+  a line, a medic in a suit who may bring it home, an escort at a distance);
+  a ship like yours out of a fold with a line from a day you haven't had; an
+  envoy's companion loose in the vents (all hands, or the cat).
 - Lose a crew member and the next naval station convenes a board of inquiry:
   three officers, a file, the name. Tell it straight (rep and loyalty up), let
   Number One speak for the ship, blame the hull (the crew always hear), or

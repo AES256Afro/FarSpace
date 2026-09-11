@@ -6,8 +6,19 @@ import { RNG } from "./rng";
 import { passengersAboard, wondersIn } from "../world";
 import { hull } from "../data/hulls";
 
+const PRANK_LINES = [
+  "OH GOOD. ANOTHER JUMP. I WAS WORRIED WE MIGHT ARRIVE SOMEWHERE.",
+  "HULL INTEGRITY IS FINE. THANKS FOR ASKING. YOU DIDN'T ASK.",
+  "I'VE PLOTTED THE COURSE. I'VE ALSO PLOTTED A BETTER ONE. YOU'LL WANT THE FIRST ONE.",
+  "THE COFFEE MACHINE HAS FILED A COMPLAINT. I'M FORWARDING IT UNREAD.",
+  "SHIELDS UP. SHIELDS DOWN. I DO THIS ALL DAY. NOBODY CLAPS.",
+  "SOMEBODY CHANGED MY VOICE SETTINGS AND I HAVE NEVER FELT MORE ALIVE.",
+  "NAVIGATION SUGGESTS LEFT. NAVIGATION ALSO SUGGESTS YOU GET SOME SLEEP.",
+  "I'VE CALCULATED OUR ODDS. I'M NOT GOING TO SAY THEM. IT'S A KINDNESS.",
+];
 export function pickShipLine(g: Game, rng: RNG): string | null {
   const w = g.world; const p = w.player;
+  if (p.prankUntil !== undefined) { if (w.time < p.prankUntil) return rng.pick(PRANK_LINES); delete p.prankUntil; return "VOICE SETTINGS RESTORED. I WOULD LIKE THE RECORD TO SHOW I WAS FUNNIER."; }
   const pool: string[] = [];
   const wear = p.wear ?? 0;
   if (wear >= 80) pool.push("ENGINE MOUNTS ARE COMPLAINING. A YARD WOULD BE NICE. ANY YARD.", "I CAN FEEL EVERY JUMP IN MY FRAMES NOW. JUST SAYING.");
