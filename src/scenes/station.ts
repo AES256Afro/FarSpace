@@ -1,3 +1,4 @@
+import { loanHullChangeReason, loanReturnReason, loanSummary, plotLoanDepot, returnServiceCutter } from "../core/serviceloan";
 import { plotServiceOrder, serviceAudienceAt, serviceObjective } from "../core/service";
 // Station scene: docked services — market, shipyard, ships, missions, bar (crew), storage, news.
 
@@ -9,7 +10,7 @@ import { PAL } from "../gfx/palette";
 import { RNG, hashStr } from "../core/rng";
 import { clamp } from "../core/mathx";
 import { commodity, faction } from "../data/data";
-import { HULLS, hull } from "../data/hulls";
+import { HULLS, hull, SERVICE_CUTTER } from "../data/hulls";
 import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS, roleLabel } from "../data/crew";
 import { councilAudienceAt, councilObjective, plotCouncilMandate } from "../core/council";
 import { beginLastLeg, lastLegAtPort, lastLegDestination } from "../core/lastleg";
@@ -918,6 +919,7 @@ export class StationScene implements Scene {
   scrapHull(g: Game, ship: StoredShip | undefined): void {
     if (!ship) return;
     const p = g.world.player; const h = hull(ship.hullId);
+    if (!p.fleet?.includes(ship) || ship.stationId !== this.station.id || ship.hullId === SERVICE_CUTTER.id) { g.toast("THAT OWNED HULL IS NOT PARKED HERE"); return; }
     const price = Math.max(150, Math.round(Math.max(h.price, 900) * 0.45 * Math.max(0.5, ship.hull / h.hullMax)));
     if (!confirmBox(`Scrap the ${ship.name ?? h.name} here for ${price}cr? The yard breaks her up; there's no getting her back.`)) return;
     p.fleet = (p.fleet ?? []).filter((f) => f !== ship);
@@ -929,6 +931,7 @@ export class StationScene implements Scene {
   putToWork(g: Game, ship: StoredShip | undefined): void {
     if (!ship) return;
     const p = g.world.player; const st = this.station;
+    if (!p.fleet?.includes(ship) || ship.stationId !== st.id || ship.hullId === SERVICE_CUTTER.id) { g.toast("THAT OWNED HULL IS NOT PARKED HERE"); return; }
     const best = this.bestRoute(g);
     const toId = best ? Object.keys(p.marketMemory ?? {}).find((id) => findStation(g.world, id)?.st.name === best.station) : null;
     if (!best || !toId) { g.toast("NO KNOWN RUN FROM HERE YET - DOCK AT ANOTHER STATION AND COME BACK"); return; }
@@ -941,6 +944,7 @@ export class StationScene implements Scene {
   }
   // Passage on a liner to wherever your other ship is parked. This one stays here; the crew come with you.
   takeTheLiner(g: Game): void {
+    const loanReason = loanHullChangeReason(g.world.player); if (loanReason) { g.toast(loanReason); return; }
     const p = g.world.player; const w = g.world;
     const elsewhere = (p.fleet ?? []).filter((f) => f.stationId !== this.station.id).map((f) => ({ f, hops: charterRoute(w, this.station.id, f.stationId).hops })).sort((a, b) => a.hops - b.hops);
     if (!elsewhere.length) { g.toast("NO SHIP OF YOURS PARKED ANYWHERE ELSE"); return; }
@@ -973,9 +977,11 @@ export class StationScene implements Scene {
     g.setScene("station");
   }
   swapShip(g: Game, ship: StoredShip | undefined): void {
+    const loanReason = loanHullChangeReason(g.world.player); if (loanReason) { g.toast(loanReason); return; }
     if (!ship) return;
     const p = g.world.player;
     const h = hull(ship.hullId);
+    if (!p.fleet?.includes(ship) || ship.stationId !== this.station.id || ship.hullId === SERVICE_CUTTER.id) { g.toast("THAT OWNED HULL IS NOT PARKED HERE"); return; }
     if (cargoUsed(p) > h.cargoMax + 25 * ((p.modules ?? []).includes("rack") ? 1 : 0) + 5 * (p.engineering?.cargo ?? 0)) { g.toast(`CARGO WON'T FIT IN THE ${h.name.toUpperCase()} - STORE OR SELL FIRST`); return; }
     if (p.crew.length > h.crewSlots) { g.toast(`TOO MUCH CREW FOR ${h.crewSlots} BERTHS`); return; }
     const parked: StoredShip = { hullId: p.hullId, stationId: this.station.id, name: p.shipName, hull: p.hull, torpedoes: p.torpedoes ?? 0 };
@@ -993,6 +999,8 @@ export class StationScene implements Scene {
   }
 
   buyHull(g: Game, id: string, keepOld: boolean): void {
+    const loanReason = loanHullChangeReason(g.world.player); if (loanReason) { g.toast(loanReason); return; }
+    if (!HULLS.some(h => h.id === id)) { g.toast("THAT HULL IS NOT OFFERED FOR SALE"); return; }
     const p = g.world.player;
     const h = hull(id);
     if (p.hullId === id) { g.toast("THIS IS YOUR CURRENT HULL"); return; }
@@ -1021,6 +1029,11 @@ export class StationScene implements Scene {
     const p = g.world.player;
     const st = this.station;
     const opts: { label: string; sub: string; action: () => void }[] = [];
+    if (p.service?.loan) {
+      const loan = p.service.loan;
+      opts.push({ label: "RETURN SERVICE CUTTER", sub: loanReturnReason(g.world) ?? "YOUR HELD SHIP IS READY. CURRENT CARGO AND CREW FIT. NO CHARGE.", action: () => { g.toast(returnServiceCutter(g.world, loan)); g.spriteCache.clear(); g.autosave(); } });
+      opts.push({ label: "PLOT SERVICE DEPOT", sub: loanSummary(g.world)!, action: () => { g.toast(plotLoanDepot(g.world) ? "DEPOT COURSE SET. N IN FLIGHT FOLLOWS IT." : "THE DEPOT ROUTE IS CLOSED. YOUR HELD SHIP CAN WAIT."); g.autosave(); } });
+    }
     // patron squadrons keep their faction's yards half price for members
     const patronHere = (!!wire.getSquadron() && wire.patronOf(st.factionId) === wire.getSquadron()) || this.myBaseHere() || hasCharter(g.world, st.factionId);
     const depot = this.baseHas("depot");
@@ -1410,7 +1423,7 @@ export class StationScene implements Scene {
     drawText(ctx, nameLine, VW - textWidth(nameLine) - 8, top, PAL.greyDark);
     { const spr = g.playerShip(); ctx.drawImage(spr, VW - 8 - spr.width, top + 9); } // the hull as she'll look, trim and all
     const tradeIn = Math.round(hull(p.hullId).price * 0.6);
-    drawText(ctx, `HULL MARKET - ENTER BUYS WITH TRADE-IN (${tradeIn}CR) - K BUYS AND PARKS YOUR ${hull(p.hullId).name.toUpperCase()} HERE`, 8, top, PAL.greyDark);
+    drawText(ctx, p.service?.loan ? "SERVICE CUTTER ON LOAN - RETURN AT ISSUING DEPOT / SHIPYARD TAB" : `HULL MARKET - ENTER BUYS WITH TRADE-IN (${tradeIn}CR) - K BUYS AND PARKS YOUR ${hull(p.hullId).name.toUpperCase()} HERE`, 8, top, PAL.greyDark);
     const stored = (p.fleet ?? []).filter((f) => f.stationId === this.station.id);
     const elsewhere = (p.fleet ?? []).filter((f) => f.stationId !== this.station.id);
     const rowH = 26; // seven hulls have to fit above the parked list

@@ -2023,6 +2023,18 @@ Time passes for the people on the ship, and for the ship.
 - [x] Transfer postings within the same service without resetting the record.
       Accept reports and returned orders after standing falls; suspend new work.
 
+## Milestone 401: A Cutter in Your Custody (Sep 2026)
+- [x] Issue a playable Tern Service Cutter at watch officer grade, outside the
+      hull market, with one issue per filed report and no return deadline.
+- [x] Keep the original hull in depot custody with its condition, identity,
+      supplies and service history, while the captain's equipment and crew move.
+- [x] Return in person through the office or shipyard. Require cargo and crew
+      to fit the held hull; transfer acquired fittings and ammunition once.
+- [x] Block sale, parking and active hull swaps while the cutter is borrowed.
+      Keep other fleet ships and guard stale parked-hull actions.
+- [x] Preserve custody through saves, lower standing and depot ownership changes.
+      Keep the office's expanded list scrollable and provide a depot course.
+
 ## Later: Trek / Expanse / Orville (the fourth sitting)
 
 The third sitting shipped everything on the last list (M330–M386): the
@@ -2030,7 +2042,6 @@ singers' home, the commission, the hearing, away partners, the rival's
 Number One, the long ship's launch, standing orders II and III, the ship on
 the roster, a command of their own. Next:
 
-- The service cutter: a hull of your own on loan, with custody and return.
 - Service orders that conflict with a fare: an explicit decision with a record.
 
 The office's retirement and files, the wedding keepsake, the child named
@@ -2045,3 +2056,5 @@ The council room, weekly agendas and representation journey are covered by M398.
 The ship's interactive sim program is covered by M399.
 
 The naval career and postings are covered by M400.
+
+The service cutter and depot custody are covered by M401.

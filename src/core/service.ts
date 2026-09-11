@@ -1,3 +1,4 @@
+import type { ServiceLoan } from "./serviceloan";
 import type { PlayerState, StationDef, World } from "../world";
 import { adjustRep, commandRank, findStation, ledger, logEntry, navRoute, permitDenied } from "../world";
 
@@ -9,6 +10,7 @@ export interface ServiceOrder {
 }
 export interface ServiceRecord {
   factionId: string; stationId: string; joinedAt: number; serial: number; completed: number;
+  loan?: ServiceLoan; loanSerial?: number; loansReturned?: number; lastLoanReport?: number;
   history: { title: string; t: number; pay: number; report: string }[]; order?: ServiceOrder;
 }
 export const SERVICE_RANKS = [

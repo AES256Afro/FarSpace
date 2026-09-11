@@ -1,3 +1,4 @@
+import { borrowServiceCutter, loanBorrowReason, loanReturnReason, loanSummary, plotLoanDepot, returnServiceCutter } from "../core/serviceloan";
 import type { Game, Scene } from "../game";
 import { VW, VH } from "../game";
 import { acceptServiceOrder, joinService, plotServiceOrder, reportServiceOrder, SERVICE_RANKS, serviceJoinReason, serviceObjective, serviceOffers, serviceOffice, serviceRank, serviceWorkReason, transferService, withdrawServiceOrder } from "../core/service";
@@ -49,6 +50,15 @@ export class ServiceScene implements Scene {
         const last = record.history.at(-1); return last ? `${last.title}: ${last.report} PAID ${last.pay}CR.`.toUpperCase() : "YOUR FILE HAS A NAME, A POSTING AND AN EMPTY FIRST PAGE. 'THAT PART IS NORMAL,' SAYS THE CLERK.";
       } });
     }
+    if (record?.loan) {
+      const loan = record.loan;
+      rows.push({ label: "RETURN THE SERVICE CUTTER", detail: loanReturnReason(w) ?? `BOARD YOUR HELD SHIP. CARGO AND CREW MUST FIT; THERE IS NO RETURN CHARGE. ${loanSummary(w)}`, run: () => {
+        const line = returnServiceCutter(w, loan); g.spriteCache.clear(); return line;
+      } });
+      rows.push({ label: "PLOT THE CUTTER'S DEPOT", detail: loanSummary(w)!, run: () => plotLoanDepot(w) ? "DEPOT COURSE SET. N IN FLIGHT FOLLOWS IT TO YOUR HELD SHIP." : "THE ROUTE IS CLOSED. YOUR HELD SHIP CAN WAIT." });
+    } else if (record && record.factionId === st.factionId) rows.push({ label: "REQUEST A CUTTER ON LOAN", detail: loanBorrowReason(w) ?? "TERN CUTTER: HULL 160, SHIELD 90, HOLD 60, FUEL 180, THREE CREW. YOUR OWN SHIP IS HELD HERE. YOUR CARGO AND FITTINGS MOVE WITH YOU. RETURN REQUIRES THEM TO FIT YOUR OLD HULL. NO FEE OR DEADLINE. ONE ISSUE PER FILED REPORT.", run: () => {
+      const line = borrowServiceCutter(w); g.spriteCache.clear(); return line;
+    } });
     rows.push({ label: "BACK TO THE PROMENADE", detail: "THE DUTY DESK STAYS OPEN.", run: () => { this.leave(g); return ""; } });
     return rows;
   }
@@ -92,6 +102,7 @@ export class ServiceScene implements Scene {
     const next = SERVICE_RANKS.find(r => r.at > (record?.completed ?? 0));
     drawText(ctx, next ? `NEXT GRADE: ${next.at} REPORTS` : "SENIOR SERVICE GRADE", 22, 162, PAL.greyDark);
     drawText(ctx, `STANDING: ${(w.player.rep[record?.factionId ?? st.factionId] ?? 0).toFixed(0)}`, 22, 173, PAL.ui);
+    if (record?.loan) drawText(ctx, "CUTTER IN YOUR CUSTODY", 22, 184, PAL.gold);
     const rows = this.actions(g);
     rows.slice(this.scroll, this.scroll + VISIBLE).forEach((row, i) => {
       const selected = this.cursor === this.scroll + i, y = TOP + i * ROW;
@@ -99,6 +110,7 @@ export class ServiceScene implements Scene {
       drawText(ctx, `${selected ? ">" : " "} ${row.label}`.slice(0, 57), LEFT + 4, y + 5, selected ? PAL.gold : PAL.white);
       drawText(ctx, selected ? "READ DETAILS BELOW" : "ENTER OR CLICK", LEFT + 12, y + 15, PAL.greyDark);
     });
+    if (rows.length > VISIBLE) drawText(ctx, `${this.scroll + 1}-${Math.min(rows.length, this.scroll + VISIBLE)} OF ${rows.length} / ARROWS SCROLL`, LEFT + 4, 199, PAL.greyDark);
     const line = this.message || rows[this.cursor]?.detail || "";
     wrap(line, 112).slice(0, 6).forEach((text, i) => drawText(ctx, text, 12, 207 + i * 8, this.message ? PAL.ui : PAL.grey));
     drawText(ctx, "ARROWS / WHEEL MOVE   ENTER / CLICK CHOOSE   ESC DECK   F5 SAVE", 12, 259, PAL.greyDark);

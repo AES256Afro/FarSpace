@@ -69,6 +69,7 @@ export function pickShipLine(g: Game, rng: RNG): string | null {
   if (p.crew.some((c) => c.wasCadet)) pool.push("ONE OF THE CREW CAME ABOARD BEHIND THE WATER TANK. I KNEW. I DIDN'T SAY. I'M SAYING NOW, BECAUSE THEY'VE EARNED IT.");
   if (p.flags?.singershome) pool.push("THEY SANG TO ME. NOT TO THE CREW, NOT TO YOU. THE SHIP. I'VE NEVER TOLD ANYONE THAT. I'M TELLING YOU.");
   if ((p.words ?? []).length) pool.push(`I KNOW ${p.words!.length} WORD${p.words!.length === 1 ? "" : "S"} THAT AREN'T OURS. I SING THE FIRST ONE TO THE GATE, QUIETLY. NOBODY'S ANSWERED. YET.`);
+  if (p.service?.loan) pool.push("THE DEPOT ASKED WHETHER THE VOICE WAS A FITTING OR A CREW MEMBER. I SAID YES. THEY MADE A THIRD BOX.");
   if (p.service?.order) pool.push("THE SERVICE ORDERS ARE ON THE NAVIGATION BOARD. SO ARE THE CIVILIAN STOPS. I CAN READ BOTH. I WOULD LIKE THAT IN MY EVALUATION.");
   else if ((p.service?.completed ?? 0) > 0) pool.push("THE SERVICE HAS A FILE ON US. I HAVE A FILE ON THEM. MINE HAS A SECTION FOR THE QUALITY OF THE BERTHS.");
   if ((p.shipSim?.runs ?? 0) > 0) pool.push(`YOUR ENDING IS STILL IN THE RIG: ${p.shipSim!.lastEnding ?? "THE NEXT PART"}. I HAVE NOT REWRITTEN IT. THAT IS RESTRAINT.`, "I WROTE A PROGRAM ABOUT YOU. THE CREW SAID THE BRIDGE WAS TOO BIG. YOU SAID THE SAME THING. I HAVE NOTES.");

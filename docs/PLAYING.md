@@ -1824,3 +1824,37 @@ penalty. Below zero faction standing, new orders are suspended; you can still
 file a completed report or return existing orders. With no orders outstanding,
 visit another office of the same navy and **Take a posting here** to move your
 file without losing service grade or completed work.
+
+
+## A service cutter on loan
+
+After two filed service reports, the duty desk at your current posting can
+issue a **Tern Service Cutter**. It has 160 hull, 90 shield, a 60-unit hold,
+180 fuel, three crew berths and a freighter deck. It arrives fuelled, without
+torpedoes. Fitted modules and engineering add their normal capacity changes.
+There is no fee or return deadline. The depot issues once per completed
+service report; file another assignment before borrowing again after a return.
+
+Your current ship goes into the depot's custody, outside the fleet's scrap,
+trade and charter lists. Its name, paint, hull and system condition, breaches,
+fires, fuel, torpedoes, wear, service log, history and commissioning date are
+kept. The captain's cargo, crew, fittings, furnishings, skills and ship voice
+move to the cutter. You can name or paint the cutter for its time with you.
+
+Return through **Return the service cutter** at the duty desk, or
+**Shipyard > Return service cutter** at the issuing station. The shipyard
+return remains available if that station changes faction. Falling standing
+does not prevent a return. The office and shipyard can plot the depot; N in
+flight follows the course to the held ship.
+
+The original hull must have space for the current cargo, crew and reserved
+shore-leave berths. If it does not, the return is refused and both ships stay
+in their current state. Store or sell excess cargo, or retain the cutter
+until the crew roster fits. Fittings and engineering acquired during the loan
+transfer back. Unused torpedoes acquired aboard the cutter are added to those
+held on the original ship. Its recorded condition and fuel are restored.
+There is no charge for returning a damaged cutter.
+
+The yard will not trade in, park, charter or scrap the borrowed cutter. Return
+it before buying another active hull, swapping to a parked ship or taking a
+liner to another hull. Your other owned ships remain in the fleet.

@@ -77,6 +77,16 @@ export const HULLS: HullDef[] = [
   },
 ];
 
+// Issued by the service depot; kept out of the hull market and its trade-in list.
+export const SERVICE_CUTTER: HullDef = {
+  id: "service-cutter", name: "Tern Service Cutter", price: 0,
+  desc: "A service hull on loan: three crew berths, a useful hold, long legs and a listening watch.",
+  hullMax: 160, shieldMax: 90, cargoMax: 60, fuelMax: 180,
+  accel: 105, maxSpeed: 280, rotSpeed: 3.3, miningRate: 2, weaponDmg: 12, fireRate: 0.24,
+  spriteSize: 29, color: "#647f99", accent: "#c3dce8", deck: "freighter", crewSlots: 3,
+};
+
 export function hull(id: string | undefined): HullDef {
+  if (id === SERVICE_CUTTER.id) return SERVICE_CUTTER;
   return HULLS.find((h) => h.id === id) ?? HULLS[0];
 }
