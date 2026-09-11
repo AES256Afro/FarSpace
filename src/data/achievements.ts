@@ -109,5 +109,11 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "scout", title: "SCOUT", desc: "Reach Explorer rank Scout", check: (w) => rankOf(w.player, "explorer").idx >= 2 },
   { id: "dealer", title: "DEALER", desc: "Reach Trader rank Dealer", check: (w) => rankOf(w.player, "trader").idx >= 3 },
   { id: "driller", title: "DRILLER", desc: "Reach Miner rank Driller", check: (w) => rankOf(w.player, "miner").idx >= 2 },
+  { id: "dockhand", title: "ON THE HOUSE", desc: "A dock-hand did a small job on the house", check: (w) => !!w.player.flags?.dockhand },
+  { id: "lostfound", title: "LOST AND FOUND", desc: "Hand in something a fare left aboard", check: (w) => !!w.player.flags?.lostfound },
+  { id: "keepsake", title: "FINDERS KEEPERS", desc: "Keep unclaimed lost property as a keepsake", check: (w) => !!w.player.flags?.keepsake },
+  { id: "tipped", title: "GOOD SERVICE", desc: "A passenger tipped for a request you met", check: (w) => !!w.player.flags?.tipped },
+  { id: "neighbour", title: "BERTH NEIGHBOURS", desc: "Meet a captain you know on the promenade", check: (w) => !!w.player.flags?.neighbour },
+  { id: "nightowl", title: "NIGHT OWL", desc: "Dock on a station's night shift", check: (w) => !!w.player.flags?.nightowl },
   { id: "elite", title: "ELITE", desc: "Top any career ladder", check: (w) => (["explorer", "trader", "miner"] as const).some((k) => rankOf(w.player, k).idx >= 8) },
 ];

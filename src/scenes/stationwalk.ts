@@ -212,7 +212,7 @@ export class StationWalkScene implements Scene {
     const lost = p.lostProperty ?? [];
     if (lost.length) lines.push(`LOST PROPERTY ABOARD YOUR SHIP: ${lost.map((it) => `${it.name.toUpperCase().split(",")[0]} (${it.owner.toUpperCase()})`).join("; ")}`.slice(0, 118));
     const enc: Encounter = { id: "harbour", where: "space", title: "HARBOURMASTER'S OFFICE", text: lines.join("\n"), weight: 0, options: [
-      ...lost.map((it) => ({ label: `HAND IN ${it.name.toUpperCase().split(",")[0]}`, hint: it.stationId === this.station.id ? `${it.owner} got off here; the office has them on file` : `${it.owner} got off elsewhere; it'll be forwarded`, result: (g2: Game) => { sfx.pickup(); return handInLostItem(g2.world, it, this.station.id); } })),
+      ...lost.map((it) => ({ label: `HAND IN ${it.name.toUpperCase().split(",")[0]}`, hint: it.stationId === this.station.id ? `${it.owner} got off here; the office has them on file` : `${it.owner} got off elsewhere; it'll be forwarded`, result: (g2: Game) => { sfx.pickup(); flag(g2, "lostfound"); return handInLostItem(g2.world, it, this.station.id); } })),
       { label: "THANK THEM AND GO", result: () => "" }] };
     (g.scenes["encounter"] as EncounterScene).open(g, enc, "stationwalk", true);
   }
@@ -304,14 +304,14 @@ export class StationWalkScene implements Scene {
         return;
       }
       const dh = this.npcs.find((n) => n.tag === "DOCK-HAND" && dist(this.px, this.py, n.x, n.y) < 16);
-      if (dh) { this.msg = dh.line!; this.msgTimer = 6; const f = dockhandFavour(g.world, this.station, new RNG((Math.random() * 1e9) >>> 0)); if (f) { g.toast(f); sfx.repair(); } else sfx.select(); return; }
+      if (dh) { this.msg = dh.line!; this.msgTimer = 6; const f = dockhandFavour(g.world, this.station, new RNG((Math.random() * 1e9) >>> 0)); if (f) { g.toast(f); sfx.repair(); if (f.includes("ON THE HOUSE")) flag(g, "dockhand"); } else sfx.select(); return; }
       const cap = this.npcs.find((n) => (n.tag === "FRIEND" || n.tag === "RIVAL" || n.tag === "CAPTAIN") && dist(this.px, this.py, n.x, n.y) < 16);
       if (cap) {
         const c = (g.world.captains ?? []).find((x) => x.name === cap.name);
         this.msg = cap.line!; this.msgTimer = 6; cap.pause = Math.max(cap.pause, 4);
         const key = `berth:${this.station.id}:${cap.name}:${weekKey()}`;
         if (c && !(g.world.player.flags ?? {})[key]) {
-          (g.world.player.flags ??= {})[key] = true; c.met++; c.lastSeen = g.world.time;
+          (g.world.player.flags ??= {})[key] = true; c.met++; c.lastSeen = g.world.time; flag(g, "neighbour");
           if (isRival(c)) { sfx.select(); logEntry(g.world, `Ran into ${c.name} on the promenade at ${this.station.name}. Words were had`); }
           else { const gift = Math.random() < 0.5 ? "parts" : "credits"; if (gift === "parts" && addCargo(g.world.player, "parts", 1)) { g.toast(`${c.name.toUpperCase()} HANDS OVER A SPARE FROM THE ${c.ship.toUpperCase()}. +1 SPARE PART. "YOU'LL NEED IT BEFORE I DO."`); } else { g.world.player.credits += 60; g.toast(`${c.name.toUpperCase()} SETTLES AN OLD ROUND. +60CR. "DON'T ARGUE. NEXT ONE'S YOURS."`); } sfx.pickup(); logEntry(g.world, `Met ${c.name} off the ${c.ship} on the promenade at ${this.station.name}`); }
         }

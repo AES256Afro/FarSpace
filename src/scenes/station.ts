@@ -115,13 +115,14 @@ export class StationScene implements Scene {
     const allElite = (["explorer", "trader", "miner", "rescuer"] as const).every((k) => rankOf(p, k).title === "ELITE");
     if (allElite && !p.flags?.master) { flag(g, "master"); logEntry(g.world, "Elite in every trade: master of the lanes"); void wire.post("achievement", "is Elite in every trade: master of the lanes", g.world.systems[p.systemId].name); }
     const title = allElite ? "MASTER OF THE LANES" : isHome(p, this.station.id) ? "WELCOME HOME" : dockingsAt(p, this.station.id) >= OLD_HAND_AT ? "GOOD TO HAVE YOU BACK" : rankOf(p, "rescuer").idx >= 3 ? rankOf(p, "rescuer").title : hasCharter(g.world, this.station.factionId) ? "CHARTERED" : (p.lineage ?? []).length ? "OF THE LINE" : (captainNickname(g.world) ?? "");
+    if (stationHour(this.station).night) flag(g, "nightowl");
     g.toast(stationHour(this.station).night ? `${this.station.name.toUpperCase()} NIGHT WATCH: ${p.shipName ? p.shipName + ", " : ""}${title ? title + ", " : ""}BAY ${bay}. KEEP IT QUIET, THE DAY SHIFT IS ASLEEP` : `${this.station.name.toUpperCase()} CONTROL: ${p.shipName ? p.shipName + ", " : ""}${title ? title + ", " : ""}CLEARANCE GRANTED, BAY ${bay}`);
     { const wk = weekKey(); if (p.lastWeekSeen !== wk) { p.lastWeekSeen = wk; { const lr = lanesReport(g.world); if (lr) (g.world.mailQueue ??= []).push(lr); } const bc = borderContest(g.world); const issue = !this.station.military && this.station.factionId !== "vex" ? weeklyIssue(g.world, this.station.factionId) : null; g.toast(`NEW WEEK ON THE LANES${issue ? `: ${faction(this.station.factionId).name.split(" ")[0].toUpperCase()} ASKS ABOUT ${issue.title}` : ""}${bc ? ` - ${g.world.systems[bc.systemId]?.name.toUpperCase() ?? "?"} IS CONTESTED` : ""}`.slice(0, 96)); } }
     { const c = collectCharters(p); for (const l of c.lines) g.toast(l); if (c.total !== 0) sfx.pickup(); }
     tickAlumniMail(g.world, new RNG((g.world.seed ^ Math.floor(g.world.time * 73)) >>> 0));
     { const l = catGift(p, new RNG((g.world.seed ^ Math.floor(g.world.time * 79)) >>> 0)); if (l) g.toast(l); }
     { const m = tickMail(g.world); for (const l of m) g.toast(l); if (m.length) sfx.letter(); }
-    for (const l of tickLostProperty(p)) g.toast(l);
+    { const kept = tickLostProperty(p); for (const l of kept) g.toast(l); if (kept.length) flag(g, "keepsake"); }
     { const fr = friendsAt(g.world, this.station.id); if (fr.length && Math.random() < hoursRate(this.station).lounge) g.toast(`${fr[0].name.toUpperCase()} IS IN THE LOUNGE AND WAVING YOU OVER`); }
   }
 
@@ -761,6 +762,7 @@ export class StationScene implements Scene {
     if (m.kind === "passenger" && m.mood !== undefined && hasSpecialty(p, "steward")) m.mood = Math.min(100, m.mood + 5);
     if (m.kind === "passenger" && m.mood !== undefined) (p.lastFareMood ??= {})[st.id] = m.mood;
     if (m.kind === "passenger" && m.mood !== undefined) { const e = signGuestbook(g.world, m, st.name, new RNG((g.world.seed ^ Math.floor(g.world.time * 19)) >>> 0)); if (m.returning) flag(g, "regular"); if (m.mood >= 75) g.toast(`${e.name.toUpperCase()} SIGNS THE GUESTBOOK: "${e.line.toUpperCase()}"`); }
+    if (m.kind === "passenger" && m.requestMet && m.tip) flag(g, "tipped");
     { const l = leaveLostItem(p, m, st.id, g.world.time, new RNG((g.world.seed ^ Math.floor(g.world.time * 23)) >>> 0)); if (l) { g.toast(l); logEntry(g.world, l.toLowerCase().split(". ")[0]); } }
     if (m.kind === "passenger" && m.notable) { const line = notableOutcome(g.world, m); if (line) { g.toast(line); logEntry(g.world, line.toLowerCase().slice(0, 100)); flag(g, "notable"); } }
     if (m.kind === "passenger" && m.mood !== undefined) {

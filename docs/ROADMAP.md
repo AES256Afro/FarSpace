@@ -882,4 +882,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Fares leave things in the cabin; hand them in at a harbour office or
       keep them after four dockings as keepsakes on the wall
 
+## Milestone 132 — Deeds III ✅ (Sep 2026)
+- [x] Six achievements for the new evening: on the house, lost and found,
+      finders keepers, good service, berth neighbours, night owl
+
 ## Later
