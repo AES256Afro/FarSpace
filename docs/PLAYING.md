@@ -707,6 +707,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   and a filter, or your air, with a rock hopper family out on the lane (a
   card) and the belt remembers: every belt yard runs 10% under for you from
   then on, marked BELT RATE, and the concourse knows who you are.
+- Now and then a belt rock declares itself independent for the week (a
+  galaxy event, like a strike or a festival): water, rations and medicine sell
+  high there, the tannoy says the inners can have their water back when they
+  pay for the filters, and a register by the clamp asks who stands with the
+  rock. Sign it (200 credits from the council, the belt rate from then on, a
+  deed, and a mark against you with the faction), buy the water and say
+  nothing, or report the names to the faction (rep, and the belt hears).
 - Boards near the belt post the rock's needs in the rock's words: water runs,
   ration runs, clinic runs, filter runs, and nobody there forgets who brought
   it. Now and then a rock loses its spin as you clamp on (the floor stops

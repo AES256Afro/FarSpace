@@ -12,11 +12,12 @@ import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS, roleLabel } from "../
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, tickAlumniMail, catGift, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, notableOutcome, ledger, ledgerAround, LEDGER_LABELS, dockingsAt, OLD_HAND_AT, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter, RACE_GATES, raceHolder, postDelivered, captainNickname, charterRoute, tickWorld, signGuestbook, regattaObjective, buyStake, collectStake, stakeDividend, stakePrice, totalShares, hasSpecialty, crewOwnHull, OWN_HULL_CREW_FEE, favourFor, favourDone, resolveBorder, pushInfluence, weekKey, borderStanding, replyToLetter, borderContest, collectRemoteStakes, lanesReport, isFriend, isRival, hangPicture, leaveLostItem, tickLostProperty, berthedCaptains, stardate, envoyOutcome, patientOutcome, beltRate, isBeltStation, receptionDue, receptionHeld, legSummary, newLeg, commandRank, registry, grievanceDue, grievanceHeard, spinOutageDue, spinOutageSeen, crewXp } from "../world";
+  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, tickAlumniMail, catGift, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, notableOutcome, ledger, ledgerAround, LEDGER_LABELS, dockingsAt, OLD_HAND_AT, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter, RACE_GATES, raceHolder, postDelivered, captainNickname, charterRoute, tickWorld, signGuestbook, regattaObjective, buyStake, collectStake, stakeDividend, stakePrice, totalShares, hasSpecialty, crewOwnHull, OWN_HULL_CREW_FEE, favourFor, favourDone, resolveBorder, pushInfluence, weekKey, borderStanding, replyToLetter, borderContest, collectRemoteStakes, lanesReport, isFriend, isRival, hangPicture, leaveLostItem, tickLostProperty, berthedCaptains, stardate, envoyOutcome, patientOutcome, beltRate, isBeltStation, receptionDue, receptionHeld, legSummary, newLeg, commandRank, registry, grievanceDue, grievanceHeard, spinOutageDue, spinOutageSeen, crewXp, secessionAt } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
 import { BLUEPRINTS, MATERIALS, engGrade, nextCost, canAfford, upgrade } from "../data/engineering";
 import { flag } from "../core/achievements";
+import type { GalaxyEvent } from "../world";
 import { presence } from "../core/presence";
 import type { Encounter } from "../data/encounters";
 import type { EncounterScene } from "./encounter";
@@ -132,6 +133,7 @@ export class StationScene implements Scene {
     if (receptionDue(g.world, this.station)) this.reception(g);
     else if (grievanceDue(g.world)) this.grievance(g);
     else if (spinOutageDue(g.world, this.station)) this.spinOutage(g);
+    else { const sec = secessionAt(g.world, this.station.id); if (sec && !(p.flags ?? {})[`register:${this.station.id}:${Math.round(sec.until)}`]) this.register(g, sec); }
   }
 
   settleCrew(g: Game): void {
@@ -1840,6 +1842,20 @@ export class StationScene implements Scene {
   }
   // The week: the strategy layer on one page. Votes, the border, the regatta, holdings, your name.
   // the harbour view: what this port knows about you and your ship right now, without walking the deck
+  // the register: an independent rock for the week asks who's with it
+  register(g: Game, sec: GalaxyEvent): void {
+    const st = this.station; const p = g.world.player; const fac = faction(st.factionId);
+    (p.flags ??= {})[`register:${st.id}:${Math.round(sec.until)}`] = true;
+    const enc: Encounter = { id: "register", where: "space", title: "THE REGISTER", weight: 0,
+      text: `A table by the clamp with a book on it and two people behind it who have not slept. ${st.name} has declared itself independent for the week: the water is the rock's, the air is the rock's, and the ${fac.name} can have their tithe back when they pay for the filters. The book is a register of ships that stand with the rock. There is a pen.`,
+      options: [
+        { label: "SIGN THE REGISTER", hint: `The rock pays 200cr and remembers; the ${fac.name} remember too`, result: (g2) => { p.credits += 200; adjustRep(g2.world, st.factionId, -3); (p.flags ??= {}).belt = true; flag(g2, "register"); logEntry(g2.world, `Signed the register at ${st.name}, the week it went independent`); return `YOU SIGN. THE TWO BEHIND THE TABLE LOOK AT THE NAME, THEN AT YOU, THEN AT EACH OTHER. 200CR FROM THE ROCK'S COUNCIL, THE BELT RATE FROM HERE ON, AND A MARK AGAINST YOU WITH THE ${fac.name.toUpperCase()} THAT THEY WILL NOT FORGET EITHER.`; } },
+        { label: "BUY THE WATER AND SAY NOTHING", hint: "Trade with an independent rock; the market pays", result: () => "YOU NOD AT THE TABLE AND GO ON TO THE MARKET, WHERE WATER, RATIONS AND MEDICINE SELL LIKE THEY'VE NEVER SOLD. THE BOOK STAYS OPEN. NOBODY MAKES YOU." },
+        { label: "REPORT THE REGISTER TO THE FACTION", hint: `Rep +3 with the ${fac.name}; the belt hears`, result: (g2) => { adjustRep(g2.world, st.factionId, 3); for (const c of p.crew) if (c.trait?.includes("rock") || c.trait?.includes("litres")) c.morale = Math.max(0, c.morale - 6); logEntry(g2.world, `Reported the register at ${st.name} to the ${fac.name}`); return `YOU FILE THE NAMES IN THE BOOK WITH THE ${fac.name.toUpperCase()} ON THE NEXT BAND. REP UP. THE TABLE IS GONE BY THE TIME YOU'RE BACK FROM THE MARKET, AND SO IS THE PEN. THE BELT WILL HEAR.`; } },
+      ] };
+    (g.scenes["encounter"] as EncounterScene).open(g, enc, "station", true);
+  }
+
   // the spin's gone: a belt rock without rotation for an hour, and a yard that would pay for a tool roll
   spinOutage(g: Game): void {
     const st = this.station; const p = g.world.player;

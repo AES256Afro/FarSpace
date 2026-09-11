@@ -1076,6 +1076,11 @@ Time passes for the people on the ship, and for the ship.
 - [x] Once it has a name, the ship asks to be on the roster; say yes and it
       gets a line at the bottom with its own mood
 
+## Milestone 179 — The Rock's Own ✅ (Sep 2026)
+- [x] A galaxy event: a belt rock declares itself independent for the week;
+      water, rations and medicine pay, and a register by the clamp asks who's
+      with it
+
 ## Later: Trek / Expanse / Orville
 
 - A second story arc per faction (first contact proper: the singers' home)

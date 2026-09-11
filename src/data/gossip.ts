@@ -31,6 +31,7 @@ export function concourseGossip(w: World, st: StationDef, rng: RNG): string[] {
   const ev = galaxyEventAt(w, sys.id);
   if (ev?.kind === "flare") pool.push("'DON'T FLY SUNWARD TODAY. THE FLARE'S COOKING HULLS OUT THERE.'");
   if (ev?.kind === "storm") pool.push("'RADAR'S GONE TO SOUP. THE ION STORM. PILOTS ARE FLYING BY EYE.'");
+  if (ev?.kind === "secession" && ev.stationId === st.id) pool.push("'INDEPENDENT. FOR A WEEK. THEN THE INNERS SEND A PATROL AND A PRICE LIST, AND WE'RE BACK. BUT IT'S A GOOD WEEK.'");
   if (ev?.kind === "comet") pool.push("'THE COMET'S UP. GO OUT TO THE OBSERVATION DECK, IT'S WORTH IT.'");
   if (w.synWar && w.time < w.synWar.until) pool.push(`'THE ${w.synWar.attacker} AND THE ${w.synWar.defender} ARE AT IT AGAIN. STAY OUT OF THE LANES OUT THERE.'`);
   const wd = wondersIn(w, sys.id)[0];

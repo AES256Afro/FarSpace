@@ -3514,7 +3514,11 @@ export function logEntry(w: World, text: string): void {
 }
 
 // ---------- Galaxy events (not wars): comets, flares, festivals, strikes ----------
-export type GalaxyEventKind = "comet" | "flare" | "festival" | "strike" | "storm";
+export type GalaxyEventKind = "comet" | "flare" | "festival" | "strike" | "storm" | "secession";
+// A belt rock has declared itself independent for the week: water, rations and medicine pay, and the register is open.
+export function secessionAt(w: World, stationId: string): GalaxyEvent | null {
+  const e = w.galaxyEvent; return e && e.kind === "secession" && e.stationId === stationId && w.time < e.until ? e : null;
+}
 // An ion storm blinds radar and the system map unless a lit beacon holds the picture.
 export function stormBlind(w: World, systemId: string): boolean {
   return galaxyEventAt(w, systemId)?.kind === "storm" && !infraAt(w, systemId).some((i) => i.kind === "beacon" && infraLit(i));
@@ -3530,20 +3534,23 @@ export function tickGalaxyEvents(w: World, rng: RNG): void {
     const sys = w.systems[e.systemId];
     if (e.kind === "comet") for (const a of sys.asteroids) { a.rich = a.rich && rng.chance(0.4); }
     if (e.kind === "strike" && e.stationId) { const f = findStation(w, e.stationId); if (f) { f.st.fuelPrice = Math.max(1, Math.round(f.st.fuelPrice / 2)); f.st.repairPrice = Math.max(1, Math.round(f.st.repairPrice / 2)); } }
+    if (e.kind === "secession" && e.stationId) { const f = findStation(w, e.stationId); if (f) pushEvent(w, { t: w.time, kind: "peace", systemId: sys.id, text: `${f.st.name} is back in the fold, or says it is; the register is closed` }); return; }
     pushEvent(w, { t: w.time, kind: "peace", systemId: sys.id, text: e.kind === "comet" ? `The comet has passed ${sys.name}; the belt settles` : e.kind === "flare" ? `${sys.name}'s star quietens` : e.kind === "storm" ? `The ion storm over ${sys.name} has blown through` : e.kind === "festival" ? `The festival at ${findStation(w, e.stationId ?? "")?.st.name ?? sys.name} winds down` : `The strike at ${findStation(w, e.stationId ?? "")?.st.name ?? sys.name} ends` });
     return;
   }
   if (w.galaxyEvent || !rng.chance(0.3)) return;
   const sys = rng.pick(Object.values(w.systems));
-  const kind = rng.pick(["comet", "flare", "festival", "strike", "storm"] as GalaxyEventKind[]);
-  const st = sys.stations.length ? rng.pick(sys.stations) : null;
-  if ((kind === "festival" || kind === "strike") && !st) return;
+  const kind = rng.pick(["comet", "flare", "festival", "strike", "storm", "secession"] as GalaxyEventKind[]);
+  const belt = sys.stations.filter((s) => isBeltStation(s) && s.factionId !== "vex");
+  const st = kind === "secession" ? (belt.length ? rng.pick(belt) : null) : sys.stations.length ? rng.pick(sys.stations) : null;
+  if ((kind === "festival" || kind === "strike" || kind === "secession") && !st) return;
   w.galaxyEvent = { kind, systemId: sys.id, stationId: st?.id, until: w.time + 720 };
   if (kind === "comet") { for (const a of sys.asteroids) { a.rich = a.rich || rng.chance(0.5); a.ore += 4; } pushEvent(w, { t: w.time, kind: "discovery", systemId: sys.id, text: `A comet crosses ${sys.name}: the belt is seeded with rich ore for a while` }); }
   if (kind === "flare") pushEvent(w, { t: w.time, kind: "shock", systemId: sys.id, text: `Solar flare warning for ${sys.name}: hulls run hot, scanners struggle` });
   if (kind === "festival" && st) { for (const id of ["lux", "food"]) st.stock[id] = Math.max(0, Math.round((st.stock[id] ?? 0) * 0.3)); refreshPrices(st); pushEvent(w, { t: w.time, kind: "discovery", systemId: sys.id, text: `Festival week at ${st.name}: luxuries and provisions sell dear, tourists pay double` }); }
   if (kind === "strike" && st) { st.fuelPrice *= 2; st.repairPrice *= 2; pushEvent(w, { t: w.time, kind: "shock", systemId: sys.id, text: `Dock workers strike at ${st.name}: fuel and repairs cost double` }); }
   if (kind === "storm") pushEvent(w, { t: w.time, kind: "shock", systemId: sys.id, text: `Ion storm over ${sys.name}: radar and charts are blind there unless a beacon holds the picture` });
+  if (kind === "secession" && st) { for (const id of ["water", "food", "med"]) st.stock[id] = Math.max(0, Math.round((st.stock[id] ?? 0) * 0.4)); refreshPrices(st); pushEvent(w, { t: w.time, kind: "shock", systemId: sys.id, text: `${st.name} declares itself independent for the week: water, rations and medicine pay, the register is open, and the inners are not amused` }); }
 }
 
 // ---------- Daily contract ----------
