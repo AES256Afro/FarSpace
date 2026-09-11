@@ -227,7 +227,7 @@ export class GalaxyScene implements Scene {
       const cr = w.crisis; if (cr && cr.delivered < cr.need && w.time < cr.until) calls.push(`CRISIS AT ${(w.systems[cr.systemId]?.name ?? "?").toUpperCase()}`);
       if (w.realGalaxy) { const md = new Set<string>(); for (const sys of Object.values(w.systems)) if (wire.lightsAt(sys.name).some((l) => l.kind === "mayday")) md.add(sys.name.toUpperCase()); if (md.size) calls.push(`MAYDAY: ${[...md].slice(0, 2).join(", ")}`); }
       const bc = borderContest(w); if (bc) calls.push(`CONTESTED: ${(w.systems[bc.systemId]?.name ?? "?").toUpperCase()}`);
-      if (calls.length) { const line = `CALLS THIS WEEK - ${calls.join("  -  ")}`.slice(0, 92); drawText(ctx, line, VW / 2 - textWidth(line) / 2, VH - 43, PAL.warn); }
+      if (calls.length) { const line = `CALLS THIS WEEK - ${calls.join("  -  ")}`.slice(0, 92); const lw = textWidth(line); ctx.fillStyle = "rgba(8,12,22,0.85)"; ctx.fillRect(Math.round(VW / 2 - lw / 2) - 4, VH - 45, lw + 8, 10); drawText(ctx, line, VW / 2 - lw / 2, VH - 43, PAL.warn); }
     }
     const help = `CLICK: INTEL - CLICK AGAIN/N: PLOT COURSE - B: BOOKMARK - V: LAYERS ${this.layers ? "ON" : "OFF"} - ESC BACK`;
     drawText(ctx, help, VW / 2 - textWidth(help) / 2, VH - 10, PAL.greyDark);
