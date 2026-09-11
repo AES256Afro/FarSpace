@@ -171,6 +171,7 @@ export interface Mission {
   party?: number;           // how many of them there are
   returning?: boolean;      // rode with you before and asked for you by name
   favourFor?: string;       // a post run carried as a favour for this captain (NpcCaptain id)
+  rally?: boolean;          // a border rally: supplies for a contested station, a big push for its faction
   anomalyId?: string;
   syndicate?: string;                  // contract issued by an AI syndicate (tag)
   tenderDone?: boolean;                // repair tenders: the work is done, collect at the station
@@ -2290,6 +2291,21 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
   if (tier >= 1) kinds.push("research", "research");
   if (station.type === "research") kinds.push("ground");
   if (station.military) kinds.push("bounty", "bounty");
+  // the rally: a contested station wants supplies, and the faction remembers who brings them
+  { const bc = borderContest(world); if (bc && bc.systemId === sys.id && !station.military) {
+    const exports = new Set(stationExports(station));
+    const want = COMMODITIES.filter((c) => !c.rare && !c.illegal && !exports.has(c.id) && c.id !== "ore");
+    if (want.length) {
+      const com = rng.pick(want); const qty = rng.int(6, 10);
+      missions.push({
+        id: `rally-${station.id}-${weekKey()}`, kind: "delivery", accepted: false, done: false, tier: 0, rally: true,
+        title: `Rally: ${qty}x ${com.name} for ${station.name}`,
+        desc: `${sys.name} is contested this week. ${station.name} wants ${qty} ${com.name} from anywhere, fast; the ${facName(station.factionId)} count every crate toward holding the system.`,
+        fromStationId: station.id, targetSystemId: sys.id, targetStationId: station.id, commodityId: com.id, qty,
+        reward: Math.round(com.base * qty * 1.6 + 200), repReward: 4,
+      });
+    }
+  } }
   // the mail bag: every civil station has one waiting for the next ship out. No hold space, small pay, good standing.
   if (!station.military) {
     const pool = [...linked.flatMap((s2) => s2.stations.filter((x) => !x.military).map((x) => ({ sys: s2, st: x, hops: 1 }))), ...sys.stations.filter((x) => x !== station && !x.military).map((x) => ({ sys, st: x, hops: 0 }))];

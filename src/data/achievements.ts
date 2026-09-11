@@ -97,6 +97,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "fuelrat", title: "FUEL RAT", desc: "Answer another pilot's mayday with fuel", check: (w) => !!w.player.flags?.fuelrat },
   { id: "note", title: "FOR WHOEVER COMES NEXT", desc: "Leave a note at a wonder", check: (w) => !!w.player.flags?.note },
   { id: "favour", title: "A FAVOUR OWED", desc: "Carry a favour for a friend", check: (w) => !!w.player.flags?.favour },
+  { id: "rally", title: "TO THE RALLY", desc: "Deliver a border rally", check: (w) => !!w.player.flags?.rally },
   { id: "first", title: "FIRST FOOTFALL", desc: "Be first to log a system", check: (w) => !!w.player.flags?.first },
   { id: "scout", title: "SCOUT", desc: "Reach Explorer rank Scout", check: (w) => rankOf(w.player, "explorer").idx >= 2 },
   { id: "dealer", title: "DEALER", desc: "Reach Trader rank Dealer", check: (w) => rankOf(w.player, "trader").idx >= 3 },

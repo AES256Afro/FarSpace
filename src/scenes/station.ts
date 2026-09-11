@@ -700,7 +700,7 @@ export class StationScene implements Scene {
     if (m.kind !== "passenger" && p.missions.filter((x) => x.accepted && !x.done && x.kind !== "passenger").length >= 5) { g.toast("MISSION LOG FULL"); return; }
     if (m.kind === "passenger" && passengersAboard(p).length >= passengerCap(p)) { g.toast(passengerCap(p) === 1 ? "ONE PASSENGER WITHOUT CABINS - FIT PASSENGER CABINS AT A SHIPYARD" : `ALL ${passengerCap(p)} CABINS TAKEN`); return; }
     if (m.tier && m.tier > missionTier(p.rep[st.factionId] ?? 0)) { g.toast("YOUR STANDING ISN'T HIGH ENOUGH"); return; }
-    if ((m.kind === "delivery" || (m.kind === "arc" && m.commodityId && m.arcStage !== undefined && ARCS[m.arcFaction!].stages[m.arcStage].kind === "delivery")) && m.commodityId && m.qty) {
+    if (!m.rally && (m.kind === "delivery" || (m.kind === "arc" && m.commodityId && m.arcStage !== undefined && ARCS[m.arcFaction!].stages[m.arcStage].kind === "delivery")) && m.commodityId && m.qty) {
       if (!addCargo(p, m.commodityId, m.qty)) { g.toast("NOT ENOUGH CARGO SPACE"); return; }
     }
     m.accepted = true;
@@ -752,7 +752,8 @@ export class StationScene implements Scene {
     }
     adjustRep(g.world, st.factionId, m.repReward ?? 3);
     if (m.kind === "passenger" && m.passengerKind === "tourist") flag(g, "tourist");
-    if (m.kind === "delivery" || m.kind === "post" || m.kind === "passenger") { if (pushInfluence(g.world, p.systemId, st.factionId, m.kind === "delivery" ? 2 : 1)) g.toast(`THE ${faction(st.factionId).name.toUpperCase()} NOTE WHO KEEPS ${st.name.toUpperCase()} SUPPLIED. YOUR PUSH IN THE BORDER CONTEST COUNTS.`); }
+    if (m.rally) { pushInfluence(g.world, p.systemId, st.factionId, 4); g.toast(`RALLY DELIVERED. THE ${faction(st.factionId).name.toUpperCase()} COUNT IT: A BIG PUSH TO HOLD ${g.world.systems[p.systemId].name.toUpperCase()}.`); flag(g, "rally"); }
+    else if (m.kind === "delivery" || m.kind === "post" || m.kind === "passenger") { if (pushInfluence(g.world, p.systemId, st.factionId, m.kind === "delivery" ? 2 : 1)) g.toast(`THE ${faction(st.factionId).name.toUpperCase()} NOTE WHO KEEPS ${st.name.toUpperCase()} SUPPLIED. YOUR PUSH IN THE BORDER CONTEST COUNTS.`); }
     if (m.kind === "post" && m.favourFor) { const line = favourDone(g.world, m, new RNG((g.world.seed ^ Math.floor(g.world.time * 23)) >>> 0)); if (line) g.toast(line); flag(g, "favour"); }
     else if (m.kind === "post") { const note = postDelivered(g.world, new RNG((g.world.seed ^ Math.floor(g.world.time * 13)) >>> 0)); if (note) g.toast(note); if ((p.postRuns ?? 0) >= 10) flag(g, "postman"); }
     if (m.syndicate) {
@@ -1348,7 +1349,7 @@ export class StationScene implements Scene {
     for (const m of avail) {
       const locked = (m.tier ?? 0) > tier;
       this.row(ctx, y, idx === this.cursor);
-      drawText(ctx, (m.kind === "arc" ? "* " : "") + m.title + (locked ? "  [LOCKED]" : ""), 12, y, m.kind === "arc" ? PAL.gold : locked ? PAL.greyDark : PAL.white);
+      drawText(ctx, (m.kind === "arc" || m.rally ? "* " : "") + m.title + (locked ? "  [LOCKED]" : ""), 12, y, m.kind === "arc" || m.rally ? PAL.gold : locked ? PAL.greyDark : PAL.white);
       drawText(ctx, `+${m.reward}CR`, VW - textWidth(`+${m.reward}CR`) - 8, y, PAL.gold);
       y += 8;
       drawText(ctx, m.desc.slice(0, 112), 12, y, PAL.greyDark);

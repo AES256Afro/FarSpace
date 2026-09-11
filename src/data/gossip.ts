@@ -3,7 +3,7 @@
 // your own reputation all end up in somebody's mouth.
 
 import type { World, StationDef } from "../world";
-import { crisisAt, galaxyEventAt, wondersIn, dockingsAt, friendsAt, rivalOf, isHome, infraAt, findStation, captainNickname } from "../world";
+import { crisisAt, galaxyEventAt, wondersIn, dockingsAt, friendsAt, rivalOf, isHome, infraAt, findStation, captainNickname, borderContest } from "../world";
 import { commodity, faction } from "./data";
 import { RNG } from "../core/rng";
 import { stationHour } from "./tannoy";
@@ -35,6 +35,7 @@ export function concourseGossip(w: World, st: StationDef, rng: RNG): string[] {
   if ((p.races ?? 0) >= 1) pool.push("'SOMEBODY RAN THE RINGS UNDER PAR LAST WEEK. THE MARSHAL'S STILL TALKING ABOUT IT.'");
   if (p.raceBeaten?.[st.id]) pool.push("'THE COURSE RECORD HERE FELL. NEW NAME ON THE BOARD IN THE BAR.'");
   if ((p.postRuns ?? 0) >= 3) pool.push("'THE MAIL CAME EARLY. I DIDN'T KNOW WHAT TO DO WITH MYSELF.'");
+  { const bc = borderContest(w); if (bc && bc.systemId === sys.id) pool.push(`'THE ${faction(bc.challenger).name.toUpperCase()} WANT THIS SYSTEM. LET THEM TRY. OR DON'T. DEPENDS WHO PAYS BETTER.'`, "'CONTESTED WEEK. EVERY CRATE THAT LANDS HERE COUNTS FOR SOMEBODY.'"); }
   if ((p.stakes?.[st.id] ?? 0) >= 10) pool.push("'THAT CAPTAIN OWNS A PIECE OF THIS PLACE. MIND WHAT YOU SAY ABOUT THE BERTH FEES.'");
   const docks = dockingsAt(p, st.id);
   if (docks >= 6) pool.push("'THAT'S THE ONE WHO'S ALWAYS IN. THE REGULAR. HARBOURMASTER LIKES THEM.'");

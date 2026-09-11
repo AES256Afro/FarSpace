@@ -711,4 +711,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] A weekly contested seam system; deliveries, votes and stakes push;
       Monday settles it and can flip the system's faction
 
+## Milestone 87 — The Rally ✅ (Sep 2026)
+- [x] Rally supply missions at contested stations with a big push; tannoy
+      and gossip about the contest
+
 ## Later

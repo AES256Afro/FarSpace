@@ -3,9 +3,10 @@
 // a station says: bay calls, lost property, last calls, and the odd kindness.
 
 import type { World, StationDef } from "../world";
-import { crisisAt, galaxyEventAt, findStation, captainNickname } from "../world";
+import { crisisAt, galaxyEventAt, findStation, captainNickname, borderContest } from "../world";
 import { hull } from "./hulls";
-import { commodity } from "./data";
+import { commodity, faction } from "./data";
+const facName = (id: string) => faction(id).name;
 import { RNG, hashStr } from "../core/rng";
 import { voteMods } from "./votes";
 
@@ -41,6 +42,7 @@ export function tannoyLines(w: World, st: StationDef, rng: RNG, now = Date.now()
   if (ev?.kind === "flare") pool.push("SOLAR FLARE IN PROGRESS. DEPARTURES SUNWARD ARE AT YOUR OWN RISK.");
   if (ev?.kind === "strike" && ev.stationId === st.id) pool.push("YARD SERVICES ARE SUSPENDED. THE MANAGEMENT REGRETS. THE PICKET DOES NOT.");
   if (t.night && voteMods(w, st.factionId).curfew) pool.push("CURFEW IS IN FORCE ON THE PROMENADE. THE BAR IS EXEMPT. THE BAR IS ALWAYS EXEMPT.");
+  { const bc = borderContest(w); if (bc && bc.systemId === sys.id) pool.push(`${st.name.toUpperCase()} REMINDS ALL CREWS THAT ${sys.name.toUpperCase()} IS, AND REMAINS, ${facName(bc.incumbent).toUpperCase()} SPACE. SUPPLY RUNS ARE POSTED ON THE BOARD.`); }
   const nick = captainNickname(w);
   if (nick) pool.push(`${st.name.toUpperCase()} WISHES ${nick} A SAFE LANE. THAT'S NOT A STANDARD ANNOUNCEMENT. SOMEBODY IN CONTROL LIKES YOU.`);
   if (p.dockedAt === st.id) pool.push(`THE ${(p.shipName ?? hull(p.hullId).name).toUpperCase()} IS BERTHED IN BAY 4. CREW SHORE LEAVE ENDS WHEN THE CAPTAIN SAYS SO.`);

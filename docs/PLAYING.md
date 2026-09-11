@@ -237,6 +237,9 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   station's faction. On Monday the house lean plus the captains' pushes
   settles it: hold, or change hands, stations and all. Push for the winning
   side and it remembers you.
+- Stations in the contested system post a RALLY on their board: a load of
+  something they lack, from anywhere, at a premium, and a big push for the
+  incumbent when it lands. The tannoy and the crowd know what week it is.
 
 ## Second stories
 

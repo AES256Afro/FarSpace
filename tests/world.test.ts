@@ -976,6 +976,9 @@ describe("the border", () => {
     expect(w.player.rep[c.challenger]).toBeGreaterThan(0);
     expect(resolveBorder(w, later)).toBeNull();
     expect(w.borderLog!.length).toBe(1);
+    // a rally on the contested station's board this week, fetched from anywhere, not handed over
+    const now = borderContest(w)!; const cst = w.systems[now.systemId].stations.find((x) => !x.military);
+    if (cst) { const board = genMissionsFor(w, cst, new RNG(3)); const r = board.find((m) => m.rally)!; expect(r).toBeTruthy(); expect(r.targetStationId).toBe(cst.id); expect(r.qty).toBeGreaterThanOrEqual(6); }
   });
 });
 
