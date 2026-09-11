@@ -832,4 +832,9 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 118 — People in the Codex ✅ (Sep 2026)
 - [x] Captains, notables, old shipmates and families on the codex page
 
+## Milestone 119 — Odds and Ends II ✅ (Sep 2026)
+- [x] The champion in the crowd and on the tannoy; the week page notes the
+      marshal's wager; fares impressed by a record holder; the roster marks
+      families met
+
 ## Later

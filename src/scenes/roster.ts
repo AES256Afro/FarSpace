@@ -37,7 +37,7 @@ export class RosterScene implements Scene {
     p.crew.forEach((c, i) => {
       const sel = i === this.cursor;
       if (sel) { ctx.fillStyle = "#13203a"; ctx.fillRect(6, y - 3, VW - 12, 40); }
-      const home = c.home ? (findStation(w, c.home)?.st.name ?? "?") : "no home port";
+      const home = c.home ? `${findStation(w, c.home)?.st.name ?? "?"}${Object.keys(p.flags ?? {}).some((k) => k.startsWith(`family:${c.home}:${c.name}:`)) ? " (FAMILY MET)" : ""}` : "no home port";
       drawText(ctx, `${c.name.toUpperCase()} - ${ROLE_INFO[c.role].label} ${"*".repeat(c.skill)}${c.specialty ? " - " + (SPECIALTIES[c.role].find((x) => x.id === c.specialty)?.name ?? "") : c.skill >= 3 ? " - HAS A CHOICE TO MAKE (TALK ABOARD)" : ""}${c.sick ? " - LAID UP (" + c.sick.kind.toUpperCase() + ")" : p.crew.length >= 2 ? (onWatch(p, i, w.time) ? " - ON WATCH" : " - OFF WATCH") : ""}`, 12, y, sel ? PAL.white : PAL.ui);
       drawText(ctx, `MORALE ${Math.round(c.morale)}   LOYALTY ${(c.loyalty ?? 0).toFixed(0)}   WAGE ${c.wage}CR   ${c.docks ?? 0} DOCKINGS   HOME ${home.toUpperCase()}`, 12, y + 9, PAL.grey);
       const xp = c.xp ?? 0, need = c.skill < 3 ? XP_STEPS[c.skill] : 0;

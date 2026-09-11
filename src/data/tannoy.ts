@@ -53,6 +53,7 @@ export function tannoyLines(w: World, st: StationDef, rng: RNG, now = Date.now()
   if (ev?.kind === "strike" && ev.stationId === st.id) pool.push("YARD SERVICES ARE SUSPENDED. THE MANAGEMENT REGRETS. THE PICKET DOES NOT.");
   if (t.night && voteMods(w, st.factionId).curfew) pool.push("CURFEW IS IN FORCE ON THE PROMENADE. THE BAR IS EXEMPT. THE BAR IS ALWAYS EXEMPT.");
   { const bc = borderContest(w); if (bc && bc.systemId === sys.id) pool.push(`${st.name.toUpperCase()} REMINDS ALL CREWS THAT ${sys.name.toUpperCase()} IS, AND REMAINS, ${facName(bc.incumbent).toUpperCase()} SPACE. SUPPLY RUNS ARE POSTED ON THE BOARD.`); }
+  if (p.regatta === 3 && p.dockedAt === st.id) pool.push("THE REGATTA CHAMPION IS ON THE STATION. THE MARSHAL ASKS THAT NOBODY MAKE A FUSS. THE MARSHAL IS MAKING A FUSS.");
   const nick = captainNickname(w);
   if (nick) pool.push(`${st.name.toUpperCase()} WISHES ${nick} A SAFE LANE. THAT'S NOT A STANDARD ANNOUNCEMENT. SOMEBODY IN CONTROL LIKES YOU.`);
   if (p.dockedAt === st.id) pool.push(`THE ${(p.shipName ?? hull(p.hullId).name).toUpperCase()} IS BERTHED IN BAY 4. CREW SHORE LEAVE ENDS WHEN THE CAPTAIN SAYS SO.`);

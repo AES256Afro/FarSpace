@@ -720,6 +720,7 @@ export class StationScene implements Scene {
       if (!addCargo(p, m.commodityId, m.qty)) { g.toast("NOT ENOUGH CARGO SPACE"); return; }
     }
     m.accepted = true;
+    if (m.kind === "passenger" && m.mood !== undefined && p.raceBeaten?.[st.id]) { m.mood = Math.min(100, m.mood + 5); g.toast(`${(m.passengerName ?? "YOUR FARE").toUpperCase()} HAS HEARD YOU HOLD THE RINGS HERE. THEY BOARD IMPRESSED.`); }
     p.missions.push(m);
     this.fares = this.fares.filter((f) => f !== m);
     if (m.kind === "passenger" && m.demand) g.toast(`${(m.passengerName ?? "").toUpperCase()} MENTIONS THEY'D APPRECIATE ${commodity(m.demand).name.toUpperCase()} ABOARD`);
@@ -1814,7 +1815,7 @@ export class StationScene implements Scene {
     for (const b of (w.borderLog ?? []).slice(-3).reverse()) { drawText(ctx, `${b.week}: ${w.systems[b.systemId]?.name.toUpperCase() ?? "?"} ${b.flipped ? `FELL TO THE ${faction(b.to).name.toUpperCase()}` : `HELD FOR THE ${faction(b.from).name.toUpperCase()}`}${b.yours ? ` (YOUR PUSH ${b.yours})` : ""}`.slice(0, 104), 8, y, PAL.grey); y += 8; }
     y += 3;
     drawText(ctx, "THE LANES", 8, y, PAL.gold); y += 9;
-    { const ro = regattaObjective(w); drawText(ctx, ro ? ro : p.regatta === 3 ? "THE REGATTA: CHAMPION" : "THE REGATTA: NOT ENTERED - FINISH ANY RING RACE", 8, y, PAL.ui); y += 8; }
+    { const ro = regattaObjective(w); drawText(ctx, `${ro ? ro : p.regatta === 3 ? "THE REGATTA: CHAMPION" : "THE REGATTA: NOT ENTERED - FINISH ANY RING RACE"}${p.marshalWager ? "  -  MARSHAL'S WAGER ON: NEXT RUN UNDER PAR PAYS DOUBLE" : ""}`.slice(0, 104), 8, y, PAL.ui); y += 8; }
     { const best = Object.entries(p.raceBest ?? {}).slice(0, 3).map(([id, t]) => `${(findStation(w, id)?.st.name ?? "?").toUpperCase()} ${t.toFixed(1)}S`).join(", "); drawText(ctx, best ? `BEST TIMES: ${best}` : "BEST TIMES: NONE YET", 8, y, PAL.grey); y += 8; }
     { const nick = captainNickname(w); drawText(ctx, `${nick ? `THE LANES CALL YOU ${nick}. ` : ""}${p.postRuns ?? 0} MAIL BAGS, ${p.fares ?? 0} FARES, ${p.rescues ?? 0} RESCUES, ${p.races ?? 0} RACES`, 8, y, PAL.grey); y += 8; }
     y += 3;

@@ -36,6 +36,7 @@ export function concourseGossip(w: World, st: StationDef, rng: RNG): string[] {
   if (wd) pool.push(wd.seen ? `'SAW A SHIP GO OUT TO ${wd.name.toUpperCase()} LAST WEEK. CAME BACK QUIET.'` : `'NOBODY'S BEEN OUT TO ${wd.name.toUpperCase()} IN AN AGE. IT'S STILL THERE. I CHECKED.'`);
   { const nick = captainNickname(w); if (nick) pool.push(`'SEE THAT CAPTAIN? ${nick}. THAT'S WHAT THEY CALL THEM OUT ON THE LANES.'`); }
   if ((p.races ?? 0) >= 1) pool.push("'SOMEBODY RAN THE RINGS UNDER PAR LAST WEEK. THE MARSHAL'S STILL TALKING ABOUT IT.'");
+  if (p.regatta === 3) pool.push("'THAT'S THE REGATTA CHAMPION. THREE COURSES. MY NEPHEW HAS THE POSTER.'");
   if (p.raceBeaten?.[st.id]) pool.push("'THE COURSE RECORD HERE FELL. NEW NAME ON THE BOARD IN THE BAR.'");
   if ((p.postRuns ?? 0) >= 3) pool.push("'THE MAIL CAME EARLY. I DIDN'T KNOW WHAT TO DO WITH MYSELF.'");
   { const bc = borderContest(w); if (bc && bc.systemId === sys.id) pool.push(`'THE ${faction(bc.challenger).name.toUpperCase()} WANT THIS SYSTEM. LET THEM TRY. OR DON'T. DEPENDS WHO PAYS BETTER.'`, "'CONTESTED WEEK. EVERY CRATE THAT LANDS HERE COUNTS FOR SOMEBODY.'"); }
