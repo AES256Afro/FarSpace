@@ -371,6 +371,16 @@ const NOTES: [string, string[]][] = [
   ]],
 ];
 
+// Long notes wrap to the screen width instead of running off the right edge
+const WRAP_AT = 92;
+function wrapLine(l: string): string[] {
+  const out: string[] = []; let cur = "";
+  for (const wd of l.split(" ")) { if ((cur + " " + wd).trim().length > WRAP_AT && cur) { out.push(cur); cur = wd; } else cur = cur ? cur + " " + wd : wd; }
+  if (cur) out.push(cur);
+  return out;
+}
+const WRAPPED: [string, string[]][] = NOTES.map(([t, lines]) => [t, lines.flatMap(wrapLine)]);
+
 export class WhatsNewScene implements Scene {
   touchMode = "menu" as const;
   scroll = 0;
@@ -378,7 +388,7 @@ export class WhatsNewScene implements Scene {
   update(g: Game, dt: number): void {
     void dt;
     if (g.input.wasPressed("Escape") || g.input.wasPressed("Enter") || g.input.mousePressed) { g.setScene("title"); return; }
-    const total = NOTES.reduce((a, [, lines]) => a + 9 + lines.length * 8 + 6, 0);
+    const total = WRAPPED.reduce((a, [, lines]) => a + 9 + lines.length * 8 + 6, 0);
     const max = Math.max(0, total - (VH - 44));
     if (g.input.wasPressed("ArrowDown")) this.scroll = Math.min(max, this.scroll + 24);
     if (g.input.wasPressed("ArrowUp")) this.scroll = Math.max(0, this.scroll - 24);
@@ -389,11 +399,11 @@ export class WhatsNewScene implements Scene {
     ctx.fillStyle = PAL.uiPanel; ctx.fillRect(0, 0, VW, VH);
     ctx.save(); ctx.beginPath(); ctx.rect(0, 18, VW, VH - 34); ctx.clip();
     let y = 24 - this.scroll;
-    for (const [title, lines] of NOTES) {
+    for (const [title, lines] of WRAPPED) {
       if (y > VH) break;
       if (y + 9 + lines.length * 8 > 18) {
         drawText(ctx, title, 12, y, PAL.ui);
-        lines.forEach((l, i) => drawText(ctx, l.slice(0, 112), 12, y + 9 + i * 8, PAL.grey));
+        lines.forEach((l, i) => drawText(ctx, l, 12, y + 9 + i * 8, PAL.grey));
       }
       y += 9 + lines.length * 8 + 6;
     }
