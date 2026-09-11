@@ -647,7 +647,7 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
   for (const m of active.slice(0, 3)) {
     const prog = m.kind === "bounty" ? ` ${m.kills}/${m.killsNeeded}` : m.kind === "ground" ? ` ${m.groundDone ?? 0}/${m.groundNeed ?? 1}` : m.shipTotal ? ` ${(m.shipDone ?? 0) + 1}/${m.shipTotal}` : "";
     // a fare's open request rides on the line: what they want, and whether it's still on
-    const patient = m.kind === "passenger" && m.passengerKind === "patient" ? ((m.docksAboard ?? 0) >= patientDeadline(p, m) ? " - PATIENT: CRITICAL, NEXT DOCK" : " - PATIENT: STABLE") : "";
+    const patient = m.kind === "passenger" && m.passengerKind === "patient" ? ((m.docksAboard ?? 0) >= patientDeadline(p, m) ? " - CRITICAL, NEXT DOCK" : " - STABLE") : "";
     const envoy = patient ? patient : m.kind === "passenger" && m.treaty ? (m.tookFire ? " - TREATY: SHOT AT" : (m.docksAboard ?? 0) >= (m.patience ?? 2) ? " - TREATY: LAST DOCKING" : " - TREATY: CLEAN SO FAR") : "";
     const req = envoy ? envoy : m.kind === "passenger" && m.request && !m.requestSettled ? (m.request === "quiet" ? (m.tookFire ? " - QUIET RUN: BROKEN" : " - QUIET RUN: SO FAR") : m.requestMet ? ` - ${m.request === "meal" ? "HOT MEAL" : "VIEW"}: DONE` : ` - WANTS ${m.request === "meal" ? "A HOT MEAL" : "A VIEW"}`) : "";
     const line = `> ${m.title}${prog}${req}`;
