@@ -1099,6 +1099,10 @@ Time passes for the people on the ship, and for the ship.
 - [x] A card: a jar on the console and a list headed "what the skipper does
       next"; take it, let it ride, or double it and pick a line
 
+## Milestone 184 — Damage Control ✅ (Sep 2026)
+- [x] At red alert an engineer works the worst system back up while the guns
+      are busy; a card: a ship like yours, with your voice, saying don't
+
 ## Later: Trek / Expanse / Orville
 
 - A second story arc per faction (first contact proper: the singers' home)

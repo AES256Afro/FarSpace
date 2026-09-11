@@ -704,6 +704,9 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   them (morale +5 and the next red alert costs less for a minute), warn them
   (yellow alert and nobody surprised), or thank them by name (loyalty up).
   Keep it short; it's your ship either way.
+- At red alert with an engineer aboard, damage control runs on its own:
+  the worst system climbs back toward a hundred while the guns are busy, and
+  the engineer calls it at every quarter. Keep her steady.
 - The first time the hull drops under half on a leg, the engineer (or the
   ship, if nobody's aboard) gives a damage report on the band: hull, the
   worst system, breaches, fire, and an opinion about who's getting her hit.
@@ -900,6 +903,10 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   lives; otherwise two hulls come out from behind the hulk already talking),
   scan it first with a gunner or a discovery scanner, or fly on and take the
   mark.
+- A ship like yours: the same class, the same scorch, the same registry,
+  two kilometres off the bow, and your own voice a little tired saying
+  don't. Ask what they mean, hail them by name, or fire (on yourself; bold).
+  Once only.
 - The pool: a jar on the console with credits in it and a list taped to the
   jar headed "what the skipper does next". Take the jar (sixty credits and a
   button; morale down), let it ride (morale up; someone is mysteriously

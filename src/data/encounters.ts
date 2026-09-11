@@ -372,6 +372,15 @@ export const ENCOUNTERS: Encounter[] = [
     ],
   },
   {
+    id: "doppel", where: "space", weight: 2, title: "A SHIP LIKE YOURS", when: (g) => !p(g).flags?.doppel,
+    text: "The scanner draws a hull it has drawn a thousand times, because it is yours: the same class, the same scorch on the housing, the same registry, transmitting from two kilometres off the bow. The voice that hails is your voice, a little tired. 'DON'T,' it says. 'WHATEVER YOU'RE ABOUT TO DO NEXT. DON'T.'",
+    options: [
+      { label: "ASK WHAT THEY MEAN", result: (g) => { (p(g).flags ??= {}).doppel = true; p(g).expData = (p(g).expData ?? 0) + 70; for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 4); logEntry(g.world, "Met a ship with my registry and my voice. It said: don't"); return "'I CAN'T SAY. I COULDN'T SAY EITHER. JUST... TAKE THE OTHER GATE.' THE HULL FOLDS INTO THE DARK LIKE IT WAS NEVER THERE, AND THE REGISTRY GOES WITH IT. +70 DATA FOR READINGS NOBODY WILL BELIEVE. THE CREW ARE STRANGELY CHEERED: WHOEVER THAT WAS, THEY MADE IT THIS FAR."; } },
+      { label: "HAIL THEM BY NAME", hint: "Your own name, on the band", result: (g) => { (p(g).flags ??= {}).doppel = true; (p(g).keepsakes ??= []).push("a recording of my own voice saying don't"); if (p(g).keepsakes!.length > 8) p(g).keepsakes!.shift(); return "YOU SAY YOUR OWN NAME INTO THE BAND AND THE OTHER SHIP GOES QUIET FOR A LONG TIME. THEN, VERY SOFTLY: 'YEAH.' IT'S GONE BEFORE THE SCANNER REFRESHES. THE RECORDING GOES ON THE SEAT WITH THE KEEPSAKES. YOU DON'T PLAY IT."; } },
+      { label: "OPEN FIRE", hint: "On yourself. Bold.", result: (g) => { (p(g).flags ??= {}).doppel = true; p(g).hull = Math.max(1, p(g).hull - 12); return "YOU FIRE. THE OTHER SHIP DOESN'T. THE SHOTS CROSS THE TWO KILOMETRES AND, SOMEHOW, ARRIVE ON YOUR OWN HULL. -12 HULL. THE VOICE SAYS 'YEAH, I DID THAT TOO' AND IS GONE."; } },
+    ],
+  },
+  {
     id: "loop", where: "space", weight: 2, title: "THE SAME MINUTE, AGAIN", when: (g) => !p(g).flags?.loopDone,
     text: "The clock on the console reads a time it read a moment ago. The coffee is full again. Somebody on the band says the thing they just said, word for word, and then, seeing your face, says 'WHAT?' the same way. You have been here before. You will be here again unless something changes.",
     options: [

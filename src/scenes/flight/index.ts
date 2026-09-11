@@ -1100,6 +1100,8 @@ export class FlightScene implements Scene {
     // tactical calls yellow alert when a hostile closes and nobody has yet
     this.autoAlertT -= dt;
     if (this.alert === 0 && this.autoAlertT <= 0 && !this.docking && this.npcs.some((n) => n.kind === "pirate" && n.hull > 0 && dist(p.x, p.y, n.x, n.y) < 950)) { this.autoAlertT = 90; this.alert = 1; const gun = p.crew.find((c) => c.role === "gunner" && !c.sick); this.comms.push({ from: gun ? gun.name.split(" ")[0].toUpperCase() : shipVoiceName(p), text: gun ? "HOSTILE CLOSING. GOING TO YELLOW. SAY THE WORD FOR RED." : "A HOSTILE IS CLOSING. I'VE GONE TO YELLOW. Y FOR RED, IF YOU LIKE THE SOUND OF THE KLAXON.", life: 6, color: PAL.warn }); sfx.blip(); }
+    // damage control: at red alert an engineer works the worst system back up while the guns are busy
+    if (this.alert === 2) { const eng = p.crew.find((c) => c.role === "engineer" && !c.sick); if (eng) { const worst = [...p.systems].sort((a, b) => a.health - b.health)[0]; if (worst && worst.health < 100) { const before = Math.floor(worst.health / 25); worst.health = Math.min(100, worst.health + dt * 0.8 * (1 + crewBonus(p, "engineer") * 0.3)); if (Math.floor(worst.health / 25) > before && this.comms.length < 3) this.comms.push({ from: eng.name.split(" ")[0].toUpperCase(), text: `DAMAGE CONTROL: ${worst.name.toUpperCase()} BACK TO ${Math.round(worst.health)}%. KEEP HER STEADY.`, life: 5, color: PAL.good }); } } }
     // the klaxon repeats while the ship is at red
     this.klaxonT -= dt;
     if (this.alert === 2 && this.klaxonT <= 0) { this.klaxonT = 9; sfx.alarm(); }
