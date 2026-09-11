@@ -15,7 +15,7 @@ import { STARS, starDistance } from "../src/data/stars";
 import { ACHIEVEMENTS } from "../src/data/achievements";
 import { ARCS, dailyContract, dailyKey, rankOf, logSystem, applyHull } from "../src/world";
 import { MODULES } from "../src/data/modules";
-import { WONDER_DEFS, rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook, leaveWreck, addWireWrecks, enterRegatta, regattaObjective, regattaProgress, buyStake, collectStake, stakePrice, STAKE_CAP, hasSpecialty, chooseSpecialty, wearRate, crewOwnHull, OWN_HULL_CREW_FEE, maydayAnswered, favourFor, favourDone, borderContest, pushInfluence, borderStanding, resolveBorder, photoTaken, WONDER_RANGE } from "../src/world";
+import { WONDER_DEFS, rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook, leaveWreck, addWireWrecks, enterRegatta, regattaObjective, regattaProgress, buyStake, collectStake, stakePrice, STAKE_CAP, hasSpecialty, chooseSpecialty, wearRate, crewOwnHull, OWN_HULL_CREW_FEE, maydayAnswered, favourFor, favourDone, borderContest, pushInfluence, borderStanding, resolveBorder, photoTaken, WONDER_RANGE, replyToLetter } from "../src/world";
 import { RARES } from "../src/data/data";
 import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
