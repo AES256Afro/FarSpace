@@ -752,6 +752,8 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- A cadet's first docking: the crew buy the drink and make them sign the
+  bar's book. Morale up, their loyalty up, a deed.
 - A science specialist reports at the briefing: signals still unscanned,
   strange readings worth a look, and how many finds are on the chart under
   your name.

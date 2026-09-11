@@ -175,7 +175,7 @@ export class StationScene implements Scene {
     p.crew = p.crew.filter((c) => c.morale > 5 || (c.loyalty ?? 0) >= 2);
     const now = g.world.time;
     const rng = new RNG((g.world.seed ^ Math.floor(now) ^ 0x5ea) >>> 0);
-    for (const c of p.crew) c.docks = (c.docks ?? 0) + 1;
+    { const firsts = p.crew.filter((c) => (c.docks ?? 0) === 0); for (const c of p.crew) c.docks = (c.docks ?? 0) + 1; for (const c of firsts) { for (const o of p.crew) o.morale = Math.min(100, o.morale + 2); c.loyalty = (c.loyalty ?? 0) + 0.2; logEntry(g.world, `${c.name}'s first docking, at ${this.station.name}; the crew bought the drink`); flag(g, "firstdock"); g.toast(`${c.name.split(" ")[0].toUpperCase()}'S FIRST DOCKING. THE CREW BUY THE DRINK AND MAKE THEM SIGN THE BAR'S BOOK. THEY'RE ON THE ROSTER FOR REAL NOW.`); } }
     (p.dockings ??= {})[this.station.id] = dockingsAt(p, this.station.id) + 1;
     p.jumpStreak = 0;
     // pending asks: honoured here, or wearing thin

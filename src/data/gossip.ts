@@ -37,6 +37,10 @@ export function concourseGossip(w: World, st: StationDef, rng: RNG): string[] {
   if ((p.inquiries ?? 0) > 0) pool.push("'STOOD BEFORE A BOARD AND TOLD IT STRAIGHT, THEY SAY. MOST DON'T. THE BOARD REMEMBERS THE ONES WHO DO.'");
   if (p.flags?.warningshot) pool.push("'PUT ONE ACROSS A CORSAIR'S BOW AND THE CORSAIR WENT HOME. NO SHOTS BACK. THAT'S A GUNNER.'");
   if (p.flags?.freeman && isBeltStation(st)) pool.push("'THE COUNCIL WROTE THAT ONE'S NAME IN THE MINUTES. AN INNER. I KNOW. I WAS THERE.'");
+  if (p.flags?.longship) pool.push("'THAT HULL'S NAME IS ON A PLATE IN THE LONG SHIP. TWO HUNDRED YEARS BEFORE ANYONE READS IT. THAT'S A KIND OF FAITH.'");
+  if (p.flags?.fleetreview) pool.push("'A MERCHANT TOOK STATION AT THE END OF THE LINE AT THE REVIEW. LIGHTS IN SEQUENCE. THE ADMIRAL NOTICED. THE ADMIRAL NOTICES EVERYTHING.'");
+  if (p.flags?.hundredth) pool.push("'A HUNDRED ON THAT HULL'S COUNT, THEY SAY. THE MEDIC READ IT OUT. THE WHOLE BRIDGE STAYED FOR IT.'");
+  if (p.crew.some((c) => (c.docks ?? 0) <= 1)) pool.push("'THERE'S A CADET ON THAT HULL SIGNING THE BAR'S BOOK. FIRST DOCKING. THE CREW BOUGHT THE DRINK. THAT'S A GOOD SHIP.'");
   if (p.flags?.captainstable) pool.push("'A FARE TOLD ME THE CAPTAIN SAT THEM AT THE TOP OF THE TABLE. A REFUGEE. TOP OF THE TABLE.'");
   if (ev?.kind === "drought" && ev.stationId === st.id) pool.push("'TWO LITRES A HEAD. MY KID'S COUNTING THE TANKS AT THE CLAMP. ANY SHIP WITH WATER IS A HERO THIS WEEK.'");
   if (ev?.kind === "secession" && ev.stationId === st.id) pool.push("'INDEPENDENT. FOR A WEEK. THEN THE INNERS SEND A PATROL AND A PRICE LIST, AND WE'RE BACK. BUT IT'S A GOOD WEEK.'");

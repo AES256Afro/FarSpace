@@ -62,6 +62,10 @@ export function pickShipLine(g: Game, rng: RNG): string | null {
   if (p.flags?.numberoneleg) pool.push("NUMBER ONE FLIES ME DIFFERENTLY. SMOOTHER, AND SLOWER INTO THE TURNS. I'M NOT SAYING BETTER. I'M NOT NOT SAYING IT.");
   if (p.flags?.rockcadet) pool.push("THE ROCK KID PINNED THE DRAWING UP IN THE BUNK ROOM. THE DOG IS STILL IN IT. I'VE DECIDED THE DOG IS ME.");
   if (p.flags?.fleetreview) pool.push("I WAS IN A FLEET REVIEW. AT THE END OF THE LINE, BUT IN IT. I'VE KEPT THE LIGHT SEQUENCE. I RUN IT WHEN NOBODY'S LOOKING.");
+  if (p.flags?.simCats) pool.push("THE ENGINEER'S CAT PROGRAM IS STILL IN THE RIG. I'VE RUN IT ALONE, AT NIGHT. I WAS A GOOD CAT.");
+  if (p.flags?.cadetMistake) pool.push("THE VALVE LABELS ARE TWO COLOURS NOW. I'VE BEEN ASKING FOR THAT FOR YEARS. IT TOOK A CADET AND A BANG.");
+  if (p.crew.some((c) => c.specialty === "science")) pool.push("THE SCIENCE OFFICER TALKS TO THE ANOMALIES. I TALK TO THE SCIENCE OFFICER. SOMEBODY SHOULD TALK TO ME ABOUT THE PORT MOUNT.");
+  if (p.flags?.firstdock) pool.push("THE CADET SIGNED THE BAR'S BOOK. I DON'T HAVE HANDS. I'D HAVE SIGNED IT TOO.");
   if (p.flags?.dockhand) pool.push("THE DOCK-HAND PATCHED ME WITHOUT ASKING. I DIDN'T MIND. I MINDED A LITTLE. IT WAS A GOOD PATCH.");
   if (passengersAboard(p).some((m) => m.request && !m.requestMet)) pool.push("THE ONE IN THE LOUNGE WANTS SOMETHING. I HEARD THE ASK. I CAN'T COOK. YOU CAN.");
   if ((p.mealsCooked ?? 0) >= 5) pool.push("THE GALLEY SMELLS OF SOMETHING GOOD AGAIN. I DON'T EAT. I STILL NOTICE.");

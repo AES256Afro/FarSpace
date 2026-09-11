@@ -1608,6 +1608,18 @@ Time passes for the people on the ship, and for the ship.
 - [x] The cadet vents the wrong tank: fix the labels (loyalty), a week on the
       scrubbers, or shout and apologise to the corridor
 
+## Milestone 306 — The Bar's Book ✅ (Sep 2026)
+- [x] A cadet's first docking: the crew buy the drink and make them sign the
+      bar's book (morale, loyalty, a deed)
+
+## Milestone 307 — The Promenade Talks II ✅ (Sep 2026)
+- [x] Gossip about the long ship's plate, the end of the line, the hundredth
+      and the cadet's first docking
+
+## Milestone 308 — The Ship Notices III ✅ (Sep 2026)
+- [x] Ship's-voice lines for the cat program, the valve labels, the science
+      officer and the bar's book
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
