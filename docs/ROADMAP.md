@@ -936,4 +936,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] E at the study with two crew aboard, once a leg: each department
       reports and the captain sets a focus (engines, sickbay, tactical, helm)
 
+## Milestone 145 — The Sim Rig ✅ (Sep 2026)
+- [x] A furnishing by the study: four programs, an hour somewhere else once
+      a leg; the fares come to the opera; it jams sometimes
+
 ## Later

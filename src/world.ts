@@ -332,6 +332,7 @@ export interface PlayerState {
   juice?: number;                    // doses of burn juice from a clinic: one hard burn each
   focus?: FocusKind | null;          // the senior staff's focus for this leg, set at the briefing, cleared at the clamp
   briefed?: boolean;                 // the briefing has been held this leg
+  simUsed?: boolean;                 // the sim rig has run this leg
   lostProperty?: LostItem[];         // what fares left in the cabin; hand it in, or keep it
   keepsakes?: string[];              // small things that stayed aboard: unclaimed lost property
   regatta?: number;                  // the regatta: 0 entered, 1 first course won, 2 second, 3 champion
@@ -717,7 +718,28 @@ export const FURNISHINGS: { id: string; name: string; price: number; desc: strin
   { id: "shelf", name: "A Trophy Shelf", price: 300, desc: "By the wall of record, for the things you've brought back.", tile: "M" },
   { id: "hammock", name: "A Hammock", price: 180, desc: "Slung in the hold. Somebody is always in it.", tile: "G" },
   { id: "mural", name: "A Mural", price: 350, desc: "The crew paint the corridor with everywhere the ship has been.", tile: "E" },
+  { id: "simrig", name: "A Sim Rig", price: 700, desc: "An environment rig by the study. An hour somewhere else, once a leg. It jams sometimes.", tile: "S" },
 ];
+
+// The sim rig: an hour somewhere else. Each program has its own way of going right, and its own way of going wrong.
+export type SimProgram = "beach" | "frontier" | "opera" | "home";
+export const SIM_PROGRAMS: { id: SimProgram; name: string; blurb: string }[] = [
+  { id: "beach", name: "THE BEACH", blurb: "Sand, a sea that isn't wet, and a sun that doesn't burn" },
+  { id: "frontier", name: "FRONTIER TOWN", blurb: "Dust, a saloon, and a duel at noon that nobody wins" },
+  { id: "opera", name: "THE OPERA HOUSE", blurb: "Velvet seats and a soprano; the fares are invited" },
+  { id: "home", name: "HOME PORT, SPRING", blurb: "The promenade of wherever you call home, on a good day" },
+];
+export function runSim(w: World, program: SimProgram, rng: RNG): string {
+  const p = w.player; p.simUsed = true;
+  const all = (n: number) => { for (const c of p.crew) c.morale = Math.min(100, c.morale + n); };
+  logEntry(w, `An hour in the sim rig: ${SIM_PROGRAMS.find((x) => x.id === program)?.name.toLowerCase() ?? program}`);
+  if (program === "beach") { all(6); return rng.pick([`AN HOUR ON THE BEACH. ${p.cat ? `${p.cat.name.toUpperCase()} HUNTS A CRAB THAT ISN'T THERE. ` : ""}EVERYBODY COMES OUT SQUINTING. MORALE UP.`, "AN HOUR ON THE BEACH. THE RIG ADDED A HORSE. NOBODY ASKED FOR THE HORSE. THE HORSE STAYS. MORALE UP."]); }
+  if (program === "frontier") { all(5); const g = p.crew.find((c) => c.role === "gunner"); if (g) g.morale = Math.min(100, g.morale + 4); return rng.pick(["HIGH NOON IN FRONTIER TOWN. YOU LOSE THE DUEL TO THE PIANO PLAYER. TWICE. THE CREW WILL NOT LET THIS GO. MORALE UP.", `FRONTIER TOWN. ${g ? g.name.toUpperCase() + " WINS THE DUEL AND KEEPS THE HAT." : "THE SHERIFF'S HAT COMES OUT OF THE RIG SOMEHOW."} MORALE UP.`]); }
+  if (program === "opera") { all(4); for (const m of passengersAboard(p)) m.mood = Math.min(100, (m.mood ?? 60) + 8); return passengersAboard(p).length ? "THE OPERA HOUSE. THE FARES DRESS UP FROM NOTHING AND WEEP AT THE SECOND ACT. MOOD UP ALL ROUND. THE CREW FALL ASLEEP IN THE BOX." : "THE OPERA HOUSE, EMPTY BUT FOR YOU AND THE CREW. THE SOPRANO SINGS TO SIX PEOPLE LIKE IT'S SIX THOUSAND. MORALE UP."; }
+  const home = p.homePort ? findStation(w, p.homePort)?.st.name : null;
+  all(home ? 8 : 5); for (const c of p.crew) if (c.home) c.loyalty = (c.loyalty ?? 0) + 0.2;
+  return home ? `${home.toUpperCase()} IN SPRING, THE PROMENADE ON A GOOD DAY. NOBODY SAYS MUCH. MORALE UP, A LOT.` : "A PROMENADE SOMEWHERE, IN SPRING. THE RIG GUESSED AT A HOME PORT AND GOT IT ALMOST RIGHT. MORALE UP.";
+}
 
 // ---------- The ship's cat ----------
 // Now and then the cat brings something up from the hold. It is usually useful.

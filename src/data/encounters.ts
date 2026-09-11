@@ -340,7 +340,7 @@ export const ENCOUNTERS: Encounter[] = [
   {
     id: "simstuck", where: "space", weight: 2, title: "THE SIM RIG IS STUCK",
     text: "The rec deck's old environment rig has jammed on a program called 'FRONTIER TOWN, HIGH NOON' and will not let the engineer out. Through the door: tinny piano, a horse, and the engineer saying 'I DON'T WANT ANY TROUBLE, MISTER.'",
-    when: (g) => p(g).crew.length >= 1,
+    when: (g) => p(g).crew.length >= 1 && (p(g).furnishings ?? []).includes("simrig"),
     options: [
       { label: "RIDE IT OUT WITH THEM", hint: "An hour of bad westerns", result: (g) => { for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 6); return "YOU GO IN. THERE IS A SHOOTOUT. YOU LOSE, TWICE. THE RIG RESETS AT SUNDOWN AND EVERYBODY COMES OUT DUSTY AND PLEASED. MORALE UP."; } },
       { label: "PULL THE PLUG", result: (g, rng) => { if (rng.chance(0.4)) { const s = rng.pick(p(g).systems); if (s) s.health = Math.max(10, s.health - 12); return `THE RIG DIES WITH A BANG AND TAKES A BREAKER WITH IT. ${s ? s.name.toUpperCase() + " -12%." : ""} THE ENGINEER COMES OUT WITH A HAT THEY DIDN'T GO IN WITH.`; } return "THE RIG POWERS DOWN. THE PIANO STOPS MID-BAR. THE ENGINEER COMES OUT SQUINTING AND ASKS WHAT YEAR IT IS."; } },

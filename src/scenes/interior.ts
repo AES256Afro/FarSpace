@@ -4,7 +4,7 @@
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond, onWatch, watchIndex, captainNickname, borderStanding, passengersFed, cookMeal, briefingReports, setFocus } from "../world";
+import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond, onWatch, watchIndex, captainNickname, borderStanding, passengersFed, cookMeal, briefingReports, setFocus, runSim, SIM_PROGRAMS } from "../world";
 import { commodity, faction } from "../data/data";
 import { crewChatter, soloChatter, MESS_LINES, passengerChatter } from "../data/chatter";
 import { RNG } from "../core/rng";
@@ -585,6 +585,14 @@ export class InteriorScene implements Scene {
             ] };
           (g.scenes["encounter"] as EncounterScene).open(g, enc, "interior", true);
           return;
+        } else if (near.ch === "S" && (p.furnishings ?? []).includes("simrig") && !p.simUsed) {
+          const enc: Encounter = { id: "simrig", where: "space", title: "THE SIM RIG", weight: 0, text: "The rig hums up. A menu on the door, hand-lettered, with a warning under it in a different hand: 'IF IT JAMS, DON'T PANIC. PANIC IS A PROGRAM.'",
+            options: [
+              ...SIM_PROGRAMS.map((sp) => ({ label: sp.name, hint: sp.blurb, result: (g2: Game, rng: RNG) => { sfx.select(); flag(g2, "holiday"); return runSim(g2.world, sp.id, rng); } })),
+              { label: "NOT NOW. STUDY INSTEAD", result: (g2) => { g2.world.player.simUsed = true; return "THE RIG HUMS DOWN, DISAPPOINTED. E TO READ."; } },
+            ] };
+          (g.scenes["encounter"] as EncounterScene).open(g, enc, "interior", true);
+          return;
         } else if (near.ch === "S") {
           const which = (p.skills.piloting ?? 0) <= (p.skills.engineering ?? 0) ? "piloting" : "engineering";
           p.skills[which] = Math.min(10, (p.skills[which] ?? 0) + 0.5);
@@ -726,6 +734,7 @@ export class InteriorScene implements Scene {
       else if (id === "viewport") { ctx.fillStyle = "#0b1020"; ctx.fillRect(x + 1, y + 1, 8, 8); ctx.fillStyle = "#9aa5bd"; ctx.fillRect(x + 1, y + 1, 8, 1); ctx.fillRect(x + 1, y + 8, 8, 1); for (let i = 0; i < 4; i++) { ctx.fillStyle = i % 2 ? "#ffffff" : "#5ab3ff"; ctx.fillRect(x + 2 + ((i * 3 + Math.floor(g.world.time)) % 6), y + 2 + (i * 2) % 5, 1, 1); } }
       else if (id === "hammock") { ctx.fillStyle = "#c7a54a"; ctx.fillRect(x + 1, y + 3, 1, 4); ctx.fillRect(x + 8, y + 3, 1, 4); ctx.fillStyle = "#7a5aa5"; ctx.fillRect(x + 2, y + 5, 6, 2); if (Math.floor(g.world.time / 7) % 2 === 0) { ctx.fillStyle = "#e8b48c"; ctx.fillRect(x + 4, y + 4, 2, 1); } }
       else if (id === "mural") { const cols = ["#5ab3ff", "#ffd75a", "#3aa55e", "#e060ff", "#ff9a3a"]; const n = Math.min(5, 1 + Math.floor(Object.keys(p.expLog ?? {}).length / 3)); for (let i = 0; i < n; i++) { ctx.fillStyle = cols[i]; ctx.fillRect(x + 1 + i * 2, y + 2 + (i % 2), 2, 5 - (i % 2)); } }
+      else if (id === "simrig") { ctx.fillStyle = "#5d6680"; ctx.fillRect(x + 1, y + 1, 8, 8); const ph = Math.floor(g.world.time * 2) % 4; ctx.fillStyle = ["#5ab3ff", "#ffd75a", "#3aa55e", "#e060ff"][ph]; ctx.fillRect(x + 2, y + 2, 6, 6); ctx.fillStyle = "#0b1020"; ctx.fillRect(x + 4, y + 4, 2, 4); }
       else if (id === "shelf") { ctx.fillStyle = "#6a4a2a"; ctx.fillRect(x + 1, y + 4, 8, 1); ctx.fillRect(x + 1, y + 7, 8, 1); const n = Math.min(4, Math.floor(((p.codex ? Object.keys(p.codex).length : 0) + (p.cargo.relics ?? 0) + (p.achievements ?? []).length) / 3)); for (let i = 0; i < n; i++) { ctx.fillStyle = ["#e060ff", "#ffd75a", "#63f2c8", "#ff9a3a"][i]; ctx.fillRect(x + 2 + i * 2, y + 2, 1, 2); } }
     }
     if (p.cat && !p.catAway && (this.cat.x || this.cat.y)) {
