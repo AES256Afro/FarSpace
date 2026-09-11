@@ -8,7 +8,7 @@ import { RNG, hashStr } from "../core/rng";
 import { dist } from "../core/mathx";
 import { sfx } from "../core/sfx";
 import { flag } from "../core/achievements";
-import { isBeltStation } from "../world";
+import { isBeltStation, beltGain, removeCargo } from "../world";
 import { StationDef, findStation, isFriend, isRival, rivalOf, galaxyEventAt, dockingsAt, raceHolder, stakeDividend, weekKey, addCargo, logEntry, berthedCaptains, rivalryLine, handInLostItem, buyJuice, JUICE_PRICE, passengersAboard } from "../world";
 import { occasionFor } from "../data/occasions";
 import type { Encounter } from "../data/encounters";
@@ -221,6 +221,7 @@ export class StationWalkScene implements Scene {
     if (lost.length) lines.push(`LOST PROPERTY ABOARD YOUR SHIP: ${lost.map((it) => `${it.name.toUpperCase().split(",")[0]} (${it.owner.toUpperCase()})`).join("; ")}`.slice(0, 118));
     const enc: Encounter = { id: "harbour", where: "space", title: "HARBOURMASTER'S OFFICE", text: lines.join("\n"), weight: 0, options: [
       ...lost.map((it) => ({ label: `HAND IN ${it.name.toUpperCase().split(",")[0]}`, hint: it.stationId === this.station.id ? `${it.owner} got off here; the office has them on file` : `${it.owner} got off elsewhere; it'll be forwarded`, result: (g2: Game) => { sfx.pickup(); flag(g2, "lostfound"); return handInLostItem(g2.world, it, this.station.id); } })),
+      ...(isBeltStation(this.station) && (p.cargo.water ?? 0) >= 1 ? [{ label: "A UNIT OF WATER FOR THE ROCK'S TANK", hint: "The tithe; belt standing, a little, and the office writes it down", result: (g2: Game) => { removeCargo(p, "water", 1); p.waterToBelt = (p.waterToBelt ?? 0) + 1; const bl = beltGain(g2.world, 0.2); flag(g2, "tithe"); logEntry(g2.world, `A unit of water for ${this.station.name}'s tank, the tithe`); return bl ?? "THE HARBOURMASTER WRITES IT IN THE BOOK WITHOUT LOOKING UP, WHICH ON A ROCK IS A CEREMONY. THE TANK IS A LITRE FULLER. THE BELT REMEMBERS THE SMALL THINGS TOO."; } }] : []),
       { label: "THANK THEM AND GO", result: () => "" }] };
     (g.scenes["encounter"] as EncounterScene).open(g, enc, "stationwalk", true);
   }

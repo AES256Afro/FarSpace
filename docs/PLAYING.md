@@ -752,6 +752,12 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- Break the rule on the ground and the next naval station holds a hearing
+  with the board of ethics as a silent witness: let Number One speak (rep
+  and loyalty up), say you'd do it again (rep down here, the board writes
+  with data), or pay the survey's fine and hear what the crew don't say.
+- At a rock's harbour office you can give a unit of water to the tank: the
+  tithe. Belt standing, a little, and a line in the book.
 - Settings has two more standing orders: NO. 1 TAKES THE LEG AT 8H (off by
   default; on, they take the ship instead of asking) and NO. 1 OBJECTS TO
   LANDINGS (once, or never).

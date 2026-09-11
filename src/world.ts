@@ -362,6 +362,7 @@ export interface PlayerState {
   numberOneLeg?: boolean;            // Number One has the ship for this leg; settled at the next clamp
   ruleKept?: number;                 // first contacts left as found
   ruleBroken?: number;               // first contacts made, kindly or otherwise
+  hearings?: number;                 // hearings sat through over the rule, one per contact broken
   motto?: string;                    // the line on the dedication plaque by the airlock
   prisoners?: number;                // prisoners delivered to a brig
   evacuated?: number;                // people carried out of a bad week

@@ -1707,6 +1707,19 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 332 — Seconds-in-Command ✅ (Sep 2026)
 - [x] Your rival's Number One writes to yours, once: first round's theirs
 
+## Milestone 333 — A Hearing ✅ (Sep 2026)
+- [x] Naval stations hold a hearing for every first contact broken: let
+      Number One speak (rep, loyalty), say you'd do it again (rep down here,
+      the board writes), or pay the survey's fine (the crew notice)
+
+## Milestone 334 — The Tithe ✅ (Sep 2026)
+- [x] At a rock's harbour office, a unit of water for the tank: belt
+      standing, a line in the book, a deed
+
+## Milestone 335 — The Board Says Nothing ✅ (Sep 2026)
+- [x] After "I'd do it again" the board of ethics writes to say nothing, with
+      thirty data's worth of it
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
