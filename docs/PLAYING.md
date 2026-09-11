@@ -752,6 +752,8 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- A hundred deeds is itself a deed. Number One's note in the chronicle now
+  mentions the leg you gave them, the same leave, and the cadet.
 - The first time you land with a given Number One aboard they object, once,
   for the log, and then tell you to mind the step.
 - Once you've talked to a rock kid, they may turn up years later in a skiff

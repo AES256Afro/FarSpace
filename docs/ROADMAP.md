@@ -1577,6 +1577,17 @@ Time passes for the people on the ship, and for the ship.
 - [x] Ship's-voice lines for the crew photo, the hundredth, the place,
       Number One's leg, the rock cadet's drawing and the fleet review
 
+## Milestone 297 — The Second Sitting ✅ (Sep 2026)
+- [x] What's New reads 0.56 to 0.200; the second sitting's notes under their
+      own header
+
+## Milestone 298 — A Hundred Deeds ✅ (Sep 2026)
+- [x] A deed for a hundred deeds
+
+## Milestone 299 — Number One's Note II ✅ (Sep 2026)
+- [x] Number One's chronicle note mentions the leg they were given, the same
+      leave, and the cadet
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
