@@ -356,6 +356,7 @@ export interface PlayerState {
   wakes?: number;                    // wakes held in the galley, one per crew member lost
   named?: number;                    // finds the captain named for the survey
   hullsCommissioned?: number;        // hulls taken at a yard under this captain
+  ribbons?: number;                  // ribbons pinned on at receptions
   motto?: string;                    // the line on the dedication plaque by the airlock
   prisoners?: number;                // prisoners delivered to a brig
   evacuated?: number;                // people carried out of a bad week
@@ -705,6 +706,9 @@ export function chronicleText(w: World, callsign: string | null): string {
     const crewLine = mood >= 70 ? "The crew would follow them through a gate with the lights off." : mood >= 45 ? "The crew are tired and say so, which is healthy." : "The crew are worn thin. I've said so. I'll say so again.";
     const you = (p.inquiries ?? 0) ? ` We've buried ${p.inquiries === 1 ? "one" : String(p.inquiries)} and stood before the board for ${p.inquiries === 1 ? "them" : "each"}; the captain told it straight.` : "";
     lines.push(""); lines.push(`Number One's note, ${fo.name}:`); lines.push(`  The captain ${verdict}. ${crewLine}${you}`); } }
+  if (p.voiceName || p.flags?.shipCrew) { const name = shipVoiceName(p); const wear = Math.round(p.wear ?? 0);
+    const body = `${wear > 70 ? "I ache, and I'd like that written down somewhere the yard will read it." : wear > 35 ? "I'm holding. Ask me after the next long burn." : "I feel new, which at my age is a compliment to somebody."} ${(p.hailsAnswered ?? 0) >= 3 ? "The lanes know my name now, because the captain answers hails." : "I'd like the captain to answer more hails. I like hearing my name on the band."} ${(p.lost ?? []).length ? `I remember ${p.lost![p.lost!.length - 1].name}. I keep the bunk warm. Nobody asked me to.` : p.crew.length >= 2 ? "The crew sing in the galley. I've stopped pretending I don't listen." : "It's quiet aboard. I don't mind quiet. I'd mind it more if it stayed."} ${p.motto ? `The plaque says '${p.motto}'. I'm trying.` : "There's a blank line on the plaque by the airlock. I have suggestions."}`;
+    lines.push(""); lines.push(`${name}, in its own words:`); lines.push(`  ${body}`); }
   if ((p.log ?? []).length) { lines.push(""); lines.push("Captain's log, last entries:"); for (const e of (p.log ?? []).slice(-5).reverse()) lines.push(`  ${e.text}`); }
   if ((p.guestbook ?? []).length) { lines.push(""); lines.push("Guestbook, last signatures:"); for (const e of (p.guestbook ?? []).slice(-5).reverse()) lines.push(`  ${e.name} (${e.kind}), ${e.from} to ${e.to}: "${e.line}"`); }
   if (p.crew.length) { lines.push(""); lines.push("Crew aboard:"); for (const c of p.crew) lines.push(`  ${c.name}, ${ROLE_INFO[c.role].label.toLowerCase()}${c.specialty ? ` (${(SPECIALTIES[c.role].find((x) => x.id === c.specialty)?.name ?? c.specialty).toLowerCase()})` : ""}, skill ${c.skill}, ${c.docks ?? 0} dockings${c.trait ? `, ${c.trait}` : ""}.`); }

@@ -145,6 +145,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "inspection", title: "A GOOD SHIP", desc: "Pass an inspection with three marks of four", check: (w) => !!w.player.flags?.inspection },
   { id: "freeman", title: "FREEMAN OF THE BELT", desc: "Earn a standing of three with the rocks", check: (w) => !!w.player.flags?.freeman },
   { id: "requisition", title: "COURTESY OF THE SERVICE", desc: "Requisition a full service at a naval station", check: (w) => !!w.player.flags?.requisition },
+  { id: "ribbons", title: "CROOKED, THREE TIMES", desc: "Have three ribbons pinned on at receptions", check: (w) => !!w.player.flags?.ribbons },
   { id: "anniversary", title: "A HUNDRED HOURS", desc: "Be aboard for the ship's anniversary", check: (w) => !!w.player.flags?.anniversary },
   { id: "synFreemanAsked", title: "THE OTHER COUNCIL", desc: "Answer the rock's other council", check: (w) => !!w.player.flags?.synFreemanAsked },
   { id: "commissioned3", title: "THE BELL THEY KEEP FOR THIS", desc: "Commission three hulls under one captain", check: (w) => !!w.player.flags?.commissioned3 },

@@ -1408,6 +1408,18 @@ Time passes for the people on the ship, and for the ship.
       set them down (the rule broken, kindly), nudge the orbit unseen (the
       engineer's trick, the rule kept), or watch and record
 
+## Milestone 255 — Ribbons ✅ (Sep 2026)
+- [x] When a reception speech lands the harbourmaster pins a faction ribbon
+      on, crooked; it stays aboard as a keepsake (deed at three)
+
+## Milestone 256 — Number One at the Parley ✅ (Sep 2026)
+- [x] With a Number One aboard the parley card carries their word at your
+      shoulder: bluff, the bow shot, pay, or fight, by the odds and the hold
+
+## Milestone 257 — The Ship, in Its Own Words ✅ (Sep 2026)
+- [x] Once the ship has a name or a roster line, the chronicle carries a
+      paragraph from it: wear, hails, the one it remembers, the plaque
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

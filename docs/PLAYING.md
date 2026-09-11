@@ -752,6 +752,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- When a reception speech lands, the harbourmaster pins a faction ribbon on
+  your jacket, crooked. It stays aboard as a keepsake; three is a deed.
+- With a Number One aboard, the parley card carries their word at your
+  shoulder: the bluff if the odds are good, the bow shot if there's a gunner,
+  pay if the tin can take it, and otherwise "I'd fight. I don't like it."
+- Once the ship has a name or a roster line, the chronicle carries a
+  paragraph in its own words: how it feels, whether the lanes know its name,
+  who it remembers, and what it thinks of the plaque.
 - Freemen in a system with a syndicate rock get the other council's ask: a
   hauler with no transponder tonight, and would you be looking the other way.
   Look away (syndicate standing up, faction rep down), tell the patrol (the
