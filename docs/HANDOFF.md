@@ -218,6 +218,14 @@ and a Bigbox installation are separate claims.
 
 ## Local runtime and next work
 
+The next development plan is [M416-M427](NEXT-MILESTONES.md), proposed after
+the user's title-screen and milestone request. The user wants random variety
+between orbital ship, station traffic and bridge-window title views. Select
+without immediate repetition and preserve the scene through title submenus.
+Start with M416's menu hierarchy and scene lifecycle, followed by save
+clarity and shared menu behavior. The plan includes scope, dependencies and
+acceptance criteria; these milestones have not been implemented or released.
+
 The dev server was restarted at <http://127.0.0.1:5199> so its version define
 reads 0.255.0. The separate production-build preview on port 5198 was stopped.
 All temporary browser tabs are closed. No test saves or linked cloud codes

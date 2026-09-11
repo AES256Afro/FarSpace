@@ -2192,3 +2192,24 @@ The decision between service orders and booked fares is covered by M402.
 - Preserve volume adjustment, key rebinding and the caller's return scene.
   Keep margin and information clicks inert; allow pointer cancellation of
   a pending binding without changing its key.
+
+## Proposed next cycle: M416-M427
+
+The [next development plan](NEXT-MILESTONES.md) contains dependencies,
+implementation boundaries, acceptance checks, effort ranges and release gates.
+These milestones are proposed and are not part of the shipped M415 baseline.
+
+| Milestone | Planned outcome |
+| --- | --- |
+| M416: The opening view | Random orbital, station and bridge title scenes with one clear main menu. |
+| M417: A clear save library | Read-only previews, deliberate activation and understandable local/cloud choices. |
+| M418: Menus with one set of rules | Shared navigation, complete lists and consistent focus restoration. |
+| M419: A readable flight deck | Prioritized heading, route, threats and messages. |
+| M420: Know the contact | Identity, current intent, hostility reasons and valid actions. |
+| M421: The first useful voyage | An optional first-session course that verifies actual player actions. |
+| M422: Pick up the journey | A sourced return briefing and one chosen objective across scenes. |
+| M423: Work worth answering | Three complete support/rescue chains using existing mechanics. |
+| M424: The port changes | Visible port conditions tied to actual economy and support outcomes. |
+| M425: A ship you can read | Clear interior layout, hull identity and visible condition. |
+| M426: Comfortable across devices | Input, readability, motion and performance verified across devices. |
+| M427: A voyage that holds together | Full player journeys, save compatibility and long-session release checks. |
