@@ -147,6 +147,7 @@ export class StationScene implements Scene {
     else if (this.station.military && commandOffer(g.world)) this.commandOfferScene(g, commandOffer(g.world)!);
     else if (leavePair(g.world)) this.leaveTogether(g, leavePair(g.world)!);
     else if (fleetReviewAt(g.world, this.station.id) && commandRank(p) !== "SKIPPER" && !(p.flags ?? {})[`review:${this.station.id}:${weekKey()}`]) this.fleetReview(g);
+    else if (fleetReviewAt(g.world, this.station.id) && firstOfficer(p) && !(p.flags ?? {})[`secondsbar:${weekKey()}`]) this.secondsBar(g);
     else if (receptionDue(g.world, this.station)) this.reception(g);
     else if (grievanceDue(g.world)) this.grievance(g);
     else if (spinOutageDue(g.world, this.station)) this.spinOutage(g);
@@ -179,7 +180,7 @@ export class StationScene implements Scene {
     p.crew = p.crew.filter((c) => c.morale > 5 || (c.loyalty ?? 0) >= 2);
     const now = g.world.time;
     const rng = new RNG((g.world.seed ^ Math.floor(now) ^ 0x5ea) >>> 0);
-    { const firsts = p.crew.filter((c) => (c.docks ?? 0) === 0); for (const c of p.crew) c.docks = (c.docks ?? 0) + 1; for (const c of p.crew) if (c.cadet && (c.docks ?? 0) >= 10) { c.cadet = false; c.skill = Math.min(10, c.skill + 1); c.wage = Math.round(c.wage / 0.6); c.loyalty = (c.loyalty ?? 0) + 0.3; flag(g, "cadetgrown"); logEntry(g.world, `${c.name}, cadet no longer: ten dockings`); g.toast(`${c.name.split(" ")[0].toUpperCase()}: TEN DOCKINGS. CADET NO LONGER. FULL WAGE, A SKILL UP, AND THE CREW STOP CALLING THEM THE NEW ONE. MOSTLY.`); } for (const c of firsts) { for (const o of p.crew) o.morale = Math.min(100, o.morale + 2); c.loyalty = (c.loyalty ?? 0) + 0.2; logEntry(g.world, `${c.name}'s first docking, at ${this.station.name}; the crew bought the drink`); flag(g, "firstdock"); g.toast(`${c.name.split(" ")[0].toUpperCase()}'S FIRST DOCKING. THE CREW BUY THE DRINK AND MAKE THEM SIGN THE BAR'S BOOK. THEY'RE ON THE ROSTER FOR REAL NOW.`); } }
+    { const firsts = p.crew.filter((c) => (c.docks ?? 0) === 0); for (const c of p.crew) c.docks = (c.docks ?? 0) + 1; for (const c of p.crew) if (c.cadet && (c.docks ?? 0) >= 10) { c.cadet = false; c.skill = Math.min(10, c.skill + 1); c.wage = Math.round(c.wage / 0.6); c.loyalty = (c.loyalty ?? 0) + 0.3; flag(g, "cadetgrown"); logEntry(g.world, `${c.name}, cadet no longer: ten dockings`); g.toast(`${c.name.split(" ")[0].toUpperCase()}: TEN DOCKINGS. CADET NO LONGER. FULL WAGE, A SKILL UP, AND THE CREW STOP CALLING THEM THE NEW ONE. MOSTLY.`); } for (const c of firsts) { for (const o of p.crew) o.morale = Math.min(100, o.morale + 2); c.loyalty = (c.loyalty ?? 0) + 0.2; logEntry(g.world, `${c.name}'s first docking, at ${this.station.name}; the crew bought the drink`); flag(g, "firstdock"); if (c.cadet && c.home) (g.world.mailQueue ??= []).push({ dueT: g.world.time + 800, from: `${c.name.split(" ")[0]}'s mam, ${findStation(g.world, c.home)?.st.name ?? "home"}`, text: `${c.name.split(" ")[0]} wrote. First docking, they said, and the crew bought the drink, and they signed a book. I don't know what book. I cried anyway. Feed them. They don't eat when they're nervous and they're always nervous. Thank you for the seat.`, gift: { credits: 40 } }); g.toast(`${c.name.split(" ")[0].toUpperCase()}'S FIRST DOCKING. THE CREW BUY THE DRINK AND MAKE THEM SIGN THE BAR'S BOOK. THEY'RE ON THE ROSTER FOR REAL NOW.`); } }
     (p.dockings ??= {})[this.station.id] = dockingsAt(p, this.station.id) + 1;
     p.jumpStreak = 0;
     // pending asks: honoured here, or wearing thin
@@ -1916,6 +1917,17 @@ export class StationScene implements Scene {
   }
 
   // the crew want a word: a bonus, a night ashore, or your foot down
+  // the seconds' bar: review week, and the Numbers One of every hull in the line drink while the captains posture
+  secondsBar(g: Game): void {
+    const st = this.station; const p = g.world.player; const fo = firstOfficer(p)!; (p.flags ??= {})[`secondsbar:${weekKey()}`] = true; const rv = rivalOf(g.world);
+    const enc: Encounter = { id: "secondsbar", where: "space", title: "THE SECONDS' BAR", weight: 0,
+      text: `Review week, and there's a bar on the lower ring with a hand-lettered sign: SECONDS IN COMMAND ONLY. ${fo.name.split(" ")[0]} is looking at it the way people look at a door they've been told about. ${rv ? `${rv.ship}'s Number One is already inside.` : "Half the fleet's Numbers One are already inside."}`,
+      options: [
+        { label: "GO ON. I'LL MANAGE THE POSTURING", hint: "Number One's loyalty and morale up; they come back with something", result: (g2, rng) => { fo.loyalty = (fo.loyalty ?? 0) + 0.3; fo.morale = Math.min(100, fo.morale + 10); if (rv) rv.disposition = Math.min(5, rv.disposition + 1); const intel = rng.pick(["THE ADMIRAL HATES THE LIGHT SEQUENCE TOO. EVERYBODY DOES. NOBODY SAYS.", `${rv ? rv.ship.toUpperCase() : "THE FLAGSHIP"}'S PORT MOUNT IS WORSE THAN OURS. I'VE STOPPED FEELING BAD ABOUT OURS.`, "EVERY NUMBER ONE IN THAT ROOM HAS THE SAME STORY ABOUT THEIR CAPTAIN AND THE COFFEE MACHINE. INCLUDING ME. SORRY."]); flag(g2, "secondsbar"); logEntry(g2.world, `${fo.name} drank at the seconds' bar during review week at ${st.name}`); return `${fo.name.split(" ")[0].toUpperCase()} COMES BACK THREE HOURS LATER, STEADY, WITH ONE THING TO REPORT: '${intel}' LOYALTY UP.${rv ? " THE RIVALRY IS A DEGREE WARMER, WHICH IS THE SECONDS' JOB." : ""}`; } },
+        { label: "WE'VE A SCHEDULE", hint: "Morale down a little; the sign stays up all week", result: () => { fo.morale = Math.max(0, fo.morale - 4); return `${fo.name.split(" ")[0].toUpperCase()} NODS AND DOESN'T LOOK AT THE SIGN AGAIN, WHICH TAKES SOME DOING, BECAUSE IT'S RIGHT THERE.`; } },
+      ] };
+    (g.scenes["encounter"] as EncounterScene).open(g, enc, "station", true);
+  }
   // fleet review: the service's hulls in line abreast, and a merchant with a rank expected among them
   fleetReview(g: Game): void {
     const st = this.station; const p = g.world.player; const fac = faction(st.factionId); (p.flags ??= {})[`review:${st.id}:${weekKey()}`] = true;

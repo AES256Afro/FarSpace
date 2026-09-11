@@ -145,6 +145,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "inspection", title: "A GOOD SHIP", desc: "Pass an inspection with three marks of four", check: (w) => !!w.player.flags?.inspection },
   { id: "freeman", title: "FREEMAN OF THE BELT", desc: "Earn a standing of three with the rocks", check: (w) => !!w.player.flags?.freeman },
   { id: "requisition", title: "COURTESY OF THE SERVICE", desc: "Requisition a full service at a naval station", check: (w) => !!w.player.flags?.requisition },
+  { id: "secondsbar", title: "SECONDS IN COMMAND ONLY", desc: "Send Number One to the seconds' bar in review week", check: (w) => !!w.player.flags?.secondsbar },
   { id: "oldnumberone", title: "I'D KNOW IT ANYWHERE", desc: "Pass your old Number One in the lanes, in their own ship", check: (w) => !!w.player.flags?.oldnumberone },
   { id: "commandoffer", title: "AN ORDER I CAN'T GIVE", desc: "Send Number One to a command of their own", check: (w) => !!w.player.flags?.commandoffer },
   { id: "stayed", title: "THEN I'LL STAY", desc: "Ask Number One to stay, plainly", check: (w) => !!w.player.flags?.stayed },

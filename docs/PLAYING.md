@@ -757,6 +757,11 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   Send them (they become a friendly captain in the lanes, write from the
   chair, and the chronicle says who they command), ask them to stay plainly
   (loyalty up a lot), or leave it to them and a coin.
+- In review week at a naval station there's a bar for seconds in command
+  only. Send Number One (loyalty and morale up, one thing to report, and a
+  rivalry a degree warmer) or keep the schedule.
+- A cadet with a home port writes home after their first docking; their mam
+  writes to you, with forty credits and instructions to feed them.
 - Send Number One to a command and they'll hail you from their own cutter
   when you pass in the lanes (the crew wave at the viewport), the promenade
   talks about them, and if you help them out there, their letter says what

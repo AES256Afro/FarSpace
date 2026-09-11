@@ -1830,6 +1830,18 @@ Time passes for the people on the ship, and for the ship.
 - [x] Help them in the lanes and their letter says what the chair taught
       them
 
+## Milestone 366 — Seconds in Command Only ✅ (Sep 2026)
+- [x] Review week has a bar for Numbers One: send yours (loyalty, morale,
+      one thing to report, a rivalry a degree warmer) or keep the schedule
+
+## Milestone 367 — The Cadet's Mam ✅ (Sep 2026)
+- [x] A cadet with a home port writes home after the first docking, and
+      their mam writes to you
+
+## Milestone 368 — The Galley Door III ✅ (Sep 2026)
+- [x] Newsletter lines for the Number One who has a ship and the singers'
+      home
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
