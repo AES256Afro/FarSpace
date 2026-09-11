@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.97 - TRAFFIC CONTROL", [
+    "CONTROL CALLS REAL SHIPS IN AND OUT OF THE BAYS ON THE BAND. STAY CLOSE TO A STATION AND LISTEN.",
+  ]],
   ["0.96 - FOUR MORE CARDS", [
     "AN OLD PROBE STILL TALKING, THE LANTERN SHIPS, A STRANDED LINER, A SURVEY CREW'S CAIRN.",
   ]],

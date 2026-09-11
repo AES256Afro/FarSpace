@@ -229,6 +229,12 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Traffic control
+
+- Near a station the band carries the real traffic: control clears each
+  hauler into a bay as it arrives, and calls departures as they leave. The
+  regulars are called by name.
+
 ## Four more cards
 
 - An old probe still transmitting to a dead star; a procession of lantern

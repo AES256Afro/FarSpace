@@ -749,4 +749,8 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 96 — Encounters Batch 3 ✅ (Sep 2026)
 - [x] An old probe, the lantern ships, a stranded liner, a survey crew's cairn
 
+## Milestone 97 — Traffic Control ✅ (Sep 2026)
+- [x] Control calls real ships in and out of bays on the band when you're
+      close enough to hear
+
 ## Later

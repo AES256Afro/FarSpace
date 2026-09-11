@@ -163,6 +163,8 @@ export function spawnTrader(fs: FlightScene, g: Game, rng: RNG): void {
   const sx = Math.cos(from.angle) * from.orbit, sy = Math.sin(from.angle) * from.orbit;
   const a = rng.range(0, TAU);
   const cap = pickCaptainFor(g.world, sys.id, rng);
+  const p = g.world.player;
+  if (dist(sx, sy, p.x, p.y) < 1400 && fs.comms.length < 4) fs.comms.push({ from: `${from.name.toUpperCase()} CONTROL`, text: `${(cap?.name ?? "HAULER").toUpperCase()} DEPARTING BAY ${rng.int(1, 6)}. TRAFFIC ON THE APPROACH, MIND YOUR SPACING.`, life: 6, color: PAL.greyDark });
   fs.npcs.push({
     kind: "trader",
     x: sx + Math.cos(a) * 200, y: sy + Math.sin(a) * 200,
@@ -596,6 +598,8 @@ export function updateNpcs(fs: FlightScene, g: Game, dt: number): void {
       if (st) {
         tx = Math.cos(st.angle) * st.orbit; ty = Math.sin(st.angle) * st.orbit;
         if (dist(n.x, n.y, tx, ty) < 60) {
+          // control calls them in on the band, if you're close enough to hear it
+          if (!n.announced && !n.convoy && !n.ghost && dist(n.x, n.y, p.x, p.y) < 1400 && fs.comms.length < 4) { n.announced = true; const bay = 1 + Math.abs(Math.round(n.x + n.y)) % 6; fs.comms.push({ from: `${st.name.toUpperCase()} CONTROL`, text: `${(n.name ?? (n.tag ? `[${n.tag}] CONVOY` : "HAULER")).toUpperCase()}, BAY ${bay} IS YOURS. ${["WELCOME IN.", "MIND THE TRAFFIC.", "WE HAVE YOU.", "GOOD TO SEE YOU BACK."][bay % 4]}`, life: 6, color: PAL.greyDark }); }
           // deliver: stock the station, pick up its exports, move on (or dock for a while)
           if (n.cargo) { st.stock[n.cargo.id] = (st.stock[n.cargo.id] ?? 0) + n.cargo.qty; }
           if (!n.tag && Math.random() < 0.3) { boom(fs, n.x, n.y, 6, PAL.info); n.hull = 0; n.docked = true; }
