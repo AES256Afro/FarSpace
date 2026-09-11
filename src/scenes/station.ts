@@ -1,3 +1,4 @@
+import { recordOffence, closeLawCases } from "../core/law";
 import { loanHullChangeReason, loanReturnReason, loanSummary, plotLoanDepot, returnServiceCutter } from "../core/serviceloan";
 import { beginDockVisit, currentDockVisit, type DockVisit } from "../core/docking";
 import type { World } from "../world";
@@ -322,7 +323,7 @@ export class StationScene implements Scene {
     if (p.wanted > 0.5 && rep > -20 && p.credits >= 800) {
       text = `A ${name} ENVOY MEETS YOU AT THE AIRLOCK. 'YOUR RECORD IS... BUSY. WE CAN MAKE IT LESS BUSY. ${Math.round(1200 + p.wanted * 1500)} CREDITS AND THE PATROLS FORGET YOUR HULL.'`;
       const price = Math.round(1200 + p.wanted * 1500);
-      opts.push({ label: `PAY ${price}CR FOR AMNESTY`, requires: (g2) => g2.world.player.credits >= price, result: (g2) => { g2.world.player.credits -= price; g2.world.player.wanted = 0; logEntry(g2.world, `Bought an amnesty from the ${fac.name}`); return "THE ENVOY SIGNS SOMETHING. SOMEWHERE A FILE CLOSES. YOU ARE NOBODY AGAIN."; } });
+      opts.push({ label: `PAY ${price}CR FOR AMNESTY`, requires: (g2) => g2.world.player.credits >= price, result: (g2) => { g2.world.player.credits -= price; closeLawCases(g2.world); logEntry(g2.world, `Bought an amnesty from the ${fac.name}`); return "THE ENVOY SIGNS SOMETHING. SOMEWHERE A FILE CLOSES. YOU ARE NOBODY AGAIN."; } });
       opts.push({ label: "KEEP MY RECORD, THANKS", result: () => "'AS YOU LIKE. THE PATROLS HAVE LONG MEMORIES.'" });
     } else if (rep >= 75 && !hasCharter(g.world, fid)) {
       text = `A ${name} ENVOY, IN DRESS GREYS. 'THE ${name} RECOGNISES ITS FRIENDS. A CHARTER: OUR CONTRACTS PAY YOU FIFTEEN PERCENT MORE, AND OUR YARDS WORK AT COST. WE ASK ONLY THAT YOU KEEP FLYING THE WAY YOU FLY.'`;
@@ -492,7 +493,7 @@ export class StationScene implements Scene {
           else if (illegal && !fence && Math.random() < 0.12) {
             // customs sting: the crate is gone and so is some goodwill
             adjustRep(g.world, st.factionId, -5);
-            p.wanted = Math.min(1, (p.wanted ?? 0) + 0.1);
+            recordOffence(g.world, 0.1, st.factionId);
             g.toast(`CUSTOMS STING - ${commodity(id).name.toUpperCase()} SEIZED, NO PAYMENT`);
             sfx.alarm();
           } else {
@@ -1183,7 +1184,7 @@ export class StationScene implements Scene {
       const cost = Math.round(p.wanted * 1000);
       opts.push({ label: "BRIBE RECORDS CLERK (CLEAR WARRANT)", sub: `${cost}CR`, action: () => {
         if (p.credits < cost) return g.toast("NOT ENOUGH CREDITS");
-        p.credits -= cost; p.wanted = 0; g.toast("RECORDS... MISPLACED");
+        p.credits -= cost; closeLawCases(g.world); g.toast("RECORDS... MISPLACED");
       } });
     }
     const rep = p.rep[st.factionId] ?? 0;

@@ -4,6 +4,7 @@ export interface Bullet {
   x: number; y: number; vx: number; vy: number;
   life: number; hostile: boolean; dmg: number;
   fromPlayer?: boolean;
+  lawFaction?: string;
 }
 
 export type NpcKind = "pirate" | "trader" | "patrol" | "fighter" | "drone";

@@ -1,3 +1,4 @@
+import { recordOffence } from "../core/law";
 // Encounters: short choice cards that interrupt flight or a drive. Each option
 // applies real effects and returns the line the player reads afterwards.
 
@@ -69,8 +70,8 @@ export const ENCOUNTERS: Encounter[] = [
         adjustRep(g.world, sys(g).factionId, 2); return "CLEAN. THE OFFICER WISHES YOU SAFE TRANSIT AND MEANS IT. STANDING UP.";
       } },
       { label: "SHOW THE ENVOY'S SEAL", hint: "Diplomatic passage; nobody opens a treaty ship", requires: (g) => passengersAboard(p(g)).some((m) => m.treaty), result: (g) => { const env = passengersAboard(p(g)).find((m) => m.treaty)!; adjustRep(g.world, sys(g).factionId, 1); (p(g).flags ??= {}).immunity = true; return `${(env.passengerName ?? "THE ENVOY").toUpperCase()} HOLDS THE SEAL UP TO THE CAMERA WITHOUT GETTING OUT OF THE CHAIR. THE CORVETTE READS IT, GOES QUIET, AND BACKS OFF WITH AN APOLOGY IN IT. DIPLOMATIC PASSAGE. NOBODY OPENS THE HOLD.`; } },
-      { label: "OFFER 150CR TO SKIP THE SCAN", requires: (g) => p(g).credits >= 150, result: (g, rng) => { p(g).credits -= 150; if (rng.chance(0.55)) return "THE OFFICER POCKETS IT. 'MOVE ALONG.'"; adjustRep(g.world, sys(g).factionId, -10); p(g).wanted = Math.min(1, (p(g).wanted ?? 0) + 0.15); return "THE OFFICER TAKES THE CREDITS AND FILES A BRIBERY REPORT. YOU ARE NOW A PERSON OF INTEREST."; } },
-      { label: "PUNCH IT", hint: "Wanted, and worse", result: (g) => { p(g).wanted = Math.min(1, (p(g).wanted ?? 0) + 0.3); adjustRep(g.world, sys(g).factionId, -12); return "YOU RUN. THE CORVETTE LOGS YOUR HULL. PATROLS WILL BE LOOKING."; } },
+      { label: "OFFER 150CR TO SKIP THE SCAN", requires: (g) => p(g).credits >= 150, result: (g, rng) => { p(g).credits -= 150; if (rng.chance(0.55)) return "THE OFFICER POCKETS IT. 'MOVE ALONG.'"; adjustRep(g.world, sys(g).factionId, -10); recordOffence(g.world, 0.15); return "THE OFFICER TAKES THE CREDITS AND FILES A BRIBERY REPORT. YOU ARE NOW A PERSON OF INTEREST."; } },
+      { label: "PUNCH IT", hint: "Wanted, and worse", result: (g) => { recordOffence(g.world, 0.3); adjustRep(g.world, sys(g).factionId, -12); return "YOU RUN. THE CORVETTE LOGS YOUR HULL. PATROLS WILL BE LOOKING."; } },
     ],
   },
   {

@@ -1,3 +1,4 @@
+import { recordOffence } from "../../core/law";
 // Combat feel: pirate variants, homing torpedoes, hit feedback, damage smoke,
 // and comms chatter. Called from the flight scene each frame.
 
@@ -122,7 +123,7 @@ export function updateTorpedoes(fs: FlightScene, g: Game, dt: number): void {
         fs.floaters.push({ x: n.x, y: n.y - 10, text: "45", life: 1, color: PAL.gold });
         fs.camShake = Math.max(fs.camShake, 3);
         if (n.hull <= 0) { flag(g, "torpedoKill"); npcKilled(fs, g, n, true); }
-        else if (n.kind !== "pirate") { g.world.player.wanted = Math.min(1, g.world.player.wanted + 0.2); }
+        else if (n.kind !== "pirate") { recordOffence(g.world, 0.2); }
         break;
       }
     }

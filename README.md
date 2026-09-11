@@ -22,7 +22,7 @@ See [docs/PLAYING.md](docs/PLAYING.md) for a guide by career,
 
 | Context | Keys |
 |---|---|
-| Flight | **W/S** thrust · **A/D** rotate · **mouse** aims the turret (left-click fire, right-click mine) or **Space** fire / **M** mine in keyboard mode · **R** torpedo · **C** seismic charge · **X** brake assist · **J** cruise · **N** autopilot to your course · **V** (hold) deep scan (logs the system) · **E** dock / jump / orbit / board wreck · **T** hail · **L** comms log the system channel · **Tab** system map · **G** galaxy map · **I** board ship · **F** fullscreen |
+| Flight | **W/S** thrust · **A/D** rotate · **mouse** aims the turret (left-click fire, right-click mine) or **Space** fire / **M** mine in keyboard mode · **R** torpedo · **C** seismic charge · **X** brake assist · **J** cruise · **N** autopilot to your course · **V** (hold) deep scan (logs the system) · **E** dock / jump / orbit / board wreck · **U** traffic control / settle warrant · **T** hail · **L** comms log the system channel · **Tab** system map · **G** galaxy map · **I** board ship · **F** fullscreen |
 | Ship / station / wreck / outpost | **WASD** walk · **E** interact · **E** (hold) repair, seal, extinguish |
 | Orbit | **↑/↓** or click to target a site · **V** (hold) survey scan · **E** land at the site · **L** drop the rover in its region · **Esc** leave orbit |
 | Groundside (rover) | **WASD** drive · **E** mine / salvage / enter a site / lift off at the lander · **V** (hold) scan flora · **R** patch the rover at the lander · **T** choose up to two away crew at the lander · **L** shore leave |
@@ -144,7 +144,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestones 1-404 are live (v0.244.0). See the [roadmap](docs/ROADMAP.md) for what's next.
+Milestones 1-405 are live (v0.245.0). See the [roadmap](docs/ROADMAP.md) for what's next.
 
 ```bash
 npm test         # vitest: world-gen, routing, economy, law, missions, save migrations

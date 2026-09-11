@@ -1,3 +1,4 @@
+import { LAW_COOLDOWN, lawActive, lawCases, lawSettlement, recordOffence, settleLaw, tickLawCooldown } from "../../core/law";
 import { tickServiceOrder } from "../../core/service";
 import { beginDockVisit } from "../../core/docking";
 // Flight scene: player controls, interactions (dock/jump/orbit/board), law.
@@ -79,7 +80,6 @@ export class FlightScene implements Scene {
   floaters: Floater[] = [];
   comms: Comms[] = [];
   hitFlash = 0;
-  pursuitTimer = 0;    // time the law has been chasing us this system
 
   private population: { world: World; systemId: string } | null = null;
   resumeNext = false; // Temporary visits return to the same flight population.
@@ -152,7 +152,7 @@ export class FlightScene implements Scene {
     this.docking = null; this.launching = 0; this.dockTimer = 0;
     this.drifters = []; this.charges = []; this.maydays = []; this.lastMayday = 0;
     this.lastFound = null; this.lastHail = null; this.wonderSeen.clear();
-    this.scanCharge = 0; this.pursuitTimer = 0; this.fireCd = 0; this.turretCd = 0;
+    this.scanCharge = 0; this.fireCd = 0; this.turretCd = 0;
     this.camShake = 0; this.hitFlash = 0; this.mining = false; this.scooping = false;
     this.spawnTimer = 4; this.encounterTimer = 90; this.trafficTimer = 40;
     this.maydayCheck = 20; this.chatterTimer = 25; this.hailT = 25; this.songTimer = 0;
@@ -163,6 +163,7 @@ export class FlightScene implements Scene {
   pauseOptions(g: Game): { label: string; act: () => void }[] {
     return [
       { label: "RESUME", act: () => { this.paused = false; } },
+      { label: "TRAFFIC CONTROL (U)", act: () => { this.paused = false; this.contactTrafficControl(g); } },
       { label: "SAVE (F5)", act: () => { g.save(); this.paused = false; } },
       { label: "SETTINGS", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("settings"); } },
       { label: "HANDBOOK", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("almanac"); } },
@@ -181,6 +182,12 @@ export class FlightScene implements Scene {
       })(),
       { label: "SAVE AND QUIT TO TITLE", act: () => { g.save(); this.paused = false; g.setScene("title"); } },
     ];
+  }
+
+  pauseRows(g: Game): { option: { label: string; act: () => void }; index: number; y: number }[] {
+    const options = this.pauseOptions(g);
+    const start = clamp(this.pauseCursor - 4, 0, Math.max(0, options.length - 9));
+    return options.slice(start, start + 9).map((option, i) => ({ option, index: start + i, y: 110 + i * 12 }));
   }
 
   // Collect the till, patch the structure, stock or draw on a depot.
@@ -247,13 +254,21 @@ export class FlightScene implements Scene {
     }
     this.recordComms(w.time);
     // pause: the galaxy holds its breath; save, settings, the handbook, or home
-    if (g.input.wasPressed("Escape") && !this.logOpen && !this.mapOpen && !this.docking) { this.paused = !this.paused; this.pauseCursor = 0; sfx.blip(); }
+    if (g.input.wasPressed("Escape") && !this.logOpen && !this.mapOpen && !this.docking) { this.paused = !this.paused; this.pauseCursor = 0; this.pausePointerX = g.input.mouseX; this.pausePointerY = g.input.mouseY; sfx.blip(); }
     if (this.paused) {
       w.time -= dt; // undo this frame's clock; nothing moves while paused
       const opts = this.pauseOptions(g);
       if (g.input.wasPressed("ArrowUp")) { this.pauseCursor = (this.pauseCursor + opts.length - 1) % opts.length; sfx.blip(); }
       if (g.input.wasPressed("ArrowDown")) { this.pauseCursor = (this.pauseCursor + 1) % opts.length; sfx.blip(); }
-      for (let i = 0; i < opts.length; i++) { const y = 110 + i * 12; if (g.input.mouseY >= y - 3 && g.input.mouseY < y + 9 && g.input.mouseX > VW / 2 - 80 && g.input.mouseX < VW / 2 + 80) { this.pauseCursor = i; if (g.input.mousePressed) { sfx.select(); opts[i].act(); return; } } }
+      if (g.input.wheel) this.pauseCursor = clamp(this.pauseCursor + Math.sign(g.input.wheel), 0, opts.length - 1);
+      const moved = g.input.mouseX !== this.pausePointerX || g.input.mouseY !== this.pausePointerY;
+      this.pausePointerX = g.input.mouseX; this.pausePointerY = g.input.mouseY;
+      for (const row of this.pauseRows(g)) {
+        if (g.input.mouseY >= row.y - 3 && g.input.mouseY < row.y + 9 && g.input.mouseX > VW / 2 - 130 && g.input.mouseX < VW / 2 + 130 && (moved || g.input.mousePressed)) {
+          this.pauseCursor = row.index;
+          if (g.input.mousePressed) { sfx.select(); row.option.act(); return; }
+        }
+      }
       if (g.input.wasPressed("Enter") || g.input.wasPressed(" ")) { sfx.select(); opts[this.pauseCursor].act(); }
       return;
     }
@@ -262,6 +277,7 @@ export class FlightScene implements Scene {
     if (g.input.wasPressed("Tab")) this.mapOpen = !this.mapOpen;
     if (g.input.wasPressed("g")) { g.setScene("galaxy"); return; }
     if (g.input.wasPressed("i")) { g.setScene("interior"); return; }
+    if (g.input.wasPressed("u")) { this.contactTrafficControl(g); return; }
     if (g.input.wasPressed("y") && !this.docking) { this.alert = ((this.alert + 1) % 3) as AlertLevel; this.alertT = 0; if (this.alert === 2) { sfx.alarm(); noteLeg(p, "alerts", g.world.time); { const fo = firstOfficer(p); if (fo && !fo.sick && !this.npcs.some((n) => n.kind === "pirate" && n.hull > 0 && dist(p.x, p.y, n.x, n.y) < 1400)) this.comms.push({ from: fo.name.split(" ")[0].toUpperCase(), text: "RED ALERT, AYE. ... IS THERE SOMETHING I SHOULD KNOW, CAPTAIN? THE SCANNER'S CLEAR.", life: 6, color: PAL.warn }); } const gun = p.crew.find((c) => c.role === "gunner" && !c.sick) ?? p.crew.find((c) => !c.sick); this.comms.push({ from: gun ? gun.name.split(" ")[0].toUpperCase() : shipVoiceName(p), text: gun ? "RED ALERT. SHIELDS UP, STATIONS. SOMEBODY GET THE CAT OFF THE CONSOLE." : "RED ALERT. I'VE PUT EVERYTHING INTO THE SHIELDS. I HOPE YOU KNOW SOMETHING I DON'T.", life: 6, color: PAL.danger }); flag(g, "redalert"); } else if (this.alert === 1) { sfx.blip(); this.comms.push({ from: shipVoiceName(p), text: "YELLOW ALERT. SHIELDS READY. THE CREW LOOK UP FROM THEIR CARDS.", life: 5, color: PAL.warn }); } else { sfx.select(); this.comms.push({ from: shipVoiceName(p), text: "STAND DOWN. CONDITION GREEN. THE CARDS COME BACK OUT.", life: 5, color: PAL.good }); } }
     if (g.input.wasPressed("F5")) g.save();
     if (g.input.wasPressed("F9")) { g.load(); return; }
@@ -510,24 +526,51 @@ export class FlightScene implements Scene {
   turretCd?: number;
   mining = false;
 
-  // Law escalation: 1 = wanted, patrols hunt; 2 = shoot on sight after prolonged pursuit / very low rep
+  lawContact(g: Game): boolean {
+    const p = g.world.player, level = this.lawLevel(g);
+    if (!level) return false;
+    if (this.npcs.some(n => n.hull > 0 && !n.disabled && !n.fleeing
+      && (n.kind === "patrol" || n.kind === "fighter") && dist(p.x, p.y, n.x, n.y) < 900)) return true;
+    return level >= 2 && this.platforms.some(pf => !pf.hostileToPlayer && dist(p.x, p.y, pf.x, pf.y) < 500);
+  }
+
+  lawStatus(g: Game): string | null {
+    if (!lawActive(g.world)) return null;
+    return this.lawContact(g) ? "WARRANT: BREAK CONTACT / U TRAFFIC CONTROL"
+      : `WARRANT COOLDOWN: ${Math.ceil(LAW_COOLDOWN - (g.world.player.lawQuiet ?? 0))}S / U SETTLE`;
+  }
+
+  clearLawFire(g: Game): void {
+    if (this.lawLevel(g) === 0) this.bullets = this.bullets.filter(b => !b.lawFaction);
+  }
+
   updateLaw(g: Game, dt: number): void {
-    const p = g.world.player;
-    const level = this.lawLevel(g);
-    if (level >= 1) {
-      this.pursuitTimer += dt;
-      if (this.pursuitTimer > 60 && level === 1 && !this.scanMsg) {
-        const facId = g.world.systems[p.systemId].factionId;
-        adjustRep(g.world, facId, -5);
-        this.scanMsg = "PURSUIT ESCALATED - LETHAL FORCE AUTHORIZED";
-        this.scanTimer = 4;
-        this.pursuitTimer = 0;
-      }
-    } else {
-      this.pursuitTimer = 0;
-      // heat cools slowly while you behave
-      p.wanted = Math.max(0, p.wanted - dt * 0.004);
+    if (tickLawCooldown(g.world, dt, this.lawContact(g))) {
+      this.clearLawFire(g);
+      this.scanMsg = "PURSUIT CLOSED - PATROLS STANDING DOWN";
+      this.scanTimer = 5;
+      this.comms.push({ from: "TRAFFIC CONTROL", text: "CONTACT LOST. PURSUIT CLOSED. CIVILIAN PORTS WILL TAKE YOU. YOUR STANDING STILL NEEDS WORK. U TO SETTLE THE RECORD.", life: 12, color: PAL.good });
     }
+  }
+
+  contactTrafficControl(g: Game): void {
+    const w = g.world, quote = lawSettlement(w), fac = faction(w.systems[w.player.systemId].factionId);
+    const active = lawActive(w);
+    let used = false;
+    const text = `${fac.name.toUpperCase()} TRAFFIC CONTROL. ${active ? "BREAK LAW CONTACT FOR 60 SECONDS TO CLOSE PURSUIT FREE. STAY 900M FROM PATROLS/FIGHTERS AND 500M FROM HOSTILE LAW PLATFORMS. NEW OFFENCES RESTART THE CLOCK. STANDING STAYS; CIVILIAN PORTS REOPEN." : "NO ACTIVE PURSUIT. YOUR RECORD IS AVAILABLE HERE."} ${quote ? "SETTLEMENT CLOSES OPEN CASES AND RESTORES THEIR FACTIONS TO NEUTRAL. MILITARY DOCKING REOPENS." : fac.id === "vex" ? "NO LAWFUL SETTLEMENT OFFICE HERE. THE FREE COOLDOWN STILL WORKS." : "NO PAYMENT DUE."}`;
+    (g.scenes.encounter as EncounterScene).open(g, {
+      id: "traffic-control", where: "space", weight: 0, title: "TRAFFIC CONTROL", text,
+      options: [
+        ...(quote ? [{ label: `SETTLE RECORD: ${quote.cost}CR`, hint: `You have ${w.player.credits}cr`, result: (g2: Game) => {
+          if (used || g2.world !== w) return "THIS TRAFFIC CALL HAS CLOSED.";
+          const reason = settleLaw(w, quote);
+          if (reason) return reason;
+          used = true; this.clearLawFire(g2);
+          return "PAYMENT RECEIVED. PURSUIT CLOSED; WEAPONS STANDING DOWN. YOUR RECORD IS NEUTRAL OR BETTER WITH THE SETTLED FACTIONS. SAFE FLYING.";
+        } }] : []),
+        { label: active ? "BREAK CONTACT AND COOL DOWN (FREE)" : "CLOSE CHANNEL", result: () => "" },
+      ],
+    }, "flight", true);
   }
 
   // ---------- Escort missions ----------
@@ -785,7 +828,7 @@ export class FlightScene implements Scene {
     const p = g.world.player;
     const rep = p.rep?.[st.factionId] ?? 0;
     if (st.military && rep < -20) { g.toast("DOCKING DENIED - YOUR RECORD PRECEDES YOU"); return false; }
-    if (rep < -60) { g.toast("DOCKING DENIED - PERSONA NON GRATA"); return false; }
+    if (rep < -60 && !p.lawStandDown?.[st.factionId]) { g.toast("DOCKING DENIED - PERSONA NON GRATA"); return false; }
     if (this.docking) return true;
     if (this.convoy) { const c = this.convoy; this.npcs = this.npcs.filter((s) => !s.convoy); this.convoy = null; if (c.missionId) p.missions = p.missions.filter((x) => x.id !== c.missionId); this.comms.push({ from: "CONVOY LEAD", text: "DOCKING? RIGHT. WE'LL FIND ANOTHER WAY TO THE GATE. NO HARD FEELINGS.", life: 7, color: PAL.grey }); }
     if (this.race) { this.race = null; this.comms.push({ from: "MARSHAL", text: "DOCKING MID-RACE. CLOCK STOPPED. THE RINGS WILL KEEP.", life: 7, color: PAL.grey }); }
@@ -1128,6 +1171,7 @@ export class FlightScene implements Scene {
   // the comms log: everything said on the band this session, L to read back
   paused = false;
   pauseCursor = 0;
+  pausePointerX = -1; pausePointerY = -1;
   wonderSfx = 1;
   commsLog: { from: string; text: string; t: number }[] = [];
   logged = new WeakSet<object>();
@@ -1628,7 +1672,7 @@ export class FlightScene implements Scene {
           for (const id of ["contra", "bio"]) { seized += p.cargo[id] ?? 0; delete p.cargo[id]; }
           const fine = 100 + seized * 60;
           p.credits = Math.max(0, p.credits - fine);
-          p.wanted = Math.min(1, p.wanted + 0.2);
+          recordOffence(g.world, 0.2);
           adjustRep(g.world, facId, -10);
           this.scanMsg = `${fac.name.toUpperCase()} SCAN: CONTRABAND SEIZED, ${fine}CR FINE`;
           this.scanTimer = 4;
@@ -1638,7 +1682,7 @@ export class FlightScene implements Scene {
           this.scanTimer = 3;
         }
       } else if (this.lawLevel(g) >= 1) {
-        this.scanMsg = `${fac.name.toUpperCase()}: WARRANT FLAGGED - PATROLS NOTIFIED`;
+        this.scanMsg = `${fac.name.toUpperCase()}: WARRANT ON FILE - PATROLS NOTIFIED`;
         this.scanTimer = 4;
       } else {
         this.scanMsg = "ROUTINE SCAN CLEAR - SAFE TRANSIT";
@@ -1653,6 +1697,7 @@ export class FlightScene implements Scene {
     if (this.npcs.some((n) => n.naval)) { this.npcs = this.npcs.filter((n) => !n.naval); g.toast("SERVICE CUTTER: THAT'S THE GATE. THE SERVICE HAS YOU NO FURTHER. FLY WELL, SIR."); }
     if (this.towing) { this.towing = null; g.toast("THE TOW LINE DOESN'T SURVIVE THE JUMP"); }
     const fromId = p.systemId;
+    p.lawCases = lawCases(g.world);
     p.systemId = targetId;
     const tsys = g.world.systems[targetId];
     this.dockTimer = 0;

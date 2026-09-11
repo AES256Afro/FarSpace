@@ -1,3 +1,4 @@
+import { recordOffence } from "../../core/law";
 // NPC / platform / projectile simulation for the flight scene.
 // Every function takes the scene as explicit state so this file has no `this`.
 
@@ -399,7 +400,7 @@ export function updateBullets(fs: FlightScene, g: Game, dt: number): void {
           if (b.fromPlayer) fs.floaters.push({ x: n.x, y: n.y - 10, text: `${Math.round(b.dmg)}`, life: 0.8, color: PAL.white });
           if (n.hull <= 0) npcKilled(fs, g, n, b.fromPlayer === true);
           if (b.fromPlayer && n.kind !== "pirate") {
-            p.wanted = Math.min(1, p.wanted + 0.15);
+            recordOffence(g.world, 0.15);
             adjustRep(g.world, g.world.systems[p.systemId].factionId, -3);
           }
           break;
@@ -485,7 +486,7 @@ export function npcKilled(fs: FlightScene, g: Game, n: Npc, byPlayer: boolean): 
     // traders drop what they were hauling, whoever killed them
     if (n.cargo) fs.loot.push({ x: n.x, y: n.y, commodityId: n.cargo.id, qty: n.cargo.qty, life: 60 });
     if (byPlayer) {
-      p.wanted = Math.min(1, p.wanted + 0.4);
+      recordOffence(g.world, 0.4);
       adjustRep(g.world, facId, -15);
       adjustRep(g.world, "vex", 5);
       g.toast("WARRANT ISSUED - PATROLS ALERTED");
@@ -499,7 +500,7 @@ export function npcKilled(fs: FlightScene, g: Game, n: Npc, byPlayer: boolean): 
 export function updateNpcs(fs: FlightScene, g: Game, dt: number): void {
   const p = g.world.player;
   const sys = g.world.systems[p.systemId];
-  const lawful = p.wanted > 0.5;
+  const lawful = fs.lawLevel(g) >= 1;
   for (const n of fs.npcs) {
     if (n.hull <= 0) continue;
     n.fireCd -= dt;
@@ -569,7 +570,7 @@ export function updateNpcs(fs: FlightScene, g: Game, dt: number): void {
       for (const o of fs.npcs) {
         if (o.kind === "pirate" && o.hull > 0 && dist(hx, hy, o.x, o.y) < 800) { target = o; break; }
       }
-      if (p.wanted > 0.6 && dist(hx, hy, p.x, p.y) < 500) {
+      if (lawful && dist(hx, hy, p.x, p.y) < 500) {
         tx = p.x; ty = p.y; wantFire = dist(n.x, n.y, p.x, p.y) < 280; fireHostile = true;
       } else if (target) {
         tx = target.x; ty = target.y;
@@ -670,6 +671,7 @@ export function updateNpcs(fs: FlightScene, g: Game, dt: number): void {
           x: n.x + Math.cos(aim + spread) * 10, y: n.y + Math.sin(aim + spread) * 10,
           vx: n.vx + Math.cos(aim + spread) * bs, vy: n.vy + Math.sin(aim + spread) * bs,
           life: 1.8, hostile: fireHostile, dmg,
+          lawFaction: fireHostile && (n.kind === "patrol" || n.kind === "fighter") ? sys.factionId : undefined,
         });
       }
     }
@@ -736,6 +738,7 @@ export function updatePlatforms(fs: FlightScene, g: Game, dt: number): void {
       x: x + Math.cos(aim) * 8, y: y + Math.sin(aim) * 8,
       vx: Math.cos(aim) * 360, vy: Math.sin(aim) * 360,
       life: 1.2, hostile: hostileShot, dmg: 9,
+      lawFaction: hostileShot && !pf.hostileToPlayer ? g.world.systems[p.systemId].factionId : undefined,
     });
   }
 }

@@ -432,8 +432,13 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
     drawText(ctx, "PAUSED", VW / 2 - textWidth("PAUSED") / 2, 84, PAL.white);
     const sub = `${(g.world.player.shipName ?? hull(g.world.player.hullId).name).toUpperCase()} - ${g.world.systems[g.world.player.systemId].name.toUpperCase()} - ${Math.floor(g.world.time / 3600)}H ${Math.floor((g.world.time % 3600) / 60)}M UNDER WAY`;
     drawText(ctx, sub, VW / 2 - textWidth(sub) / 2, 94, PAL.grey);
-    fs.pauseOptions(g).forEach((o, i) => { const y = 110 + i * 12; const sel = i === fs.pauseCursor; if (sel) drawText(ctx, ">", VW / 2 - textWidth(o.label) / 2 - 10, y, PAL.gold); drawText(ctx, o.label, VW / 2 - textWidth(o.label) / 2, y, sel ? PAL.white : PAL.greyDark); });
-    drawText(ctx, "ESC RESUMES", VW / 2 - textWidth("ESC RESUMES") / 2, 180, PAL.greyDark);
+    for (const { option, index, y } of fs.pauseRows(g)) {
+      const sel = index === fs.pauseCursor;
+      if (sel) drawText(ctx, ">", VW / 2 - textWidth(option.label) / 2 - 10, y, PAL.gold);
+      drawText(ctx, option.label, VW / 2 - textWidth(option.label) / 2, y, sel ? PAL.white : PAL.greyDark);
+    }
+    const footer = `UP/DOWN OR WHEEL: ${fs.pauseCursor + 1}/${fs.pauseOptions(g).length}  ENTER SELECT  ESC RESUME`;
+    drawText(ctx, footer, VW / 2 - textWidth(footer) / 2, 230, PAL.greyDark);
     return;
   }
   if (fs.logOpen) {
@@ -584,6 +589,8 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
   if (g.cloudStatus) drawText(ctx, g.cloudStatus, VW - 36 - textWidth(g.cloudStatus) - 6, VH - 11, g.cloudStatus === "SYNCED" ? PAL.uiDim : PAL.warn);
 
   let wy = 4;
+  const lawStatus = fs.lawStatus(g);
+  if (lawStatus) { drawText(ctx, lawStatus, 4, wy, PAL.warn); wy += 9; }
   for (const s of p.systems) {
     if (s.health < 50) {
       drawText(ctx, `! ${systemLabel(p, s)} ${Math.round(s.health)}%`, 4, wy, s.health < 25 ? PAL.danger : PAL.warn);

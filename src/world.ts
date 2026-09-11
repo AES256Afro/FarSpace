@@ -261,6 +261,9 @@ export interface PlayerState {
   yardFittings?: { cargo: number; shield: number };
   kills: number;
   wanted: number;
+  lawQuiet?: number;
+  lawCases?: string[];
+  lawStandDown?: Record<string, boolean>;
   navTarget?: string | null;
   navStationId?: string; // an exact station at the end of the plotted route
   hullId: string;
@@ -2502,7 +2505,7 @@ export function lawLevelFor(w: World, systemId: string): number {
   const p = w.player;
   const fac = w.systems[systemId].factionId;
   if (fac === "vex") return 0;
-  const rep = p.rep[fac] ?? 0;
+  const rep = p.lawStandDown?.[fac] ? 0 : p.rep[fac] ?? 0;
   if (rep <= -75 || p.wanted >= 0.95) return 2;
   if (p.wanted > 0.5 || rep <= -40) return 1;
   return 0;

@@ -2090,3 +2090,16 @@ The naval career and postings are covered by M400.
 The service cutter and depot custody are covered by M401.
 
 The decision between service orders and booked fares is covered by M402.
+
+### M405: The Pursuit Ends
+
+- Close patrol pursuit after 60 flight seconds out of contact, with a visible
+  countdown and saved progress. Renewed contact or an offence restarts it.
+- Reach traffic control with U or the pause menu. Pay an exact quote from space
+  for immediate stand-down and neutral standing, or take the free cooldown.
+- Keep reputation consequences after free cooling, reopen civilian docking,
+  and prevent old closed cases from restarting pursuit without a new offence.
+- Share hostility between patrols, fighters and law platforms; withdraw their
+  active shots at settlement. Remove the reputation-loss pursuit timer.
+- Keep all pause actions within the viewport and preserve keyboard selection
+  when the pointer has not moved.

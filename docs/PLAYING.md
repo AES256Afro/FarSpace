@@ -1921,3 +1921,28 @@ This preserves the surplus still recorded on that ship, including old shield
 rounding differences. Previously lost capacity cannot be inferred from a save
 that no longer records it. Existing damage and stores are preserved when
 recalculating fitted capacity. Fuel transfers up to the new fitted tank size.
+
+## Ending a pursuit
+
+Press **U in flight**, or select **Traffic Control** in the pause menu, to
+read and settle the patrol record without docking. The channel pauses flight
+while you make the choice.
+
+- **Free cooldown:** spend 60 flight seconds out of law contact. Stay at least
+  900 metres from active patrols and fighters, and 500 metres from law defence
+  platforms when under a severe warrant. The HUD shows whether contact remains
+  or the seconds left. Renewed contact or a new offence restarts the clock.
+- Completing the cooldown clears wanted heat and closes those faction cases.
+  Your reputation stays where it is, but civilian ports reopen. Poor standing
+  can still affect prices, contracts and military docking. Returning to the
+  same faction does not reopen a closed case by itself.
+- **Immediate settlement:** traffic control quotes a bill for the open record.
+  Paying stops law fire and restores the settled factions to neutral or better,
+  including their military docking access. The price is 200 credits plus 800
+  times wanted heat, plus 30 for each point of negative standing across the
+  affected factions, rounded up. Positive standing is preserved.
+- Cooldown progress and closed cases survive saving and jumping. Menu time does
+  not advance the countdown. Pursuit no longer reduces reputation on a timer.
+- New offences can reopen pursuit. Pirate aggression has separate causes:
+  approach within 260 metres and press **E** for parley. Law settlements do not
+  pay pirates. Pirate space has no lawful settlement desk; free cooling works.
