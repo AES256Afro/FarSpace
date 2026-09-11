@@ -355,6 +355,7 @@ export interface PlayerState {
   inquiries?: number;                // boards of inquiry sat through, one per crew member lost
   wakes?: number;                    // wakes held in the galley, one per crew member lost
   named?: number;                    // finds the captain named for the survey
+  hullsCommissioned?: number;        // hulls taken at a yard under this captain
   motto?: string;                    // the line on the dedication plaque by the airlock
   prisoners?: number;                // prisoners delivered to a brig
   evacuated?: number;                // people carried out of a bad week
@@ -618,6 +619,7 @@ export function officeWrites(w: World, what: string): void {
     : n === 2 ? `Re: ${what}. Second incident. The office reminds you that form ${form} supersedes the previous form, which you did not return. We are aware of the irony. Please do not point it out.`
     : `Re: ${what}. The office has opened a file with your registry on the cover. It is the thickest file we have. Form ${form} enclosed. A representative will not be visiting. That is not a threat. It is a budget.`;
   (w.mailQueue ??= []).push({ dueT: w.time + 500 + n * 100, from: "the office of anomalous incidents", text, gift: n === 3 ? { data: 30 } : undefined });
+  (p.codex ??= {})["contact:THE OFFICE OF ANOMALOUS INCIDENTS"] = n;
   if (n === 3) (p.flags ??= {}).office = true;
 }
 export function strangeReading(w: World, an: AnomalyDef, rng: RNG): string | null {

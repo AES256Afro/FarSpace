@@ -752,6 +752,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- Every hull you take at a yard, bought or brought out of the park, is
+  commissioned: a new stardate on the plaque, a bell the yard keeps for this.
+- Let the voice-settings prank run and, a leg or so later, the ship gets
+  even: every alarm on the crew deck at once. Log it as even, tell it that's
+  enough, or tell the engineer it's war.
+- The office of anomalous incidents and the board of ethics are in the codex
+  under CONTACTS, with their letter counts.
 - After a scan turns up an anomaly, the pause menu offers NAME THE FIND: the
   finder's name goes on the chart for anyone who comes after.
 - Crew chatter now covers your undock word, the plaque, Number One having the

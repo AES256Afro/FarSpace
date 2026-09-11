@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS, roleLabel } from "../
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, tickAlumniMail, catGift, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, notableOutcome, ledger, ledgerAround, LEDGER_LABELS, dockingsAt, OLD_HAND_AT, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter, RACE_GATES, raceHolder, postDelivered, captainNickname, charterRoute, tickWorld, signGuestbook, regattaObjective, buyStake, collectStake, stakeDividend, stakePrice, totalShares, hasSpecialty, crewOwnHull, OWN_HULL_CREW_FEE, favourFor, favourDone, resolveBorder, pushInfluence, weekKey, borderStanding, replyToLetter, borderContest, collectRemoteStakes, lanesReport, isFriend, isRival, hangPicture, leaveLostItem, tickLostProperty, berthedCaptains, stardate, envoyOutcome, patientOutcome, beltRate, isBeltStation, receptionDue, receptionHeld, legSummary, newLeg, commandRank, registry, grievanceDue, grievanceHeard, spinOutageDue, spinOutageSeen, crewXp, secessionAt, inspectionDue, inspectionScore, beltGain, BELT_FREEMAN_AT, inquiryDue, firstOfficer, birthdaysDue, prisonerOutcome, transferRequest, droughtAt, shipVoiceName } from "../world";
+  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, tickAlumniMail, catGift, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, notableOutcome, ledger, ledgerAround, LEDGER_LABELS, dockingsAt, OLD_HAND_AT, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter, RACE_GATES, raceHolder, postDelivered, captainNickname, charterRoute, tickWorld, signGuestbook, regattaObjective, buyStake, collectStake, stakeDividend, stakePrice, totalShares, hasSpecialty, crewOwnHull, OWN_HULL_CREW_FEE, favourFor, favourDone, resolveBorder, pushInfluence, weekKey, borderStanding, replyToLetter, borderContest, collectRemoteStakes, lanesReport, isFriend, isRival, hangPicture, leaveLostItem, tickLostProperty, berthedCaptains, stardate, envoyOutcome, patientOutcome, beltRate, isBeltStation, receptionDue, receptionHeld, legSummary, newLeg, commandRank, registry, grievanceDue, grievanceHeard, spinOutageDue, spinOutageSeen, crewXp, secessionAt, inspectionDue, inspectionScore, beltGain, BELT_FREEMAN_AT, inquiryDue, firstOfficer, birthdaysDue, prisonerOutcome, transferRequest, droughtAt, shipVoiceName, dedication } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
 import { BLUEPRINTS, MATERIALS, engGrade, nextCost, canAfford, upgrade } from "../data/engineering";
@@ -131,8 +131,8 @@ export class StationScene implements Scene {
     if (p.shipAskedQuiet) { const l = p.leg; const quiet = !l || (!l.alerts && !l.fights); p.shipAskedQuiet = false; if (quiet) { p.wear = Math.max(0, (p.wear ?? 0) - 6); flag(g, "quietleg"); logEntry(g.world, "Gave the ship the quiet leg it asked for"); g.toast(`${shipVoiceName(p)}: THAT WAS A GOOD LEG. I'VE TIGHTENED SOMETHING IN THE MOUNTS MYSELF. DON'T ASK HOW. WEAR -6.`); } else g.toast(`${shipVoiceName(p)}: THAT WASN'T QUIET. I'M NOT ANGRY. I'M A SHIP. I'M NOTING IT.`); }
     { const l = legSummary(g.world); if (l) logEntry(g.world, l); newLeg(p, g.world.time); delete (p.flags ?? {}).counselledLeg; }
     for (const l of birthdaysDue(g.world)) g.toast(l);
-    if (p.flags?.directiveBroken && !p.flags?.ethicsLetter) { (p.flags ??= {}).ethicsLetter = true; (g.world.mailQueue ??= []).push({ dueT: g.world.time + 600, from: "the survey's board of ethics", text: "It has come to the board's attention that a rover from your hull made contact with a population that had not, until then, met a rover. The board does not say you were wrong. The board is not permitted to say anything. The board would like you to know that a child on that world has drawn your lander on a wall, and that the drawing is, by all accounts, quite good. Please find the enclosed guidance, which you will not read.", gift: { data: 20 } }); }
-    if (p.flags?.directiveKept && !p.flags?.directiveKept2 && !p.flags?.ethicsLetterKept) { (p.flags ??= {}).ethicsLetterKept = true; (g.world.mailQueue ??= []).push({ dueT: g.world.time + 600, from: "the survey's board of ethics", text: "The board notes that your hull found a population the survey had filed under geology, and left it as it found it. The board is not permitted to thank you. The board has enclosed a survey grant, which is not thanks, and a note that the population has since invented the wheel, which is not your doing, and which the board finds it cannot stop thinking about.", gift: { credits: 250, data: 20 } }); }
+    if (p.flags?.directiveBroken && !p.flags?.ethicsLetter) { (p.flags ??= {}).ethicsLetter = true; (p.codex ??= {})["contact:THE BOARD OF ETHICS"] = ((p.codex ?? {})["contact:THE BOARD OF ETHICS"] ?? 0) + 1; (g.world.mailQueue ??= []).push({ dueT: g.world.time + 600, from: "the survey's board of ethics", text: "It has come to the board's attention that a rover from your hull made contact with a population that had not, until then, met a rover. The board does not say you were wrong. The board is not permitted to say anything. The board would like you to know that a child on that world has drawn your lander on a wall, and that the drawing is, by all accounts, quite good. Please find the enclosed guidance, which you will not read.", gift: { data: 20 } }); }
+    if (p.flags?.directiveKept && !p.flags?.directiveKept2 && !p.flags?.ethicsLetterKept) { (p.flags ??= {}).ethicsLetterKept = true; (p.codex ??= {})["contact:THE BOARD OF ETHICS"] = ((p.codex ?? {})["contact:THE BOARD OF ETHICS"] ?? 0) + 1; (g.world.mailQueue ??= []).push({ dueT: g.world.time + 600, from: "the survey's board of ethics", text: "The board notes that your hull found a population the survey had filed under geology, and left it as it found it. The board is not permitted to thank you. The board has enclosed a survey grant, which is not thanks, and a note that the population has since invented the wheel, which is not your doing, and which the board finds it cannot stop thinking about.", gift: { credits: 250, data: 20 } }); }
     { const fr = friendsAt(g.world, this.station.id); if (fr.length && Math.random() < hoursRate(this.station).lounge) g.toast(`${fr[0].name.toUpperCase()} IS IN THE LOUNGE AND WAVING YOU OVER`); }
     if (inspectionDue(g.world, this.station)) this.inspection(g);
     else if (inquiryDue(g.world, this.station)) this.inquiry(g);
@@ -907,7 +907,7 @@ export class StationScene implements Scene {
     // park this one, board that one
     const parked: StoredShip = { hullId: p.hullId, stationId: this.station.id, name: p.shipName, hull: p.hull, torpedoes: p.torpedoes ?? 0 };
     p.fleet = (p.fleet ?? []).filter((x) => x !== f); p.fleet.push(parked);
-    applyHull(p, f.hullId); p.hull = Math.min(p.hullMax, f.hull); p.fuel = p.fuelMax * 0.5; p.torpedoes = f.torpedoes; p.shipName = f.name;
+    applyHull(p, f.hullId); this.commission(g); p.hull = Math.min(p.hullMax, f.hull); p.fuel = p.fuelMax * 0.5; p.torpedoes = f.torpedoes; p.shipName = f.name;
     g.spriteCache.delete(`player-ship-${p.hullId}`);
     // the journey: time passes, the crew rest
     const secs = 90 * hops;
@@ -932,7 +932,7 @@ export class StationScene implements Scene {
     p.fleet = (p.fleet ?? []).filter((f) => f !== ship);
     p.fleet.push(parked);
     const fuel = p.fuel;
-    applyHull(p, ship.hullId);
+    applyHull(p, ship.hullId); this.commission(g);
     p.hull = Math.min(p.hullMax, ship.hull);
     p.fuel = Math.min(p.fuelMax, fuel);
     p.torpedoes = ship.torpedoes;
@@ -958,7 +958,7 @@ export class StationScene implements Scene {
       p.torpedoes = 0;
       flag(g, "fleet");
     }
-    applyHull(p, id);
+    applyHull(p, id); this.commission(g);
     g.spriteCache.delete(`player-ship-${p.hullId}`);
     p.hullHistory = hullHistoryFor(g.world, new RNG((g.world.seed ^ Math.floor(g.world.time * 71)) >>> 0));
     g.toast(keepOld ? `WELCOME ABOARD THE ${h.name.toUpperCase()} - YOUR OLD HULL IS PARKED HERE` : `WELCOME ABOARD THE ${h.name.toUpperCase()}`);
@@ -1907,6 +1907,13 @@ export class StationScene implements Scene {
   }
 
   // the crew want a word: a bonus, a night ashore, or your foot down
+  // commissioning: a new hull under you, a new stardate on the plaque, and the yard says so
+  commission(g: Game): void {
+    const p = g.world.player; p.commissionedAt = g.world.time; p.hullsCommissioned = (p.hullsCommissioned ?? 0) + 1;
+    logEntry(g.world, `Commissioned ${(p.shipName ?? hull(p.hullId).name)} at ${this.station.name}, stardate ${stardate(g.world)}`);
+    g.toast(`${dedication(g.world)}. THE YARD RINGS A BELL THEY KEEP FOR THIS. ONCE.`);
+    if ((p.hullsCommissioned ?? 0) >= 3) flag(g, "commissioned3");
+  }
   // the office sends someone, once, after the third letter
   officeVisit(g: Game): void {
     const st = this.station; const p = g.world.player; (p.flags ??= {}).officeVisited = true;

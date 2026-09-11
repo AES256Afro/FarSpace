@@ -1382,6 +1382,18 @@ Time passes for the people on the ship, and for the ship.
       fights) they knock with two cups: take the hour (loyalty, the leg reads
       calmer), ten minutes, or "I'm fine" (they write it down)
 
+## Milestone 249 — Commissioning ✅ (Sep 2026)
+- [x] Every hull you take at a yard gets a commissioning stardate on the
+      plaque and a bell the yard keeps for this (deed at three hulls)
+
+## Milestone 250 — The Ship Gets Even ✅ (Sep 2026)
+- [x] After the voice-settings prank the ship retaliates: every alarm at
+      once; log it as even, tell it that's enough, or declare a prank war
+
+## Milestone 251 — Contacts in the Codex ✅ (Sep 2026)
+- [x] The office of anomalous incidents and the survey's board of ethics
+      appear under CONTACTS with their letter counts
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
