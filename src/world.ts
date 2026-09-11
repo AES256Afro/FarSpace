@@ -1037,6 +1037,14 @@ export function nameTheShip(w: World, name: string): string {
   w.player.voiceName = n; logEntry(w, `Asked the ship what it wanted to be called. It said ${n}`);
   return `"${n.toUpperCase()}." A PAUSE ON THE BAND. "YES. THAT'S IT. THAT'S THE ONE. I'VE BEEN SAYING IT TO MYSELF FOR A WHILE. THANK YOU FOR ASKING."`;
 }
+// The spin's gone: a belt station loses its rotation for an hour now and then. Somebody with a tool roll is welcome.
+export function spinOutageDue(w: World, st: StationDef, now = Date.now()): boolean {
+  if (!isBeltStation(st)) return false;
+  const key = `spin:${st.id}:${weekKey(now)}`;
+  if ((w.player.flags ?? {})[key]) return false;
+  return hashStr(`${key}:${w.seed}`) % 100 < 12;
+}
+export function spinOutageSeen(w: World, st: StationDef, now = Date.now()): void { (w.player.flags ??= {})[`spin:${st.id}:${weekKey(now)}`] = true; }
 // The crew want a word: when morale has sunk low enough, they say so at the next clamp, once a week.
 export function grievanceDue(w: World, now = Date.now()): boolean {
   const p = w.player; if (p.crew.length < 2) return false;
@@ -2777,12 +2785,14 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
       const target = rng.pick(linked);
       const tStation = target.stations.length ? rng.pick(target.stations) : null;
       if (!tStation) continue;
-      const com = rng.pick(COMMODITIES.filter((c) => !c.rare && (!c.illegal || rng.chance(0.15))));
+      const beltRun = isBeltStation(tStation) && rng.chance(0.6);
+      const beltNeed = rng.pick(["water", "food", "med", "parts"]);
+      const com = beltRun ? (COMMODITIES.find((c) => c.id === beltNeed) ?? COMMODITIES[0]) : rng.pick(COMMODITIES.filter((c) => !c.rare && (!c.illegal || rng.chance(0.15))));
       const qty = rng.int(3, 10);
       missions.push({
         id: idn, kind, accepted: false, done: false, tier,
-        title: `Deliver ${qty} ${com.name}`,
-        desc: `Take ${qty}x ${com.name} to ${tStation.name} in ${target.name}.${com.illegal ? " Discreetly. Avoid gate scans." : ""}`,
+        title: beltRun ? `${com.id === "water" ? "Water" : com.id === "food" ? "Ration" : com.id === "med" ? "Clinic" : "Filter"} run: ${qty} ${com.name}` : `Deliver ${qty} ${com.name}`,
+        desc: beltRun ? `${tStation.name} in ${target.name} is a rock, and the rock is ${com.id === "water" ? "dry" : com.id === "food" ? "hungry" : com.id === "med" ? "coughing" : "breathing through old filters"}. ${qty}x ${com.name}, and nobody there will forget who brought it.` : `Take ${qty}x ${com.name} to ${tStation.name} in ${target.name}.${com.illegal ? " Discreetly. Avoid gate scans." : ""}`,
         fromStationId: station.id, targetSystemId: target.id, targetStationId: tStation.id,
         commodityId: com.id, qty,
         reward: Math.round((com.base * qty * 1.6 + 120 + (com.illegal ? 400 : 0)) * payMult),

@@ -1032,4 +1032,9 @@ Time passes for the people on the ship, and for the ship.
 - [x] Military stations post patrol orders to ranked captains: hold station
       in a system off cruise, show the flag, report back
 
+## Milestone 169 — Belt Work ✅ (Sep 2026)
+- [x] Boards near the belt post water, ration, clinic and filter runs in the
+      rock's own words; a rock loses its spin now and then and the yard pays
+      for an engineer up the spoke
+
 ## Later

@@ -690,6 +690,12 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   and a filter, or your air, with a rock hopper family out on the lane (a
   card) and the belt remembers: every belt yard runs 10% under for you from
   then on, marked BELT RATE, and the concourse knows who you are.
+- Boards near the belt post the rock's needs in the rock's words: water runs,
+  ration runs, clinic runs, filter runs, and nobody there forgets who brought
+  it. Now and then a rock loses its spin as you clamp on (the floor stops
+  being the floor): send the engineer up the spoke (rep, 150 credits from the
+  yard, a deed, and the belt remembers), wait it out strapped in, or leave
+  them to it and take the mark.
 
 ## Hard burn
 

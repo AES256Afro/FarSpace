@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  weekKey, genCrewCandidate, logEntry, strangeReading, grievanceHeard, grievanceDue, registry, commandRank, hasSpecialty, legSummary, noteLeg, newLeg, SIM_PROGRAMS, reviewCrew, reviewDue, nameTheShip, shipVoiceName, receptionHeld, receptionDue, ALERT_NAME, alertMods, beltRate, isBeltStation, FURNISHINGS, runSim, setFocus, briefingReports, patientDeadline, patientOutcome, takeJuice, buyJuice, envoyOutcome, firstOfficer, stardate, cookMeal, LOST_KEEP_AFTER, LOST_REWARD, tickLostProperty, handInLostItem, leaveLostItem, passengersTookFire, passengersFed, askPassengerRequest, findStation, berthedCaptains, generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
+  weekKey, genCrewCandidate, spinOutageSeen, spinOutageDue, logEntry, strangeReading, grievanceHeard, grievanceDue, registry, commandRank, hasSpecialty, legSummary, noteLeg, newLeg, SIM_PROGRAMS, reviewCrew, reviewDue, nameTheShip, shipVoiceName, receptionHeld, receptionDue, ALERT_NAME, alertMods, beltRate, isBeltStation, FURNISHINGS, runSim, setFocus, briefingReports, patientDeadline, patientOutcome, takeJuice, buyJuice, envoyOutcome, firstOfficer, stardate, cookMeal, LOST_KEEP_AFTER, LOST_REWARD, tickLostProperty, handInLostItem, leaveLostItem, passengersTookFire, passengersFed, askPassengerRequest, findStation, berthedCaptains, generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
   missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn, captainByName, helpCaptain, isFriend, friendsAt, tickMail, pickCaptainFor, canUpgradeInfra, upgradeInfra, rivalOf, isRival, rivalTakesFare, rivalBeatsYouTo, askRideAlong, tickRideAlong, setHomePort, isHome, donateRelic, hullHistoryFor, notableById, notableOutcome, canFundProject, fundProject, PROJECTS, settlementNeeds, ledger, ledgerAround, LEDGER_LABELS, catGift, stationBulletin, dockingsAt } from "../src/world";
 import { occasionFor, OCCASIONS } from "../src/data/occasions";
@@ -774,6 +774,17 @@ describe("station hours and the tannoy", () => {
     expect(stationHour(sts[0], at)).toEqual(stationHour(sts[0], at));
     for (const st of sts.slice(0, 5)) { const lines = tannoyLines(w, st, new RNG(1), at); expect(lines.length).toBeGreaterThan(5); for (const l of lines) expect(l.length).toBeLessThanOrEqual(130); }
     w.player.postRuns = 10; expect(tannoyLines(w, sts[0], new RNG(2), at).some((l) => l.includes("THE POSTMAN"))).toBe(true);
+  });
+  it("belt work: the rock's board posts water and filter runs, and the spin goes now and then", () => {
+    const w = generateWorld(58, { realGalaxy: true });
+    const sts = Object.values(w.systems).flatMap((s) => s.stations);
+    const beltTargets = sts.filter((s) => isBeltStation(s)).map((s) => s.id);
+    let found = false;
+    for (const st of sts.slice(0, 12)) for (let i = 0; i < 6 && !found; i++) found = genMissionsFor(w, st, new RNG(i)).some((m) => m.kind === "delivery" && /run: /.test(m.title) && beltTargets.includes(m.targetStationId ?? ""));
+    expect(found).toBe(true);
+    const inner = sts.find((s) => !isBeltStation(s))!; expect(spinOutageDue(w, inner)).toBe(false);
+    const belt = sts.filter((s) => isBeltStation(s)); const due = belt.find((s) => spinOutageDue(w, s));
+    if (due) { spinOutageSeen(w, due); expect(spinOutageDue(w, due)).toBe(false); }
   });
   it("patrol orders: military stations post them for a ranked captain; hold station to complete", () => {
     const w = generateWorld(57, { realGalaxy: true }); const p = w.player;
