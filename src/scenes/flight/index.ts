@@ -530,7 +530,7 @@ export class FlightScene implements Scene {
     if (st) {
       const entered = enterRegatta(g.world, st.id);
       if (entered) this.comms.push({ from: "MARSHAL", text: entered, life: 10, color: PAL.gold });
-      const prog = regattaProgress(g.world, st.id, r.t, r.par, !!beat || (p.raceBeaten?.[st.id] ?? false));
+      const prog = entered ? null : regattaProgress(g.world, st.id, r.t, r.par, !!beat || (p.raceBeaten?.[st.id] ?? false));
       if (prog) { g.toast(prog); this.comms.push({ from: "MARSHAL", text: prog, life: 10, color: PAL.gold }); if (p.regatta === 3) { flag(g, "regatta"); void wire.post("race", "won the regatta: three courses, three stations", g.world.systems[p.systemId].name); } }
     }
     if (beat || r.t <= r.par) void wire.post("race", `${beat ? "took the course record" : "ran under par"} at ${st?.name ?? "a station"}: ${r.t.toFixed(1)}s`, g.world.systems[p.systemId].name);
