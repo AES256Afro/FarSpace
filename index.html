@@ -2,16 +2,17 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>FarSpace</title>
   <meta name="description" content="FarSpace — a pixel-art space sim. Fly, trade, mine, fight, and walk your own ship across a living galaxy." />
   <style>
     html, body {
       margin: 0; padding: 0; height: 100%;
       background: #05060a; overflow: hidden;
-      touch-action: none;
+      touch-action: auto;
     }
     #game {
+      touch-action: none;
       position: absolute; inset: 0; margin: auto;
       image-rendering: pixelated;
       image-rendering: crisp-edges;

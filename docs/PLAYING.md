@@ -19,6 +19,19 @@ The guide grew a section per milestone; this is where to look.
 
 ## First hour
 
+The title offers **Continue voyage** when the selected slot has a valid save,
+or **New voyage** for a new captain. Choose Sol neighbourhood (20 light-years),
+Sol 50 light-years or Uncharted. Settings contains the difficulty choice.
+Save library groups the slots, Chronicle, cloud, import/export and identity
+tools. Help & handbook opens Controls and the full guide.
+
+The background randomly picks orbit, station or a bridge window. Each scene
+appears once per cycle. Settings and Help preserve the current view and
+focused control; Change view advances it explicitly. The menu scrolls on
+small screens and supports Tab, arrows and Enter. Reduced motion in your
+device settings keeps the background still. The title does not run your
+voyage's story systems or create saves.
+
 Flight School (the card at the top of the screen, K dismisses it) walks you
 through ten lessons: flying, docking, buying, a mission, a jump, your own deck,
 a world and its rover, the lounge, the promenade, and a fare or a rescue.

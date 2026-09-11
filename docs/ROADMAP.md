@@ -2193,15 +2193,25 @@ The decision between service orders and booked fares is covered by M402.
   Keep margin and information clicks inert; allow pointer cancellation of
   a pending binding without changing its key.
 
-## Proposed next cycle: M416-M427
+### M416: The Opening View
+
+- Use a separate presentation RNG to rotate through orbital, station and
+  bridge scenes without consecutive repeats. Decorative traffic is bounded.
+- Put Continue, New voyage, Save library, Settings and Help into a native
+  HTML menu with full-size controls, keyboard focus and narrow-screen scrolling.
+- Preserve the title view, page, focus and scroll when returning from child
+  menus. Honor reduced motion and the current music preference.
+- Read the selected save for its hull and caption. Keep title navigation from
+  updating voyage systems, and ignore stale cloud/import responses.
+
+## Approved next cycle: M417-M427
 
 The [next development plan](NEXT-MILESTONES.md) contains dependencies,
 implementation boundaries, acceptance checks, effort ranges and release gates.
-These milestones are proposed and are not part of the shipped M415 baseline.
+M416 is implemented in v0.256.0. M417-M427 remain planned.
 
 | Milestone | Planned outcome |
 | --- | --- |
-| M416: The opening view | Random orbital, station and bridge title scenes with one clear main menu. |
 | M417: A clear save library | Read-only previews, deliberate activation and understandable local/cloud choices. |
 | M418: Menus with one set of rules | Shared navigation, complete lists and consistent focus restoration. |
 | M419: A readable flight deck | Prioritized heading, route, threats and messages. |

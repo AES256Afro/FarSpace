@@ -1,9 +1,11 @@
 # FarSpace: next development plan
 
-Date: September 11, 2026. Status: proposed implementation sequence.
+Date: September 11, 2026. Status: approved implementation sequence.
 Baseline: v0.255.0, M415, release 9bef5b4540c4393de3654a710053bf6d0b66fb06.
 The preceding release has 404 passing tests and a verified hosted deployment.
-This document proposes M416-M427; none of these milestones is shipped yet.
+M416 is implemented in v0.256.0 and is undergoing release validation.
+M417-M427 remain planned. The user approved implementation after reviewing
+the three title concepts and choosing random selection between them.
 
 The next development cycle should make FarSpace easier to enter, understand
 and return to, then deepen the consequences of helping people. Single-player

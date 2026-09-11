@@ -10,8 +10,6 @@ import { StationWalkScene } from "./scenes/stationwalk";
 import { WreckScene } from "./scenes/wreck";
 import { OrbitScene } from "./scenes/orbit";
 import { OutpostScene } from "./scenes/outpost";
-import { crewArcUpdate } from "./core/crewarcs";
-import { keeperUpdate } from "./core/keeper";
 import { WaystationScene } from "./scenes/waystation";
 import { AlmanacScene } from "./scenes/almanac";
 import { ChronicleScene } from "./scenes/chronicle";
@@ -34,13 +32,11 @@ import { WhatsNewScene } from "./scenes/whatsnew";
 import { EncounterScene } from "./scenes/encounter";
 import { RepairScene } from "./scenes/repair";
 import { SlotsScene } from "./scenes/slots";
-import { checkAchievements } from "./core/achievements";
-import { storyUpdate, convoyUpdate } from "./core/story";
 import { presence } from "./core/presence";
 import { initAudioUnlock } from "./core/sfx";
 import { initTouch } from "./core/touch";
 import { music } from "./core/music";
-import { tutorialUpdate } from "./core/tutorial";
+import { updateVoyageSystems } from "./core/runtime";
 
 const canvas = document.getElementById("game") as HTMLCanvasElement;
 const game = new Game(canvas);
@@ -100,16 +96,11 @@ function frame(now: number): void {
   // one bad frame must not kill the loop: log it, toast it, carry on
   try {
     game.scene.update(game, dt);
-    tutorialUpdate(game);
-    storyUpdate(game);
-    convoyUpdate(game);
-    crewArcUpdate(game);
-    keeperUpdate(game);
+    updateVoyageSystems(game);
   } catch (err) {
     console.error(err);
     if (!game.toastMsg.startsWith("GLITCH")) game.toast("GLITCH LOGGED - CARRYING ON");
   }
-  checkAchievements(game);
   try { game.scene.draw(game, game.bctx); }
   catch (err) { console.error("draw failed in", game.sceneName, err); if (!game.toastMsg.startsWith("GLITCH")) game.toast("GLITCH LOGGED - CARRYING ON"); }
   if (game.input.wasPressed("F7") && game.sceneName !== "title") game.postcard(game.postcardCaption());

@@ -9,6 +9,7 @@ import { loadSave, writeSave, saveKeyFor, activeSlot } from "./save";
 import * as cloud from "./core/cloud";
 import { syncScores } from "./core/wire";
 import { settings } from "./core/settings";
+import { titlePreview } from "./core/titlepreview";
 import { hull } from "./data/hulls";
 import { isOccasion } from "./data/occasions";
 import {
@@ -23,6 +24,7 @@ export interface Scene {
   update(g: Game, dt: number): void;
   draw(g: Game, ctx: CanvasRenderingContext2D): void;
   enter?(g: Game): void;
+  onSceneLeave?(g: Game, next: string): void;
   touchMode?: "flight" | "walk" | "menu";
 }
 
@@ -35,6 +37,7 @@ export class Game {
   world: World;
   scene!: Scene;
   sceneName = "";
+  frontend = false;
   scale = 1;
   toastMsg = "";
   toastTimer = 0;
@@ -62,7 +65,7 @@ export class Game {
     this.bctx.imageSmoothingEnabled = false;
     this.input = new Input(canvas, () => ({ scale: this.scale, ox: 0, oy: 0 }));
     window.addEventListener("resize", () => this.resize());
-    this.world = loadSave() ?? generateWorld(0xfa25face);
+    this.world = titlePreview().world ?? generateWorld(0xfa25face);
     this.resize();
   }
 
@@ -180,6 +183,8 @@ export class Game {
   }
 
   setScene(name: string): void {
+    this.scene?.onSceneLeave?.(this, name);
+    this.frontend = name === "title" || (this.frontend && ["settings", "help", "almanac", "slots", "whatsnew", "chronicle"].includes(name));
     this.scene = this.scenes[name];
     this.sceneName = name;
     this.scene.enter?.(this);

@@ -64,8 +64,10 @@ export async function push(world: World): Promise<CloudResult> {
 }
 
 export async function pull(code: string): Promise<{ world: World; updatedAt: number } | null> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
   try {
-    const r = await fetch(`${cloudBase()}/api/save/${code.toUpperCase()}`);
+    const r = await fetch(`${cloudBase()}/api/save/${code.toUpperCase()}`, { signal: controller.signal });
     if (!r.ok) return null;
     const j = (await r.json()) as { updatedAt: number; world: unknown };
     const world = migrateSave(j.world);
@@ -73,7 +75,7 @@ export async function pull(code: string): Promise<{ world: World; updatedAt: num
     return { world, updatedAt: j.updatedAt };
   } catch {
     return null;
-  }
+  } finally { clearTimeout(timeout); }
 }
 
 // ---- file export / import (offline moves, the self-hosted copy, backups)

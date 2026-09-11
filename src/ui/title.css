@@ -1,0 +1,41 @@
+#title-screen { position:fixed; inset:0; z-index:5; overflow:auto; overscroll-behavior:contain; touch-action:pan-y; background:#070d16; color:#e8f2f7; font:16px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace; color-scheme:dark; }
+#title-screen * { box-sizing:border-box; }
+#title-screen .title-art { position:fixed; inset:0; width:100%; height:100%; object-fit:cover; image-rendering:pixelated; pointer-events:none; }
+#title-screen .title-shell { position:relative; min-height:100%; padding:clamp(22px,4vw,64px); background:linear-gradient(90deg,rgba(7,13,22,.97),rgba(7,13,22,.90) 33%,rgba(7,13,22,.22) 76%,rgba(7,13,22,.08)); display:flex; flex-direction:column; }
+#title-screen .title-top { display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; color:#a9becb; font-size:12px; letter-spacing:.16em; }
+#title-screen .title-body { display:grid; grid-template-columns:minmax(280px,410px) 1fr; gap:32px; flex:1; padding:clamp(28px,6vh,75px) 0 28px; align-items:center; }
+#title-screen .title-brand { margin:0; color:#91efce; font-size:clamp(40px,6vw,76px); line-height:1.1; font-weight:600; letter-spacing:.03em; text-shadow:3px 3px #164b48; }
+#title-screen .title-tagline { color:#c0ced5; margin:12px 0 30px; }
+#title-screen .title-menu { display:grid; gap:10px; }
+#title-screen button { font:inherit; color:inherit; cursor:pointer; background:#10202b; border:1px solid #405461; padding:12px 16px; min-height:46px; text-align:left; border-radius:2px; overflow-wrap:anywhere; }
+#title-screen button:hover { border-color:#91efce; background:#18333d; }
+#title-screen button:focus-visible, #title-screen input:focus-visible { outline:3px solid #e9cf8f; outline-offset:3px; }
+#title-screen button:disabled { cursor:default; color:#91a2ae; background:#12212a; border-color:#34434b; }
+#title-screen button.primary { color:#09221b; background:#91efce; border-color:#91efce; }
+#title-screen button.primary:hover { background:#b4f8df; }
+#title-screen button small { display:block; color:#b8cbd6; font-size:13px; margin-top:4px; }
+#title-screen button.primary small { color:#274e43; }
+#title-screen h2 { font:500 25px/1.2 ui-monospace,SFMono-Regular,Consolas,monospace; margin:0 0 6px; }
+#title-screen p { overflow-wrap:anywhere; }
+#title-screen .title-note { color:#bacbd6; font-size:14px; margin:0 0 12px; }
+#title-screen .title-caption { align-self:end; justify-self:end; max-width:300px; padding:10px 14px; border-left:2px solid #91efce; background:#07101bc9; text-shadow:0 1px 3px #000; }
+#title-screen .title-caption strong { display:block; font-weight:500; }
+#title-screen .title-caption span { font-size:13px; color:#b8cbd6; }
+#title-screen .title-footer { border-top:1px solid #354957; padding-top:18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; }
+#title-screen .title-footer nav { display:flex; gap:10px; flex-wrap:wrap; }
+#title-screen .title-footer button { font-size:13px; padding:8px 12px; }
+#title-screen .title-version { color:#a9becb; font-size:13px; }
+#title-screen .title-status { min-height:1.5em; color:#b8e8d8; font-size:14px; margin-top:14px; overflow-wrap:anywhere; }
+#title-screen form { display:grid; gap:14px; }
+#title-screen label { display:grid; gap:7px; color:#d7e5ec; }
+#title-screen input { width:100%; min-width:0; font:inherit; padding:12px; color:#f2f4ff; background:#09131c; border:1px solid #708b9a; }
+#title-screen .title-actions { display:flex; flex-wrap:wrap; gap:10px; }
+@media(max-width:700px) {
+ #title-screen .title-shell { padding:24px; background:linear-gradient(90deg,rgba(7,13,22,.95),rgba(7,13,22,.80)); }
+ #title-screen .title-body { grid-template-columns:minmax(0,1fr); padding-top:32px; gap:24px; }
+ #title-screen .title-caption { justify-self:start; }
+ #title-screen .title-brand { font-size:42px; }
+ #title-screen .title-top { font-size:11px; }
+ #title-screen .title-art { opacity:.65; }
+}
+@media(prefers-reduced-motion:reduce) { #title-screen * { scroll-behavior:auto; } }
