@@ -137,7 +137,7 @@ export class StationWalkScene implements Scene {
     const stScene = (g.scenes["station"] as StationScene | undefined);
     for (const f of (stScene?.fares ?? []).slice(0, 3)) {
       const spot = this.randomFloor(rng);
-      this.npcs.push({ x: spot.x, y: spot.y, tx: spot.x, ty: spot.y, name: f.passengerName ?? "A FARE", skin: rng.pick(["#e8b48c", "#c78a5a", "#f0d0b0"]), suit: f.passengerKind === "vip" ? "#c7a54a" : f.passengerKind === "tourist" ? "#5ab3ff" : "#7a5aa5", pause: 6, tag: "WAITING FOR A SHIP",
+      this.npcs.push({ x: spot.x, y: spot.y, tx: spot.x, ty: spot.y, name: f.passengerName ?? "A FARE", skin: f.passengerKind === "singer" ? "#63f2c8" : rng.pick(["#e8b48c", "#c78a5a", "#f0d0b0"]), suit: f.passengerKind === "vip" ? "#c7a54a" : f.passengerKind === "tourist" ? "#5ab3ff" : "#7a5aa5", pause: 6, tag: "WAITING FOR A SHIP",
         line: `${(f.passengerName ?? "").toUpperCase()}: '${f.desc.split(". ")[0]}. Ask at the lounge if you've a cabin.'` });
     }
     // the ship's cat, if she's slipped out: a small walker with opinions, and a homecoming if she was left here before

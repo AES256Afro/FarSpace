@@ -14,6 +14,7 @@ import type { CrewMember, CrewRole } from "./data/crew";
 import { ROLE_INFO, CREW_TRAITS, SICKNESS, LEAVE_DOCKS, SPECIALTIES } from "./data/crew";
 import { tickSerial, type SerialState } from "./data/serials";
 import { isOccasion } from "./data/occasions";
+import { singerFare } from "./core/singers";
 
 // ---------- Types ----------
 
@@ -158,7 +159,8 @@ export interface Mission {
   done: boolean;
   escortDone?: boolean;
   passengerName?: string;
-  passengerKind?: "vip" | "refugee" | "fugitive" | "tourist" | "courier" | "envoy" | "patient" | "prisoner";
+  passengerKind?: "vip" | "refugee" | "fugitive" | "tourist" | "courier" | "envoy" | "patient" | "prisoner" | "singer";
+  lightReward?: number;               // singer fares pay at their own berth
   freed?: boolean;                    // a prisoner you let go at a rock; no fare, and the service remembers
   dined?: boolean;                    // sat at the captain's table at a mess call
   evac?: boolean;                     // an evacuation party: a head rate, lives counted at the far clamp
@@ -1144,7 +1146,7 @@ export function genFares(w: World, station: StationDef, rng: RNG): Mission[] {
     });
   }
   // a happy passenger comes back and asks for you by name
-  const happy = (w.player.guestbook ?? []).filter((e) => e.mood >= 75 && !passengersAboard(w.player).some((m) => m.passengerName === e.name));
+  const happy = (w.player.guestbook ?? []).filter((e) => e.kind !== "singer" && e.mood >= 75 && !passengersAboard(w.player).some((m) => m.passengerName === e.name));
   if (happy.length && fares.length && rng.chance(0.35)) {
     const e = rng.pick(happy); const f = fares[fares.length - 1];
     f.passengerName = e.name; f.passengerKind = e.kind as Mission["passengerKind"]; f.returning = true; f.mood = 72;
@@ -1152,6 +1154,8 @@ export function genFares(w: World, station: StationDef, rng: RNG): Mission[] {
     f.desc = `${e.name} rode with you before ("${e.line}") and asked for you by name. ${f.desc.split(". ").slice(0, 1).join(". ").replace(/^[^ ]+( and \d+ others)?('s party)?/, e.name + (f.desc.includes("'s party") ? "'s party" : ""))}.`;
     f.reward = Math.round(f.reward * 1.3);
   }
+  const singer = singerFare(w, station);
+  if (singer) fares.unshift(singer);
   return fares;
 }
 // Each dock, the passengers take stock. Demands met from the hold cheer them up; a long trip or a battered hull sours them.
@@ -1161,7 +1165,7 @@ export function settlePassengers(p: PlayerState): string[] {
     const name = (m.passengerName ?? "YOUR PASSENGER").toUpperCase();
     m.mood ??= 60; m.docksAboard = (m.docksAboard ?? 0) + 1;
     if (m.demand && (p.cargo[m.demand] ?? 0) > 0) { removeCargo(p, m.demand, 1); m.mood = Math.min(100, m.mood + 30); out.push(`${name} NOTICES THE ${(COMMODITIES.find((c) => c.id === m.demand)?.name ?? m.demand).toUpperCase()}. MOOD UP.`); m.demand = null; }
-    if (m.docksAboard > (m.patience ?? 4)) { m.mood = Math.max(0, m.mood - 12); out.push(m.treaty ? `${name} SAYS THE OTHER DELEGATION WON'T WAIT. THE TREATY IS ALREADY LATE.` : `${name} ASKS, AGAIN, HOW MUCH LONGER.`); }
+    if (m.passengerKind !== "singer" && m.docksAboard > (m.patience ?? 4)) { m.mood = Math.max(0, m.mood - 12); out.push(m.treaty ? `${name} SAYS THE OTHER DELEGATION WON'T WAIT. THE TREATY IS ALREADY LATE.` : `${name} ASKS, AGAIN, HOW MUCH LONGER.`); }
     else if (m.treaty && m.docksAboard === (m.patience ?? 2)) out.push(`${name} CHECKS THE CASE AND THE CLOCK. ONE MORE DOCKING AND THE TALKS ARE OFF.`);
     if (m.passengerKind === "patient" && m.docksAboard === patientDeadline(p, m) && m.targetStationId !== p.dockedAt) out.push(`${name}'S READINGS ARE SLIPPING. THE NEXT DOCKING HAS TO BE THE CLINIC.`);
     if (p.hull < p.hullMax * 0.4) { m.mood = Math.max(0, m.mood - 10); out.push(`${name} HAS SEEN THE HULL READOUT. NOT HAPPY.`); }
@@ -1427,7 +1431,7 @@ export const PAX_REQUEST_LINES: Record<PaxRequest, string> = {
   view: "I HEAR THERE ARE THINGS WORTH SEEING OUT HERE. SHOW ME ONE AND I'LL REMEMBER YOU AT THE END.",
 };
 export function askPassengerRequest(p: PlayerState, rng: RNG): { m: Mission; text: string } | null {
-  const pax = passengersAboard(p).filter((m) => !m.request);
+  const pax = passengersAboard(p).filter((m) => !m.request && m.passengerKind !== "singer");
   if (!pax.length) return null;
   const m = rng.pick(pax);
   const kinds: PaxRequest[] = ["quiet", "view", "star"]; if (p.crew.filter((c) => !c.sick).length >= 2) kinds.push("meal");

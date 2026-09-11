@@ -55,6 +55,7 @@ export function pickShipLine(g: Game, rng: RNG): string | null {
   if ((p.officeLetters ?? 0) >= 2) pool.push("ANOTHER LETTER FROM THE OFFICE. I'VE STARTED FILING THEM UNDER 'WEATHER'.");
   if ((p.hailsAnswered ?? 0) >= 3) pool.push("YOU ANSWER HAILS. THE LANES HAVE STARTED CALLING ME BY NAME. I LIKE THAT MORE THAN I'D ADMIT TO A HULL.");
   if ((p.waterToBelt ?? 0) >= 10) pool.push("THE ROCKS KNOW MY TANK BY ITS SOUND NOW. THAT'S WHAT THE DOCK-HAND SAID. I'M CHOOSING TO BELIEVE IT.");
+  if (p.missions.some(m => m.passengerKind === "singer" && m.accepted && !m.done)) pool.push("THE PASSENGER'S BOWL HAS BEEN LISTENING TO ME. I HAVE BEEN ON MY BEST BEHAVIOR. THIS IS EXHAUSTING.", "I AM NOT HUMMING. THE REACTOR IS HUMMING. WE HAVE DISCUSSED THE DISTINCTION.");
   if (p.crew.some((c) => c.role === "gunner") && p.missions.some((m) => m.passengerKind === "prisoner" && m.accepted && !m.done)) pool.push("THE GUNNER HASN'T SAT DOWN SINCE THE PRISONER CAME ABOARD. I'VE WARMED THAT CORRIDOR A DEGREE.");
   if (p.flags?.crewphoto) pool.push("I'M IN THE CREW PHOTO. I'M THE BACKGROUND. I'VE MADE MY PEACE WITH BEING THE BACKGROUND. MOSTLY.");
   if (p.flags?.hundredth) pool.push("A HUNDRED ON THE COUNT. I CARRIED EVERY ONE OF THEM. I'M NOT SAYING THAT FOR CREDIT. I'M SAYING IT BECAUSE IT'S TRUE.");

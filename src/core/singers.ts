@@ -1,8 +1,8 @@
-import { addCargo, cargoUsed, logEntry, type PlayerState, type World } from "../world";
+import { addCargo, cargoUsed, findStation, learnWord, logEntry, navRoute, passengersAboard, type Mission, type PlayerState, type StationDef, type World } from "../world";
 import { hashStr } from "./rng";
 
 export const SINGERS_DOCK_RANGE = 160;
-export interface SingersAccount { light: number; dataShared: number; trades: number; joinedAt: number }
+export interface SingersAccount { light: number; dataShared: number; trades: number; joinedAt: number; homecomings?: number }
 export type SingersOffer = "survey" | "fuel" | "repair" | "parts" | "relic";
 export const SINGERS_OFFERS: SingersOffer[] = ["survey", "fuel", "repair", "parts", "relic"];
 export interface LightQuote { label: string; detail: string; amount: number; cost: number; reason: string }
@@ -72,4 +72,50 @@ export function tradeWithSingers(w: World, offer: SingersOffer): { ok: boolean; 
   account.light -= q.cost;
   account.trades++;
   return { ok: true, message: offer === "survey" ? "THEY KEEP THE STORY OF WHERE YOU WENT. +5 LIGHT." : `${q.label}: ${q.detail}.` };
+}
+
+export function singerFare(w: World, station: StationDef): Mission | null {
+  const p = w.player;
+  if (station.type !== "research" || !knowsSingersBerth(p) || passengersAboard(p).some(m => m.passengerKind === "singer")) return null;
+  const from = findStation(w, station.id)?.sys, home = p.singersHome && w.systems[p.singersHome];
+  if (!from || !home || from.id === home.id) return null;
+  const route = navRoute(w, from.id, home.id);
+  if (!route || route.length < 2) return null;
+  const reward = 20 + (route.length - 1) * 5;
+  const name = ["The Held Note", "Light Through Rain", "The Fifth Voice", "A Small Interval"][w.missionCounter % 4];
+  return {
+    id: `fare-singer-${station.id}-${w.missionCounter++}`, kind: "passenger", passengerKind: "singer",
+    title: `Homeward: ${name}`, passengerName: name,
+    desc: `One cabin to the singers' berth in ${home.name}. ${reward} light on arrival, no deadline. The traveler carries a listening bowl and insists it gets the window. G then R plots home.`,
+    fromStationId: station.id, targetSystemId: home.id, reward: 0, lightReward: reward,
+    accepted: false, done: false, tier: 0, party: 1, mood: 65, demand: null, docksAboard: 0, sights: [],
+  };
+}
+
+export function singerBoardingReason(w: World, m: Mission, stationId: string): string {
+  if (m.accepted || m.done || w.player.missions.some(x => x.id === m.id)) return "THIS PASSENGER IS ALREADY ON YOUR MANIFEST.";
+  if (!knowsSingersBerth(w.player) || m.targetSystemId !== w.player.singersHome || m.fromStationId !== stationId) return "THIS OFFER IS NO LONGER AVAILABLE HERE.";
+  if (passengersAboard(w.player).some(x => x.passengerKind === "singer")) return "YOU ALREADY HAVE A SINGER TRAVELING HOME.";
+  return "";
+}
+
+export function deliverSinger(w: World, m: Mission): string | null {
+  const p = w.player;
+  if (m.kind !== "passenger" || m.passengerKind !== "singer" || !m.accepted || m.done || !p.missions.includes(m)
+    || m.targetSystemId !== p.systemId || !atSingersBerth(w)) return null;
+  if (!enterSingersBerth(w)) return null;
+  const account = p.singersExchange!;
+  const pay = m.lightReward ?? 25;
+  m.done = true;
+  account.light += pay; account.homecomings = (account.homecomings ?? 0) + 1;
+  p.fares = (p.fares ?? 0) + 1;
+  const name = m.passengerName ?? "A singer";
+  (p.guestbook ??= []).push({ name, kind: "singer", from: findStation(w, m.fromStationId)?.st.name ?? "a research station",
+    to: "The singers' berth", mood: Math.round(m.mood ?? 65), t: w.time,
+    line: m.dined ? "There was a place for my bowl at your table. I will remember the shape of it." : "You brought me home without asking the light to hurry. Your name belongs in this room.",
+  });
+  if (p.guestbook.length > 12) p.guestbook.shift();
+  const learned = learnWord(p, "return");
+  logEntry(w, `${name} went home through the singers' berth. ${pay} light received. The listening bowl had the window all the way.`);
+  return `${name.toUpperCase()} IS HOME. +${pay} LIGHT.${learned ? " A WORD LEARNED: RETURN." : " THE ROOM KNOWS YOUR NAME."}`;
 }

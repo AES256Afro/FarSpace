@@ -1,5 +1,5 @@
 import { Game, Scene, VW, VH } from "../game";
-import { enterSingersBerth, lightQuote, SINGERS_OFFERS, tradeWithSingers } from "../core/singers";
+import { deliverSinger, enterSingersBerth, lightQuote, SINGERS_OFFERS, tradeWithSingers } from "../core/singers";
 import { sfx } from "../core/sfx";
 import { music } from "../core/music";
 import { drawText, textWidth } from "../gfx/font";
@@ -22,6 +22,7 @@ export class SingersScene implements Scene {
     p.vx = 0; p.vy = 0;
     this.cursor = 0; this.time = 0;
     this.message = "YOUR NAME IS STILL IN THE ROLL-CALL. THE BERTH REMEMBERS.";
+    for (const m of p.missions) { const arrival = deliverSinger(g.world, m); if (arrival) this.message = arrival; }
     g.autosave();
   }
 

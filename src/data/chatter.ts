@@ -130,6 +130,16 @@ const ROLE_REPLY: Record<string, string[]> = {
   medic: ["DRINK SOME WATER.", "YOU'LL LIVE. THAT'S MY PROFESSIONAL OPINION."], gunner: ["ADEQUATELY.", "NOBODY'S SHOOTING. THAT'S THE PLAN."],
 };
 export function passengerChatter(m: Mission, c: CrewMember, rng: RNG): { ask: string; reply: string } {
+  if (m.passengerKind === "singer") {
+    const lines: Record<string, [string, string][]> = {
+      pilot: [["HOME CAN WAIT. CAN YOUR ENGINES?", "THEY'D APPRECIATE A STOP, ACTUALLY."], ["IS THIS WHAT YOU CALL A SHORTCUT?", "ONLY WHEN IT WORKS."]],
+      engineer: [["YOUR REACTOR IS SINGING FLAT.", "I KNOW. I'VE ORDERED THE PART."], ["THE BOWL LIKES YOUR LAUGH.", "THE BOWL CAN KEEP THAT TO ITSELF."]],
+      medic: [["I AM NOT UNWELL. THIS IS MY RESTING LIGHT.", "I'LL PUT THAT IN THE CHART."]],
+      gunner: [["DOES THAT TUBE ALSO MAKE MUSIC?", "YOU WOULDN'T LIKE THE SONG."]],
+    };
+    const [ask, reply] = rng.pick(lines[c.role] ?? lines.pilot);
+    return { ask, reply };
+  }
   const kind = m.passengerKind ?? "vip";
   const pool = [...(PAX_TO_ROLE[kind]?.[c.role] ?? PAX_TO_ROLE.vip[c.role] ?? ["HOW LONG NOW?"])];
   const mood = m.mood ?? 60;

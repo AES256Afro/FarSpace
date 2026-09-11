@@ -2,6 +2,7 @@
 
 import { ask, confirmBox } from "../core/dialog";
 import { Game, Scene, VW, VH } from "../game";
+import { singerBoardingReason } from "../core/singers";
 import { drawText, textWidth, CHAR_H } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 import { RNG, hashStr } from "../core/rng";
@@ -37,6 +38,8 @@ import { music } from "../core/music";
 const TABS = ["MARKET", "SHIPYARD", "SHIPS", "MISSIONS", "BAR", "SURVEY", "ENGINEER", "STORAGE", "BASE", "NEWS", "WIRE", "RECORD"] as const;
 
 export class StationScene implements Scene {
+  lastPointerX = -1;
+  lastPointerY = -1;
   touchMode = "menu" as const;
   tab = 0;
   cursor = 0;
@@ -395,7 +398,9 @@ export class StationScene implements Scene {
         tx += w;
       }
     }
-    if (inp.mouseX > 4 && inp.mouseX < 476) {
+    const pointerMoved = inp.mouseX !== this.lastPointerX || inp.mouseY !== this.lastPointerY;
+    this.lastPointerX = inp.mouseX; this.lastPointerY = inp.mouseY;
+    if ((pointerMoved || inp.mousePressed || inp.mouseRightPressed) && inp.mouseX > 4 && inp.mouseX < 476) {
       const row = this.rowBoxes.findIndex(([y0, y1]) => inp.mouseY >= y0 && inp.mouseY <= y1);
       if (row >= 0) { this.cursor = row; if (inp.mousePressed) clickedRow = true; if (inp.mouseRightPressed) rightClickedRow = true; }
     }
@@ -747,6 +752,8 @@ export class StationScene implements Scene {
   acceptMission(g: Game, m: Mission): void {
     const p = g.world.player;
     const st = this.station;
+    if (m.accepted || m.done || p.missions.some(x => x.id === m.id)) { g.toast("ALREADY ON YOUR MISSION LOG"); return; }
+    if (m.passengerKind === "singer") { const reason = singerBoardingReason(g.world, m, st.id); if (reason) { g.toast(reason); return; } }
     if (m.kind !== "passenger" && p.missions.filter((x) => x.accepted && !x.done && x.kind !== "passenger").length >= 5) { g.toast("MISSION LOG FULL"); return; }
     if (m.kind === "passenger" && passengersAboard(p).length >= passengerCap(p)) { g.toast(passengerCap(p) === 1 ? "ONE PASSENGER WITHOUT CABINS - FIT PASSENGER CABINS AT A SHIPYARD" : `ALL ${passengerCap(p)} CABINS TAKEN`); return; }
     if (m.tier && m.tier > missionTier(p.rep[st.factionId] ?? 0)) { g.toast("YOUR STANDING ISN'T HIGH ENOUGH"); return; }
@@ -758,6 +765,12 @@ export class StationScene implements Scene {
     if (m.kind === "passenger" && m.mood !== undefined && p.raceBeaten?.[st.id]) { m.mood = Math.min(100, m.mood + 5); impressed = `${(m.passengerName ?? "YOUR FARE").toUpperCase()} HAS HEARD YOU HOLD THE RINGS HERE. THEY BOARD IMPRESSED.`; }
     p.missions.push(m);
     this.fares = this.fares.filter((f) => f !== m);
+    if (m.passengerKind === "singer") {
+      this.fares = this.fares.filter(f => f.passengerKind !== "singer");
+      p.navTarget = m.targetSystemId; p.singersCourse = true;
+      g.toast(`${(m.passengerName ?? "THE SINGER").toUpperCase()} BOARDS. ${m.lightReward ?? 25} LIGHT AT HOME. COURSE PLOTTED.`);
+      g.autosave(); return;
+    }
     if (m.kind === "passenger" && m.demand) g.toast(`${(m.passengerName ?? "").toUpperCase()} MENTIONS THEY'D APPRECIATE ${commodity(m.demand).name.toUpperCase()} ABOARD`);
     if (m.kind === "repair") { g.tenderMission = m; g.toast("SUITING UP - THE PLANT IS THROUGH THE YARD DOOR"); sfx.repair(); g.setScene("repair"); return; }
     if (m.kind === "convoy") { p.convoyPending = m.id; g.toast("THE CONVOY LEAD NODS. 'WE LAUNCH WHEN YOU DO. DON'T LOSE US.'"); sfx.select(); return; }
@@ -772,6 +785,7 @@ export class StationScene implements Scene {
     ledgerAround(p, m.kind === "passenger" ? "fares" : "contracts", () => this.completeMissionInner(g, m));
   }
   completeMissionInner(g: Game, m: Mission): void {
+    if (m.done || m.passengerKind === "singer") return;
     const p = g.world.player;
     const st = this.station;
     if (m.commodityId && m.qty && m.kind !== "research") removeCargo(p, m.commodityId, m.qty);
@@ -1477,10 +1491,22 @@ export class StationScene implements Scene {
   drawBar(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
     const st = this.station;
     const p = g.world.player;
-    drawText(ctx, "THE LOUNGE - TALK (ENTER) OR HIRE - R ROSTER", 8, top, PAL.greyDark);
+    drawText(ctx, "THE LOUNGE - ENTER TALK / HIRE - R ROSTER - ARROWS / WHEEL SCROLL", 8, top, PAL.greyDark);
     const leaveHere = (p.shoreCrew ?? []).filter((s) => s.stationId === st.id);
     if (leaveHere.length) drawText(ctx, `ON LEAVE HERE: ${leaveHere.map((s) => s.member.name.toUpperCase()).join(", ")} (BACK ABOARD WHEN BERTHS ALLOW)`, 200, top, PAL.gold);
-    let y = top + 12;
+    const rowPositions: number[] = [];
+    let naturalY = top + 12;
+    for (const _ of st.barPatrons) { rowPositions.push(naturalY + 2); naturalY += 18; }
+    if (this.candidates.length) naturalY += 10;
+    for (const _ of this.candidates) { rowPositions.push(naturalY + 2); naturalY += 18; }
+    if (this.fares.length) naturalY += 10;
+    for (const _ of this.fares) { rowPositions.push(naturalY); naturalY += 9; if (rowPositions.length - 1 === this.cursor) naturalY += 9; }
+    if (this.fares.length) naturalY += 2;
+    if (!st.military) rowPositions.push(naturalY);
+    const offset = Math.max(0, (rowPositions[this.cursor] ?? 0) - (VH - 85));
+    const bottom = VH - 54;
+    ctx.save(); ctx.beginPath(); ctx.rect(0, top + 9, VW, bottom - top - 9); ctx.clip();
+    let y = top + 12 - offset;
     let idx = 0;
     st.barPatrons.forEach((name, i) => {
       this.row(ctx, y + 2, idx === this.cursor);
@@ -1506,7 +1532,8 @@ export class StationScene implements Scene {
         const sel = idx === this.cursor;
         this.row(ctx, y, sel);
         drawText(ctx, `${f.notable ? "* " : ""}${f.title.toUpperCase()}  -  ${g.world.systems[f.targetSystemId].name.toUpperCase()}${f.demand ? "  (WANTS " + commodity(f.demand).name.toUpperCase() + ")" : ""}`, 12, y, f.notable ? PAL.gold : f.passengerKind === "fugitive" ? PAL.danger : PAL.ui);
-        drawText(ctx, `+${f.reward}CR`, VW - textWidth(`+${f.reward}CR`) - 8, y, PAL.gold);
+        const pay = f.passengerKind === "singer" ? `+${f.lightReward ?? 25} LIGHT` : `+${f.reward}CR`;
+        drawText(ctx, pay, VW - textWidth(pay) - 8, y, PAL.gold);
         y += 9;
         if (sel) { drawText(ctx, f.desc.toUpperCase().slice(0, 112), 12, y, PAL.greyDark); y += 9; }
         idx++;
@@ -1526,7 +1553,12 @@ export class StationScene implements Scene {
       }
       idx++; y += 2;
     }
+    ctx.restore();
+    this.rowBoxes = this.rowBoxes.map(([a, b]) => a < top + 9 || b > bottom ? [Infinity, -Infinity] : [a, b]);
+    if (offset) drawText(ctx, "^", VW - 10, top + 12, PAL.ui);
+    if (naturalY - offset > bottom - 10) drawText(ctx, "V", VW - 10, bottom - 8, PAL.ui);
     if (this.barLine) {
+      y = VH - 51;
       ctx.fillStyle = "#0e1626"; ctx.fillRect(6, y, VW - 12, 28);
       ctx.strokeStyle = PAL.uiBorder; ctx.strokeRect(6.5, y + 0.5, VW - 13, 27);
       const words = this.barLine.split(" ");

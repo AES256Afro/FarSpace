@@ -10,6 +10,9 @@ import { crewChatter, soloChatter, MESS_LINES, passengerChatter } from "../data/
 import { RNG } from "../core/rng";
 
 const PASSENGER_LINES: Record<string, { high: string[]; mid: string[]; low: string[] }> = {
+  singer: { high: ["Your engine has learned the second note. I have not told it. It seems pleased.", "There will be a place for your name when we arrive."],
+    mid: ["The bowl is listening. Yes, to the window. It misses home too.", "There is no late arrival. Only a longer story to bring back.", "Your ship says it is not humming. I believe it is being modest."],
+    low: ["The hull sounds tired. We can stop. Home will still be there.", "I do not need you to hurry. I need you to come back with me."] },
   vip: { high: ["This is almost civilised.", "I've told my people about this ship. Good things, for once.", "Keep flying like this and I'll book you again."],
     mid: ["Is this really the fastest you can fly?", "Do you have anything to drink that isn't recycled?", "I'll be mentioning this ship to my people. Whether that's good depends on you."],
     low: ["I have been on prison barges with better service.", "My people will hear about this.", "How much longer. Exactly."] },
@@ -238,6 +241,7 @@ export class InteriorScene implements Scene {
   captainsTable(g: Game, m: import("../world").Mission): void {
     const p = g.world.player; const name = (m.passengerName ?? "THE PASSENGER").toUpperCase(); const kind = m.passengerKind ?? "vip";
     const story: Record<string, string> = {
+      singer: "THEY SET THE LISTENING BOWL BETWEEN THE PLATES. IT REPEATS THE ENGINEER'S LAUGH IN PERFECT PITCH. THE ENGINEER ASKS IT NOT TO DO THAT AT HOME. IT PROMISES NOTHING.",
       vip: "THEY TALK ABOUT THE PORTS THEY OWN A PIECE OF, AND THEN, THREE COURSES IN, ABOUT THE ONE THEY GREW UP ON.",
       refugee: "THEY DON'T TALK MUCH. THEY EAT EVERYTHING, AND THEN THEY TALK ABOUT THE HOUSE. THE CREW GO QUIET AND STAY QUIET.",
       fugitive: "THEY TELL A STORY ABOUT A CARD GAME AND A HARBOURMASTER THAT CAN'T BE TRUE AND IS, AND NOBODY ASKS THE NAMES.",
@@ -898,7 +902,11 @@ export class InteriorScene implements Scene {
         const pp = this.paxPos[px.id];
         const ofs = [[0, 0], [-8, 4], [8, 4]][i] ?? [0, 8];
         const x = pp ? ox + pp.x : ox + pSpot.tx * T + T / 2 + ofs[0], y = pp ? oy + pp.y : oy + pSpot.ty * T + T / 2 + ofs[1];
-        drawPerson(ctx, Math.round(x), Math.round(y), "#f0d0b0", px.passengerKind === "vip" ? "#c7a54a" : px.passengerKind === "refugee" ? "#6a7a9c" : px.passengerKind === "tourist" ? "#5ab3ff" : "#7a5aa5");
+        if (px.passengerKind === "singer") {
+          ctx.fillStyle = "#38526a"; ctx.fillRect(Math.round(x) - 3, Math.round(y) - 6, 6, 7);
+          ctx.fillStyle = "#63f2c8"; ctx.fillRect(Math.round(x) - 2, Math.round(y) - 9, 4, 3);
+          ctx.fillStyle = "#d6bcff"; ctx.fillRect(Math.round(x) + 4, Math.round(y) - 3, 3, 2);
+        } else drawPerson(ctx, Math.round(x), Math.round(y), "#f0d0b0", px.passengerKind === "vip" ? "#c7a54a" : px.passengerKind === "refugee" ? "#6a7a9c" : px.passengerKind === "tourist" ? "#5ab3ff" : "#7a5aa5");
         if ((px.mood ?? 60) < 35 && Math.floor(g.world.time * 2) % 2 === 0) { ctx.fillStyle = PAL.warn; ctx.fillRect(Math.round(x) + 3, Math.round(y) - 5, 2, 2); }
       });
     }

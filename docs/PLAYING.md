@@ -815,6 +815,20 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   light. Arrows or the wheel select; Enter or a click trades; Escape leaves.
   The balance and contributed data persist. Existing captains who completed
   the roll-call can enter without carrying the keepsake token.
+- Research station lounges outside the home system offer a singer who wants
+  passage to the berth. The fare occupies one cabin and pays **20 light plus
+  5 per jump on the plotted route**. The quoted price is fixed when offered.
+  Boarding plots home; press N after launch to follow the course. There is
+  no deadline or penalty for extra dockings. You can carry one singer at a
+  time, alongside other fares if you have spare cabins.
+- The traveler appears aboard with their listening bowl. Talk to them in
+  the lounge, or invite them to the captain's table at mess. Docking at the
+  singers' berth completes the journey, pays light once, frees the cabin,
+  and adds a guestbook entry. Your first homecoming teaches the word
+  **return**. The fare and payment survive saving and loading.
+- In crowded station bars, arrows or the wheel scroll the selected row
+  into view. Clicking acts on the visible row; leaving the mouse over a row
+  no longer prevents keyboard navigation.
 - The singers and the quiet ones teach a word with each contact. The wall of
   record lists them, the chronicle keeps them, and the ship sings the first
   one to the gate.
