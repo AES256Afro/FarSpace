@@ -35,6 +35,7 @@ const COLORS: Record<number, { water: string; plain: string; plain2: string; hil
 
 export class SurfaceScene implements Scene {
   leaveTaken = false;
+  away: { name: string; role: string } | null = null; awayAsked = "";
   touchMode = "walk" as const;
   map!: GroundMap;
   state!: GroundState;
@@ -77,7 +78,16 @@ export class SurfaceScene implements Scene {
     this.regionName = region.name; this.planetName = pl.name; this.biome = pl.palette;
     this.vx = 0; this.vy = 0;
     if (g.surfaceFresh) {
-      { const p1 = g.world.player; const fo = firstOfficer(p1); if (fo && (settings().objectsToLandings ?? true) && !(p1.flags ?? {})[`objected:${fo.name}`]) { (p1.flags ??= {})[`objected:${fo.name}`] = true; g.toast(`${fo.name.split(" ")[0].toUpperCase()}: "REGULATIONS SAY THE CAPTAIN STAYS ABOARD FOR LANDINGS. I'M SAYING IT ONCE, FOR THE LOG. ... NOTED. MIND THE STEP."`); logEntry(g.world, `${fo.name} objected to the captain landing, once, for the log`); flag(g, "objected"); } }
+      { const p1 = g.world.player; const fit = p1.crew.filter((c) => !c.sick); const k = `${g.world.player.systemId}:${g.orbitPlanetIdx}:${g.landedRegionIdx}:${Math.floor(g.world.time)}`;
+        this.away = null;
+        if (fit.length && this.awayAsked !== k) { this.awayAsked = k; const enc0: Encounter = { id: "awayteam2", where: "ground", title: "WHO COMES DOWN?", weight: 0,
+          text: "The lander's ramp is down and the rover's warm. One seat beside you. The rest hold the ship, and say so, loudly, into the band.",
+          options: [
+            ...fit.slice(0, 4).map((c) => ({ label: `${c.name.toUpperCase()} (${c.role.toUpperCase()}${c.specialty ? ", " + String(c.specialty).toUpperCase() : ""})`, hint: c.role === "engineer" ? "The rover's battery lasts a third longer" : c.specialty === "science" ? "Flora scans pay a quarter more" : c.role === "medic" ? "A bad landing hurts the rover less" : c.role === "gunner" ? "Nothing on the ground argues with them" : "Company, and a story", result: () => { this.away = { name: c.name, role: c.specialty === "science" ? "science" : c.role }; c.loyalty = (c.loyalty ?? 0) + 0.1; return `${c.name.split(" ")[0].toUpperCase()} TAKES THE SEAT AND THE HELMET THAT DOESN'T FIT ANYONE. THE BAND SAYS 'BRING THEM BACK' LIKE IT'S AN ORDER.`; } })),
+            { label: "ALONE", result: () => "YOU GO DOWN ALONE. THE RAMP COMES UP BEHIND YOU. SOMEBODY ON THE BAND SAYS 'COME BACK' LIKE IT'S AN ORDER." },
+          ] };
+          (g.scenes["encounter"] as EncounterScene).open(g, enc0, "surface", true); }
+        const fo = firstOfficer(p1); if (fo && (settings().objectsToLandings ?? true) && !(p1.flags ?? {})[`objected:${fo.name}`]) { (p1.flags ??= {})[`objected:${fo.name}`] = true; g.toast(`${fo.name.split(" ")[0].toUpperCase()}: "REGULATIONS SAY THE CAPTAIN STAYS ABOARD FOR LANDINGS. I'M SAYING IT ONCE, FOR THE LOG. ... NOTED. MIND THE STEP."`); logEntry(g.world, `${fo.name} objected to the captain landing, once, for the log`); flag(g, "objected"); } }
       g.surfaceFresh = false;
       this.say(`TOUCHDOWN: ${region.name.toUpperCase()}, ${pl.name.toUpperCase()} - ${BIOMES[this.biome % BIOMES.length].name}`);
       sfx.dock();
@@ -121,6 +131,7 @@ export class SurfaceScene implements Scene {
   }
 
   leave(g: Game): void {
+    if (this.away) { const p = g.world.player; const c = p.crew.find((x) => x.name === this.away!.name); if (c) { c.loyalty = (c.loyalty ?? 0) + 0.2; c.morale = Math.min(100, c.morale + 3); logEntry(g.world, `${c.name} came down with me and came back up`); flag(g, "awayteam2"); g.toast(`${c.name.split(" ")[0].toUpperCase()} STRAPS IN FOR THE LIFT WITH DUST ON THE SUIT AND A STORY FOR THE GALLEY. LOYALTY UP.`); } this.away = null; }
     g.surfaceReturn = false;
     sfx.rover(false);
     g.setScene("orbit");
@@ -154,7 +165,7 @@ export class SurfaceScene implements Scene {
       const l = Math.hypot(ax, ay); ax /= l; ay /= l;
       this.vx += ax * 320 * dt; this.vy += ay * 320 * dt;
       this.facing = Math.atan2(ay, ax);
-      this.power = Math.max(0, this.power - dt * (this.storm > 0 ? 0.7 : 0.35) * (1 - 0.2 * engGrade(p, "battery")));
+      this.power = Math.max(0, this.power - dt * (this.storm > 0 ? 0.7 : 0.35) * (1 - 0.2 * engGrade(p, "battery")) * (this.away?.role === "engineer" ? 0.75 : 1));
     } else { this.vx *= Math.pow(0.02, dt); this.vy *= Math.pow(0.02, dt); }
     const spd = Math.hypot(this.vx, this.vy);
     if (spd > top) { this.vx *= top / spd; this.vy *= top / spd; }
@@ -183,7 +194,7 @@ export class SurfaceScene implements Scene {
     if (this.integrity <= 0) {
       g.toast("ROVER WRECKED - EMERGENCY RECOVERY TO ORBIT. HULL SCUFFED.");
       p.hull = Math.max(1, p.hull - 10);
-      this.integrity = 60; this.power = 60;
+      this.integrity = this.away?.role === "medic" ? 75 : 60; this.power = 60;
       this.px = this.map.lander.x * GT + GT / 2 + 12; this.py = this.map.lander.y * GT + GT / 2;
       this.leave(g);
       return;
@@ -265,7 +276,7 @@ export class SurfaceScene implements Scene {
         const sk = `flora:${node.label}`;
         const first = !p.codex[sk];
         p.codex[sk] = (p.codex[sk] ?? 0) + 1;
-        p.expData = (p.expData ?? 0) + (first ? 120 : 45);
+        p.expData = (p.expData ?? 0) + Math.round((first ? 120 : 45) * (this.away?.role === "science" ? 1.25 : 1));
         p.discoveries += 1;
         gainMaterials(g, { carbon: 1 + Math.floor(Math.random() * 2) });
         g.toast(first ? `NEW SPECIES: ${node.label} +120 EXPLORATION DATA` : `${node.label} LOGGED +45 EXPLORATION DATA`);
@@ -452,7 +463,7 @@ export class SurfaceScene implements Scene {
     ctx.fillStyle = "rgba(8,12,22,0.85)"; ctx.fillRect(0, 0, VW, 20);
     drawText(ctx, `${this.planetName.toUpperCase()} - ${this.regionName.toUpperCase()} - ${BIOMES[this.biome % BIOMES.length].name}`, 6, 4, PAL.white);
     const left = this.map.nodes.filter((n, i) => n.kind !== "geyser" && !this.state.taken.includes(i)).length;
-    drawText(ctx, `SITES LEFT ${left}   ${day < 0.45 ? "NIGHT" : "DAY"}${this.storm > 0 ? "   STORM" : ""}`, 6, 12, PAL.grey);
+    drawText(ctx, `SITES LEFT ${left}   ${day < 0.45 ? "NIGHT" : "DAY"}${this.storm > 0 ? "   STORM" : ""}${this.away ? `   AWAY: ${this.away.name.split(" ")[0].toUpperCase()} (${this.away.role.toUpperCase()})` : ""}`, 6, 12, PAL.grey);
     const bar = (x: number, label: string, v: number, col: string) => { drawText(ctx, label, x, 4, PAL.grey); ctx.fillStyle = PAL.greyDark; ctx.fillRect(x, 12, 40, 4); ctx.fillStyle = col; ctx.fillRect(x, 12, Math.round(40 * v / 100), 4); };
     bar(250, "POWER", this.power, this.power < 25 ? PAL.danger : PAL.thrust);
     bar(300, "ROVER", this.integrity, this.integrity < 35 ? PAL.danger : PAL.good);

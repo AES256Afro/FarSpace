@@ -1730,6 +1730,18 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 338 — Roster Help ✅ (Sep 2026)
 - [x] A help line for V and S on the roster
 
+## Milestone 339 — Who Comes Down? ✅ (Sep 2026)
+- [x] Every fresh landing with fit crew asks who takes the seat beside you:
+      an engineer makes the battery last, a science hand pays more per scan,
+      a medic softens a bad landing, a gunner is company
+
+## Milestone 340 — Away on the HUD ✅ (Sep 2026)
+- [x] The surface header shows who's in the rover with you
+
+## Milestone 341 — One Seat Beside You ✅ (Sep 2026)
+- [x] At lift-off the away partner's loyalty and morale go up, with a log
+      line and a deed
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

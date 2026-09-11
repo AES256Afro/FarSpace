@@ -752,6 +752,10 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- Every fresh landing with fit crew asks who comes down. An engineer makes
+  the rover's battery last a third longer, a science hand pays a quarter more
+  per flora scan, a medic softens a bad landing, a gunner is company. The
+  surface header shows who's aboard, and at lift-off their loyalty goes up.
 - Once the ship is on the roster, S there is the ship's review of every crew
   member, one line each. And at any other business the ship votes.
 - Break the rule on the ground and the next naval station holds a hearing
