@@ -1059,6 +1059,11 @@ Time passes for the people on the ship, and for the ship.
       them; the engineer gives a damage report the first time the hull drops
       under half
 
+## Milestone 175 — Boarding Party ✅ (Sep 2026)
+- [x] Boarding a derelict asks who comes through the lock: the engineer
+      slows the leaks and the fires, the medic brings a spare tank, the gunner
+      clears the fires by the lock
+
 ## Later: Trek / Expanse / Orville
 
 - A second story arc per faction (first contact proper: the singers' home)

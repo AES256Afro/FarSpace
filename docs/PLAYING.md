@@ -877,6 +877,11 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   quietly (the rule; data, and a deed), go down with your hands open (bread,
   or shut doors), or help with the fire (three lives, and a log entry that
   says geology). The crew argue about it either way.
+- Boarding a derelict with crew aboard asks who comes through the lock with
+  you, one only: the engineer (breaches drain your suit half as fast and the
+  fires spread slower), the medic (a spare tank clipped on: a third more
+  air), the gunner (the fires near the lock are out before you've found your
+  feet), or alone, with somebody on the band saying come back like an order.
 - On the ground, an away team: a door in the rock and a light that shouldn't
   be on. Send the engineer (the light means power), the medic (if something's
   alive in there), the gunner (who will shoot the light), or go yourself,

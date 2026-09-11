@@ -10,6 +10,8 @@ import { commodity } from "../data/data";
 import { sfx } from "../core/sfx";
 import { music } from "../core/music";
 import { flag } from "../core/achievements";
+import type { Encounter } from "../data/encounters";
+import type { EncounterScene } from "./encounter";
 import { gainMaterials } from "../core/materials";
 import { T, moveWalker, deckOrigin, drawTiles, drawPerson, nearestTile, tooltip, footer } from "./walkbase";
 
@@ -31,6 +33,7 @@ export class WreckScene implements Scene {
   deck: string[] = [];
   crates: { tx: number; ty: number; id: string; qty: number; taken: boolean }[] = [];
   fires: { tx: number; ty: number }[] = [];
+  partner: "engineer" | "medic" | "gunner" | null = null; askedFor = "";
   breaches: { tx: number; ty: number }[] = [];
   o2 = 100;
   msg = ""; msgTimer = 0;
@@ -46,6 +49,23 @@ export class WreckScene implements Scene {
     const rng = new RNG(hashStr(w.id));
     this.px = 2 * T; this.py = T + 5;
     this.o2 = 100;
+    // a boarding party: who comes through the lock with you changes the derelict
+    if (this.askedFor !== w.id) {
+      this.askedFor = w.id; this.partner = null;
+      const p = g.world.player;
+      const has = (r: string) => p.crew.some((c) => c.role === r && !c.sick);
+      if (has("engineer") || has("medic") || has("gunner")) {
+        const enc: Encounter = { id: "boarding", where: "space", title: "BOARDING PARTY", weight: 0,
+          text: "The lock cycles and the derelict breathes out at you: cold, dark, something burning somewhere aft. Who comes through with you? One. The rest hold the ship.",
+          options: [
+            ...(has("engineer") ? [{ label: "THE ENGINEER", hint: "Seals what leaks; breaches drain half as fast, fires spread slower", result: () => { this.partner = "engineer"; return "THE ENGINEER COMES THROUGH WITH A ROLL OF PATCHES AND A TORCH IN THEIR TEETH. 'BREACHES FIRST. THEN WHATEVER YOU CAME FOR.'"; } }] : []),
+            ...(has("medic") ? [{ label: "THE MEDIC", hint: "A spare tank on the suit: a third more air", result: () => { this.partner = "medic"; this.o2 = 130; return "THE MEDIC CLIPS A SPARE TANK TO YOUR SUIT BEFORE YOU CAN ARGUE. 'BREATHE SLOWER. YOU NEVER DO.'"; } }] : []),
+            ...(has("gunner") ? [{ label: "THE GUNNER", hint: "Clears the fires near the lock", result: () => { this.partner = "gunner"; this.fires = this.fires.filter((f) => f.tx > 8); return "THE GUNNER GOES IN FIRST WITH AN EXTINGUISHER LIKE IT'S A RIFLE AND THE FIRES NEAR THE LOCK ARE OUT BEFORE YOU'VE FOUND YOUR FEET."; } }] : []),
+            { label: "GO ALONE", result: () => "YOU GO THROUGH ALONE. THE LOCK SHUTS BEHIND YOU. SOMEBODY ON THE BAND SAYS 'COME BACK' LIKE IT'S AN ORDER." },
+          ] };
+        (g.scenes["encounter"] as EncounterScene).open(g, enc, "wreck", true);
+      }
+    }
     // scatter crates for each loot entry in the side rooms / corridor
     const spots: [number, number][] = [];
     for (let ty = 1; ty < BASE.length - 1; ty++) for (let tx = 2; tx < BASE[0].length - 1; tx++) if (BASE[ty][tx] === "." && !(tx < 4 && ty < 3)) spots.push([tx, ty]);
@@ -95,10 +115,10 @@ export class WreckScene implements Scene {
     }
     // breached compartment drains suit O2 while you're inside the derelict
     const breachNear = this.breaches.some((b) => Math.hypot(b.tx - ptx, b.ty - pty) < 4);
-    this.o2 = Math.max(0, this.o2 - dt * (breachNear ? 4 : 1.2));
+    this.o2 = Math.max(0, this.o2 - dt * (breachNear ? (this.partner === "engineer" ? 2 : 4) : 1.2));
     if (this.o2 <= 0) { g.toast("SUIT O2 EXHAUSTED - RETURNING TO SHIP"); this.leave(g); return; }
     // fire spreads slowly
-    if (Math.random() < dt * 0.05 && this.fires.length < 12) {
+    if (Math.random() < dt * (this.partner === "engineer" ? 0.02 : 0.05) && this.fires.length < 12) {
       const f = this.fires[Math.floor(Math.random() * this.fires.length)];
       if (f) {
         const nx = f.tx + (Math.random() < 0.5 ? 1 : -1), ny = f.ty;
