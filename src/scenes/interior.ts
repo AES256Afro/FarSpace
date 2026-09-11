@@ -30,6 +30,7 @@ import { hull, HullDef } from "../data/hulls";
 import { CREW_LINES, ROLE_INFO, roleLabel, SPECIALTIES } from "../data/crew";
 import { clamp, dist } from "../core/mathx";
 import { sfx } from "../core/sfx";
+import { flag } from "../core/achievements";
 import { music } from "../core/music";
 import { rankOf, rescuePoints, STORY_LEN, findStation, canRetireCaptain, retireCaptain, RETIRE_AFTER, ledger, logEntry, chooseSpecialty } from "../world";
 import * as wire from "../core/wire";
@@ -247,7 +248,7 @@ export class InteriorScene implements Scene {
     if (!lines.length) lines.push("A CARRIER WAVE AND NOTHING ON IT. THE STATIONS ARE QUIET TONIGHT.");
     const key = `band:${p.systemId}`;
     const enc: Encounter = { id: "band", where: "space", title: "THE BAND", text: lines.join("\n"), weight: 0, options: [
-      { label: "SIT WITH IT A WHILE", result: () => { const first = !(p.flags ?? {})[key]; (p.flags ??= {})[key] = true; if (first) { for (const c of p.crew) c.morale = Math.min(100, c.morale + 2); for (const m of passengersAboard(p)) m.mood = Math.min(100, (m.mood ?? 60) + 2); } return first ? "THE CREW DRIFT IN ONE BY ONE AND STAND IN THE HATCHWAY LISTENING. NOBODY SAYS 'TURN IT UP'. NOBODY HAS TO. MORALE UP." : "YOU'VE HEARD THIS EPISODE. IT'S STILL GOOD."; } },
+      { label: "SIT WITH IT A WHILE", result: () => { const first = !(p.flags ?? {})[key]; (p.flags ??= {})[key] = true; flag(g, "band"); if (first) { for (const c of p.crew) c.morale = Math.min(100, c.morale + 2); for (const m of passengersAboard(p)) m.mood = Math.min(100, (m.mood ?? 60) + 2); } return first ? "THE CREW DRIFT IN ONE BY ONE AND STAND IN THE HATCHWAY LISTENING. NOBODY SAYS 'TURN IT UP'. NOBODY HAS TO. MORALE UP." : "YOU'VE HEARD THIS EPISODE. IT'S STILL GOOD."; } },
       { label: "SWITCH IT OFF", result: () => "THE HUM OF THE SHIP COMES BACK. IT WAS THERE ALL ALONG." },
     ] };
     (g.scenes["encounter"] as EncounterScene).open(g, enc, "interior", true);
@@ -275,8 +276,8 @@ export class InteriorScene implements Scene {
     const enc: Encounter = { id: "cards", where: "space", title: `A HAND OF CARDS WITH ${c.name.toUpperCase()}`, weight: 0,
       text: `${c.name.toUpperCase()} DEALS ON AN UPTURNED CRATE.${others.length ? ` ${others.map((o) => o.name.toUpperCase()).join(" AND ")} PULL${others.length === 1 ? "S" : ""} UP A SEAT.` : ""} ${sharp ? "THEY PLAY FOR MATCHSTICKS. THEY PLAY VERY WELL FOR MATCHSTICKS." : "NOBODY'S VERY GOOD. THAT'S THE POINT."}`,
       options: [
-        { label: "MATCHSTICKS", result: () => { const win = rng.chance(1 - edge); cheer(5); logEntry(g.world, `A hand of cards with ${c.name} after watch`); return win ? `YOU TAKE THE POT: ELEVEN MATCHSTICKS AND ${c.name.toUpperCase()}'S GRUDGING RESPECT. MORALE UP.` : `${c.name.toUpperCase()} CLEANS YOU OUT AND DOESN'T EVEN GLOAT. MUCH. MORALE UP ANYWAY.`; } },
-        { label: "A ROUND OF DRINKS (20CR STAKE)", requires: () => p.credits >= 20, result: () => { const win = rng.chance(1 - edge); if (win) { p.credits += 20; ledger(p, "crew", 20); } else { p.credits -= 20; ledger(p, "crew", -20); } cheer(8); return win ? "YOU WIN THE ROUND AND BUY IT ANYWAY. THE CREW NOTICE. +20CR, MORALE UP." : "YOU LOSE THE ROUND AND PAY FOR IT. THE CREW NOTICE THAT TOO. -20CR, MORALE UP."; } },
+        { label: "MATCHSTICKS", result: () => { const win = rng.chance(1 - edge); cheer(5); flag(g, "cards"); logEntry(g.world, `A hand of cards with ${c.name} after watch`); return win ? `YOU TAKE THE POT: ELEVEN MATCHSTICKS AND ${c.name.toUpperCase()}'S GRUDGING RESPECT. MORALE UP.` : `${c.name.toUpperCase()} CLEANS YOU OUT AND DOESN'T EVEN GLOAT. MUCH. MORALE UP ANYWAY.`; } },
+        { label: "A ROUND OF DRINKS (20CR STAKE)", requires: () => p.credits >= 20, result: () => { const win = rng.chance(1 - edge); flag(g, "cards"); if (win) { p.credits += 20; ledger(p, "crew", 20); } else { p.credits -= 20; ledger(p, "crew", -20); } cheer(8); return win ? "YOU WIN THE ROUND AND BUY IT ANYWAY. THE CREW NOTICE. +20CR, MORALE UP." : "YOU LOSE THE ROUND AND PAY FOR IT. THE CREW NOTICE THAT TOO. -20CR, MORALE UP."; } },
         { label: "NOT TONIGHT", result: () => `${c.name.toUpperCase()} SHRUGS AND DEALS ${others.length ? "THE OTHERS IN" : "A PATIENCE HAND"}.` },
       ] };
     (g.scenes["encounter"] as EncounterScene).open(g, enc, "interior", true);

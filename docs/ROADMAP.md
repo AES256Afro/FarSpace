@@ -787,4 +787,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] The chronicle carries the week's votes, border, holdings, times and
       counts as prose
 
+## Milestone 107 — Deeds and Slots ✅ (Sep 2026)
+- [x] Five more deeds (the band, family, cards, the breakers, mess call); the
+      save slots show your name on the lanes
+
 ## Later

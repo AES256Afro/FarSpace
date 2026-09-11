@@ -835,7 +835,7 @@ export class StationScene implements Scene {
     if (!confirmBox(`Scrap the ${ship.name ?? h.name} here for ${price}cr? The yard breaks her up; there's no getting her back.`)) return;
     p.fleet = (p.fleet ?? []).filter((f) => f !== ship);
     p.credits += price; ledger(p, "yard", price);
-    logEntry(g.world, `Scrapped the ${ship.name ?? h.name} at ${this.station.name} for ${price}cr`);
+    logEntry(g.world, `Scrapped the ${ship.name ?? h.name} at ${this.station.name} for ${price}cr`); flag(g, "scrapped");
     g.toast(`THE YARD TAKES THE ${(ship.name ?? h.name).toUpperCase()} FOR ${price}CR. THE CREW WATCH FROM THE GALLERY. NOBODY SAYS MUCH.`); sfx.select();
   }
   // A parked hull of yours goes to work on your best known run from here, with a hired crew

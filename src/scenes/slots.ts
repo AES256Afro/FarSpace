@@ -69,7 +69,7 @@ export class SlotsScene implements Scene {
       const ago = r.savedAt ? wire.ageLabel(r.savedAt) : "?";
       drawText(ctx, `${hull(r.hullId).name.toUpperCase()}  ${r.credits ?? 0}CR  ${(r.systemName ?? "?").toUpperCase()}  ${r.discoveries ?? 0} DISCOVERIES${r.hardcore ? "  HARDCORE" : ""}`, 14, y + 10, PAL.grey);
       drawText(ctx, `${ago === "NOW" ? "SAVED JUST NOW" : `SAVED ${ago} AGO`}  ${Math.round((r.bytes ?? 0) / 1024)} KB`, 14, y + 19, PAL.greyDark);
-      { const story = `${r.shipName ? `"${r.shipName.toUpperCase()}"` : "UNNAMED"}${r.captain ? `, CAPTAIN ${r.captain.toUpperCase()}` : ""} - ${Math.floor(r.hours ?? 0)}H UNDER WAY - ${r.crew ?? 0} CREW${(r.captains ?? 1) > 1 ? ` - CAPTAIN ${r.captains} OF THE LINE` : ""}${r.cat ? ` - ${r.cat.toUpperCase()} ABOARD` : ""}`; drawText(ctx, story.slice(0, 100), 14, y + 28, PAL.uiDim); }
+      { const story = `${r.shipName ? `"${r.shipName.toUpperCase()}"` : "UNNAMED"}${r.captain ? `, CAPTAIN ${r.captain.toUpperCase()}` : ""}${r.nick ? ` (${r.nick})` : ""} - ${Math.floor(r.hours ?? 0)}H UNDER WAY - ${r.crew ?? 0} CREW${(r.captains ?? 1) > 1 ? ` - CAPTAIN ${r.captains} OF THE LINE` : ""}${r.cat ? ` - ${r.cat.toUpperCase()} ABOARD` : ""}`; drawText(ctx, story.slice(0, 100), 14, y + 28, PAL.uiDim); }
     });
     drawText(ctx, "EACH SLOT KEEPS ITS OWN CLOUD CODE. AUTOSAVE WRITES TO THE ACTIVE SLOT.", 12, VH - 14, PAL.greyDark);
   }

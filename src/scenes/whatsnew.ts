@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.106 - DEEDS AND SLOTS", [
+    "FIVE MORE DEEDS ON THE RECORD, AND THE SAVE SLOTS SHOW YOUR NAME ON THE LANES.",
+  ]],
   ["0.105 - THE CHRONICLE'S WEEK", [
     "THE CHRONICLE TELLS THE WEEK: YOUR VOTES, THE BORDER, YOUR HOLDINGS AND TIMES, AS PROSE.",
   ]],

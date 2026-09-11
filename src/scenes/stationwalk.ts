@@ -7,6 +7,7 @@ import { PAL } from "../gfx/palette";
 import { RNG, hashStr } from "../core/rng";
 import { dist } from "../core/mathx";
 import { sfx } from "../core/sfx";
+import { flag } from "../core/achievements";
 import { StationDef, findStation, isFriend, isRival, rivalOf, galaxyEventAt, dockingsAt, raceHolder, stakeDividend, weekKey, addCargo, logEntry } from "../world";
 import { occasionFor } from "../data/occasions";
 import type { Encounter } from "../data/encounters";
@@ -284,7 +285,7 @@ export class StationWalkScene implements Scene {
         const first = fam.name.split("'")[0]; const c = g.world.player.crew.find((x) => x.name.split(" ")[0] === first);
         const key = `family:${this.station.id}:${c?.name ?? first}:${weekKey()}`;
         this.msg = fam.line!; this.msgTimer = 6;
-        if (c && !(g.world.player.flags ?? {})[key]) { (g.world.player.flags ??= {})[key] = true; c.morale = Math.min(100, c.morale + 12); c.loyalty = (c.loyalty ?? 0) + 0.5; addCargo(g.world.player, "food", 1); g.toast(`${c.name.toUpperCase()} IS GLAD YOU STOPPED. +1 PROVISIONS FOR THE GALLEY, MORALE UP`); sfx.pickup(); logEntry(g.world, `Met ${c.name}'s ${fam.name.split("'s ")[1] ?? "family"} at ${this.station.name}`); }
+        if (c && !(g.world.player.flags ?? {})[key]) { (g.world.player.flags ??= {})[key] = true; c.morale = Math.min(100, c.morale + 12); c.loyalty = (c.loyalty ?? 0) + 0.5; addCargo(g.world.player, "food", 1); flag(g, "family"); g.toast(`${c.name.toUpperCase()} IS GLAD YOU STOPPED. +1 PROVISIONS FOR THE GALLEY, MORALE UP`); sfx.pickup(); logEntry(g.world, `Met ${c.name}'s ${fam.name.split("'s ")[1] ?? "family"} at ${this.station.name}`); }
         return;
       }
       const who = this.npcs.find((n) => dist(this.px, this.py, n.x, n.y) < 16);
