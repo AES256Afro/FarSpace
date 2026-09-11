@@ -309,6 +309,10 @@ export interface PlayerState {
   stakes?: Record<string, number>;   // station id -> shares held; they pay a dividend every time you dock there
   votes?: Record<string, "yes" | "no">; // "<week>:<faction>" -> how you voted
   mayday?: { system: string; t: number } | null; // your own mayday on the wire, until somebody answers it
+  racesUnderPar?: number;            // ring races finished under par
+  messes?: number;                   // mess calls you sat down for
+  mealsCooked?: number;              // galley meals you cooked
+  vistaViews?: number;               // times you looked out of the viewport
   regatta?: number;                  // the regatta: 0 entered, 1 first course won, 2 second, 3 champion
   regattaCourse?: string[];          // the three stations of your regatta, set when you're entered
   wrecksOfMine?: string[];           // wreck ids of ships you lost; they stay where they fell

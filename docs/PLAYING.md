@@ -229,6 +229,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Second stories
+
+- Every role now has two personal stories, and which one a crew member
+  carries depends on who they are: an engineer who built for racers wants to
+  hear the rings again; a medic wants a crew that eats together; a pilot wants
+  to see a wonder out of a window; a gunner wants a quiet week where the
+  turret doesn't matter. Offered like the others, to crew who trust you.
+
 ## Favours
 
 - Sit with a friend in a lounge and ask if there's anything you can carry.

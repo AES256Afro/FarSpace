@@ -13,7 +13,7 @@ import { flag } from "../core/achievements";
 
 export interface CrewArc { id: string; stage: number; targetStationId?: string; targetSystemId?: string; wreckId?: string; planetIdx?: number; baseline?: number; done?: boolean }
 interface ArcStage { objective: (w: World, c: CrewMember) => string; check: (g: Game, c: CrewMember) => boolean; card: (g: Game, c: CrewMember) => string }
-interface ArcDef { role: CrewRole; title: string; ask: (w: World, c: CrewMember) => string; setup: (w: World, c: CrewMember, rng: RNG) => CrewArc; stages: ArcStage[]; finale: (g: Game, c: CrewMember) => string }
+interface ArcDef { id: string; role: CrewRole; title: string; ask: (w: World, c: CrewMember) => string; setup: (w: World, c: CrewMember, rng: RNG) => CrewArc; stages: ArcStage[]; finale: (g: Game, c: CrewMember) => string }
 
 const stName = (w: World, id?: string) => (findStation(w, id ?? "")?.st.name ?? "a station").toUpperCase();
 const sysName = (w: World, id?: string) => (w.systems[id ?? ""]?.name ?? "a system").toUpperCase();
@@ -21,7 +21,7 @@ const linkedWithStations = (w: World, rng: RNG) => { const sys = w.systems[w.pla
 
 export const CREW_ARCS: ArcDef[] = [
   {
-    role: "engineer", title: "THE SHIP THAT BURNED",
+    id: "engineer", role: "engineer", title: "THE SHIP THAT BURNED",
     ask: (w, c) => `${c.name.toUpperCase()} WAITS UNTIL THE OTHERS HAVE GONE. 'THERE'S A WRECK I NEED TO SEE. THE SHIP I LEARNED ON. IT BURNED WITH MY TEACHER ABOARD AND I NEVER WENT BACK. IT'S NOT FAR.'`,
     setup: (w, c, rng) => { const sys = linkedWithStations(w, rng); const id = `arc-${hashStr(c.name)}`; if (!sys.wrecks.some((x) => x.id === id)) sys.wrecks.push({ id, x: rng.range(-2500, 2500), y: rng.range(-2500, 2500), looted: false, loot: [{ id: "parts", qty: 2 }, { id: "relics", qty: 1 }], hazard: 0.3, name: `ISV ${["Tallow", "Kindling", "Ember Row", "Firebrand"][hashStr(c.name) % 4]}` }); return { id: "engineer", stage: 0, targetSystemId: sys.id, wreckId: id, targetStationId: c.home }; },
     stages: [
@@ -31,7 +31,7 @@ export const CREW_ARCS: ArcDef[] = [
     finale: (g, c) => `${c.name.toUpperCase()} RETUNES THE REACTOR THAT NIGHT UNTIL IT HUMS LIKE THE ONE THEY LEARNED ON. IT HAS NEVER RUN BETTER.`,
   },
   {
-    role: "medic", title: "THE PATIENT",
+    id: "medic", role: "medic", title: "THE PATIENT",
     ask: (w, c) => `${c.name.toUpperCase()} HAS A LETTER, OLD AND SOFT AT THE FOLDS. 'SOMEONE I COULDN'T SAVE HAD A DAUGHTER. SHE RUNS A CLINIC NOW, OUT ON THE LANES. I'D LIKE TO SEND HER WHAT I COULDN'T SEND HER MOTHER.'`,
     setup: (w, c, rng) => { const sys = linkedWithStations(w, rng); const st = rng.pick(sys.stations); return { id: "medic", stage: 0, targetSystemId: sys.id, targetStationId: st.id, baseline: w.player.fares ?? 0 }; },
     stages: [
@@ -41,7 +41,7 @@ export const CREW_ARCS: ArcDef[] = [
     finale: (g, c) => `${c.name.toUpperCase()} PUTS THE LETTER IN THE MED BAY DRAWER AND STOPS CARRYING IT. THE MED BAY HAS NEVER BEEN BETTER RUN.`,
   },
   {
-    role: "pilot", title: "THE LONG BURN",
+    id: "pilot", role: "pilot", title: "THE LONG BURN",
     ask: (w, c) => `${c.name.toUpperCase()} IS DRAWING GATES ON A NAPKIN. 'THERE'S A RUN I NEVER FINISHED. THREE GATES WITHOUT A DOCK, THEN THE VIEW FROM ORBIT AT THE END OF IT. I HAD A COPILOT THEN. I'D LIKE TO FINISH IT WITH YOU.'`,
     setup: (w, c, rng) => { const sys = linkedWithStations(w, rng); const idx = sys.planets.length ? rng.int(0, sys.planets.length - 1) : 0; return { id: "pilot", stage: 0, targetSystemId: sys.id, planetIdx: idx }; },
     stages: [
@@ -51,7 +51,7 @@ export const CREW_ARCS: ArcDef[] = [
     finale: (g, c) => `${c.name.toUpperCase()} FOLDS THE NAPKIN INTO THE CONSOLE TRIM. THE SHIP TURNS TIGHTER THAN IT HAS ANY RIGHT TO.`,
   },
   {
-    role: "gunner", title: "THE OLD CREW",
+    id: "gunner", role: "gunner", title: "THE OLD CREW",
     ask: (w, c) => `${c.name.toUpperCase()} CLEANS THE TURRET THAT DOESN'T NEED CLEANING. 'MY OLD CREW DRINK AT A PLACE ON THE LANES. I WALKED OUT ON THEM. I'D LIKE TO WALK BACK IN, AND BUY A ROUND, AND SEE WHAT HAPPENS.'`,
     setup: (w, c, rng) => { const sys = linkedWithStations(w, rng); const st = rng.pick(sys.stations); return { id: "gunner", stage: 0, targetSystemId: sys.id, targetStationId: st.id }; },
     stages: [
@@ -62,15 +62,65 @@ export const CREW_ARCS: ArcDef[] = [
   },
 ];
 
-export function arcFor(role: CrewRole): ArcDef | undefined { return CREW_ARCS.find((a) => a.role === role); }
+// Second stories: another one per role, about the things a ship does now
+CREW_ARCS.push(
+  {
+    id: "engineer2", role: "engineer", title: "THE RACING LINE",
+    ask: (w, c) => `${c.name.toUpperCase()} HAS A PHOTOGRAPH OF AN ENGINE. 'I BUILT FOR RACERS, ONCE. I'D LIKE TO HEAR ONE OF MINE CROSS A LINE AGAIN. OURS, I MEAN. THE MARSHAL RUNS RINGS AT ANY CIVIL STATION.'`,
+    setup: (w) => ({ id: "engineer2", stage: 0, baseline: w.player.races ?? 0 }),
+    stages: [
+      { objective: (w, c) => `RUN A RING RACE WITH ${c.name.toUpperCase()} ABOARD (THE LAST ROW IN ANY LOUNGE)`, check: (g, c) => (g.world.player.races ?? 0) > (c.arc?.baseline ?? 0), card: (g, c) => { c.arc!.baseline = g.world.player.racesUnderPar ?? 0; return `${c.name.toUpperCase()} RIDES THE WHOLE RACE WITH ONE HAND ON THE REACTOR HOUSING. 'SHE'S GOT MORE. UNDER PAR NEXT TIME. I'LL FIND IT.'`; } },
+      { objective: (w, c) => `RUN THE RINGS UNDER PAR (${c.name.toUpperCase()} HAS BEEN TUNING)`, check: (g, c) => (g.world.player.racesUnderPar ?? 0) > (c.arc?.baseline ?? 0), card: (g, c) => `UNDER PAR. ${c.name.toUpperCase()} DOESN'T CHEER. THEY GO DOWN TO THE ENGINE ROOM AND STAND THERE A WHILE WITH THE LIGHTS OFF.` },
+    ],
+    finale: (g, c) => `${c.name.toUpperCase()} FRAMES THE TIME NEXT TO THE OLD PHOTOGRAPH. THE ENGINES HAVE A NOTE IN THEM NOW THAT WASN'T THERE BEFORE.`,
+  },
+  {
+    id: "medic2", role: "medic", title: "MESS CALL",
+    ask: (w, c) => `${c.name.toUpperCase()} PUTS A LADLE ON THE TABLE. 'A CREW THAT EATS TOGETHER GETS HOME TOGETHER. I'VE SEEN THE OTHER KIND. I WANT THIS SHIP TO BE THE FIRST KIND. SIT WITH US AT MESS. THEN COOK FOR US.'`,
+    setup: (w) => ({ id: "medic2", stage: 0, baseline: w.player.messes ?? 0 }),
+    stages: [
+      { objective: (w, c) => `EAT WITH THE CREW AT MESS CALL THREE TIMES (${Math.min(3, (w.player.messes ?? 0) - (c.arc?.baseline ?? 0))}/3)`, check: (g, c) => (g.world.player.messes ?? 0) - (c.arc?.baseline ?? 0) >= 3, card: (g, c) => { c.arc!.baseline = g.world.player.mealsCooked ?? 0; return `THREE MESSES. THE CREW HAVE STARTED SAVING YOU A SEAT. ${c.name.toUpperCase()}: 'NOW COOK. PROVISIONS IN THE GALLEY, E ON THE STOVE. IT DOESN'T HAVE TO BE GOOD.'`; } },
+      { objective: (w, c) => `COOK A MEAL IN THE GALLEY WITH PROVISIONS ABOARD (${c.name.toUpperCase()} IS WATCHING)`, check: (g, c) => (g.world.player.mealsCooked ?? 0) > (c.arc?.baseline ?? 0), card: (g, c) => `IT ISN'T GOOD. EVERYBODY HAS SECONDS. ${c.name.toUpperCase()} WASHES UP WITHOUT BEING ASKED, WHICH IS HOW YOU KNOW.` },
+    ],
+    finale: (g, c) => `THE GALLEY IS ${c.name.toUpperCase()}'S NOW, BY COMMON CONSENT. NOBODY ON THIS SHIP EATS ALONE AGAIN.`,
+  },
+  {
+    id: "pilot2", role: "pilot", title: "THE VIEW",
+    ask: (w, c) => `${c.name.toUpperCase()} HAS A POSTCARD, CREASED SOFT. 'I'VE ONLY EVER SEEN THE BIG THINGS IN PICTURES. I'D LIKE TO FLY US TO ONE. AND THEN I'D LIKE TO LOOK AT IT PROPERLY, OUT OF A WINDOW, LIKE A PASSENGER.'`,
+    setup: (w) => ({ id: "pilot2", stage: 0, baseline: (w.wonders ?? []).filter((x) => x.seen).length }),
+    stages: [
+      { objective: (w, c) => `SIGHT A WONDER YOU HAVEN'T SEEN, WITH ${c.name.toUpperCase()} AT THE HELM`, check: (g, c) => (g.world.wonders ?? []).filter((x) => x.seen).length > (c.arc?.baseline ?? 0), card: (g, c) => { c.arc!.baseline = g.world.player.vistaViews ?? 0; return `${c.name.toUpperCase()} CUTS THE ENGINES WITHOUT BEING TOLD. 'THAT'S IT. THAT'S THE ONE ON THE CARD.' A LONG MINUTE. 'CAN WE GO AND LOOK? PROPERLY?'`; } },
+      { objective: (w, c) => `LOOK OUT OF THE VIEWPORT ABOARD (V) WITH ${c.name.toUpperCase()}`, check: (g, c) => (g.world.player.vistaViews ?? 0) > (c.arc?.baseline ?? 0), card: (g, c) => `${c.name.toUpperCase()} STANDS AT THE GLASS FOR A LONG TIME AND SAYS NOTHING AT ALL. THEN: 'RIGHT. WHERE NEXT?'` },
+    ],
+    finale: (g, c) => `${c.name.toUpperCase()} PINS THE POSTCARD BY THE HELM, NEXT TO A NEW ONE. THEY FLY SMOOTHER NOW. THEY'RE NOT IN A HURRY ANY MORE.`,
+  },
+  {
+    id: "gunner2", role: "gunner", title: "THE QUIET WEEK",
+    ask: (w, c) => `${c.name.toUpperCase()} HAS BEEN CLEANING THE TURRET FOR AN HOUR. 'I WANT A WEEK WHERE THIS THING DOESN'T MATTER. SHOW ME THE LANES CAN BE THAT. HELP SOMEBODY. VOTE ON SOMETHING. I'LL BELIEVE IT WHEN I SEE IT.'`,
+    setup: (w) => ({ id: "gunner2", stage: 0, baseline: w.player.rescues ?? 0 }),
+    stages: [
+      { objective: (w, c) => `ANSWER A MAYDAY OR HELP A STRICKEN SHIP (E BESIDE IT), WITH ${c.name.toUpperCase()} WATCHING`, check: (g, c) => (g.world.player.rescues ?? 0) > (c.arc?.baseline ?? 0), card: (g, c) => { c.arc!.baseline = Object.keys(g.world.player.votes ?? {}).length; return `${c.name.toUpperCase()} WATCHES THE WHOLE THING FROM THE TURRET AND NEVER PUTS A HAND ON THE TRIGGER. 'HUH.'`; } },
+      { objective: (w, c) => `CAST A VOTE IN THE WEEK'S QUESTION (NEWS TAB AT ANY CIVIL STATION)`, check: (g, c) => Object.keys(g.world.player.votes ?? {}).length > (c.arc?.baseline ?? 0), card: (g, c) => `${c.name.toUpperCase()} READS THE RESULT TWICE. 'SO THAT'S HOW IT WORKS WHEN NOBODY'S SHOOTING.' THEY ALMOST SMILE.` },
+    ],
+    finale: (g, c) => `${c.name.toUpperCase()} TAKES THE NIGHT WATCH FROM THEN ON, BY CHOICE. THE TURRET STAYS CLEAN. IT MOSTLY STAYS COLD.`,
+  },
+);
+
+// Which story a crew member gets: the one they're on, or one of their role's by name
+export function arcFor(role: CrewRole, c?: CrewMember): ArcDef | undefined {
+  if (c?.arc) return CREW_ARCS.find((a) => a.id === c.arc!.id) ?? CREW_ARCS.find((a) => a.role === role);
+  const defs = CREW_ARCS.filter((a) => a.role === role);
+  if (!defs.length) return undefined;
+  return defs[c ? hashStr(c.name) % defs.length : 0];
+}
 export function arcObjective(w: World, c: CrewMember): string | null {
-  const def = arcFor(c.role); const a = c.arc;
+  const def = arcFor(c.role, c); const a = c.arc;
   if (!def || !a || a.done || a.stage >= def.stages.length) return null;
   return `${c.name.toUpperCase()} - ${def.title}: ${def.stages[a.stage].objective(w, c)}`;
 }
 // At a dock: a loyal crew member without a story asks for one
 export function offerArc(g: Game, c: CrewMember, returnTo: string): boolean {
-  const def = arcFor(c.role);
+  const def = arcFor(c.role, c);
   if (!def || c.arc) return false;
   const w = g.world;
   const opts: Encounter["options"] = [
@@ -86,7 +136,7 @@ export function crewArcUpdate(g: Game): void {
   if (g.sceneName === "encounter") return;
   const p: PlayerState = g.world.player;
   for (const c of p.crew) {
-    const def = arcFor(c.role); const a = c.arc;
+    const def = arcFor(c.role, c); const a = c.arc;
     if (!def || !a || a.done) continue;
     if (a.stage >= def.stages.length) continue;
     const st = def.stages[a.stage];

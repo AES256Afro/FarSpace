@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.85 - SECOND STORIES", [
+    "EVERY ROLE HAS TWO PERSONAL STORIES NOW. WHICH ONE YOUR CREW CARRY DEPENDS ON WHO THEY ARE.",
+  ]],
   ["0.84 - FAVOURS", [
     "ASK A FRIEND IN THE LOUNGE IF THERE'S ANYTHING YOU CAN CARRY. NO FEE. A LETTER AND A GIFT LATER, AND A CAPTAIN WHO REMEMBERS.",
   ]],

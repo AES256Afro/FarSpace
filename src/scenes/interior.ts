@@ -190,7 +190,7 @@ export class InteriorScene implements Scene {
     if (mess && !this.messFed) {
       const k = nearestTile(this.deck, 0, 0, "K", 1e9);
       if (k && dist(k.tx * T + T / 2, k.ty * T + T / 2, this.px, this.py) < 22) {
-        this.messFed = true;
+        this.messFed = true; p.messes = (p.messes ?? 0) + 1;
         for (const c of p.crew) if (!c.sick) c.morale = Math.min(100, c.morale + 1);
         const i = p.crew.findIndex((c) => !c.sick);
         if (i >= 0) this.bubbles.push({ i, text: rng.pick(MESS_LINES), life: 5 });
@@ -558,6 +558,7 @@ export class InteriorScene implements Scene {
             removeCargo(p, "food", 1);
             p.hull = Math.min(p.hullMax, p.hull + 5);
             const cook = p.crew.find((c) => c.trait?.includes("cooks"));
+            p.mealsCooked = (p.mealsCooked ?? 0) + 1;
             for (const c of p.crew) c.morale = Math.min(100, c.morale + (cook ? 12 : 10));
             this.say(cook ? `${cook.name.toUpperCase()} COOKS. NOBODY KNOWS WHAT IT IS. EVERYBODY HAS SECONDS. MORALE UP, +5 HULL` : p.crew.length ? "A HOT MEAL FOR EVERYONE. MORALE UP, +5 HULL" : "A HOT MEAL. +5 HULL");
           } else this.say("GALLEY'S EMPTY. BUY PROVISIONS AT A STATION");

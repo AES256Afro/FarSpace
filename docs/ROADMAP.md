@@ -703,4 +703,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Friends in the lounge hand you errands; no fee, a letter and gift later,
       disposition up
 
+## Milestone 85 — Second Stories ✅ (Sep 2026)
+- [x] A second crew arc per role, about races, mess call, the viewport,
+      maydays and the vote
+
 ## Later

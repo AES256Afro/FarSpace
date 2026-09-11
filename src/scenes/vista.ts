@@ -20,6 +20,7 @@ export class VistaScene implements Scene {
   enter(g: Game): void {
     this.look = 0;
     const p = g.world.player;
+    p.vistaViews = (p.vistaViews ?? 0) + 1;
     if (!this.credited.has(p.systemId)) {
       this.credited.add(p.systemId);
       for (const c of p.crew) c.morale = Math.min(100, c.morale + 1);

@@ -21,6 +21,7 @@ import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
 import { ENCOUNTERS, pickEncounter } from "../src/data/encounters";
 import { crewChatter, soloChatter, passengerChatter } from "../src/data/chatter";
+import { arcFor, CREW_ARCS, arcObjective } from "../src/core/crewarcs";
 import { concourseGossip } from "../src/data/gossip";
 import { stationHour, tannoyLines } from "../src/data/tannoy";
 import { weeklyIssue, castVote, voteResult, voteMods, myVote } from "../src/data/votes";
@@ -931,6 +932,30 @@ describe("favours", () => {
   });
 });
 
+describe("second stories", () => {
+  it("every role has two stories, picked by name, and the new beats check the new counters", () => {
+    const w = generateWorld(38, { realGalaxy: true });
+    for (const role of ["engineer", "medic", "pilot", "gunner"] as const) expect(CREW_ARCS.filter((a) => a.role === role).length).toBe(2);
+    const rng = new RNG(9); const crew = Array.from({ length: 12 }, () => ({ ...genCrewCandidate(rng), role: "pilot" as const }));
+    const ids = new Set(crew.map((c) => arcFor(c.role, c)!.id));
+    expect(ids.size).toBe(2);
+    const c = crew.find((x) => arcFor(x.role, x)!.id === "pilot2")!;
+    w.player.crew = [c];
+    c.arc = arcFor(c.role, c)!.setup(w, c, rng);
+    expect(c.arc.id).toBe("pilot2");
+    expect(arcObjective(w, c)).toContain("SIGHT A WONDER");
+    const g = { world: w, scenes: {}, sceneName: "flight" } as unknown as import("../src/game").Game;
+    const def = arcFor(c.role, c)!;
+    expect(def.stages[0].check(g, c)).toBe(false);
+    (w.wonders ?? [])[0].seen = true;
+    expect(def.stages[0].check(g, c)).toBe(true);
+    def.stages[0].card(g, c); c.arc.stage = 1;
+    expect(def.stages[1].check(g, c)).toBe(false);
+    w.player.vistaViews = 1;
+    expect(def.stages[1].check(g, c)).toBe(true);
+  });
+});
+
 describe("the signal", () => {
   it("every stage has an objective and its checks pass when the world reaches them", () => {
     const w = generateWorld(22, { realGalaxy: true });
@@ -1611,15 +1636,15 @@ describe("crew arcs", () => {
   it("every role has a three-beat story whose objectives and cards render, and the engineer's wreck is planted", () => {
     const w = generateWorld(191, { realGalaxy: true });
     const g = { world: w, scenes: {}, sceneName: "station" } as unknown as import("../src/game").Game;
-    expect(CREW_ARCS.length).toBe(4);
+    expect(CREW_ARCS.length).toBe(8);
     for (const def of CREW_ARCS) {
-      const c = { name: "Test " + def.role, role: def.role, skill: 1, morale: 70, wage: 40, loyalty: 2, home: w.systems[w.player.systemId].stations[0].id };
+      const c = { name: "Test " + def.role, role: def.role, skill: 1, morale: 70, wage: 40, loyalty: 2, home: w.systems[w.player.systemId].stations[0].id, arc: null as import("../src/core/crewarcs").CrewArc | null };
       expect(def.ask(w, c).length).toBeGreaterThan(20);
       c.arc = def.setup(w, c, new RNG(7));
       expect(def.stages.length).toBe(2);
       expect(arcObjective(w, c)).toContain(def.title);
       for (const st of def.stages) expect(st.objective(w, c).length).toBeGreaterThan(5);
-      if (def.role === "engineer") expect(w.systems[c.arc.targetSystemId!].wrecks.some((x) => x.id === c.arc!.wreckId)).toBe(true);
+      if (def.id === "engineer") expect(w.systems[c.arc.targetSystemId!].wrecks.some((x) => x.id === c.arc!.wreckId)).toBe(true);
       expect(def.finale(g, c).length).toBeGreaterThan(20);
     }
   });

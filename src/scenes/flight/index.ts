@@ -526,6 +526,7 @@ export class FlightScene implements Scene {
     const prize = racePrize(r.t, r.par);
     p.credits += prize; ledger(p, "races", prize);
     const best = recordRace(p, r.stationId, r.t);
+    if (r.t <= r.par) p.racesUnderPar = (p.racesUnderPar ?? 0) + 1;
     const st = g.world.systems[p.systemId].stations.find((s) => s.id === r.stationId);
     g.toast(`RACE DONE IN ${r.t.toFixed(1)}S (PAR ${r.par}S) - ${prize}CR${best ? " - YOUR BEST HERE" : ""}`);
     this.comms.push({ from: "MARSHAL", text: r.t <= r.par ? "UNDER PAR. THE BAR WILL HEAR ABOUT THAT." : "OVER PAR, BUT CLEAN. THE PRIZE STANDS.", life: 8, color: PAL.gold });
