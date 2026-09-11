@@ -829,4 +829,7 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 117 — The Lanes Report ✅ (Sep 2026)
 - [x] A weekly letter from your home port's harbour office
 
+## Milestone 118 — People in the Codex ✅ (Sep 2026)
+- [x] Captains, notables, old shipmates and families on the codex page
+
 ## Later

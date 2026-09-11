@@ -243,6 +243,12 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## People in the codex
+
+- The codex (C on the SURVEY tab) has a people block: captains you've met on
+  the lanes, with friends and rivals counted, notables you've carried, old
+  shipmates, and the families you've visited.
+
 ## The lanes report
 
 - Once you have a home port, its harbour office writes each new week: the
