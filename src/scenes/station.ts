@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS, roleLabel } from "../
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, tickAlumniMail, catGift, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, notableOutcome, ledger, ledgerAround, LEDGER_LABELS, dockingsAt, OLD_HAND_AT, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter, RACE_GATES, raceHolder, postDelivered, captainNickname, charterRoute, tickWorld, signGuestbook, regattaObjective, buyStake, collectStake, stakeDividend, stakePrice, totalShares, hasSpecialty, crewOwnHull, OWN_HULL_CREW_FEE, favourFor, favourDone, resolveBorder, pushInfluence, weekKey, borderStanding, replyToLetter, borderContest, collectRemoteStakes, lanesReport, isFriend, isRival, hangPicture, leaveLostItem, tickLostProperty, berthedCaptains, stardate, envoyOutcome, patientOutcome, beltRate, isBeltStation, receptionDue, receptionHeld, legSummary, newLeg, commandRank, registry, grievanceDue, grievanceHeard, spinOutageDue, spinOutageSeen, crewXp, secessionAt, inspectionDue, inspectionScore, beltGain, BELT_FREEMAN_AT, inquiryDue, firstOfficer, birthdaysDue } from "../world";
+  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, tickAlumniMail, catGift, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, notableOutcome, ledger, ledgerAround, LEDGER_LABELS, dockingsAt, OLD_HAND_AT, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter, RACE_GATES, raceHolder, postDelivered, captainNickname, charterRoute, tickWorld, signGuestbook, regattaObjective, buyStake, collectStake, stakeDividend, stakePrice, totalShares, hasSpecialty, crewOwnHull, OWN_HULL_CREW_FEE, favourFor, favourDone, resolveBorder, pushInfluence, weekKey, borderStanding, replyToLetter, borderContest, collectRemoteStakes, lanesReport, isFriend, isRival, hangPicture, leaveLostItem, tickLostProperty, berthedCaptains, stardate, envoyOutcome, patientOutcome, beltRate, isBeltStation, receptionDue, receptionHeld, legSummary, newLeg, commandRank, registry, grievanceDue, grievanceHeard, spinOutageDue, spinOutageSeen, crewXp, secessionAt, inspectionDue, inspectionScore, beltGain, BELT_FREEMAN_AT, inquiryDue, firstOfficer, birthdaysDue, prisonerOutcome } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
 import { BLUEPRINTS, MATERIALS, engGrade, nextCost, canAfford, upgrade } from "../data/engineering";
@@ -427,7 +427,7 @@ export class StationScene implements Scene {
         if (bought > 1) g.toast(`BOUGHT ${bought} ${commodity(id).name.toUpperCase()} FOR ${spent}CR`);
         ledger(p, "buys", p.credits - creditsBefore);
         const sellBefore = p.credits;
-        let sold = 0, earned = 0;
+        let sold = 0, earned = 0; let waterSold = 0;
         for (let k = 0; k < sellQty; k++) {
           const rare = commodity(id).rare;
           const illegal = commodity(id).illegal;
@@ -469,12 +469,13 @@ export class StationScene implements Scene {
               if ((p.routes ?? []).length >= 10) flag(g, "routeRunner");
             }
             if (goalHit) { this.goalPending++; p.goalContrib ??= {}; p.goalContrib[this.goal.id] = (p.goalContrib[this.goal.id] ?? 0) + 1; if ((p.goalContrib[this.goal.id] ?? 0) >= 20) flag(g, "communal"); }
-            p.credits += paid; p.tradeRevenue = (p.tradeRevenue ?? 0) + paid; sold++; earned += paid;
+            p.credits += paid; p.tradeRevenue = (p.tradeRevenue ?? 0) + paid; sold++; earned += paid; if (id === "water" && isBeltStation(st)) waterSold++;
             if (!rare || st.rare === id) { st.stock[id] = (st.stock[id] ?? 0) + 1; refreshPrices(st); }
             if (rare && st.rare !== id) { p.rareRevenue = (p.rareRevenue ?? 0) + price; if (!p.flags?.rareRun) flag(g, "rareRun"); }
           }
         }
         if (sold > 1) g.toast(`SOLD ${sold} ${commodity(id).name.toUpperCase()} FOR ${earned}CR`);
+        if (waterSold > 0) { p.waterToBelt = (p.waterToBelt ?? 0) + waterSold; const bl = beltGain(g.world, waterSold * 0.1); if (bl) g.toast(bl); else if (waterSold >= 5) g.toast("THE ROCK TAKES THE WATER AND SAYS SO ON THE TANNOY. THE BELT REMEMBERS WHO BRINGS IT."); if ((p.waterToBelt ?? 0) >= 50) flag(g, "waterbearer"); }
         ledger(p, "trade", p.credits - sellBefore);
         break;
       }
@@ -770,6 +771,7 @@ export class StationScene implements Scene {
     m.done = true;
     if (m.kind === "emergency") { const late = m.byT !== undefined && g.world.time > m.byT; const eng = p.crew.find((c) => c.role === "engineer" && !c.sick); if (late) m.reward = Math.round(m.reward / 2); else flag(g, "emergency"); p.lives = (p.lives ?? 0) + (late ? 4 : 12); const x = eng ? crewXp(p, "engineer", 3) : null; if (x) g.toast(x); if (eng) { eng.morale = Math.min(100, eng.morale + 6); eng.loyalty = (eng.loyalty ?? 0) + 0.2; } logEntry(g.world, `Answered ${st.name}'s emergency with ${eng?.name ?? "an engineer"}${late ? ", late" : ", in time"}`); g.toast(late ? `${(eng?.name ?? "THE ENGINEER").toUpperCase()} GOES DOWN THE GANGWAY AT A RUN. LATE, BUT NOT TOO LATE. HALF PAY. FOUR LIVES.` : `${(eng?.name ?? "THE ENGINEER").toUpperCase()} GOES DOWN THE GANGWAY AT A RUN AND THE STATION'S LIGHTS STEADY AN HOUR LATER. TWELVE LIVES.`); }
     if (m.kind === "passenger" && m.treaty) { const o = envoyOutcome(g.world, m); for (const l of o.lines) g.toast(l); if (o.ok) flag(g, "treaty"); }
+    if (m.kind === "passenger" && m.passengerKind === "prisoner") { const o = prisonerOutcome(g.world, m, new RNG((g.world.seed ^ Math.floor(g.world.time * 7)) >>> 0)); for (const l of o.lines) g.toast(l); if (o.ok) flag(g, "prisoner"); }
     if (m.kind === "passenger" && m.passengerKind === "patient") { const o = patientOutcome(g.world, m); for (const l of o.lines) g.toast(l); if (o.ok) flag(g, "medevac"); else m.reward = Math.round(m.reward / 2); }
     const fest = m.kind === "passenger" && galaxyEventAt(g.world, p.systemId)?.kind === "festival" && galaxyEventAt(g.world, p.systemId)?.stationId === st.id;
     const charter = hasCharter(g.world, st.factionId) && !m.syndicate ? 1.15 : 1;

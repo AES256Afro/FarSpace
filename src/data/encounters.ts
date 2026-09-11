@@ -7,6 +7,7 @@ import { hull } from "./hulls";
 import { RNG } from "../core/rng";
 import { addMaterials } from "./engineering";
 import { commodity, FACTIONS } from "./data";
+import { officeWrites, findStation as findStationW } from "../world";
 
 export interface EncounterOption {
   label: string;
@@ -364,6 +365,15 @@ export const ENCOUNTERS: Encounter[] = [
     ],
   },
   {
+    id: "prisonerplea", where: "space", weight: 4, title: "A WORD FROM THE BUNK ROOM", when: (g) => passengersAboard(p(g)).some((m) => m.passengerKind === "prisoner" && !m.freed),
+    text: "The prisoner asks for the captain, politely, through the hatch. 'I'M NOT GOING TO SAY I DIDN'T DO IT. I'M GOING TO SAY THE NAVY'S VERSION LEAVES OUT WHO PAID THEM TO SAY IT. THERE'S A ROCK TWO JUMPS FROM HERE WHERE NOBODY WOULD ASK. I'M JUST TELLING YOU IT EXISTS.'",
+    options: [
+      { label: "LISTEN, AND SAY NOTHING", hint: "They settle; the transfer goes on", result: (g) => { const m = passengersAboard(p(g)).find((x) => x.passengerKind === "prisoner"); if (!m) return "THE BUNK ROOM IS EMPTY. YOU LISTEN ANYWAY."; m.mood = Math.min(100, (m.mood ?? 40) + 15); return "YOU LISTEN TO THE WHOLE THING AND SAY NOTHING, WHICH IS MORE THAN THE NAVY DID. THEY THANK YOU FOR THAT, SPECIFICALLY. THE IRONS STAY ON."; } },
+      { label: "LET THEM WALK AT THE NEXT ROCK", hint: "No fare, rep -6 with the service; the belt hears; the crew split on it", result: (g, rng) => { const m = passengersAboard(p(g)).find((x) => x.passengerKind === "prisoner"); if (!m) return "THERE'S NOBODY TO LET GO. THE ROCK IS STILL THERE."; m.freed = true; m.done = true; m.reward = 0; adjustRep(g.world, findStationW(g.world, m.fromStationId)?.st.factionId ?? sys(g).factionId, -6); p(g).beltStanding = (p(g).beltStanding ?? 0) + 3; for (const c of p(g).crew) c.morale = Math.max(0, Math.min(100, c.morale + (rng.chance(0.5) ? 5 : -5))); (p(g).flags ??= {}).freed = true; logEntry(g.world, `Let the prisoner ${m.passengerName ?? ""} walk at a rock`); return `${(m.passengerName ?? "THE PRISONER").toUpperCase()} GOES DOWN A ROCK'S GANGWAY WITHOUT THE IRONS AND DOESN'T RUN, WHICH IS HOW YOU KNOW. THE SERVICE WILL WANT A WORD. THE BELT ALREADY KNOWS. HALF THE CREW THINK YOU'RE RIGHT.`; } },
+      { label: "DOUBLE THE WATCH", hint: "The gunner sits up all night; they'll get there", requires: (g) => p(g).crew.some((c) => c.role === "gunner" && !c.sick), result: (g) => { const gnr = p(g).crew.find((c) => c.role === "gunner" && !c.sick)!; gnr.morale = Math.max(0, gnr.morale - 4); const m = passengersAboard(p(g)).find((x) => x.passengerKind === "prisoner"); if (m) m.mood = Math.max(0, (m.mood ?? 40) - 10); return `${gnr.name.split(" ")[0].toUpperCase()} SITS UP ALL WATCH WITH A COFFEE AND A FACE. THE PRISONER STOPS TALKING. NOBODY WALKS ANYWHERE.`; } },
+    ],
+  },
+  {
     id: "quarantine", where: "space", weight: 3, title: "A SHIP THAT WANTS TO DOCK", when: (g) => p(g).crew.length >= 1,
     text: "A freighter on the short band asking to come alongside: a fever aboard, half the crew down, they want a medic and a hull to lean on. Your medic, or whoever's nearest a scanner, reads the freighter's air and goes quiet. 'That's not a fever, captain. That's a quarantine.'",
     options: [
@@ -377,7 +387,7 @@ export const ENCOUNTERS: Encounter[] = [
     id: "mirror", where: "space", weight: 2, title: "A SHIP LIKE YOURS",
     text: "The scanner paints a contact on a reciprocal course, same class, same registry, same everything. It hails on your own callsign. The voice is yours, tired, a little older. 'DON'T PANIC. IT'S A FOLD. WE'VE GOT ABOUT A MINUTE. LISTEN.'",
     options: [
-      { label: "LISTEN", hint: "Data +25; something true from a day you haven't had yet", result: (g, rng) => { p(g).expData = (p(g).expData ?? 0) + 25; const line = rng.pick(["'CHECK THE PORT MOUNT BEFORE THE NEXT LONG BURN. TRUST ME.'", "'THE ENVOY IS LYING ABOUT THE TREATY. TAKE THE FARE ANYWAY.'", "'BUY WATER AT THE NEXT ROCK. ALL OF IT.'", "'SAY YES TO THE BAND. YOU'LL KNOW WHAT I MEAN.'", "'THE CAT WAS RIGHT ABOUT THE VENT.'"]); logEntry(g.world, `Met a ship like mine in a fold; it said ${line.toLowerCase()}`); return `${line} THEN THE FOLD CLOSES AND THE CONTACT IS GONE AND THE SCANNER SAYS IT WAS NEVER THERE. +25 DATA. YOU WRITE THE LINE ON THE BACK OF YOUR HAND.`; } },
+      { label: "LISTEN", hint: "Data +25; something true from a day you haven't had yet", result: (g, rng) => { officeWrites(g.world, `a ship like mine in a fold, ${sys(g).name}`); p(g).expData = (p(g).expData ?? 0) + 25; const line = rng.pick(["'CHECK THE PORT MOUNT BEFORE THE NEXT LONG BURN. TRUST ME.'", "'THE ENVOY IS LYING ABOUT THE TREATY. TAKE THE FARE ANYWAY.'", "'BUY WATER AT THE NEXT ROCK. ALL OF IT.'", "'SAY YES TO THE BAND. YOU'LL KNOW WHAT I MEAN.'", "'THE CAT WAS RIGHT ABOUT THE VENT.'"]); logEntry(g.world, `Met a ship like mine in a fold; it said ${line.toLowerCase()}`); return `${line} THEN THE FOLD CLOSES AND THE CONTACT IS GONE AND THE SCANNER SAYS IT WAS NEVER THERE. +25 DATA. YOU WRITE THE LINE ON THE BACK OF YOUR HAND.`; } },
       { label: "TALK BACK. ASK THEM ANYTHING", hint: "Morale up; you don't get an answer you can use", result: (g) => { for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 3); return "YOU ASK WHETHER IT WORKS OUT. THE OTHER YOU LAUGHS, WHICH IS EITHER AN ANSWER OR ISN'T. THE FOLD CLOSES. THE CREW TALK ABOUT IT FOR A WEEK. MORALE UP."; } },
       { label: "CUT THE CHANNEL", hint: "Some things you don't want to know", result: () => "YOU CUT IT. THE CONTACT HANGS THERE THIRTY SECONDS MORE, THEN ISN'T. THE SCANNER LOG SHOWS NOTHING. YOU DECIDE THAT'S FINE." },
     ],
@@ -475,7 +485,7 @@ export const ENCOUNTERS: Encounter[] = [
     id: "loop", where: "space", weight: 2, title: "THE SAME MINUTE, AGAIN", when: (g) => !p(g).flags?.loopDone,
     text: "The clock on the console reads a time it read a moment ago. The coffee is full again. Somebody on the band says the thing they just said, word for word, and then, seeing your face, says 'WHAT?' the same way. You have been here before. You will be here again unless something changes.",
     options: [
-      { label: "DO SOMETHING DIFFERENT", hint: "Anything. The other chair. The other hand.", result: (g, rng) => { const n = ((p(g).flags?.loopCount as unknown as number) ?? 0); if (n >= 2 || rng.chance(0.35)) { (p(g).flags ??= {}).loopDone = true; p(g).expData = (p(g).expData ?? 0) + 100; logEntry(g.world, "Broke a loop in the lane by sitting in the other chair"); return "YOU SIT IN THE OTHER CHAIR. THE CLOCK TICKS FORWARD. THE COFFEE GOES DOWN. THE BAND SAYS SOMETHING NEW. +100 DATA FOR THE READINGS, AND NOBODY WILL EVER BELIEVE YOU."; } (p(g).flags ??= {} as any)["loopCount" as string] = (n + 1) as unknown as boolean; return "YOU TRY THE OTHER HAND. THE CLOCK READS THE SAME TIME AGAIN. THE COFFEE REFILLS. NOT THAT, THEN. YOU'LL BE BACK."; } },
+      { label: "DO SOMETHING DIFFERENT", hint: "Anything. The other chair. The other hand.", result: (g, rng) => { officeWrites(g.world, `a repeating minute, ${sys(g).name}`); const n = ((p(g).flags?.loopCount as unknown as number) ?? 0); if (n >= 2 || rng.chance(0.35)) { (p(g).flags ??= {}).loopDone = true; p(g).expData = (p(g).expData ?? 0) + 100; logEntry(g.world, "Broke a loop in the lane by sitting in the other chair"); return "YOU SIT IN THE OTHER CHAIR. THE CLOCK TICKS FORWARD. THE COFFEE GOES DOWN. THE BAND SAYS SOMETHING NEW. +100 DATA FOR THE READINGS, AND NOBODY WILL EVER BELIEVE YOU."; } (p(g).flags ??= {} as any)["loopCount" as string] = (n + 1) as unknown as boolean; return "YOU TRY THE OTHER HAND. THE CLOCK READS THE SAME TIME AGAIN. THE COFFEE REFILLS. NOT THAT, THEN. YOU'LL BE BACK."; } },
       { label: "RIDE IT", hint: "A free minute is a free minute", result: (g) => { const n = ((p(g).flags?.loopCount as unknown as number) ?? 0); (p(g).flags ??= {} as any)["loopCount" as string] = (n + 1) as unknown as boolean; for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 2); return "YOU LET IT RUN. THE CREW WORK OUT WHAT'S HAPPENING AND START USING THE MINUTE: A NAP, A HAND OF CARDS, THE SAME JOKE THREE TIMES. MORALE UP. THE CLOCK WAITS."; } },
     ],
   },

@@ -752,6 +752,16 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- Every fold, echo, loop and mirror gets a letter from the office of
+  anomalous incidents, with a form. The third letter opens a file on you and
+  comes with thirty data.
+- Water sold at a belt rock counts toward belt standing. Fifty units and the
+  belt calls you waterbearer.
+- Naval stations post prisoner transfers: a fare in irons, to a brig in the
+  next system. A gunner aboard keeps it simple; with no gunner there's a fair
+  chance they walk at a clamp on the way, for no fare and the service's
+  displeasure. On the way they ask for the captain: listen, let them walk at
+  a rock (rep down, belt standing up, the crew split), or double the watch.
 - Every crew member has a birthday every thirty ship-days. Be aboard, or dock
   that day, and the galley does something with ration sugar and a candle:
   morale and loyalty up, a line in the log.

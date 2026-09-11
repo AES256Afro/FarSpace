@@ -156,7 +156,8 @@ export interface Mission {
   done: boolean;
   escortDone?: boolean;
   passengerName?: string;
-  passengerKind?: "vip" | "refugee" | "fugitive" | "tourist" | "courier" | "envoy" | "patient";
+  passengerKind?: "vip" | "refugee" | "fugitive" | "tourist" | "courier" | "envoy" | "patient" | "prisoner";
+  freed?: boolean;                    // a prisoner you let go at a rock; no fare, and the service remembers
   treaty?: { a: string; b: string };  // an envoy between two factions: land them unshot and on time
   patrolT?: number;                   // seconds held on station in the target system
   patrolNeed?: number;
@@ -348,6 +349,9 @@ export interface PlayerState {
   keepsakes?: string[];              // small things that stayed aboard: unclaimed lost property
   inquiries?: number;                // boards of inquiry sat through, one per crew member lost
   motto?: string;                    // the line on the dedication plaque by the airlock
+  prisoners?: number;                // prisoners delivered to a brig
+  waterToBelt?: number;              // units of water sold to belt rocks; the belt keeps count
+  officeLetters?: number;            // letters from the office of anomalous incidents; three and they open a file
   commissionedAt?: number;           // world time this captain took the ship; stardate on the plaque
   prankUntil?: number;               // somebody reprogrammed the ship's voice; it's insufferable until then
   regatta?: number;                  // the regatta: 0 entered, 1 first course won, 2 second, 3 champion
@@ -595,8 +599,19 @@ export function legSummary(w: World): string | null {
   return (head + " " + close).length <= 118 ? head + " " + close : head.slice(0, 118);
 }
 // Strange readings: the phenomena among the anomalies. Each does something when you reach it.
+// The office: every fold, echo and loop gets a letter from a department nobody has met, asking for a form.
+export function officeWrites(w: World, what: string): void {
+  const p = w.player; const n = (p.officeLetters ?? 0) + 1; p.officeLetters = n;
+  const form = `${27 + n}-${"BCDEFGH"[n % 7]}`;
+  const text = n === 1 ? `Re: ${what}. This office notes the incident. Please complete the enclosed form ${form} (three copies) describing what you did, what you did not do, and whether you would do it again. Do not discuss the incident with yourself.`
+    : n === 2 ? `Re: ${what}. Second incident. The office reminds you that form ${form} supersedes the previous form, which you did not return. We are aware of the irony. Please do not point it out.`
+    : `Re: ${what}. The office has opened a file with your registry on the cover. It is the thickest file we have. Form ${form} enclosed. A representative will not be visiting. That is not a threat. It is a budget.`;
+  (w.mailQueue ??= []).push({ dueT: w.time + 500 + n * 100, from: "the office of anomalous incidents", text, gift: n === 3 ? { data: 30 } : undefined });
+  if (n === 3) (p.flags ??= {}).office = true;
+}
 export function strangeReading(w: World, an: AnomalyDef, rng: RNG): string | null {
   const p = w.player;
+  if (an.kind === "fold" || an.kind === "echo") officeWrites(w, `${an.name}, ${w.systems[p.systemId]?.name ?? "somewhere"}`);
   const sci = hasSpecialty(p, "science") ? 1.5 : 1;
   const gain = (n: number) => { p.expData = (p.expData ?? 0) + Math.round(n * sci); };
   if (an.kind === "fold") { w.time += 900; gain(60); (p.codex ??= {})["signal:A FOLD IN THE LANE"] = ((p.codex ?? {})["signal:A FOLD IN THE LANE"] ?? 0) + 1; logEntry(w, `${an.name}: a fold in the lane; the clock jumped fifteen minutes nobody remembers`); return `${an.name.toUpperCase()}: THE STARS BEND, THE CLOCK JUMPS FIFTEEN MINUTES, AND NOBODY ABOARD REMEMBERS THEM. +60 DATA. THE CODEX HAS A SIGNAL.`; }
@@ -1017,6 +1032,21 @@ export function genFares(w: World, station: StationDef, rng: RNG): Mission[] {
       });
     }
   }
+  // a prisoner transfer: the navy wants somebody moved, in irons, and pays a ship that has a gunner to watch them
+  if (station.military && rng.chance(0.4)) {
+    const target = rng.pick(pool); const tStation = rng.pick(target.stations); const name = genPersonName(rng); const hops = one.includes(target) ? 1 : 2;
+    const crime = rng.pick(["smuggling, twice", "a mutiny that didn't take", "salvage that wasn't theirs", "a fight at a clamp that ended badly", "papers that weren't"]);
+    fares.push({
+      id: `fare-${station.id}-${w.missionCounter++}`, kind: "passenger", accepted: false, done: false, tier: 0,
+      title: `Prisoner transfer: ${name}`,
+      desc: `${name}, held for ${crime}, to the brig at ${tStation.name}, ${target.name}. In irons, in the bunk room, fed. A gunner aboard keeps it simple. No gunner and they may walk at a docking, and the service will want to know why.`,
+      fromStationId: station.id, targetSystemId: target.id, targetStationId: tStation.id,
+      passengerName: name, passengerKind: "prisoner", sightSeen: false, sights: [],
+      mood: 40, demand: null, patience: hops + 1, docksAboard: 0, party: 1,
+      reward: Math.round((500 + rng.int(0, 300)) * (hops === 2 ? 1.3 : 1)),
+      repReward: 4,
+    });
+  }
   // a patient: the clinic here can't do it; the one at the target can, if they get there in time
   if (rng.chance(0.25)) {
     const target = rng.pick(pool); const tStation = rng.pick(target.stations); const name = genPersonName(rng); const hops = one.includes(target) ? 1 : 2;
@@ -1224,6 +1254,17 @@ export function patientOutcome(w: World, m: Mission): { ok: boolean; lines: stri
   m.mood = Math.max(0, (m.mood ?? 50) - 25); adjustRep(w, findStation(w, m.targetStationId ?? "")?.st.factionId ?? "", -1);
   logEntry(w, `The patient ${m.passengerName ?? ""} arrived late; the clinic is doing what it can`);
   return { ok, lines: [`${name} ARRIVES TOO LATE FOR THE EASY VERSION. THE CLINIC IS DOING WHAT IT CAN. HALF THE FARE, AND A LONG WALK BACK TO THE SHIP.`] };
+}
+// The prisoner lands, or doesn't: no gunner aboard and there's a fair chance they walked at some clamp on the way.
+export function prisonerOutcome(w: World, m: Mission, rng: RNG): { ok: boolean; lines: string[] } {
+  if (m.passengerKind !== "prisoner") return { ok: true, lines: [] };
+  const p = w.player; const name = (m.passengerName ?? "THE PRISONER").toUpperCase();
+  const gunner = p.crew.some((c) => c.role === "gunner" && !c.sick);
+  const walked = !gunner && (m.docksAboard ?? 0) >= 1 && rng.chance(0.3);
+  if (!walked) { p.prisoners = (p.prisoners ?? 0) + 1; logEntry(w, `Delivered the prisoner ${m.passengerName ?? ""} to the brig`); return { ok: true, lines: [`${name} GOES DOWN THE GANGWAY BETWEEN TWO MARINES WITHOUT LOOKING BACK. THE SERVICE SIGNS FOR THEM LIKE FREIGHT.`] }; }
+  m.reward = 0; m.mood = 0; adjustRep(w, findStation(w, m.targetStationId ?? "")?.st.factionId ?? "", -4);
+  logEntry(w, `The prisoner ${m.passengerName ?? ""} walked at a clamp on the way; no gunner aboard`);
+  return { ok: false, lines: [`THE BUNK ROOM IS EMPTY AND THE IRONS ARE ON THE PILLOW. ${name} WALKED AT THE LAST CLAMP WHILE NOBODY WAS WATCHING, BECAUSE NOBODY WAS. NO FARE. THE SERVICE WANTS A WORD.`] };
 }
 // The envoy lands: on time and unshot, the treaty holds and both factions remember; otherwise the talks fail.
 export function envoyOutcome(w: World, m: Mission): { ok: boolean; lines: string[] } {

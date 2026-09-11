@@ -1223,6 +1223,20 @@ Time passes for the people on the ship, and for the ship.
       engineer at the clamp inside three hours; full pay on time, half after;
       the HUD counts the minutes; lives, engineer XP, a deed
 
+## Milestone 213 — The Office ✅ (Sep 2026)
+- [x] Every fold, echo, loop and mirror gets a letter from the office of
+      anomalous incidents asking for a form; the third opens a file (deed)
+
+## Milestone 214 — Water Is Standing ✅ (Sep 2026)
+- [x] Water sold at a belt rock counts toward belt standing; fifty units and
+      the belt calls you waterbearer
+
+## Milestone 215 — Prisoner Transfers ✅ (Sep 2026)
+- [x] Naval stations post prisoner transfers: in irons in the bunk room, a
+      gunner keeps it simple, no gunner and they may walk at a clamp; a word
+      from the bunk room on the way (listen, let them walk at a rock, double
+      the watch); chatter, HUD tag, deeds
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
