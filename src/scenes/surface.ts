@@ -54,7 +54,7 @@ export class SurfaceScene implements Scene {
   miniAt = 0;
 
   enter(g: Game): void {
-    this.leaveTaken = false;
+    if (g.surfaceFresh) this.leaveTaken = false;
     const p = g.world.player;
     const sys = g.world.systems[p.systemId];
     const pl = sys.planets[g.orbitPlanetIdx];
