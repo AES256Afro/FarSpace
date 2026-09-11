@@ -752,6 +752,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- A science specialist reports at the briefing: signals still unscanned,
+  strange readings worth a look, and how many finds are on the chart under
+  your name.
+- Once you've given to the long ship, its scaffold watch hails you on the
+  rocks: your plate's still in.
+- The cadet's first mistake: the wrong tank vented, because the valves are
+  the same colour. Fix the labels (loyalty up a lot), give them a week on the
+  scrubbers, or shout and apologise to the corridor.
 - The sim rig has a seventh program: the bridge, but everyone is a cat.
 - An engraved plaque plus a ribbon counts for the inspector's bare-deck
   check, and with three ribbons the harbour greeting says "ribbons and all".

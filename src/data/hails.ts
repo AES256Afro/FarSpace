@@ -37,6 +37,7 @@ export function passingHail(w: World, n: Npc, alert: number, rng: RNG): { from: 
   }
   { const dry = sys.stations.find((st) => droughtAt(w, st.id)); if (dry) pool.push(`${hailCallsign(n, kind)}: IF YOU'VE WATER IN THE HOLD, ${dry.name.toUpperCase()} IS ON RATION. THEY'LL REMEMBER THE HULL THAT BROUGHT IT. WE'RE CARRYING NONE. DON'T ASK.`); }
   { const rev = sys.stations.find((st) => fleetReviewAt(w, st.id)); if (rev) pool.push(`${hailCallsign(n, kind)}: FLEET REVIEW OFF ${rev.name.toUpperCase()}. STAY CLEAR OF THE LINE UNLESS YOU'RE IN IT, ${ship}. THEY'RE VERY PARTICULAR ABOUT THE LINE.`); }
+  if (p.flags?.longship && sys.stations.some(isBeltStation)) pool.push(`THE LONG SHIP, SCAFFOLD WATCH: YOUR PLATE'S STILL IN, ${ship}. STILL NOBODY READING IT. THAT'S THE POINT. FLY SAFE.`);
   if (p.flags?.freeman && belt) pool.push(`${hailCallsign(n, kind)}: THAT'S THE FREEMAN'S HULL. KEEP THE WATER COLD, ${ship}. THE ROCK SAYS HELLO. THE ROCK DOESN'T SAY THAT TO INNERS.`);
   if (!pool.length) return null;
   return { from: hailCallsign(n, kind), text: rng.pick(pool).replace(/^(THIS IS )?(PATROL|LINER|HAULER) [A-Z]-\d+[:.] ?/, "") };

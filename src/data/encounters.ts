@@ -404,6 +404,15 @@ export const ENCOUNTERS: Encounter[] = [
     ],
   },
   {
+    id: "cadetmistake", where: "space", weight: 4, title: "THE CADET'S FIRST MISTAKE", when: (g) => p(g).crew.some((c) => (c.docks ?? 0) === 0 && !c.sick) && !p(g).flags?.cadetMistake,
+    text: "A bang from aft, then a silence with the specific texture of somebody standing very still. The cadet has vented the number two tank to space instead of to the scrubber, because the valves are next to each other and the labels are the same colour, which everybody has said for years and nobody has fixed. The cadet is in the corridor, white, waiting.",
+    options: [
+      { label: "'VALVES ARE THE SAME COLOUR. NOT YOUR FAULT. FIX THE LABELS.'", hint: "Wear +2; the cadet's loyalty up a lot; the labels get fixed", result: (g) => { const c = p(g).crew.find((x) => (x.docks ?? 0) === 0 && !x.sick); (p(g).flags ??= {}).cadetMistake = true; p(g).wear = (p(g).wear ?? 0) + 2; if (c) { c.loyalty = (c.loyalty ?? 0) + 0.6; c.morale = Math.min(100, c.morale + 4); } logEntry(g.world, `${c?.name ?? "The cadet"} vented the wrong tank; fixed the labels instead of the cadet`); return `${(c?.name.split(" ")[0] ?? "THE CADET").toUpperCase()} PAINTS THE VALVE LABELS TWO DIFFERENT COLOURS THAT AFTERNOON WITHOUT BEING ASKED, AND WILL FOLLOW YOU INTO A STAR. THE ENGINEER SAYS 'ABOUT TIME' AND DOESN'T SAY TO WHOM.`; } },
+      { label: "'THAT'S A WEEK OF SCRUBBER DUTY.'", hint: "Wear +2; fair, and the cadet knows it", result: (g) => { const c = p(g).crew.find((x) => (x.docks ?? 0) === 0 && !x.sick); (p(g).flags ??= {}).cadetMistake = true; p(g).wear = (p(g).wear ?? 0) + 2; if (c) c.loyalty = (c.loyalty ?? 0) + 0.2; return "A WEEK ON THE SCRUBBERS. THE CADET NODS LIKE SOMEBODY WHO EXPECTED WORSE AND GOT FAIR, AND DOES THE WEEK WITHOUT A WORD, AND THE SCRUBBERS HAVE NEVER BEEN CLEANER."; } },
+      { label: "SHOUT. THEN APOLOGISE TO THE CORRIDOR", hint: "Wear +2; morale down; the crew remember the apology more", result: (g) => { const c = p(g).crew.find((x) => (x.docks ?? 0) === 0 && !x.sick); (p(g).flags ??= {}).cadetMistake = true; p(g).wear = (p(g).wear ?? 0) + 2; for (const x of p(g).crew) x.morale = Math.max(0, x.morale - 3); if (c) c.loyalty = (c.loyalty ?? 0) + 0.1; return "YOU SHOUT, WHICH THE CORRIDOR HEARS, AND THEN YOU APOLOGISE, WHICH THE CORRIDOR ALSO HEARS, AND IT'S THE SECOND THING THEY TELL AT THE BAR. MORALE DOWN, A LITTLE. THE CADET SAYS 'NO, YOU WERE RIGHT', WHICH IS WORSE."; } },
+    ],
+  },
+  {
     id: "rockcadet", where: "space", weight: 2, title: "THE KID WITH THE DRAWING", when: (g) => !!p(g).flags?.rockkid && !p(g).flags?.rockcadet && sys(g).stations.some((st) => isBeltStation(st)) && berthsUsedW(p(g)) < hull(p(g).hullId).crewSlots,
     text: "A skiff off the rock matching your course, badly, and a voice on the band that's broken since you last heard it: 'YOU WON'T REMEMBER ME. I DREW YOUR SHIP. WITH THE DOG. I'M SIXTEEN NOW AND THE ROCK SAYS I CAN GO IF SOMEBODY'LL TAKE ME, AND I'VE BEEN WAITING FOR THE HULL WITH THE DENT. THAT'S YOU. I CHECKED.'",
     options: [

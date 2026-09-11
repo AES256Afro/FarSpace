@@ -1597,6 +1597,17 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 302 — Ribbons and All ✅ (Sep 2026)
 - [x] With three ribbons, the harbour greeting says so
 
+## Milestone 303 — The Science Report ✅ (Sep 2026)
+- [x] A science specialist reports at the briefing: unscanned signals,
+      strange readings, finds on the chart under your name
+
+## Milestone 304 — The Scaffold Watch ✅ (Sep 2026)
+- [x] Once you've given to the long ship, its scaffold hails you on the rocks
+
+## Milestone 305 — The Same Colour ✅ (Sep 2026)
+- [x] The cadet vents the wrong tank: fix the labels (loyalty), a week on the
+      scrubbers, or shout and apologise to the corridor
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
