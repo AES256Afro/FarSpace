@@ -65,7 +65,7 @@ export class FlightScene implements Scene {
   sos: Sos | null = null;
   escort: { trader: Npc; missionId: string } | null = null;
   race: { gates: { x: number; y: number }[]; idx: number; t: number; stationId: string; started: boolean; idle: number; par: number; pacerT: number; pacerName: string } | null = null;
-  convoy: { ships: Npc[]; reward: number; lost: number } | null = null;
+  convoy: { ships: Npc[]; reward: number; lost: number; talk?: number } | null = null;
   scanCharge = 0;      // deep-scan charge 0..1 (hold V)
   aim = 0;             // gun/laser direction; equals heading in keyboard mode
   mouseAim = false;
@@ -528,6 +528,8 @@ export class FlightScene implements Scene {
     if (!alive.length) { this.convoy = null; this.comms.push({ from: "CONVOY LEAD", text: "...WE'RE DONE. THANKS FOR NOTHING.", life: 7, color: PAL.grey }); return; }
     const far = alive.every((s) => dist(s.x, s.y, p.x, p.y) > 900);
     c.lost = far ? c.lost + dt : 0;
+    c.talk = (c.talk ?? 18) - dt;
+    if (c.talk <= 0 && this.comms.length < 3) { c.talk = 25 + Math.random() * 20; const near = alive.filter((s) => dist(s.x, s.y, p.x, p.y) < 700).length; this.comms.push({ from: "CONVOY LEAD", text: far ? "WHERE'D YOU GO? WE CAN'T SEE YOU. SLOW DOWN OR LOSE US." : near < alive.length ? "ONE OF OURS IS DROPPING BACK. EASE OFF A TOUCH." : ["STEADY AS SHE GOES. THIS IS THE NICEST CROSSING I'VE HAD IN A YEAR.", "MY NAVIGATOR'S ASLEEP. THAT'S HOW SAFE THIS FEELS.", "IF YOU EVER WANT A JOB HAULING, WE'RE HIRING. WE'RE ALWAYS HIRING.", "GATE'S CLOSE. KEEP US TOGETHER THROUGH THE LAST BIT."][Math.floor(Math.random() * 4)], life: 7, color: PAL.gold }); }
     if (c.lost > 40) { this.npcs = this.npcs.filter((s) => !s.convoy); this.convoy = null; this.comms.push({ from: "CONVOY LEAD", text: "WE'VE LOST YOU. WE'LL TAKE OUR CHANCES. NO HARD FEELINGS. SOME HARD FEELINGS.", life: 8, color: PAL.grey }); }
   }
   // At the gate: whoever kept up comes through with you and pays
@@ -552,11 +554,12 @@ export class FlightScene implements Scene {
     const st = g.world.systems[p.systemId].stations.find((s) => s.id === p.racePending);
     p.racePending = null;
     if (!st) return;
-    const gates = raceCourse(st, g.world.seed ^ Math.floor(g.world.time / 600));
+    const grand = p.regatta === 2 && p.regattaCourse?.[2] === st.id;
+    const gates = grand ? raceCourse(st, g.world.seed ^ Math.floor(g.world.time / 600), 8, 1.35) : raceCourse(st, g.world.seed ^ Math.floor(g.world.time / 600));
     const holder = raceHolder(g.world, st);
     const best = p.raceBest?.[st.id];
     this.race = { gates, idx: 0, t: 0, stationId: st.id, started: false, idle: 0, par: racePar(gates), pacerT: best !== undefined && best < holder.t ? best : holder.t, pacerName: best !== undefined && best < holder.t ? "YOUR BEST" : holder.name.toUpperCase() };
-    this.comms.push({ from: "MARSHAL", text: `RINGS ARE LIT. RING ONE STARTS YOUR CLOCK. PAR ${this.race.par}S.`, life: 9, color: PAL.gold });
+    this.comms.push({ from: "MARSHAL", text: grand ? `THE GRAND COURSE: EIGHT RINGS, WIDE. PAR ${this.race.par}S, AND YOU NEED FIFTEEN UNDER IT.` : `RINGS ARE LIT. RING ONE STARTS YOUR CLOCK. PAR ${this.race.par}S.`, life: 9, color: PAL.gold });
   }
   updateRace(g: Game, dt: number): void {
     const r = this.race; if (!r) return;

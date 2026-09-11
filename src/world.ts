@@ -1140,13 +1140,13 @@ export function onWatch(p: PlayerState, i: number, time: number): boolean {
 // The ring race: six rings laid out around a station, flown in order against the clock.
 // The course is fixed when you launch; the station drifts a little underneath it and nobody minds.
 export const RACE_GATES = 6;
-export function raceCourse(st: StationDef, seed: number): { x: number; y: number }[] {
-  const rng = new RNG(hashStr(`race:${seed}:${st.id}`));
+export function raceCourse(st: StationDef, seed: number, rings = RACE_GATES, spread = 1): { x: number; y: number }[] {
+  const rng = new RNG(hashStr(`race:${seed}:${st.id}:${rings}`));
   const cx = Math.cos(st.angle) * st.orbit, cy = Math.sin(st.angle) * st.orbit;
-  const r = 260 + rng.int(0, 90), a0 = rng.next() * Math.PI * 2, dir = rng.chance(0.5) ? 1 : -1;
+  const r = (260 + rng.int(0, 90)) * spread, a0 = rng.next() * Math.PI * 2, dir = rng.chance(0.5) ? 1 : -1;
   const out: { x: number; y: number }[] = [];
-  for (let i = 0; i < RACE_GATES; i++) {
-    const a = a0 + dir * (i / RACE_GATES) * Math.PI * 2, rr = r * (0.7 + rng.next() * 0.6);
+  for (let i = 0; i < rings; i++) {
+    const a = a0 + dir * (i / rings) * Math.PI * 2, rr = r * (0.7 + rng.next() * 0.6);
     out.push({ x: Math.round(cx + Math.cos(a) * rr), y: Math.round(cy + Math.sin(a) * rr) });
   }
   return out;

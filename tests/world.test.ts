@@ -685,6 +685,9 @@ describe("the ring race", () => {
     const cx = Math.cos(st.angle) * st.orbit, cy = Math.sin(st.angle) * st.orbit;
     for (const gt of gates) { const d = Math.hypot(gt.x - cx, gt.y - cy); expect(d).toBeGreaterThan(150); expect(d).toBeLessThan(600); }
     expect(raceCourse(st, 1)).toEqual(gates);
+    const grand = raceCourse(st, 1, 8, 1.35);
+    expect(grand.length).toBe(8);
+    expect(racePar(grand)).toBeGreaterThan(racePar(gates));
     const par = racePar(gates);
     expect(par).toBeGreaterThan(8);
     expect(racePrize(par - 5, par)).toBeGreaterThan(racePrize(par + 5, par));
