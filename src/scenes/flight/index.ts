@@ -5,7 +5,7 @@ import { ask, confirmBox } from "../../core/dialog";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra, raceCourse, racePar, racePrize, recordRace, beatHolder, captainNickname, leaveWreck, addWireWrecks, enterRegatta, regattaProgress, hasSpecialty, maydayAnswered, watchIndex, onWatch, raceHolder, askPassengerRequest, takeJuice, alertMods, AlertLevel, shipVoiceName, noteLeg } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra, raceCourse, racePar, racePrize, recordRace, beatHolder, captainNickname, leaveWreck, addWireWrecks, enterRegatta, regattaProgress, hasSpecialty, maydayAnswered, watchIndex, onWatch, raceHolder, askPassengerRequest, takeJuice, alertMods, AlertLevel, shipVoiceName, noteLeg, firstOfficer } from "../../world";
 import { COMMODITIES, commodity } from "../../data/data";
 import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
@@ -1038,7 +1038,7 @@ export class FlightScene implements Scene {
     this.klaxonT -= dt;
     if (this.alert === 2 && this.klaxonT <= 0) { this.klaxonT = 9; sfx.alarm(); }
     // red alert wears the crew down: a point of morale every half minute at stations
-    if (this.alert === 2) { this.alertT += dt; if (this.alertT >= 30) { this.alertT = 0; for (const c of p.crew) c.morale = Math.max(0, c.morale + alertMods(2).morale); } }
+    if (this.alert === 2) { this.alertT += dt; if (this.alertT >= (hasSpecialty(p, "counsellor") ? 60 : 30)) { this.alertT = 0; for (const c of p.crew) c.morale = Math.max(0, c.morale + alertMods(2).morale); } }
     // bridge banter: two of the crew trade a line on the band now and then, when the channel is quiet
     this.bridgeT -= dt;
     if (this.bridgeT <= 0) { this.bridgeT = 80 + Math.random() * 70; const up = p.crew.filter((c) => !c.sick); if (up.length >= 2 && this.comms.length < 2 && !this.docking) { const a = up[Math.floor(Math.random() * up.length)]; let b = up[Math.floor(Math.random() * up.length)]; if (b === a) b = up[(up.indexOf(a) + 1) % up.length]; const rng = new RNG((Math.random() * 1e9) >>> 0); this.comms.push({ from: a.name.split(" ")[0].toUpperCase(), text: crewChatter(g.world, a, b, rng), life: 7, color: PAL.grey }); this.comms.push({ from: b.name.split(" ")[0].toUpperCase(), text: crewChatter(g.world, b, a, rng), life: 7, color: PAL.grey }); } }
@@ -1083,7 +1083,7 @@ export class FlightScene implements Scene {
     }
     // the unnamed traffic hails too, now and then, with manners and opinions
     this.hailT -= dt;
-    if (this.hailT <= 0) { this.hailT = 50 + Math.random() * 60; if (this.comms.length < 2 && !this.docking) { const near = this.npcs.find((n) => (n.kind === "trader" || n.kind === "patrol") && !n.name && !n.hailed && n.hull > 0 && dist(p.x, p.y, n.x, n.y) < 420); if (near) { near.hailed = true; const h = passingHail(g.world, near, this.alert, new RNG((Math.random() * 1e9) >>> 0)); if (h) this.comms.push({ from: h.from, text: h.text, life: 8, color: near.kind === "patrol" ? PAL.info : PAL.grey }); } } }
+    if (this.hailT <= 0) { this.hailT = 50 + Math.random() * 60; if (this.comms.length < 2 && !this.docking) { const near = this.npcs.find((n) => (n.kind === "trader" || n.kind === "patrol") && !n.name && !n.hailed && n.hull > 0 && dist(p.x, p.y, n.x, n.y) < 420); if (near) { near.hailed = true; const h = passingHail(g.world, near, this.alert, new RNG((Math.random() * 1e9) >>> 0)); if (h) { this.comms.push({ from: h.from, text: h.text, life: 8, color: near.kind === "patrol" ? PAL.info : PAL.grey }); const fo = firstOfficer(p); if (fo && this.autopilot && !fo.sick) this.comms.push({ from: fo.name.split(" ")[0].toUpperCase(), text: `NUMBER ONE HAS THE CONN. ACKNOWLEDGED, ${h.from}. THE CAPTAIN'S BELOW.`, life: 6, color: PAL.grey }); } } } }
     // the wonders have voices: a pulsar ticks, the cathedral hums
     this.wonderSfx -= dt;
     if (this.wonderSfx <= 0) {
@@ -1224,6 +1224,7 @@ export class FlightScene implements Scene {
     if (g.world.player.fuel < 5) { g.toast("NOT ENOUGH FUEL FOR CRUISE"); return; }
     this.cruise = true;
     g.toast("CRUISE ENGAGED - WEAPONS AND LASERS OFFLINE");
+    { const pil = g.world.player.crew.find((c) => c.role === "pilot" && !c.sick); if (pil && this.comms.length < 3) this.comms.push({ from: pil.name.split(" ")[0].toUpperCase(), text: ["AYE, CAPTAIN. CRUISE.", "CRUISE. HOLD ONTO SOMETHING.", "ENGAGING. DON'T SAY IT. ... FINE. SAY IT.", "CRUISE, AYE. THE COFFEE'S STRAPPED DOWN THIS TIME."][Math.floor(Math.random() * 4)], life: 5, color: PAL.grey }); }
     sfx.jump();
     g.showHint("cruise", "CRUISE (J) CROSSES A SYSTEM FAST; ANYTHING BIG NEARBY DROPS YOU OUT");
   }

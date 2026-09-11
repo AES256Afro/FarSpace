@@ -1004,8 +1004,9 @@ export function reviewDue(p: PlayerState, c: CrewMember, now = Date.now()): bool
 export function reviewCrew(w: World, c: CrewMember, kind: ReviewKind, now = Date.now()): string {
   const p = w.player; (p.flags ??= {})[`review:${c.name}:${weekKey(now)}`] = true;
   const first = c.name.split(" ")[0].toUpperCase();
-  if (kind === "commend") { c.morale = Math.min(100, c.morale + 8); c.loyalty = (c.loyalty ?? 0) + 0.5; logEntry(w, `Commended ${c.name} at review`); return `YOU TELL ${first} WHAT THEY DID RIGHT, SPECIFICALLY, AND WATCH THEM NOT KNOW WHERE TO LOOK. IT GOES IN THE LOG. MORALE AND LOYALTY UP.`; }
-  if (kind === "counsel") { c.morale = Math.max(0, c.morale - 3); const x = crewXp(p, c.role, 2); logEntry(w, `Counselled ${c.name} at review`); return `YOU TELL ${first} WHAT THEY COULD DO BETTER, SPECIFICALLY. THEY TAKE IT THE WAY PEOPLE DO, AND THEN THEY TAKE IT.${x ? " " + x : ""} MORALE DIPS A LITTLE; THE WORK WON'T.`; }
+  const couns = hasSpecialty(p, "counsellor");
+  if (kind === "commend") { c.morale = Math.min(100, c.morale + (couns ? 12 : 8)); c.loyalty = (c.loyalty ?? 0) + 0.5; logEntry(w, `Commended ${c.name} at review`); return `YOU TELL ${first} WHAT THEY DID RIGHT, SPECIFICALLY, AND WATCH THEM NOT KNOW WHERE TO LOOK. IT GOES IN THE LOG. MORALE AND LOYALTY UP.`; }
+  if (kind === "counsel") { c.morale = Math.max(0, c.morale - (couns ? 1 : 3)); const x = crewXp(p, c.role, 2); logEntry(w, `Counselled ${c.name} at review`); return `YOU TELL ${first} WHAT THEY COULD DO BETTER, SPECIFICALLY. THEY TAKE IT THE WAY PEOPLE DO, AND THEN THEY TAKE IT.${x ? " " + x : ""} MORALE DIPS A LITTLE; THE WORK WON'T.`; }
   p.numberOne = c.name; c.morale = Math.min(100, c.morale + 6); c.loyalty = (c.loyalty ?? 0) + 1; logEntry(w, `Made ${c.name} Number One`);
   return `"${first}, YOU HAVE THE DECK WHEN I DON'T." A LONG PAUSE. "AYE." THE REST OF THE CREW FIND OUT WITHIN THE MINUTE AND START CALLING THEM NUMBER ONE TO THEIR FACE. MORALE AND LOYALTY UP.`;
 }

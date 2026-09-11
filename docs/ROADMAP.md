@@ -1004,4 +1004,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] A card while an envoy is aboard: the galley for an hour, join them, or
       refuse; belt and inner traits for the crew, with lines
 
+## Milestone 162 — Bridge Protocol ✅ (Sep 2026)
+- [x] A ship's counsellor specialty for medics; Number One acknowledges hails
+      while the autopilot has the conn; the helm answers when cruise engages
+
 ## Later

@@ -62,6 +62,7 @@ export const SPECIALTIES: Record<CrewRole, { id: string; name: string; desc: str
   medic: [
     { id: "surgeon", name: "FIELD SURGEON", desc: "Illness aboard runs a quarter of its course." },
     { id: "steward", name: "STEWARD", desc: "Every passenger steps off five points happier." },
+    { id: "counsellor", name: "SHIP'S COUNSELLOR", desc: "Red alert wears the crew half as fast; reviews land better." },
   ],
 };
 export const RETIRE_DOCKS = 30;   // a tour long enough to think about going home

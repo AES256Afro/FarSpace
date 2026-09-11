@@ -868,6 +868,12 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   officer: the longest-serving crew member, once two are aboard and they've
   three dockings. Number One is marked on the roster, and the corridors know
   it. The ship, for its part, has decided it's Number One until then.
+- With the autopilot flying and a Number One aboard, they take the conn:
+  passing hails get acknowledged in their name, the captain being below. And
+  when cruise engages with a pilot aboard, the helm answers. Aye, captain.
+- Medics can take a third specialty at skill three: ship's counsellor. Red
+  alert wears the crew half as fast, and reviews land better (commend +12,
+  counsel costs almost nothing).
 - Every clamp writes a supplemental entry in the captain's voice: the hours
   since the last dock, the jumps, whether the hull took fire, red alerts, a
   hard burn, the cards on the lane, the rescues, and how the crew are holding
