@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.74 - SALVAGE ON THE WIRE", [
+    "IN THE REAL GALAXY, LOST SHIPS GO ON THE WIRE. OTHER PILOTS FIND YOUR WRECK; YOU FIND THEIRS, WITH SALVAGE ABOARD.",
+  ]],
   ["0.73 - WHAT THE VOID KEEPS", [
     "LOSE YOUR SHIP AND ITS WRECK STAYS WHERE IT FELL, UNDER ITS NAME, WITH HALF THE HOLD. THE LOST GO ON THE WALL.",
   ]],

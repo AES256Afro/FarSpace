@@ -5,7 +5,7 @@ import { ask, confirmBox } from "../../core/dialog";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra, raceCourse, racePar, racePrize, recordRace, beatHolder, captainNickname, leaveWreck } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra, raceCourse, racePar, racePrize, recordRace, beatHolder, captainNickname, leaveWreck, addWireWrecks } from "../../world";
 import { COMMODITIES, commodity } from "../../data/data";
 import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
@@ -89,7 +89,7 @@ export class FlightScene implements Scene {
     this.comms = [];
     this.wonderSeen.clear();
     this.docking = null;
-    if (g.world.realGalaxy) void wire.fetchWire();
+    if (g.world.realGalaxy) { void wire.fetchWire(); void wire.fetchLights().then(() => { if (g.sceneName === "flight") { const n = addWireWrecks(g.world, wire.lightsAt(g.world.systems[g.world.player.systemId].name)); if (n) this.comms.push({ from: "CHART", text: `${n} WRECK${n > 1 ? "S" : ""} ON THE CHART HERE THAT ANOTHER PILOT LEFT. SALVAGE RIGHTS ARE WHOEVER GETS THERE.`, life: 9, color: PAL.greyDark }); } }); }
     { const sysNow = g.world.systems[g.world.player.systemId]; if (!this.loreSeen.has(sysNow.id)) { this.loreSeen.add(sysNow.id); this.comms.push({ from: "CHART", text: systemLore(g.world, sysNow).toUpperCase(), life: 9, color: PAL.greyDark }); } }
     if (g.justUndocked) {
       // launch sequence: out of the bay along your nose, control on the band
@@ -1374,7 +1374,6 @@ export class FlightScene implements Scene {
     p.shield = 0;
     p.fuel = Math.max(20, p.fuel * 0.5);
     p.credits = Math.round(p.credits * 0.85);
-    p.cargo = {};
     for (const s of p.systems) s.health = Math.max(30, s.health);
     let lostCrew: { name: string; role: string } | null = null;
     if (p.crew && p.crew.length && Math.random() < 0.5) {
@@ -1382,8 +1381,10 @@ export class FlightScene implements Scene {
       lostCrew = { name: lost.name, role: lost.role };
       g.toast(`${lost.name.toUpperCase()} DIDN'T MAKE IT TO THE POD`);
     }
-    leaveWreck(g.world, p.x, p.y, lostCrew);
+    leaveWreck(g.world, p.x, p.y, lostCrew); // takes half the hold with it
+    p.cargo = {};
     const sys = g.world.systems[p.systemId];
+    if (g.world.realGalaxy) void wire.postLight(sys.name, "wreck", false);
     const st = sys.stations[0];
     if (st) { p.dockedAt = st.id; g.setScene("station"); }
     else { p.x = 0; p.y = -600; p.vx = 0; p.vy = 0; }

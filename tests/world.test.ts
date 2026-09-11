@@ -15,7 +15,7 @@ import { STARS, starDistance } from "../src/data/stars";
 import { ACHIEVEMENTS } from "../src/data/achievements";
 import { ARCS, dailyContract, dailyKey, rankOf, logSystem, applyHull } from "../src/world";
 import { MODULES } from "../src/data/modules";
-import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook, leaveWreck } from "../src/world";
+import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook, leaveWreck, addWireWrecks } from "../src/world";
 import { RARES } from "../src/data/data";
 import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
@@ -795,6 +795,13 @@ describe("what the void keeps", () => {
     expect(p.wrecksOfMine).toEqual([wd.id]);
     expect(p.lost![0].name).toBe("Ada Ferro");
     expect((p.log ?? []).some((l) => l.text.includes("didn't make it"))).toBe(true);
+    // other pilots' wrecks from the wire appear once each, with a little salvage
+    const n = addWireWrecks(w, [{ callsign: "OTHER-1", kind: "wreck" }, { callsign: "OTHER-2", kind: "beacon" }, { callsign: "OTHER-1", kind: "wreck" }]);
+    expect(n).toBe(1);
+    expect(addWireWrecks(w, [{ callsign: "OTHER-1", kind: "wreck" }])).toBe(0);
+    const ww = sys.wrecks.find((x) => x.id === "wreck-wire-OTHER-1")!;
+    expect(ww.name).toContain("OTHER-1");
+    expect(ww.loot.length).toBe(2);
   });
 });
 

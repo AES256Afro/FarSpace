@@ -7,7 +7,7 @@
 //   GET  /api/board/:name     -> top 20 { callsign, score }
 //   POST /api/board/:name     <- { callsign, score }  keeps each call sign's best
 //   GET  /api/discover?system= / POST { system, callsign }  first-discovery tags
-//   GET  /api/lights / POST { system, callsign, kind, upgraded }  lights planted in the real galaxy
+//   GET  /api/lights / POST { system, callsign, kind, upgraded }  lights planted in the real galaxy (kind: beacon, depot, wreck)
 //   GET  /api/race?station= / POST { station, system, callsign, t }  ring race course records, top five
 //   GET  /api/goal?id= / POST { id, callsign, amount }      weekly community goal
 //   WS   /api/room/:system    presence + chat, one Durable Object per system
@@ -302,7 +302,7 @@ export default {
         const kind = clean(body.kind, 10);
         const upgraded = !!body.upgraded;
         if (!CALLSIGN.test(callsign)) return json({ error: "bad callsign" }, 400);
-        if (!system || (kind !== "beacon" && kind !== "depot")) return json({ error: "bad light" }, 400);
+        if (!system || (kind !== "beacon" && kind !== "depot" && kind !== "wreck")) return json({ error: "bad light" }, 400);
         const rec = { callsign, system, kind, upgraded, t: Date.now() };
         await env.SAVES.put(`light:${system.toLowerCase()}:${callsign}`, JSON.stringify(rec), { expirationTtl: 60 * 60 * 24 * 30 });
         return json({ ok: true, light: rec });

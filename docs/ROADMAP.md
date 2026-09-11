@@ -658,4 +658,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] A destroyed ship leaves a named wreck with half the hold; lost crew on
       the wall and at remembrance
 
+## Milestone 74 — Salvage on the Wire ✅ (Sep 2026)
+- [x] Lost ships post a wreck light; other pilots' wrecks appear in your
+      systems under their call sign with salvage
+
 ## Later

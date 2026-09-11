@@ -720,6 +720,20 @@ export function leaveWreck(w: World, x: number, y: number, lostCrew: { name: str
   logEntry(w, `Lost ${name.replace(", yours", "")} off ${sys.name}${lostCrew ? `; ${lostCrew.name} didn't make it to the pod` : ""}. The wreck is still there.`);
   return wd;
 }
+// Other pilots' lost ships, from the wire: a wreck under their call sign, once per system, a little salvage
+export function addWireWrecks(w: World, lights: { callsign: string; kind: string; t?: number }[]): number {
+  const sys = w.systems[w.player.systemId]; let n = 0;
+  for (const l of lights) {
+    if (l.kind !== "wreck") continue;
+    const id = `wreck-wire-${l.callsign}`;
+    if (sys.wrecks.some((x) => x.id === id)) continue;
+    const rng = new RNG(hashStr(`${id}:${sys.id}`));
+    const a = rng.range(0, Math.PI * 2), r = rng.int(700, 1600);
+    sys.wrecks.push({ id, x: Math.round(Math.cos(a) * r), y: Math.round(Math.sin(a) * r), looted: false, hazard: 0.4, name: `the wreck of ${l.callsign}'s ship`, loot: [{ id: rng.pick(["parts", "metals", "fuel", "med"]), qty: rng.int(1, 3) }, { id: "parts", qty: 1 }] });
+    n++;
+  }
+  return n;
+}
 export function signGuestbook(w: World, m: Mission, stationName: string, rng: RNG): GuestEntry {
   const p = w.player;
   const mood = m.mood ?? 60;

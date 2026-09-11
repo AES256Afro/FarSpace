@@ -235,6 +235,10 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   what was in the hold, under your ship's name. You can go back for it, and
   you'll know the corridor. Whoever didn't make it to the pod goes on the wall
   of record, and is read out on remembrance day.
+- In the real galaxy a lost ship also goes on the wire for a month: other
+  pilots find the wreck of your ship in that system, under your call sign,
+  with a little salvage aboard, and you find theirs. The galaxy map lists
+  them with the lights.
 
 ## The guestbook
 
