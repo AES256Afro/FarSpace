@@ -61,6 +61,7 @@ export function tannoyLines(w: World, st: StationDef, rng: RNG, now = Date.now()
   const ev = galaxyEventAt(w, sys.id);
   if (ev?.kind === "festival" && ev.stationId === st.id) pool.push("THE FESTIVAL CONTINUES ON THE UPPER RING. LOST CHILDREN TO THE HARBOUR OFFICE. LOST PARENTS TO THE BAR.");
   if (ev?.kind === "flare") pool.push("SOLAR FLARE IN PROGRESS. DEPARTURES SUNWARD ARE AT YOUR OWN RISK.");
+  if (ev?.kind === "drought" && ev.stationId === st.id) pool.push("WATER RATION IS TWO LITRES A HEAD UNTIL A TANK COMES IN. SHOWERS ARE A RUMOUR.", "ANY HULL WITH WATER IN THE HOLD: THE MARKET WILL TAKE ALL OF IT, AND THE ROCK WILL REMEMBER YOUR NAME.", "THE ICE LINE CREW ARE OUT ON THE RIG. DON'T PAGE THEM. THEY KNOW.");
   if (ev?.kind === "secession" && ev.stationId === st.id) pool.push("THIS ROCK IS INDEPENDENT UNTIL MONDAY. THE INNERS CAN HAVE THEIR WATER BACK WHEN THEY PAY FOR THE FILTERS.", "THE REGISTER IS BY THE CLAMP. NOBODY HAS TO SIGN. EVERYBODY WILL KNOW WHO DID.");
   if (ev?.kind === "strike" && ev.stationId === st.id) pool.push("YARD SERVICES ARE SUSPENDED. THE MANAGEMENT REGRETS. THE PICKET DOES NOT.");
   if (t.night && voteMods(w, st.factionId).curfew) pool.push("CURFEW IS IN FORCE ON THE PROMENADE. THE BAR IS EXEMPT. THE BAR IS ALWAYS EXEMPT.");

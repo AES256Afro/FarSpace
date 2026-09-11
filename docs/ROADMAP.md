@@ -1278,6 +1278,20 @@ Time passes for the people on the ship, and for the ship.
       the birthday, the office, answered hails, water to the belt and a guarded
       prisoner
 
+## Milestone 225 — Before the Room ✅ (Sep 2026)
+- [x] At a reception, commend your longest-serving crew member before the
+      room: loyalty and morale, XP, rep, a deed
+
+## Milestone 226 — The Drought ✅ (Sep 2026)
+- [x] A galaxy event for belt rocks: the ice line fails, water stock goes to
+      nothing, the tannoy says ration; water sold there counts triple toward
+      belt standing (deed "the tank came in")
+
+## Milestone 227 — Evacuations ✅ (Sep 2026)
+- [x] Stations in a crisis, a strike, a storm or a drought post evacuation
+      fares: a party of up to eight at a head rate, rep, lives counted at the
+      far clamp (deeds at one party and thirty people)
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

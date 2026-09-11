@@ -159,6 +159,7 @@ export interface Mission {
   passengerKind?: "vip" | "refugee" | "fugitive" | "tourist" | "courier" | "envoy" | "patient" | "prisoner";
   freed?: boolean;                    // a prisoner you let go at a rock; no fare, and the service remembers
   dined?: boolean;                    // sat at the captain's table at a mess call
+  evac?: boolean;                     // an evacuation party: a head rate, lives counted at the far clamp
   treaty?: { a: string; b: string };  // an envoy between two factions: land them unshot and on time
   patrolT?: number;                   // seconds held on station in the target system
   patrolNeed?: number;
@@ -352,6 +353,7 @@ export interface PlayerState {
   inquiries?: number;                // boards of inquiry sat through, one per crew member lost
   motto?: string;                    // the line on the dedication plaque by the airlock
   prisoners?: number;                // prisoners delivered to a brig
+  evacuated?: number;                // people carried out of a bad week
   hailsAnswered?: number;            // passing hails answered with a civil word
   waterToBelt?: number;              // units of water sold to belt rocks; the belt keeps count
   officeLetters?: number;            // letters from the office of anomalous incidents; three and they open a file
@@ -1035,6 +1037,21 @@ export function genFares(w: World, station: StationDef, rng: RNG): Mission[] {
       });
     }
   }
+  // an evacuation: a crisis, a strike or a drought at this station, and people who want out on any hull with seats
+  { const ev = w.galaxyEvent; const bad = crisisAt(w, station.id) || (ev && ev.stationId === station.id && w.time < ev.until && (ev.kind === "strike" || ev.kind === "drought" || ev.kind === "storm"));
+    if (bad && rng.chance(0.7)) {
+      const target = rng.pick(pool); const tStation = rng.pick(target.stations); const name = genPersonName(rng); const hops = one.includes(target) ? 1 : 2;
+      const party = Math.max(2, Math.min(rng.int(4, 8), passengerCap(w.player) - passengersAboard(w.player).reduce((a, m) => a + (m.party ?? 1), 0)));
+      fares.push({
+        id: `fare-${station.id}-${w.missionCounter++}`, kind: "passenger", accepted: false, done: false, tier: 0,
+        title: `Evacuation: ${name} +${party - 1}`,
+        desc: `${name} and ${party - 1} others want off ${station.name} on the first hull with seats: ${tStation.name}, ${target.name}, or anywhere with water. The harbourmaster pays a head rate and the ${facNameW(station.factionId)} remember the ships that carried people out.`,
+        fromStationId: station.id, targetSystemId: target.id, targetStationId: tStation.id,
+        passengerName: name, passengerKind: "refugee", sightSeen: false, sights: [], evac: true,
+        mood: 45, demand: "water", patience: hops + 1, docksAboard: 0, party,
+        reward: 70 * party + rng.int(0, 120), repReward: 6,
+      });
+    } }
   // a prisoner transfer: the navy wants somebody moved, in irons, and pays a ship that has a gunner to watch them
   if (station.military && rng.chance(0.4)) {
     const target = rng.pick(pool); const tStation = rng.pick(target.stations); const name = genPersonName(rng); const hops = one.includes(target) ? 1 : 2;
@@ -3671,7 +3688,10 @@ export function logEntry(w: World, text: string): void {
 }
 
 // ---------- Galaxy events (not wars): comets, flares, festivals, strikes ----------
-export type GalaxyEventKind = "comet" | "flare" | "festival" | "strike" | "storm" | "secession";
+export type GalaxyEventKind = "comet" | "flare" | "festival" | "strike" | "storm" | "secession" | "drought";
+export function droughtAt(w: World, stationId: string): GalaxyEvent | null {
+  const e = w.galaxyEvent; return e && e.kind === "drought" && e.stationId === stationId && w.time < e.until ? e : null;
+}
 // A belt rock has declared itself independent for the week: water, rations and medicine pay, and the register is open.
 export function secessionAt(w: World, stationId: string): GalaxyEvent | null {
   const e = w.galaxyEvent; return e && e.kind === "secession" && e.stationId === stationId && w.time < e.until ? e : null;
@@ -3697,15 +3717,16 @@ export function tickGalaxyEvents(w: World, rng: RNG): void {
   }
   if (w.galaxyEvent || !rng.chance(0.3)) return;
   const sys = rng.pick(Object.values(w.systems));
-  const kind = rng.pick(["comet", "flare", "festival", "strike", "storm", "secession"] as GalaxyEventKind[]);
+  const kind = rng.pick(["comet", "flare", "festival", "strike", "storm", "secession", "drought"] as GalaxyEventKind[]);
   const belt = sys.stations.filter((s) => isBeltStation(s) && s.factionId !== "vex");
-  const st = kind === "secession" ? (belt.length ? rng.pick(belt) : null) : sys.stations.length ? rng.pick(sys.stations) : null;
-  if ((kind === "festival" || kind === "strike" || kind === "secession") && !st) return;
+  const st = kind === "secession" || kind === "drought" ? (belt.length ? rng.pick(belt) : null) : sys.stations.length ? rng.pick(sys.stations) : null;
+  if ((kind === "festival" || kind === "strike" || kind === "secession" || kind === "drought") && !st) return;
   w.galaxyEvent = { kind, systemId: sys.id, stationId: st?.id, until: w.time + 720 };
   if (kind === "comet") { for (const a of sys.asteroids) { a.rich = a.rich || rng.chance(0.5); a.ore += 4; } pushEvent(w, { t: w.time, kind: "discovery", systemId: sys.id, text: `A comet crosses ${sys.name}: the belt is seeded with rich ore for a while` }); }
   if (kind === "flare") pushEvent(w, { t: w.time, kind: "shock", systemId: sys.id, text: `Solar flare warning for ${sys.name}: hulls run hot, scanners struggle` });
   if (kind === "festival" && st) { for (const id of ["lux", "food"]) st.stock[id] = Math.max(0, Math.round((st.stock[id] ?? 0) * 0.3)); refreshPrices(st); pushEvent(w, { t: w.time, kind: "discovery", systemId: sys.id, text: `Festival week at ${st.name}: luxuries and provisions sell dear, tourists pay double` }); }
   if (kind === "strike" && st) { st.fuelPrice *= 2; st.repairPrice *= 2; pushEvent(w, { t: w.time, kind: "shock", systemId: sys.id, text: `Dock workers strike at ${st.name}: fuel and repairs cost double` }); }
+  if (kind === "drought" && st) { st.stock.water = 0; refreshPrices(st); pushEvent(w, { t: w.time, kind: "shock", systemId: sys.id, text: `${st.name}'s ice line has failed: the rock is on ration until a tank comes in. Water pays, and the belt remembers who brings it` }); }
   if (kind === "storm") pushEvent(w, { t: w.time, kind: "shock", systemId: sys.id, text: `Ion storm over ${sys.name}: radar and charts are blind there unless a beacon holds the picture` });
   if (kind === "secession" && st) { for (const id of ["water", "food", "med"]) st.stock[id] = Math.max(0, Math.round((st.stock[id] ?? 0) * 0.4)); refreshPrices(st); pushEvent(w, { t: w.time, kind: "shock", systemId: sys.id, text: `${st.name} declares itself independent for the week: water, rations and medicine pay, the register is open, and the inners are not amused` }); }
 }

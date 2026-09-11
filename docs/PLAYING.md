@@ -752,6 +752,15 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- At a reception you can commend your longest-serving crew member before the
+  room: their loyalty and morale up a lot, some XP, rep, and a deed.
+- A drought: a belt rock's ice line fails for the week. Water stock drops to
+  nothing, the tannoy talks ration, and water you sell there counts triple
+  toward belt standing.
+- Evacuations: a station in a crisis, a strike, a storm or a drought posts a
+  party of up to eight who want out on the first hull with seats. A head rate,
+  rep with the faction, and every one of them counts as a life at the far
+  clamp.
 - Research stations post observation orders: hold a close, quiet orbit over a
   named world for a minute or so with no cruise and no red alert. Going to
   red in orbit halves the pay and resets the clock. Report back to the survey.
