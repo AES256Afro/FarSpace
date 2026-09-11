@@ -1155,7 +1155,7 @@ export function resolveBorder(w: World, now = Date.now()): string | null {
   w.news.unshift({ headline: text.toUpperCase().slice(0, 60), body: `${text}. ${yours ? `Captains who pushed for the winning side, you among them, are remembered.` : "The captains who pushed for it are remembered."}` });
   if (w.news.length > 12) w.news.pop();
   logEntry(w, text + (yours ? ` (your push: ${yours})` : ""));
-  return `THE BORDER: ${text.toUpperCase()}${yours ? ` - YOUR PUSH COUNTED. STANDING UP WITH THE ${facName(winner).toUpperCase()}` : ""}`;
+  return `THE BORDER: ${sys.name.toUpperCase()} ${flipped ? `FALLS TO THE ${facName(st.c.challenger).toUpperCase()}` : `HOLDS FOR THE ${facName(st.c.incumbent).toUpperCase()}`}${yours ? ". YOUR PUSH COUNTED: STANDING UP" : ""}`.slice(0, 96);
 }
 
 // Stakes: buy into a station. Shares cost what the place is worth; every docking there pays a dividend

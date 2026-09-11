@@ -970,7 +970,7 @@ describe("the border", () => {
     w.borderWeek = "2026-09-07";
     const later = Date.UTC(2026, 8, 16, 12);
     const line = resolveBorder(w, later);
-    expect(line).toContain("CHANGES HANDS");
+    expect(line).toMatch(/FALLS TO THE/);
     expect(w.systems[c.systemId].factionId).toBe(c.challenger);
     expect(w.systems[c.systemId].stations.every((x) => x.factionId === c.challenger)).toBe(true);
     expect(w.player.rep[c.challenger]).toBeGreaterThan(0);
