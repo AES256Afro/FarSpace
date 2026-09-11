@@ -882,6 +882,10 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   fires spread slower), the medic (a spare tank clipped on: a third more
   air), the gunner (the fires near the lock are out before you've found your
   feet), or alone, with somebody on the band saying come back like an order.
+- Shore leave: L at the lander with crew aboard, once a landing. An hour on
+  the ground (morale +8, an hour of ship time, and a chance one of them finds
+  something the survey missed), a photo by the lander with everyone in it
+  (morale, and a keepsake on the seat), or back to work.
 - On the ground, an away team: a door in the rock and a light that shouldn't
   be on. Send the engineer (the light means power), the medic (if something's
   alive in there), the gunner (who will shoot the light), or go yourself,

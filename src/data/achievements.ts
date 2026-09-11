@@ -136,5 +136,6 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "parley", title: "NOT TODAY, THEN", desc: "Talk a corsair off without a shot", check: (w) => !!w.player.flags?.parley },
   { id: "encore", title: "ONE MORE ANYWAY", desc: "Stand for a set on a night promenade", check: (w) => !!w.player.flags?.encore },
   { id: "allhands", title: "ALL HANDS", desc: "Address the crew on the ship's band", check: (w) => !!w.player.flags?.allhands },
+  { id: "shoreleave", title: "A SKY THAT ISN'T A CEILING", desc: "Take the crew for an hour on the ground", check: (w) => !!w.player.flags?.shoreleave },
   { id: "elite", title: "ELITE", desc: "Top any career ladder", check: (w) => (["explorer", "trader", "miner"] as const).some((k) => rankOf(w.player, k).idx >= 8) },
 ];

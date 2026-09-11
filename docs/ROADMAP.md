@@ -1064,6 +1064,10 @@ Time passes for the people on the ship, and for the ship.
       slows the leaks and the fires, the medic brings a spare tank, the gunner
       clears the fires by the lock
 
+## Milestone 176 — Shore Leave ✅ (Sep 2026)
+- [x] L at the lander with crew aboard: an hour on the ground, a photo by
+      the lander for the keepsakes, or back to work
+
 ## Later: Trek / Expanse / Orville
 
 - A second story arc per faction (first contact proper: the singers' home)

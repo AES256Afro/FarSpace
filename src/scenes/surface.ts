@@ -13,9 +13,10 @@ import type { EncounterScene } from "./encounter";
 import { RNG } from "../core/rng";
 import * as wire from "../core/wire";
 import { flag } from "../core/achievements";
+import type { Encounter } from "../data/encounters";
 import { gainMaterials } from "../core/materials";
 import { GW, GH, GT, WATER, PLAIN, HILLS, MOUNTAIN, HAZARD, SAND, BIOMES, genGround, groundKey, passable, GroundMap, GroundNode } from "../ground";
-import { adjustRep, addCargo, groundProgress, GroundState, HOMESTEAD_PRICE, homesteadYield, settleHomestead, noteLeg } from "../world";
+import { adjustRep, addCargo, groundProgress, GroundState, HOMESTEAD_PRICE, homesteadYield, settleHomestead, noteLeg, logEntry } from "../world";
 import { commodity } from "../data/data";
 import { engGrade } from "../data/engineering";
 import { faction } from "../data/data";
@@ -32,6 +33,7 @@ const COLORS: Record<number, { water: string; plain: string; plain2: string; hil
 };
 
 export class SurfaceScene implements Scene {
+  leaveTaken = false;
   touchMode = "walk" as const;
   map!: GroundMap;
   state!: GroundState;
@@ -52,6 +54,7 @@ export class SurfaceScene implements Scene {
   miniAt = 0;
 
   enter(g: Game): void {
+    this.leaveTaken = false;
     const p = g.world.player;
     const sys = g.world.systems[p.systemId];
     const pl = sys.planets[g.orbitPlanetIdx];
@@ -192,6 +195,19 @@ export class SurfaceScene implements Scene {
     // lander
     const nearLander = Math.hypot(this.px - (this.map.lander.x * GT + GT / 2), this.py - (this.map.lander.y * GT + GT / 2)) < 22;
     const home = (p.homesteads ?? []).find((h) => h.key === this.map.key);
+    if (nearLander && inp.wasPressed("l") && p.crew.length >= 1 && !this.leaveTaken) {
+      this.leaveTaken = true;
+      const enc: Encounter = { id: "shoreleave", where: "ground", title: "SHORE LEAVE", weight: 0,
+        text: "The lander's ramp is down, the air is breathable enough with the masks, and the crew are standing at the top of the ramp looking at a sky that isn't a ceiling. Somebody has already found a rock to sit on. Somebody else has already found a better rock.",
+        options: [
+          { label: "AN HOUR ON THE GROUND", hint: "Morale +8; an hour of ship time; maybe a find", result: (g2, rng) => { for (const c of p.crew) c.morale = Math.min(100, c.morale + 8); g2.world.time += 3600; flag(g2, "shoreleave"); logEntry(g2.world, "Shore leave: an hour on the ground with the crew"); if (rng.chance(0.35)) { p.expData = (p.expData ?? 0) + 30; return "AN HOUR ON THE GROUND. THE CREW WALK, SIT, THROW STONES AT NOTHING, AND COME BACK QUIETER AND BETTER. ONE OF THEM FOUND SOMETHING THE SURVEY MISSED. +30 DATA, MORALE UP."; } return "AN HOUR ON THE GROUND. THE CREW WALK, SIT, THROW STONES AT NOTHING, AND COME BACK QUIETER AND BETTER. MORALE UP. THE ROVER DIDN'T MOVE AND NOBODY MINDED."; } },
+          { label: "A PHOTO BY THE LANDER", hint: "Everyone in it, this time", result: (g2) => { for (const c of p.crew) c.morale = Math.min(100, c.morale + 3); (p.keepsakes ??= []).push(`a photo by the lander, everyone in it`); if (p.keepsakes.length > 8) p.keepsakes.shift(); logEntry(g2.world, "A photo by the lander, everyone in it"); return "EVERYONE IN IT, THIS TIME, EVEN THE ONE WHO HATES PHOTOS. THE ROVER TAKES IT ON A TIMER AND GETS THE HORIZON CROOKED. IT GOES ON THE SEAT WITH THE OTHER KEEPSAKES. MORALE UP A LITTLE."; } },
+          { label: "BACK TO WORK", result: () => "YOU RAISE THE RAMP. THE CREW LOOK AT THE SKY A MOMENT LONGER, THEN COME IN. NEXT WORLD, MAYBE." },
+        ] };
+      sfx.rover(false); this.vx = 0; this.vy = 0;
+      (g.scenes["encounter"] as EncounterScene).open(g, enc, "surface", true);
+      return;
+    }
     if (nearLander) {
       this.power = Math.min(100, this.power + dt * (home ? 30 : 12));
       if (home && this.integrity < 100) this.integrity = Math.min(100, this.integrity + dt * 4);
