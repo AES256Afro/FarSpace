@@ -606,6 +606,7 @@ export class FlightScene implements Scene {
       const prog = entered ? null : regattaProgress(g.world, st.id, r.t, r.par, !!beat || (p.raceBeaten?.[st.id] ?? false));
       if (prog) { g.toast(prog); this.comms.push({ from: "MARSHAL", text: prog, life: 10, color: PAL.gold }); if (p.regatta === 3) { flag(g, "regatta"); void wire.post("race", "won the regatta: three courses, three stations", g.world.systems[p.systemId].name); } }
     }
+    if (st && isBeltStation(st) && (beat || r.t <= r.par)) { const bl = beltGain(g.world, beat ? 0.6 : 0.3); this.comms.push({ from: "THE ROCK'S KIDS", text: beat ? "THAT'S THE RECORD! THAT'S THE HULL WITH THE DENT AND THAT'S THE RECORD! MAM! MAM, COME AND SEE!" : "UNDER PAR! DID YOU SEE THE LAST RING? DID YOU SEE IT? WE SAW IT!", life: 9, color: PAL.gold }); if (bl) g.toast(bl); flag(g, "rockrace"); logEntry(g.world, `Ran the rings at ${st.name} ${beat ? "for the record" : "under par"}; the rock's kids cheered`); }
     if (beat || r.t <= r.par) void wire.post("race", `${beat ? "took the course record" : "ran under par"} at ${st?.name ?? "a station"}: ${r.t.toFixed(1)}s`, g.world.systems[p.systemId].name);
     if (g.world.realGalaxy && st) void wire.postRaceTime(st.name, g.world.systems[p.systemId].name, r.t).then((res) => { if (res?.improved && res.rank === 1) g.toast("THE WIRE HAS YOU AT THE TOP OF THE BOARD FOR THIS COURSE"); });
     this.race = null;

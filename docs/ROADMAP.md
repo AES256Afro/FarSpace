@@ -1742,6 +1742,16 @@ Time passes for the people on the ship, and for the ship.
 - [x] At lift-off the away partner's loyalty and morale go up, with a log
       line and a deed
 
+## Milestone 342 — Mam, Come and See ✅ (Sep 2026)
+- [x] Run a rock's rings under par or for the record and the kids cheer on
+      the band; belt standing; a deed
+
+## Milestone 343 — The Ring Board ✅ (Sep 2026)
+- [x] A rock's tannoy reads your best time; the kids have chalked it up
+
+## Milestone 344 — Rings in the Handbook ✅ (Sep 2026)
+- [x] A handbook line for racing at a rock
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
