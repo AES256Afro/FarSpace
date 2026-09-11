@@ -12,6 +12,7 @@ export interface Settings {
   voice?: boolean;                // the ship speaks on the band (default on)
   chatter?: "quiet" | "normal" | "busy"; // how busy the comms band is (default normal)
   lanes?: "gentle" | "normal" | "rough"; // how many corsairs the lanes carry (default normal)
+  whatsNewSeen?: string;          // the version whose What's New you last opened
 }
 
 export const ACTIONS: { key: string; label: string }[] = [

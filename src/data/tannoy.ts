@@ -8,6 +8,7 @@ import { hull } from "./hulls";
 import { commodity, faction } from "./data";
 const facName = (id: string) => faction(id).name;
 import { RNG, hashStr } from "../core/rng";
+import { isOccasion } from "./occasions";
 import { voteMods } from "./votes";
 
 export function stationHour(st: StationDef, now = Date.now()): { h: number; m: number; label: string; night: boolean } {
@@ -40,6 +41,7 @@ export function tannoyLines(w: World, st: StationDef, rng: RNG, now = Date.now()
   ];
   const links = sys.links.map((l) => w.systems[l]).filter(Boolean);
   if (links.length) pool.push(`LAST CALL FOR THE LINER TO ${rng.pick(links).name.toUpperCase()}. BAY ${rng.int(1, 9)}. LAST CALL.`);
+  if (isOccasion("lanes", now)) pool.push("RACE DAY. THE MARSHAL PAYS HALF AGAIN AT THE RINGS. NO, HE DOESN'T KNOW WHY EITHER.");
   if (t.night) pool.push("NIGHT SHIFT. KEEP THE NOISE DOWN ON THE PROMENADE. THE DAY CREW ARE ASLEEP ABOVE YOU.", "THE BAR IS OPEN. NOTHING ELSE IS. GOODNIGHT.");
   else if (t.h < 11) pool.push("GOOD MORNING. THE WATER RATION IS NORMAL. THE COFFEE RATION IS NOT.");
   else if (t.h >= 17) pool.push("EVENING. THE MARKET CLOSES IN AN HOUR. THE BAR DOES NOT.");

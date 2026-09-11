@@ -3,11 +3,15 @@
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
+import { saveSettings } from "../core/settings";
 
 const NOTES: [string, string[]][] = [
   ["0.56 TO 0.110 - THE LONG DAY", [
     "FIFTY-FIVE MILESTONES IN ONE SITTING: THE ROSTER, CORRIDOR TALK, THE RING RACE AND REGATTA, THE POST, STAKES,",
     "THE VOTE, THE BORDER, FLEET AT WORK, THE LINER, MAYDAYS AND NOTES ON THE WIRE, CONVOYS, FAMILY, AND THE REST BELOW.",
+  ]],
+  ["0.114 - UNREAD", [
+    "THE TITLE MARKS WHAT'S NEW WHEN THERE'S SOMETHING YOU HAVEN'T READ.",
   ]],
   ["0.113 - THE GRAND COURSE", [
     "THE REGATTA'S LAST COURSE IS EIGHT WIDE RINGS. THE CONVOY LEAD TALKS ON THE WAY TO THE GATE.",
@@ -393,7 +397,7 @@ const WRAPPED: [string, string[]][] = NOTES.map(([t, lines]) => [t, lines.flatMa
 export class WhatsNewScene implements Scene {
   touchMode = "menu" as const;
   scroll = 0;
-  enter(): void { this.scroll = 0; }
+  enter(): void { this.scroll = 0; saveSettings({ whatsNewSeen: typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "?" }); }
   update(g: Game, dt: number): void {
     void dt;
     if (g.input.wasPressed("Escape") || g.input.wasPressed("Enter") || g.input.mousePressed) { g.setScene("title"); return; }

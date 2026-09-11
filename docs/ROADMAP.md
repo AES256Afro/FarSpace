@@ -818,4 +818,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] The regatta's third course is eight wide rings; the convoy lead talks
       on the way to the gate
 
+## Milestone 115 — Unread ✅ (Sep 2026)
+- [x] The title marks What's New when unread; race day on the tannoy; the
+      ship on the pacer
+
 ## Later
