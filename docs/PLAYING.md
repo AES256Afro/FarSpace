@@ -752,6 +752,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- Board a wreck of your own where a crew member was lost and the crew go
+  quiet in the lock. Say the name and leave something of the ship's there
+  (loyalty up, a keepsake given up), or work the wreck the way they'd have
+  wanted.
+- Pause menu in flight: NUMBER ONE HAS THE SHIP THIS LEG. Autopilot takes
+  it, the HUD reads ACTING CAPTAIN, their loyalty goes up, and at the next
+  clamp they hand it back with a word about the weather.
 - With an undock word chosen, one act at talent night is a crew member doing
   the captain saying it in six moods, ending with "resigned".
 - The dock-hand has lines about the plaque, the freeman's rate, the kid's

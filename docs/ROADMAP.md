@@ -1518,6 +1518,19 @@ Time passes for the people on the ship, and for the ship.
       read it aloud (morale, loyalty, a keepsake) or ask for the hundred and
       first
 
+## Milestone 282 — The Place ✅ (Sep 2026)
+- [x] Board a wreck of your own where a crew member was lost and the crew go
+      quiet in the lock: say the name and leave something (loyalty, a
+      keepsake given up), or work the wreck the way they'd have wanted
+
+## Milestone 283 — Number One Has the Ship ✅ (Sep 2026)
+- [x] Pause menu: give Number One the ship for the leg; the HUD reads ACTING
+      CAPTAIN, autopilot takes it, and they hand it back at the clamp with a
+      word about the weather
+
+## Milestone 284 — The Crew in the Handbook ✅ (Sep 2026)
+- [x] A handbook section for everything the crew do now
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

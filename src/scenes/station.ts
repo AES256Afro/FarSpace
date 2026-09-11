@@ -128,6 +128,7 @@ export class StationScene implements Scene {
     if (p.focus || p.briefed) { p.focus = null; p.briefed = false; }
     for (const c of p.crew) c.counselled = false;
     p.simUsed = false;
+    if (p.numberOneLeg) { const fo = firstOfficer(p); p.numberOneLeg = false; if (fo) { const l = p.leg; const rough = l && (l.fights > 0 || l.alerts > 0); fo.loyalty = (fo.loyalty ?? 0) + 0.2; logEntry(g.world, `${fo.name} brought the ship in from their leg${rough ? ", with some weather" : ", clean"}`); g.toast(`${fo.name.split(" ")[0].toUpperCase()}: "SHIP'S YOURS, CAPTAIN. ${rough ? "THERE WAS SOME WEATHER. IT'S IN THE LOG. NOBODY'S HURT." : "NOTHING TO REPORT, WHICH I'M TOLD IS THE HARD PART."}"`); } }
     if (p.shipAskedQuiet) { const l = p.leg; const quiet = !l || (!l.alerts && !l.fights); p.shipAskedQuiet = false; if (quiet) { p.wear = Math.max(0, (p.wear ?? 0) - 6); flag(g, "quietleg"); logEntry(g.world, "Gave the ship the quiet leg it asked for"); g.toast(`${shipVoiceName(p)}: THAT WAS A GOOD LEG. I'VE TIGHTENED SOMETHING IN THE MOUNTS MYSELF. DON'T ASK HOW. WEAR -6.`); } else g.toast(`${shipVoiceName(p)}: THAT WASN'T QUIET. I'M NOT ANGRY. I'M A SHIP. I'M NOTING IT.`); }
     { const l = legSummary(g.world); if (l) logEntry(g.world, l); newLeg(p, g.world.time); delete (p.flags ?? {}).counselledLeg; }
     for (const l of birthdaysDue(g.world)) g.toast(l);

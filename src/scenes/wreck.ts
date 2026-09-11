@@ -45,7 +45,15 @@ export class WreckScene implements Scene {
     const w = g.wreckTarget;
     if (!w) { g.setScene("flight"); return; }
     this.wreck = w;
-    if ((g.world.player.wrecksOfMine ?? []).includes(w.id)) g.toast("YOU KNOW THIS CORRIDOR. YOU KNOW WHERE THE LIGHTS WERE.");
+    { const p0 = g.world.player; const here = (p0.wrecksOfMine ?? []).includes(w.id) ? (p0.lost ?? []).find((l) => !(p0.flags ?? {})[`theplace:${w.id}:${l.name}`]) : null;
+      if (here) { (p0.flags ??= {})[`theplace:${w.id}:${here.name}`] = true; const enc0: Encounter = { id: "theplace", where: "space", title: "THE PLACE", weight: 0,
+        text: `You know this corridor. You know which hatch it was. ${here.name}, ${here.role}, didn't make it to the pod from somewhere about here, and the crew behind you have gone quiet in the lock because they know it too.`,
+        options: [
+          { label: "SAY THE NAME HERE. LEAVE SOMETHING", hint: "Loyalty up; a keepsake goes the other way; the crew remember you did", result: (g2) => { for (const c of p0.crew) { c.loyalty = (c.loyalty ?? 0) + 0.3; c.morale = Math.min(100, c.morale + 4); } if ((p0.keepsakes ?? []).length) { const k = p0.keepsakes!.shift()!; logEntry(g2.world, `Left ${k.split(",")[0]} at ${w.name} for ${here.name}`); } else logEntry(g2.world, `Said ${here.name}'s name at ${w.name}`); flag(g2, "theplace"); return `YOU SAY ${here.name.toUpperCase()} INTO THE SUIT BAND, AND LEAVE SOMETHING OF THE SHIP'S ON THE DECK BY THE HATCH, AND NOBODY BEHIND YOU SAYS ANYTHING FOR THE WHOLE BOARDING. LOYALTY UP. THEY'LL TELL THE NEXT CREW YOU DID THIS.`; } },
+          { label: "WORK THE WRECK. THEY'D HAVE WANTED THE CRATES", hint: "Morale up a little; a joke that's allowed", result: () => { for (const c of p0.crew) c.morale = Math.min(100, c.morale + 2); return `SOMEBODY BEHIND YOU SAYS '${here.name.split(" ")[0].toUpperCase()} WOULD HAVE HAD THE CRATES OUT BY NOW', AND THAT'S THE RIGHT THING TO SAY, AND EVERYBODY LAUGHS THE RIGHT AMOUNT. MORALE UP.`; } },
+        ] };
+        (g.scenes["encounter"] as EncounterScene).open(g, enc0, "wreck", true); this.askedFor = w.id; }
+      else if ((p0.wrecksOfMine ?? []).includes(w.id)) g.toast("YOU KNOW THIS CORRIDOR. YOU KNOW WHERE THE LIGHTS WERE."); }
     this.deck = BASE.map((r) => r);
     const rng = new RNG(hashStr(w.id));
     this.px = 2 * T; this.py = T + 5;

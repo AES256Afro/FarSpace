@@ -359,6 +359,7 @@ export interface PlayerState {
   ribbons?: number;                  // ribbons pinned on at receptions
   systemNicks?: Record<string, string>; // what the engineer calls the reactor; the HUD uses it
   crewPick?: string;                 // the port the crew voted for; docking there first pleases them
+  numberOneLeg?: boolean;            // Number One has the ship for this leg; settled at the next clamp
   ruleKept?: number;                 // first contacts left as found
   ruleBroken?: number;               // first contacts made, kindly or otherwise
   motto?: string;                    // the line on the dedication plaque by the airlock
