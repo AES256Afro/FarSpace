@@ -227,16 +227,16 @@ export class Game {
   playerShip(): Sprite {
     const h = hull(this.world.player.hullId);
     const paint = this.world.player.paint;
-    return this.sprite(`player-ship-${h.id}-${paint ?? ""}`, () => genShip(new RNG(this.world.seed ^ 0x51e9 ^ h.id.length), h.spriteSize, h.color, paint ?? h.accent));
+    return this.sprite(`player-ship-${h.id}-${paint ?? ""}`, () => genShip(new RNG(this.world.seed ^ 0x51e9 ^ h.id.length), h.spriteSize, h.color, paint ?? h.accent, h.id));
   }
   pirateShip(): Sprite {
-    return this.sprite("pirate-ship", () => genShip(new RNG(this.world.seed ^ 0xdead), 20, "#8c6a5a", "#ff5a5a"));
+    return this.sprite("pirate-ship", () => genShip(new RNG(this.world.seed ^ 0xdead), 20, "#8c6a5a", "#ff5a5a", "interceptor"));
   }
   traderShip(): Sprite {
-    return this.sprite("trader-ship", () => genShip(new RNG(this.world.seed ^ 0x77aa), 22, "#7a8ca5", "#ffd75a"));
+    return this.sprite("trader-ship", () => genShip(new RNG(this.world.seed ^ 0x77aa), 22, "#7a8ca5", "#ffd75a", "freighter"));
   }
   patrolShip(): Sprite {
-    return this.sprite("patrol-ship", () => genShip(new RNG(this.world.seed ^ 0x3c3c), 22, "#6a7a9c", "#5ab3ff"));
+    return this.sprite("patrol-ship", () => genShip(new RNG(this.world.seed ^ 0x3c3c), 22, "#6a7a9c", "#5ab3ff", "service-cutter"));
   }
   planetSprite(sysId: string, idx: number, radius: number, palette: number): Sprite {
     return this.sprite(`planet-${sysId}-${idx}`, () => genPlanet(new RNG(this.world.seed ^ (idx * 7919) ^ sysId.length * 31), radius, palette));

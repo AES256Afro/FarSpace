@@ -2,6 +2,7 @@
 // canvases at boot, seeded from the world seed — no external assets.
 
 import { RNG } from "../core/rng";
+import { shipDesign } from "./shipdesign";
 
 export type Sprite = HTMLCanvasElement;
 
@@ -23,53 +24,50 @@ function shade(hex: string, f: number): string {
 }
 
 // ---------- Ships ----------
-// Symmetric hull built from random pixel runs, mirrored across the axis.
+// Class silhouettes with a pointed canopy, plated wings and a flat engine bank.
 // Ships face RIGHT (+x) at rotation 0.
 
-export function genShip(rng: RNG, size: number, baseColor: string, accent: string): Sprite {
+export function genShip(rng: RNG, size: number, baseColor: string, accent: string, style = "scout"): Sprite {
   const [c, ctx] = make(size, size);
-  const half = Math.floor(size / 2);
-  const body: number[] = []; // half-width per column
-  let w = 1;
+  const { center, tail, nose, widths, engines } = shipDesign(size, style);
+  const cargoHull = ["freighter", "barge", "carrier"].includes(style);
+  const contains = (x: number, y: number) => x >= 0 && x < size && widths[x] >= 0 && Math.abs(y - center) <= widths[x];
   for (let x = 0; x < size; x++) {
-    const t = x / size;
-    // taper nose and tail, bulge middle
-    const target = t < 0.25 ? 1 + t * 8 : t < 0.7 ? 2 + Math.sin(t * Math.PI) * (size / 5) : (1 - t) * (size / 3) + 1;
-    w += rng.range(-1, 1.3);
-    w = Math.max(1, Math.min(target, half - 1));
-    body.push(Math.round(w));
-  }
-  // Hull: draw mirrored columns with vertical shading (light on top)
-  for (let x = 0; x < size; x++) {
-    const hw = body[x];
-    for (let y = -hw; y <= hw; y++) {
-      const f = y < 0 ? 1.25 - (Math.abs(y) / hw) * 0.2 : 1.0 - (y / hw) * 0.45;
-      ctx.fillStyle = shade(baseColor, f);
-      ctx.fillRect(x, half + y, 1, 1);
+    for (let y = center - widths[x]; y <= center + widths[x]; y++) {
+      if (!contains(x, y)) continue;
+      const edge = !contains(x - 1, y) || !contains(x + 1, y) || !contains(x, y - 1) || !contains(x, y + 1);
+      const dy = Math.abs(y - center), spine = dy <= 1;
+      const panel = cargoHull && x > size * .22 && x < size * .63 && dy > 2;
+      const seam = panel && (x % 5 === 0 || dy === Math.round(size * .16));
+      ctx.fillStyle = edge ? "#25334c" : seam ? shade(baseColor, .5) : shade(baseColor, spine ? 1.3 : y < center ? 1.12 : .76);
+      ctx.fillRect(x, y, 1, 1);
+      // A lit upper rim and painted wing ends make the outline survive rotation.
+      if (y === center - widths[x] && x > tail && x < nose) {
+        ctx.fillStyle = shade(baseColor, 1.4); ctx.fillRect(x, y, 1, 1);
+      }
+      if (x > size * .25 && x < size * .6 && dy === Math.max(2, widths[x] - 2)) {
+        ctx.fillStyle = accent; ctx.fillRect(x, y, 1, 1);
+      }
     }
   }
-  // Cockpit near nose
-  const cx = Math.floor(size * 0.72);
-  ctx.fillStyle = "#66d9ff";
-  ctx.fillRect(cx, half - 1, Math.max(2, Math.floor(size / 8)), 2);
-  // Accent stripe
-  ctx.fillStyle = accent;
-  const sx = Math.floor(size * 0.2);
-  ctx.fillRect(sx, half - Math.floor(body[sx] * 0.7), Math.floor(size * 0.4), 1);
-  ctx.fillRect(sx, half + Math.floor(body[sx] * 0.7), Math.floor(size * 0.4), 1);
-  // Engine glow at tail
-  ctx.fillStyle = "#3a86b8";
-  for (let y = -body[0]; y <= body[0]; y++) {
-    if (rng.chance(0.7)) ctx.fillRect(0, half + y, 1, 1);
+  // Dark canopy frame, blue glass and a white forward tip. Paint stays aft.
+  for (let x = Math.floor(size * .63); x < nose; x++) {
+    const hw = Math.max(0, Math.min(widths[x] - 1, Math.floor((nose - x) * .4)));
+    ctx.fillStyle = "#152b48"; ctx.fillRect(x, center - hw - 1, 1, hw * 2 + 3);
+    ctx.fillStyle = x % 3 === 0 ? "#a5f3ff" : "#4db5df"; ctx.fillRect(x, center - hw, 1, hw * 2 + 1);
   }
-  // Wing hardpoints
-  if (rng.chance(0.7)) {
-    const wx = Math.floor(size * rng.range(0.3, 0.5));
-    const wy = body[wx];
-    ctx.fillStyle = shade(baseColor, 0.7);
-    ctx.fillRect(wx, half - wy - 1, 3, 1);
-    ctx.fillRect(wx, half + wy + 1, 3, 1);
+  ctx.fillStyle = "#f2f4ff"; ctx.fillRect(nose - 1, center, 2, 1);
+  // Twin engine collars stay visible even with the drive idle.
+  for (const dy of engines) {
+    ctx.fillStyle = "#172236"; ctx.fillRect(tail - 1, center + dy - 1, 4, 3);
+    ctx.fillStyle = "#5d91ba"; ctx.fillRect(tail, center + dy - 1, 2, 3);
+    ctx.fillStyle = "#b0edff"; ctx.fillRect(tail - 1, center + dy, 2, 1);
   }
+  // Seeded registry plates add variation without obscuring the flight axis.
+  ctx.fillStyle = shade(baseColor, .55);
+  const plate = Math.floor(size * rng.range(.36, .5));
+  ctx.fillRect(plate, center - 1, 2, 3);
+  ctx.fillStyle = accent; ctx.fillRect(plate + 2, center, 2, 1);
   return c;
 }
 

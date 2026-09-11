@@ -77,6 +77,8 @@ export class FlightScene implements Scene {
   scanCharge = 0;      // deep-scan charge 0..1 (hold V)
   aim = 0;             // gun/laser direction; equals heading in keyboard mode
   mouseAim = false;
+  engineBurn = false;
+  retroBurn = false;
   torps: Torpedo[] = [];
   floaters: Floater[] = [];
   comms: Comms[] = [];
@@ -239,6 +241,7 @@ export class FlightScene implements Scene {
   // ---------- Update ----------
 
   update(g: Game, dt: number): void {
+    this.engineBurn = false; this.retroBurn = false;
     const w = g.world;
     const p = w.player;
     const sys = w.systems[p.systemId];
@@ -337,12 +340,14 @@ export class FlightScene implements Scene {
     }
     sfx.thrust(thrusting || retro || (g.input.isDown("x") && p.fuel > 0 && Math.hypot(p.vx, p.vy) > 4));
     if (thrusting) {
+      this.engineBurn = true;
       p.vx += Math.cos(p.angle) * ACCEL * engineFactor * dt;
       p.vy += Math.sin(p.angle) * ACCEL * engineFactor * dt;
       p.fuel = Math.max(0, p.fuel - dt * 0.55 * (h.fuelEff ?? 1));
       exhaust(this, p.x, p.y, p.angle + Math.PI, PAL.thrust);
     }
     if (retro) {
+      this.retroBurn = true;
       p.vx -= Math.cos(p.angle) * ACCEL * 0.5 * engineFactor * dt;
       p.vy -= Math.sin(p.angle) * ACCEL * 0.5 * engineFactor * dt;
       p.fuel = Math.max(0, p.fuel - dt * 0.3);
@@ -356,6 +361,7 @@ export class FlightScene implements Scene {
         const d = angDiff(p.angle, retroAngle);
         p.angle += clamp(d, -ROT * dt, ROT * dt);
         if (Math.abs(d) < 0.4) {
+          this.engineBurn = true;
           p.vx += Math.cos(p.angle) * ACCEL * engineFactor * dt;
           p.vy += Math.sin(p.angle) * ACCEL * engineFactor * dt;
           p.fuel = Math.max(0, p.fuel - dt * 0.55 * (h.fuelEff ?? 1));

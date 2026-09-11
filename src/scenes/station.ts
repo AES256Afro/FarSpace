@@ -1501,7 +1501,7 @@ export class StationScene implements Scene {
     const x = 252, lines: string[] = [];
     const h = selected.kind === "market" ? selected.hull : selected.kind === "working" ? selected.charter.hullId ? hull(selected.charter.hullId) : null : hull(selected.ship.hullId);
     if (h) {
-      const spr = g.sprite(`hull-preview-${h.id}`, () => spriteMod.genShip(new RNG(g.world.seed ^ 0x51e9 ^ h.id.length), h.spriteSize, h.color, h.accent));
+      const spr = g.sprite(`hull-preview-${h.id}`, () => spriteMod.genShip(new RNG(g.world.seed ^ 0x51e9 ^ h.id.length), h.spriteSize, h.color, h.accent, h.id));
       ctx.drawImage(spr, VW - 8 - spr.width, top + 1);
     }
     if (selected.kind === "working") {

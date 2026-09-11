@@ -2171,3 +2171,13 @@ The decision between service orders and booked fares is covered by M402.
   actual row indices for trades and a visible range count.
 - Keep market information outside actionable rows and preserve existing
   buy, sell and bulk-trade behavior.
+
+### M414: Know Your Heading
+
+- Give each hull a defined silhouette, forward canopy, armour panels and rear
+  engine bank. Use the same design for player, other pilots and yard previews.
+- Distinguish nose direction from actual drift with separate shapes and HUD
+  bearings. Keep heading readable at every zoom and independent of turret aim.
+- Display drive exhaust only during actual thrust and reverse jets during
+  retro thrust. Preserve handling, collision sizes and saved hull statistics.
+- Orient the player's system-map arrow along the current ship heading.

@@ -75,6 +75,23 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   heat vents, rover suspension and battery.
 - The Ox Mining Barge hull cracks rocks fastest and carries the most.
 
+## Reading your ship's direction
+
+- The **white chevron** ahead of your ship follows its nose. W accelerates
+  along this direction. It stays visible at every zoom level.
+- The **hollow amber diamond** shows actual drift. Turning the ship leaves
+  momentum in its previous direction until thrust changes it. Below 2 m/s,
+  the diamond disappears; the HUD still reports low speed or a stop.
+- **NOSE** and **DRIFT** bearings are labelled on the HUD. North is screen-up,
+  east is right, and degrees increase clockwise. The system map also uses an
+  oriented arrow for your ship.
+- Bright glass and a white tip mark the front of each hull. Engine banks mark
+  the rear, with exhaust during actual burns and forward jets during reverse
+  thrust. Hull class, paint and shipyard previews use the same visual design.
+- A/D turns the hull. Mouse aiming turns the turret. X turns against the
+  current drift and burns to a stop. Flight handling and ship statistics are
+  unchanged by these visual aids.
+
 ## Browsing station lists
 
 - Use the arrow keys or wheel to browse market, shipyard and other station

@@ -21,6 +21,8 @@ import { presence } from "../../core/presence";
 import { baseAt } from "../../core/wire";
 import { storyObjective } from "../../core/story";
 import { genShip } from "../../gfx/sprites";
+import { drawFlightGuides, drawShipDrive } from "../../gfx/flightguides";
+import { flightDirections } from "../../core/flightdirections";
 import { RNG } from "../../core/rng";
 import { inSafeZone } from "./ai";
 import { drawTouchControls } from "../../core/touch";
@@ -334,7 +336,7 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
   // other pilots (ghosts): translucent, tagged with their call sign
   for (const gh of presence.ghosts.values()) {
     const h = hull(gh.hull);
-    const spr = g.sprite(`ghost-${h.id}`, () => genShip(new RNG(g.world.seed ^ 0x51e9 ^ h.id.length), h.spriteSize, h.color, h.accent));
+    const spr = g.sprite(`ghost-${h.id}`, () => genShip(new RNG(g.world.seed ^ 0x51e9 ^ h.id.length), h.spriteSize, h.color, h.accent, h.id));
     const pos = presence.at(gh);
     const [sx, sy] = toScreen(pos.x, pos.y);
     if (sx < -40 || sx > VW + 40 || sy < -40 || sy > VH + 40) continue;
@@ -398,7 +400,10 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
   }
   {
     const [sx, sy] = toScreen(p.x, p.y);
+    const h = hull(p.hullId);
+    drawShipDrive(ctx, sx, sy, p.angle, h.spriteSize, z, h.id, fs.engineBurn, fs.retroBurn, g.world.time);
     drawRotated(ctx, g.playerShip(), sx, sy, p.angle, z);
+    drawFlightGuides(ctx, sx, sy, p.angle, p.vx, p.vy, h.spriteSize, z);
     if (fs.mouseAim) {
       // turret barrel + cursor reticle
       ctx.strokeStyle = PAL.ui;
@@ -611,6 +616,12 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
   }
   if ((p.wear ?? 0) >= 70) { drawText(ctx, `! WEAR ${Math.round(p.wear ?? 0)}% - YARD SERVICE DUE`, 4, wy, (p.wear ?? 0) >= 90 ? PAL.danger : PAL.warn); wy += 8; }
   drawText(ctx, `${(p.shipName ?? hull(p.hullId).name).toUpperCase()}  TORP ${p.torpedoes ?? 0}${p.seismic ? `  SEISMIC ${p.seismic}` : ""}`, 4, wy, PAL.greyDark);
+  wy += 9;
+  const directions = flightDirections(p.angle, p.vx, p.vy, hull(p.hullId).spriteSize, fs.zoom);
+  const bearingText = (d: { degrees: number; compass: string }) => `${String(d.degrees).padStart(3, "0")} ${d.compass}`;
+  ctx.fillStyle = "rgba(8,12,22,0.94)"; ctx.fillRect(2, wy - 2, 146, 10);
+  drawText(ctx, `NOSE ${bearingText(directions.nose)}`, 4, wy, PAL.white);
+  drawText(ctx, directions.drift ? `DRIFT ${bearingText(directions.drift)}` : directions.speed >= .05 ? "DRIFT <2 M/S" : "DRIFT STOPPED", 80, wy, PAL.gold);
   // heat: only shown when it matters
   const heat = p.heat ?? 0;
   if (heat > 4 || fs.scooping) {
@@ -765,9 +776,12 @@ export function drawSystemMap(g: Game, ctx: CanvasRenderingContext2D): void {
     drawText(ctx, "SINGERS' BERTH", sx + 6, sy - 2, PAL.ui);
   }
   const px = cx + p.x * sc, py = cy + p.y * sc;
+  ctx.save(); ctx.translate(px, py); ctx.rotate(p.angle);
+  ctx.beginPath(); ctx.moveTo(6, 0); ctx.lineTo(-4, -3); ctx.lineTo(-2, 0); ctx.lineTo(-4, 3); ctx.closePath();
+  ctx.strokeStyle = PAL.bg; ctx.lineWidth = 2; ctx.stroke();
   ctx.fillStyle = PAL.white;
-  ctx.fillRect(Math.round(px) - 1, Math.round(py) - 1, 3, 3);
+  ctx.fill(); ctx.restore();
   const atBerth = berth && dist(p.x, p.y, berth.x, berth.y) * sc < 16;
-  drawText(ctx, "YOU", px + 4, py + (atBerth ? 7 : -2), PAL.white);
+  drawText(ctx, "YOU", px + 8, py + (atBerth ? 7 : -2), PAL.white);
   drawText(ctx, "TAB CLOSE - G GALAXY MAP", cx - textWidth("TAB CLOSE - G GALAXY MAP") / 2, VH - 10, PAL.greyDark);
 }

@@ -554,7 +554,7 @@ export class StationWalkScene implements Scene {
       const guest = parked ? null : berthedCaptains(g.world, this.station.id)[0];
       if (guest) {
         const h = HULLS[hashStr(guest.ship) % HULLS.length];
-        const spr = g.sprite(`hull-preview-${h.id}`, () => spriteMod.genShip(new RNG(g.world.seed ^ 0x51e9 ^ h.id.length), h.spriteSize, h.color, h.accent));
+        const spr = g.sprite(`hull-preview-${h.id}`, () => spriteMod.genShip(new RNG(g.world.seed ^ 0x51e9 ^ h.id.length), h.spriteSize, h.color, h.accent, h.id));
         fit(spr, ox + 2.5 * T, oy + 2.5 * T, 26);
         ctx.fillStyle = "#3a4a6c"; ctx.fillRect(ox + T + 2, oy + 4 * T + 4, 4 * T - 4, 1);
         const nm = guest.ship.toUpperCase().slice(0, 9);
@@ -562,7 +562,7 @@ export class StationWalkScene implements Scene {
       }
       if (parked) {
         const h = hull(parked.hullId);
-        const spr = g.sprite(`hull-preview-${h.id}`, () => spriteMod.genShip(new RNG(g.world.seed ^ 0x51e9 ^ h.id.length), h.spriteSize, h.color, h.accent));
+        const spr = g.sprite(`hull-preview-${h.id}`, () => spriteMod.genShip(new RNG(g.world.seed ^ 0x51e9 ^ h.id.length), h.spriteSize, h.color, h.accent, h.id));
         fit(spr, ox + 2.5 * T, oy + 2.5 * T, 26);
         ctx.fillStyle = "#3a4a6c"; ctx.fillRect(ox + T + 2, oy + 4 * T + 4, 4 * T - 4, 1);
         const nm = (parked.name ?? h.name).toUpperCase().slice(0, 9);
