@@ -745,6 +745,10 @@ describe("the post", () => {
     expect((w.mailQueue ?? []).length).toBe(notes);
     const mil = Object.values(w.systems).flatMap((s) => s.stations).find((x) => x.military);
     if (mil) expect(genMissionsFor(w, mil, new RNG(4)).some((m) => m.kind === "post")).toBe(false);
+    let convoy: import("../src/world").Mission | undefined;
+    for (let seed = 0; seed < 8 && !convoy; seed++) convoy = genMissionsFor(w, st, new RNG(seed)).find((m) => m.kind === "convoy");
+    expect(convoy).toBeTruthy();
+    if (convoy) { convoy.accepted = true; expect(missionDeliverable(w, convoy, st)).toBe(false); expect(convoy.reward).toBeGreaterThan(150); }
   });
 });
 

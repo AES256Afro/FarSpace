@@ -378,6 +378,8 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   three of them on your stern. Keep them within a few hundred metres, take
   them to any gate and jump: whoever kept up comes through with you and pays,
   more in pirate-heavy systems. Lose them for long and they give up on you.
+- Stations post convoys on the MISSIONS board too: accept one and it forms on
+  your stern when you launch, with the pay listed up front.
 
 ## The week
 

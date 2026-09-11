@@ -726,6 +726,7 @@ export class StationScene implements Scene {
     this.fares = this.fares.filter((f) => f !== m);
     if (m.kind === "passenger" && m.demand) g.toast(`${(m.passengerName ?? "").toUpperCase()} MENTIONS THEY'D APPRECIATE ${commodity(m.demand).name.toUpperCase()} ABOARD`);
     if (m.kind === "repair") { g.tenderMission = m; g.toast("SUITING UP - THE PLANT IS THROUGH THE YARD DOOR"); sfx.repair(); g.setScene("repair"); return; }
+    if (m.kind === "convoy") { p.convoyPending = m.id; g.toast("THE CONVOY LEAD NODS. 'WE LAUNCH WHEN YOU DO. DON'T LOSE US.'"); sfx.select(); return; }
     g.toast(impressed || "MISSION ACCEPTED");
     if (m.kind === "escort") g.showHint("escort", "THE FREIGHTER LAUNCHES WHEN YOU UNDOCK - STAY CLOSE");
     if (m.kind === "research") g.showHint("research", "IN THE TARGET SYSTEM, HOLD V TO DEEP-SCAN FOR THE SIGNAL");

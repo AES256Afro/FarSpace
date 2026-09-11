@@ -837,4 +837,7 @@ Time passes for the people on the ship, and for the ship.
       marshal's wager; fares impressed by a record holder; the roster marks
       families met
 
+## Milestone 120 — Convoy on the Board ✅ (Sep 2026)
+- [x] Convoy missions on station boards; accept and launch
+
 ## Later

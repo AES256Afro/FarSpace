@@ -137,7 +137,7 @@ export interface SystemDef {
   permit?: boolean; // entry needs ALLIED standing with the owning faction
 }
 
-export type MissionKind = "delivery" | "bounty" | "mining" | "escort" | "passenger" | "research" | "arc" | "ground" | "repair" | "post" | "photo";
+export type MissionKind = "delivery" | "bounty" | "mining" | "escort" | "passenger" | "research" | "arc" | "ground" | "repair" | "post" | "photo" | "convoy";
 
 export interface Mission {
   id: string;
@@ -317,6 +317,7 @@ export interface PlayerState {
   influence?: Record<string, number>; // "<week>:<system>:<faction>" -> your push in this week's border contest
   lastWeekSeen?: string;             // the week key last announced at a dock
   marshalWager?: boolean;            // the marshal's challenge: the next under-par race pays double
+  convoyPending?: string | null;     // mission id of a convoy that forms on your stern when you launch
   messes?: number;                   // mess calls you sat down for
   mealsCooked?: number;              // galley meals you cooked
   vistaViews?: number;               // times you looked out of the viewport
@@ -2392,6 +2393,17 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
       });
     }
   }
+  // a convoy on the board: slow haulers leaving for the gate who'd pay for company
+  if (!station.military && sys.jumpPoints.length && rng.chance(0.5)) {
+    const jp = rng.pick(sys.jumpPoints); const to = world.systems[jp.targetSystemId];
+    const pay = 200 + Math.round(sys.pirateActivity * 320) + rng.int(0, 60);
+    missions.push({
+      id: `convoy-${station.id}-${world.missionCounter++}`, kind: "convoy", accepted: false, done: false, tier: 0,
+      title: `Convoy leaving for the ${to?.name ?? "gate"} gate`,
+      desc: `Three haulers, no guns, and a long way to the gate. Launch and they form on your stern; keep them close and jump. ${pay}cr on the other side, more if all three make it.`,
+      fromStationId: station.id, targetSystemId: sys.id, targetStationId: station.id, reward: pay, repReward: 3,
+    });
+  }
   // the rally: a contested station wants supplies, and the faction remembers who brings them
   { const bc = borderContest(world); if (bc && bc.systemId === sys.id && !station.military) {
     const exports = new Set(stationExports(station));
@@ -3211,6 +3223,7 @@ export function missionDeliverable(world: World, m: Mission, station: StationDef
   if (m.kind === "repair") return m.targetStationId === station.id && !!m.tenderDone;
   if (m.kind === "post") return m.targetStationId === station.id;
   if (m.kind === "photo") return !!m.photoDone && m.fromStationId === station.id;
+  if (m.kind === "convoy") return false; // settled at the gate, never turned in
   if (m.targetStationId !== station.id) return false;
   if (m.commodityId && m.qty) return (p.cargo[m.commodityId] ?? 0) >= m.qty;
   return false;
