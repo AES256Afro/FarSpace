@@ -719,4 +719,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] W on RECORD: votes, the border, the regatta, holdings, charters and
       fleet on one page
 
+## Milestone 89 — Handbook Pages ✅ (Sep 2026)
+- [x] Seven in-game handbook sections for life aboard, the post, the race,
+      stakes and the vote, the border, fleet and passage, the wire
+
 ## Later

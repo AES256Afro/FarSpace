@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.89 - HANDBOOK PAGES", [
+    "THE IN-GAME HANDBOOK COVERS LIFE ABOARD, THE POST, THE RACE, STAKES AND THE VOTE, THE BORDER, THE FLEET AND THE WIRE.",
+  ]],
   ["0.88 - THE WEEK", [
     "W ON THE RECORD TAB: VOTES, THE BORDER, THE REGATTA, HOLDINGS, CHARTERS AND FLEET ON ONE PAGE.",
   ]],
