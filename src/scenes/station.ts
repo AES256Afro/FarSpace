@@ -1843,7 +1843,7 @@ export class StationScene implements Scene {
     const caps = berthedCaptains(w, st.id);
     drawText(ctx, caps.length ? caps.map((c) => `${c.name.toUpperCase()} OFF THE ${c.ship.toUpperCase()}${isRival(c) ? " (RIVAL)" : isFriend(c) ? " (FRIEND)" : ""}`).join("; ").slice(0, 104) : "NOBODY YOU KNOW IS BERTHED THIS WEEK.", 8, y, PAL.grey); y += 9;
     { const parked = (p.fleet ?? []).filter((f) => f.stationId === st.id); drawText(ctx, `${(p.shipName ?? hull(p.hullId).name).toUpperCase()} IN BAY 4${parked.length ? `; YOURS ACROSS THE DECK: ${parked.map((f) => (f.name ?? hull(f.hullId).name).toUpperCase()).join(", ")}` : ""}. `.slice(0, 104), 8, y, PAL.grey); y += 9; }
-    drawText(ctx, `THE DOCK-HAND: ${dockhandLines(w, st, new RNG(hashStr(`dh:${st.id}:${weekKey()}`)))[0].toUpperCase()}`.slice(0, 104), 8, y, PAL.grey); y += 9;
+    drawText(ctx, `THE DOCK-HAND: ${dockhandLines(w, st, new RNG(hashStr(`dh:${st.id}:${weekKey()}`)))[0].replace(/^'/, "").split(/[.!?]/)[0].toUpperCase()}.`.slice(0, 92), 8, y, PAL.grey); y += 9;
     y += 3;
     drawText(ctx, "ON YOUR SHIP", 8, y, PAL.gold); y += 9;
     const lost = p.lostProperty ?? [];
