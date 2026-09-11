@@ -381,6 +381,13 @@ export class StationScene implements Scene {
         this.cursor = clamp(this.cursor, 0, rows.length - 1);
         const id = rows[this.cursor];
         if (embargoed(g.world, st.factionId)) { if (enter || inp.wasPressed("b") || inp.wasPressed("s")) g.toast("EMBARGO - THIS MARKET WON'T TRADE WITH YOU"); break; }
+        if (inp.wasPressed("n") && id) {
+          const best = this.bestKnownSell(g, id);
+          const target = best ? Object.values(g.world.systems).find((s2) => s2.name === best.system) : null;
+          if (!best || !target) g.toast("NO OTHER MARKET SEEN FOR THAT YET");
+          else if (target.id === p.systemId) g.toast(`${best.station.toUpperCase()} IS IN THIS SYSTEM - JUST FLY THERE`);
+          else { p.navTarget = target.id; g.toast(`COURSE PLOTTED FOR ${best.station.toUpperCase()}, ${best.system.toUpperCase()}: ${commodity(id).name.toUpperCase()} SELLS FOR ${best.price}CR THERE`); sfx.select(); }
+        }
         if (inp.wasPressed("i")) { const n = inp.isDown("Shift") ? 10 : 1; const line = buyStake(g.world, st, n); g.toast(line); if (line.includes("HELD")) { sfx.select(); if (totalShares(p) >= 25) flag(g, "shareholder"); } }
         // Enter and click sell what you hold; they buy only when your hold is empty of it. B and S stay explicit.
         const holding = (p.cargo[id] ?? 0) > 0;
@@ -1208,7 +1215,7 @@ export class StationScene implements Scene {
     // the hint follows the cursor: what Enter will do to the highlighted row
     const selId = this.marketRows(g)[clamp(this.cursor, 0, Math.max(0, this.marketRows(g).length - 1))];
     const selHeld = selId ? (p.cargo[selId] ?? 0) : 0;
-    drawText(ctx, selHeld > 0 ? "ENTER SELLS  SHIFT ALL" : "ENTER BUYS  SHIFT X10", 366, top, selHeld > 0 ? PAL.gold : PAL.greyDark);
+    drawText(ctx, selHeld > 0 ? "ENTER SELLS  SHIFT ALL  N PLOT" : "ENTER BUYS  SHIFT X10  N PLOT", 366, top, selHeld > 0 ? PAL.gold : PAL.greyDark);
     const rows = this.marketRows(g);
     const rowH = rows.length > 12 ? 9 : 11;
     rows.forEach((id, i) => {

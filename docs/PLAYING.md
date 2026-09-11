@@ -229,6 +229,12 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Calls and courses
+
+- The galaxy map's foot lists this week's calls: a crisis, maydays on the
+  wire, the contested seam. On the MARKET tab, N plots a course to the best
+  known market for the selected good, so a run is one key away.
+
 ## Hum
 
 - The tannoy speaks on the services screen as well as the promenade. In

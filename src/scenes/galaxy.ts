@@ -221,6 +221,14 @@ export class GalaxyScene implements Scene {
       const key: [string, string][] = [[PAL.gold, "ROUTE / STRUCTURE"], ["#ffe9a0", "WONDER"], [PAL.info, "OTHER PILOTS' LIGHTS"], [PAL.danger, "WAR / DARK"]];
       for (const [col, label] of key) { ctx.fillStyle = col; ctx.fillRect(lx, ly + 1, 3, 3); drawText(ctx, label, lx + 6, ly, PAL.greyDark); lx += textWidth(label) + 16; }
     }
+    {
+      // where help is wanted this week: a crisis, maydays on the wire, the contested seam
+      const calls: string[] = [];
+      const cr = w.crisis; if (cr && cr.delivered < cr.need && w.time < cr.until) calls.push(`CRISIS AT ${(w.systems[cr.systemId]?.name ?? "?").toUpperCase()}`);
+      if (w.realGalaxy) { const md = new Set<string>(); for (const sys of Object.values(w.systems)) if (wire.lightsAt(sys.name).some((l) => l.kind === "mayday")) md.add(sys.name.toUpperCase()); if (md.size) calls.push(`MAYDAY: ${[...md].slice(0, 2).join(", ")}`); }
+      const bc = borderContest(w); if (bc) calls.push(`CONTESTED: ${(w.systems[bc.systemId]?.name ?? "?").toUpperCase()}`);
+      if (calls.length) { const line = `CALLS THIS WEEK - ${calls.join("  -  ")}`.slice(0, 92); drawText(ctx, line, VW / 2 - textWidth(line) / 2, VH - 32, PAL.warn); }
+    }
     const help = `CLICK: INTEL - CLICK AGAIN/N: PLOT COURSE - B: BOOKMARK - V: LAYERS ${this.layers ? "ON" : "OFF"} - ESC BACK`;
     drawText(ctx, help, VW / 2 - textWidth(help) / 2, VH - 10, PAL.greyDark);
   }

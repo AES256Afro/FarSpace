@@ -775,4 +775,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Tannoy while docked; watch changes called on the band in flight; the
       lounge on the band
 
+## Milestone 104 — Calls and Courses ✅ (Sep 2026)
+- [x] Calls for help on the galaxy map; N on the market plots a course to the
+      best known sell
+
 ## Later
