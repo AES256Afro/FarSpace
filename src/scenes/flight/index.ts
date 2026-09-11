@@ -1287,7 +1287,7 @@ export class FlightScene implements Scene {
   }
 
   toggleCruise(g: Game): void {
-    if (this.cruise) { this.cruise = false; g.toast("CRUISE DISENGAGED"); sfx.select(); return; }
+    if (this.cruise) { this.cruise = false; g.toast("CRUISE DISENGAGED"); sfx.select(); { const pil = g.world.player.crew.find((c) => c.role === "pilot" && !c.sick); if (pil && this.comms.length < 3) this.comms.push({ from: pil.name.split(" ")[0].toUpperCase(), text: ["STEADY AS SHE GOES.", "DROPPING OUT. HANDS ON THE STICK.", "OFF CRUISE. THE COFFEE MAY NOW BE UNSTRAPPED."][Math.floor(Math.random() * 3)], life: 4, color: PAL.grey }); } return; }
     if (this.massLocked(g)) { g.toast("MASS LOCKED - GET CLEAR OF STATIONS, WORLDS AND THE STAR"); return; }
     if (g.world.player.fuel < 5) { g.toast("NOT ENOUGH FUEL FOR CRUISE"); return; }
     this.cruise = true;

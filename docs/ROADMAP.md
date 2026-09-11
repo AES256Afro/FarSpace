@@ -1149,6 +1149,10 @@ Time passes for the people on the ship, and for the ship.
 - [x] An envoy bound for a system at war pays half again and the rep is
       better; a ship on the roster reviews the captain at the wall of record
 
+## Milestone 196 — Stations ✅ (Sep 2026)
+- [x] The HUD names who has the conn on autopilot, who's at tactical and
+      on damage control at red; the helm says steady as she goes
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

@@ -1043,6 +1043,10 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   more, off cruise, and report back to the watch that sent you. The HUD
   counts the seconds on the mission line; a toast says when the flag's been
   shown. Rep and credits on return.
+- Bottom right of the flight HUD names the stations when they matter: who
+  has the conn on autopilot, who's at tactical at red alert, who's on damage
+  control. Drop out of cruise with a pilot aboard and the helm says steady as
+  she goes.
 - When someone earns a skill star, the rest of the crew stand them a drink:
   morale up all round. When the autopilot engages with a Number One aboard,
   they lay in the course on the band and take the conn. And a counsellor
