@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS, roleLabel } from "../
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, tickAlumniMail, catGift, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, notableOutcome, ledger, ledgerAround, LEDGER_LABELS, dockingsAt, OLD_HAND_AT, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter, RACE_GATES, raceHolder, postDelivered, captainNickname, charterRoute, tickWorld, signGuestbook, regattaObjective, buyStake, collectStake, stakeDividend, stakePrice, totalShares, hasSpecialty, crewOwnHull, OWN_HULL_CREW_FEE, favourFor, favourDone, resolveBorder, pushInfluence, weekKey, borderStanding, replyToLetter, borderContest, collectRemoteStakes, lanesReport, isFriend, isRival, hangPicture, leaveLostItem, tickLostProperty, berthedCaptains, stardate, envoyOutcome, patientOutcome, beltRate, isBeltStation, receptionDue, receptionHeld, legSummary, newLeg, commandRank, registry } from "../world";
+  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, tickAlumniMail, catGift, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, notableOutcome, ledger, ledgerAround, LEDGER_LABELS, dockingsAt, OLD_HAND_AT, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter, RACE_GATES, raceHolder, postDelivered, captainNickname, charterRoute, tickWorld, signGuestbook, regattaObjective, buyStake, collectStake, stakeDividend, stakePrice, totalShares, hasSpecialty, crewOwnHull, OWN_HULL_CREW_FEE, favourFor, favourDone, resolveBorder, pushInfluence, weekKey, borderStanding, replyToLetter, borderContest, collectRemoteStakes, lanesReport, isFriend, isRival, hangPicture, leaveLostItem, tickLostProperty, berthedCaptains, stardate, envoyOutcome, patientOutcome, beltRate, isBeltStation, receptionDue, receptionHeld, legSummary, newLeg, commandRank, registry, grievanceDue, grievanceHeard } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
 import { BLUEPRINTS, MATERIALS, engGrade, nextCost, canAfford, upgrade } from "../data/engineering";
@@ -129,6 +129,7 @@ export class StationScene implements Scene {
     { const l = legSummary(g.world); if (l) logEntry(g.world, l); newLeg(p, g.world.time); }
     { const fr = friendsAt(g.world, this.station.id); if (fr.length && Math.random() < hoursRate(this.station).lounge) g.toast(`${fr[0].name.toUpperCase()} IS IN THE LOUNGE AND WAVING YOU OVER`); }
     if (receptionDue(g.world, this.station)) this.reception(g);
+    else if (grievanceDue(g.world)) this.grievance(g);
   }
 
   settleCrew(g: Game): void {
@@ -1837,6 +1838,22 @@ export class StationScene implements Scene {
   }
   // The week: the strategy layer on one page. Votes, the border, the regatta, holdings, your name.
   // the harbour view: what this port knows about you and your ship right now, without walking the deck
+  // the crew want a word: a bonus, a night ashore, or your foot down
+  grievance(g: Game): void {
+    const st = this.station; const p = g.world.player;
+    grievanceHeard(g.world);
+    const spokesman = [...p.crew].sort((a, b) => a.morale - b.morale)[0];
+    const fee = 150 * p.crew.length;
+    const enc: Encounter = { id: "grievance", where: "space", title: "THE CREW WANT A WORD", weight: 0,
+      text: `${spokesman.name} is waiting at the clamp with the others behind them, which is how you know it's been discussed. Nobody's shouting. That's worse. Too many alerts, too many burns, too long between ports, not enough of whatever it is that makes a ship worth staying on. They want to know what you're going to do about it.`,
+      options: [
+        { label: `A BONUS ROUND (${fee}CR)`, hint: "Morale +15 all round; they'll remember it was money", requires: () => p.credits >= fee, result: (g2) => { p.credits -= fee; for (const c of p.crew) c.morale = Math.min(100, c.morale + 15); logEntry(g2.world, `The crew wanted a word at ${st.name}; paid a bonus round`); sfx.pickup(); return "YOU PAY. THEY TAKE IT. IT HELPS, AND EVERYBODY KNOWS WHAT KIND OF HELP IT IS. MORALE UP. THE NEXT WORD WILL COST MORE."; } },
+        { label: "A NIGHT ASHORE, ON YOU", hint: "Morale +10, loyalty up, the ship sits a while", result: (g2) => { for (const c of p.crew) { c.morale = Math.min(100, c.morale + 10); c.loyalty = (c.loyalty ?? 0) + 0.3; } p.wear = (p.wear ?? 0) + 2; g2.world.time += 1800; logEntry(g2.world, `The crew wanted a word at ${st.name}; gave them a night ashore`); flag(g2, "word"); return "YOU SEND THEM DOWN THE GANGWAY WITH THE SHIP'S CARD AND NO CURFEW. THE PROMENADE HEARS THEM COMING BACK. MORALE AND LOYALTY UP; THE SHIP SITS HALF AN HOUR LONGER THAN YOU MEANT."; } },
+        { label: "PUT YOUR FOOT DOWN", hint: "Half the time they respect it. Half the time somebody walks.", result: (g2, rng) => { if (rng.chance(0.5)) { for (const c of p.crew) c.morale = Math.min(100, c.morale + 3); logEntry(g2.world, `The crew wanted a word at ${st.name}; put my foot down and they took it`); return "YOU TELL THEM WHAT THE SHIP IS FOR AND WHAT IT ISN'T, AND THAT ANYONE WHO WANTS THE GANGWAY KNOWS WHERE IT IS. NOBODY MOVES. SOMETHING SETTLES. MORALE UP, A LITTLE, FOR THE STRANGEST REASON."; } const c = spokesman; retireCrew(p, c, st.id, g2.world.time); logEntry(g2.world, `The crew wanted a word at ${st.name}; ${c.name} took the gangway`); return `YOU TELL THEM WHAT THE SHIP IS FOR. ${c.name.toUpperCase()} NODS, GOES BELOW FOR THEIR BAG, AND TAKES THE GANGWAY. THE OTHERS STAY. THEY DON'T LOOK AT YOU FOR A WATCH.`; } },
+      ] };
+    (g.scenes["encounter"] as EncounterScene).open(g, enc, "station", true);
+  }
+
   // a reception in your honour: a speech, a gift, or an early night
   reception(g: Game): void {
     const st = this.station; const fac = faction(st.factionId); const p = g.world.player;

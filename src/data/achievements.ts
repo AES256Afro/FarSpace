@@ -129,5 +129,6 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "conditions", title: "CHANGED THE CONDITIONS", desc: "Pass the unwinnable scenario", check: (w) => !!w.player.flags?.conditions },
   { id: "immunity", title: "DIPLOMATIC PASSAGE", desc: "Wave an envoy's seal at customs", check: (w) => !!w.player.flags?.immunity },
   { id: "rite", title: "ONE WORD, THEN TEA", desc: "Join an envoy's rite", check: (w) => !!w.player.flags?.rite },
+  { id: "word", title: "A NIGHT ASHORE", desc: "Answer the crew's grievance with a night on you", check: (w) => !!w.player.flags?.word },
   { id: "elite", title: "ELITE", desc: "Top any career ladder", check: (w) => (["explorer", "trader", "miner"] as const).some((k) => rankOf(w.player, k).idx >= 8) },
 ];

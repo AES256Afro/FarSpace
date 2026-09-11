@@ -1026,6 +1026,13 @@ export function nameTheShip(w: World, name: string): string {
   w.player.voiceName = n; logEntry(w, `Asked the ship what it wanted to be called. It said ${n}`);
   return `"${n.toUpperCase()}." A PAUSE ON THE BAND. "YES. THAT'S IT. THAT'S THE ONE. I'VE BEEN SAYING IT TO MYSELF FOR A WHILE. THANK YOU FOR ASKING."`;
 }
+// The crew want a word: when morale has sunk low enough, they say so at the next clamp, once a week.
+export function grievanceDue(w: World, now = Date.now()): boolean {
+  const p = w.player; if (p.crew.length < 2) return false;
+  const avg = p.crew.reduce((a, c) => a + c.morale, 0) / p.crew.length;
+  return avg < 32 && !(p.flags ?? {})[`grievance:${weekKey(now)}`];
+}
+export function grievanceHeard(w: World, now = Date.now()): void { (w.player.flags ??= {})[`grievance:${weekKey(now)}`] = true; }
 // Receptions: dock with standing (rep 20+) and now and then the faction throws one in your honour, once a week.
 export function receptionDue(w: World, st: StationDef, now = Date.now()): boolean {
   const p = w.player; if (st.factionId === "vex" || (p.rep[st.factionId] ?? 0) < 20) return false;

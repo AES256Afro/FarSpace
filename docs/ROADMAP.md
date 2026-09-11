@@ -1012,4 +1012,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] A command rank from deeds (skipper to admiral) and a registry for the
       hull; control reads both out, the chronicle and the harbour view carry them
 
+## Milestone 164 — The Crew Want a Word ✅ (Sep 2026)
+- [x] When morale sinks the crew meet you at the clamp: a bonus round, a
+      night ashore, or your foot down (and maybe somebody walks)
+
 ## Later
