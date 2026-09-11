@@ -12,6 +12,7 @@ import { StationDef, findStation, isFriend, isRival, rivalOf, galaxyEventAt, doc
 import { occasionFor } from "../data/occasions";
 import type { Encounter } from "../data/encounters";
 import type { EncounterScene } from "./encounter";
+import { wrap } from "./encounter";
 import { faction, genPersonName } from "../data/data";
 import { StationScene } from "./station";
 import { concourseGossip } from "../data/gossip";
@@ -480,7 +481,7 @@ export class StationWalkScene implements Scene {
 
     // header
     { const t = stationHour(this.station); drawText(ctx, `${this.station.name.toUpperCase()} - PROMENADE - ${clockText(t)} STATION TIME, ${t.label}`, 8, 6, PAL.white); }
-    if (this.tannoy) { const tl = `TANNOY: ${this.tannoy}`.slice(0, 96); drawText(ctx, tl, VW / 2 - textWidth(tl) / 2, 26, PAL.gold); }
+    if (this.tannoy) { const lines = wrap(`TANNOY: ${this.tannoy}`, 90).slice(0, 2); lines.forEach((tl, i) => drawText(ctx, tl, VW / 2 - textWidth(tl) / 2, 26 + i * 8, PAL.gold)); }
     drawText(ctx, `${fac.name}${this.station.military ? " - MILITARY" : ""}`, 8, 15, fac.color);
     drawText(ctx, "WASD WALK - E USE - ESC SERVICES MENU", VW - textWidth("WASD WALK - E USE - ESC SERVICES MENU") - 6, 6, PAL.greyDark);
     if (this.station.military) {

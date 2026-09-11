@@ -56,11 +56,12 @@ export function tannoyLines(w: World, st: StationDef, rng: RNG, now = Date.now()
   if (p.regatta === 3 && p.dockedAt === st.id) pool.push("THE REGATTA CHAMPION IS ON THE STATION. THE MARSHAL ASKS THAT NOBODY MAKE A FUSS. THE MARSHAL IS MAKING A FUSS.");
   const nick = captainNickname(w);
   if (nick) pool.push(`${st.name.toUpperCase()} WISHES ${nick} A SAFE LANE. THAT'S NOT A STANDARD ANNOUNCEMENT. SOMEBODY IN CONTROL LIKES YOU.`);
-  if (p.dockedAt === st.id) pool.push(`THE ${(p.shipName ?? hull(p.hullId).name).toUpperCase()} IS BERTHED IN BAY 4. CREW SHORE LEAVE ENDS WHEN THE CAPTAIN SAYS SO.`);
+  const shipName = (p.shipName ?? hull(p.hullId).name).toUpperCase().replace(/^THE /, "");
+  if (p.dockedAt === st.id) pool.push(`THE ${shipName} IS BERTHED IN BAY 4. CREW SHORE LEAVE ENDS WHEN THE CAPTAIN SAYS SO.`);
   if ((p.shoreCrew ?? []).some((s) => s.stationId === st.id)) pool.push("WOULD CREW ON SHORE LEAVE PLEASE STOP SLEEPING IN THE OBSERVATION LOUNGE. THERE ARE BUNKS FOR THAT.");
   // PAGING: the station knows who is aboard and what they have left undone. These go in twice so they come round sooner.
   if (p.dockedAt === st.id) {
-    const ship = (p.shipName ?? hull(p.hullId).name).toUpperCase();
+    const ship = shipName;
     const page: string[] = [];
     if ((p.mail ?? []).some((m) => !m.replied && w.time - m.dueT < 1800)) page.push(`WOULD THE CAPTAIN OF THE ${ship} COLLECT THEIR MAIL FROM THE HARBOUR OFFICE. IT HAS BEEN THERE A WHILE. IT IS HANDWRITTEN.`);
     if (p.cat && p.catAway === st.id) page.push(`WOULD THE OWNER OF ${p.cat.name.toUpperCase()} COLLECT THEM FROM THE PROMENADE. THE HARBOUR OFFICE IS OUT OF FISH AND PATIENCE.`);
