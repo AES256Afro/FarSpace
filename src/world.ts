@@ -329,6 +329,7 @@ export interface PlayerState {
   vistaViews?: number;               // times you looked out of the viewport
   convoys?: number;                  // convoys walked through a gate
   catAway?: string | null;           // station id where the cat got left behind; she turns up again
+  juice?: number;                    // doses of burn juice from a clinic: one hard burn each
   lostProperty?: LostItem[];         // what fares left in the cabin; hand it in, or keep it
   keepsakes?: string[];              // small things that stayed aboard: unclaimed lost property
   regatta?: number;                  // the regatta: 0 entered, 1 first course won, 2 second, 3 champion
@@ -922,6 +923,21 @@ export function settlePassengers(p: PlayerState): string[] {
   }
   settleRequests(p, out);
   return out;
+}
+// The juice: a clinic sells it, a dose a time. One hard burn per leg: faster cruise, keener thrust,
+// and the crew and the frame pay for it.
+export const JUICE_PRICE = 150, JUICE_CAP = 3;
+export function buyJuice(p: PlayerState): string {
+  if ((p.juice ?? 0) >= JUICE_CAP) return "CLINIC: 'THREE DOSES IS THE LIMIT. THAT'S NOT A RULE, IT'S ADVICE.'";
+  if (p.credits < JUICE_PRICE) return `CLINIC: 'BURN JUICE IS ${JUICE_PRICE}CR A DOSE. YOU'RE SHORT. GOOD.'`;
+  p.credits -= JUICE_PRICE; p.juice = (p.juice ?? 0) + 1;
+  return `CLINIC: ONE DOSE OF BURN JUICE, -${JUICE_PRICE}CR. 'COUCHES, STRAPS, AND NOBODY EATS FIRST. ${p.juice} ABOARD.'`;
+}
+export function takeJuice(p: PlayerState): string | null {
+  if ((p.juice ?? 0) <= 0) return null;
+  p.juice = (p.juice ?? 0) - 1; p.wear = (p.wear ?? 0) + 4;
+  for (const c of p.crew) c.morale = Math.max(0, c.morale - 4);
+  return "THE JUICE GOES IN AND THE COUCHES TAKE THE WEIGHT. HARD BURN UNTIL YOU DOCK OR JUMP. THE CREW WILL HATE YOU FOR AN HOUR.";
 }
 // Lost property: fares leave things in the cabin. The harbour office where they got off takes it back
 // for a small reward; after four dockings unclaimed, it's the ship's.

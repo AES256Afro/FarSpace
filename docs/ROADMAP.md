@@ -924,4 +924,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Envoys carry treaties between two factions on a deadline; land them in
       time and unshot for rep on both sides, or the talks fail
 
+## Milestone 142 — The Juice ✅ (Sep 2026)
+- [x] Clinics sell burn juice; a hard burn from the pause menu lasts until
+      you dock or jump: faster cruise, keener thrust, the crew and the frame pay
+
 ## Later

@@ -5,7 +5,7 @@ import { ask, confirmBox } from "../../core/dialog";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra, raceCourse, racePar, racePrize, recordRace, beatHolder, captainNickname, leaveWreck, addWireWrecks, enterRegatta, regattaProgress, hasSpecialty, maydayAnswered, watchIndex, onWatch, raceHolder, askPassengerRequest } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra, raceCourse, racePar, racePrize, recordRace, beatHolder, captainNickname, leaveWreck, addWireWrecks, enterRegatta, regattaProgress, hasSpecialty, maydayAnswered, watchIndex, onWatch, raceHolder, askPassengerRequest, takeJuice } from "../../world";
 import { COMMODITIES, commodity } from "../../data/data";
 import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
@@ -136,6 +136,7 @@ export class FlightScene implements Scene {
       { label: "HANDBOOK", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("almanac"); } },
       { label: "THE CHRONICLE", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("chronicle"); } },
       { label: "THE ROSTER", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("roster"); } },
+      ...((g.world.player.juice ?? 0) > 0 && !this.hardBurn && !this.docking ? [{ label: `HARD BURN (JUICE X${g.world.player.juice})`, act: () => { this.paused = false; const l = takeJuice(g.world.player); if (l) { this.hardBurn = true; g.toast(l); sfx.alarm(); flag(g, "juiced"); logEntry(g.world, "Hard burn on the juice"); } } }] : []),
       ...(() => {
         const p = g.world.player; const sys = g.world.systems[p.systemId];
         const near = g.world.realGalaxy && wire.getCallsign() ? wondersIn(g.world, sys.id).find((wd) => dist(p.x, p.y, wd.x, wd.y) <= WONDER_RANGE) : undefined;
@@ -244,8 +245,8 @@ export class FlightScene implements Scene {
     if (g.input.wasPressed("j")) this.toggleCruise(g);
     if (this.cruise && this.massLocked(g)) { this.cruise = false; this.scanMsg = "MASS LOCK - DROPPED FROM CRUISE"; this.scanTimer = 2; sfx.alarm(); }
     if (this.towing && this.cruise) { this.cruise = false; g.toast("CAN'T CRUISE WITH A TOW LINE"); }
-    const cruiseMul = this.cruise ? 4.5 : this.towing ? 0.55 : 1;
-    const ACCEL = h.accel * pilot * tuned * wearThrust(p) * (this.cruise ? 3 : 1);
+    const cruiseMul = (this.cruise ? 4.5 : this.towing ? 0.55 : 1) * (this.hardBurn ? 1.4 : 1);
+    const ACCEL = h.accel * pilot * tuned * wearThrust(p) * (this.cruise ? 3 : 1) * (this.hardBurn ? 1.3 : 1);
     const ROT = h.rotSpeed * pilot * (this.cruise ? 0.6 : 1);
     const MAXS = h.maxSpeed * tuned * cruiseMul;
     this.updateAutopilot(g, dt);
@@ -631,7 +632,9 @@ export class FlightScene implements Scene {
 
   // ---------- Interactions ----------
 
+  hardBurn = false;
   dockAt(g: Game, st: StationDef): boolean {
+    this.hardBurn = false;
     const p = g.world.player;
     const rep = p.rep?.[st.factionId] ?? 0;
     if (st.military && rep < -20) { g.toast("DOCKING DENIED - YOUR RECORD PRECEDES YOU"); return false; }
@@ -1442,7 +1445,7 @@ export class FlightScene implements Scene {
         this.scanTimer = 2.5;
       }
     }
-    p.fuel -= cost;
+    p.fuel -= cost; this.hardBurn = false;
     p.jumpStreak = (p.jumpStreak ?? 0) + 1;
     jumpWear(p);
     { const up = crewXp(p, "pilot"); if (up) g.toast(up); }

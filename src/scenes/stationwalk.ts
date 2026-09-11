@@ -8,7 +8,7 @@ import { RNG, hashStr } from "../core/rng";
 import { dist } from "../core/mathx";
 import { sfx } from "../core/sfx";
 import { flag } from "../core/achievements";
-import { StationDef, findStation, isFriend, isRival, rivalOf, galaxyEventAt, dockingsAt, raceHolder, stakeDividend, weekKey, addCargo, logEntry, berthedCaptains, rivalryLine, handInLostItem } from "../world";
+import { StationDef, findStation, isFriend, isRival, rivalOf, galaxyEventAt, dockingsAt, raceHolder, stakeDividend, weekKey, addCargo, logEntry, berthedCaptains, rivalryLine, handInLostItem, buyJuice, JUICE_PRICE } from "../world";
 import { occasionFor } from "../data/occasions";
 import type { Encounter } from "../data/encounters";
 import type { EncounterScene } from "./encounter";
@@ -323,14 +323,18 @@ export class StationWalkScene implements Scene {
     if (near && inp.wasPressed("e")) {
       if (near.def.tab === -2) { this.harbourmaster(g); return; }
       if (near.def.tab === -1) {
-        // the clinic: sick crew back on their feet, for a fee
+        // the clinic: sick crew back on their feet for a fee, and the juice for a hard burn
         const p = g.world.player;
         const sick = p.crew.filter((c) => c.sick);
-        if (!sick.length) { this.msg = "CLINIC: 'EVERYONE'S FINE. TRY THE BAR.'"; this.msgTimer = 4; return; }
         const fee = 120 * sick.length;
-        if (p.credits < fee) { this.msg = `CLINIC: ${fee}CR FOR ${sick.length} PATIENT${sick.length > 1 ? "S" : ""}. YOU'RE SHORT.`; this.msgTimer = 4; return; }
-        p.credits -= fee; for (const c of sick) { c.sick = null; c.morale = Math.min(100, c.morale + 5); }
-        this.msg = `CLINIC: ${sick.map((c) => c.name.toUpperCase()).join(" AND ")} TREATED, -${fee}CR. 'REST. REAL REST. I KNOW YOU WON'T.'`; this.msgTimer = 6;
+        const enc: Encounter = { id: "clinic", where: "space", title: "THE CLINIC", weight: 0,
+          text: `${sick.length ? `${sick.map((c) => c.name).join(" and ")} on the cots, ${fee}cr to put them right.` : "Everyone's fine. The medic looks almost disappointed."} On the shelf behind the counter: burn juice, ${JUICE_PRICE}cr a dose. One hard burn each, until you dock or jump. Faster cruise, keener thrust, a frame and a crew that pay for it. ${p.juice ?? 0} aboard.`,
+          options: [
+            ...(sick.length ? [{ label: `TREAT THE SICK (${fee}CR)`, requires: () => p.credits >= fee, result: () => { p.credits -= fee; for (const c of sick) { c.sick = null; c.morale = Math.min(100, c.morale + 5); } return `${sick.map((c) => c.name.toUpperCase()).join(" AND ")} TREATED, -${fee}CR. 'REST. REAL REST. I KNOW YOU WON'T.'`; } }] : []),
+            { label: `BUY BURN JUICE (${JUICE_PRICE}CR)`, hint: "Hard burn from the pause menu in flight", result: () => { const l = buyJuice(p); if (l.includes("-")) sfx.pickup(); return l; } },
+            { label: "LEAVE", result: () => "" },
+          ] };
+        (g.scenes["encounter"] as EncounterScene).open(g, enc, "stationwalk", true);
         return;
       }
       if (near.def.tab === null) {
