@@ -390,6 +390,15 @@ export const ENCOUNTERS: Encounter[] = [
     ],
   },
   {
+    id: "scrubbers", where: "space", weight: 5, title: "THE SCRUBBERS ARE FAILING", when: (g) => p(g).systems.some((s) => /scrubber/i.test(s.name) && s.health < 45),
+    text: "The air has started to taste of the last meal, and then of the meal before that. The scrubbers are failing: the filters are past their life and the spares are wherever spares go. Everybody aboard is breathing a little more carefully without deciding to.",
+    options: [
+      { label: "SWAP THE FILTERS (1 SPARE PART)", hint: "Scrubbers +35", requires: (g) => (p(g).cargo.parts ?? 0) >= 1, result: (g) => { removeCargo(p(g), "parts", 1); const s = p(g).systems.find((x) => /scrubber/i.test(x.name))!; s.health = Math.min(100, s.health + 35); const eng = p(g).crew.find((c) => c.role === "engineer" && !c.sick); const x = eng ? crewXp(p(g), "engineer", 1) : null; return `THE OLD FILTERS COME OUT BLACK AND THE NEW ONES GO IN WHITE AND THE AIR STOPS TASTING OF ANYTHING WITHIN THE HOUR. SCRUBBERS +35.${x ? " " + x : ""}`; } },
+      { label: "BREATHE SHALLOW TO THE NEXT PORT", hint: "Morale -4; scrubbers +10 from a rest", result: (g) => { for (const c of p(g).crew) c.morale = Math.max(0, c.morale - 4); const s = p(g).systems.find((x) => /scrubber/i.test(x.name))!; s.health = Math.min(100, s.health + 10); return "YOU DROP THE DECK TO MINIMUM AND EVERYBODY BREATHES LIKE THEY'RE BEING WATCHED. THE SCRUBBERS CATCH UP A LITTLE ON THE LIGHTER LOAD. MORALE DOWN. THE CAT IS FINE. THE CAT IS ALWAYS FINE."; } },
+      { label: "OPEN THE GREENHOUSE TO THE DECK", hint: "A greenhouse module does the filters' job for a day", requires: (g) => (p(g).modules ?? []).includes("greenhouse"), result: (g) => { const s = p(g).systems.find((x) => /scrubber/i.test(x.name))!; s.health = Math.min(100, s.health + 25); for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 2); return "YOU OPEN THE GREENHOUSE HATCH AND LET THE PLANTS DO WHAT THE FILTERS CAN'T. THE DECK SMELLS OF SOIL AND SOMETHING FLOWERING. SCRUBBERS +25, AND THE CREW KEEP FINDING REASONS TO WALK PAST THE HATCH."; } },
+    ],
+  },
+  {
     id: "loop", where: "space", weight: 2, title: "THE SAME MINUTE, AGAIN", when: (g) => !p(g).flags?.loopDone,
     text: "The clock on the console reads a time it read a moment ago. The coffee is full again. Somebody on the band says the thing they just said, word for word, and then, seeing your face, says 'WHAT?' the same way. You have been here before. You will be here again unless something changes.",
     options: [

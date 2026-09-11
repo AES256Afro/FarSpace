@@ -922,6 +922,11 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   by hand (core +30, usually; a rough restart costs hull), vent and cold-start
   (ten fuel, core +18), or ride it out (it usually changes its mind; sometimes
   it changes the housing instead).
+- The scrubbers are failing: when the air scrubbers are under forty-five
+  percent the air starts tasting of the last meal. Swap the filters with a
+  spare part (+35), breathe shallow to the next port (morale down, +10), or
+  open a greenhouse module to the deck (+25 and the crew keep walking past
+  the hatch).
 - A distress call, unverified: the right words in the right order and a
   signal a little too strong. Answer it (real about half the time: four
   lives; otherwise two hulls come out from behind the hulk already talking),

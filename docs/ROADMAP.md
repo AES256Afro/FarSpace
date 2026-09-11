@@ -1129,6 +1129,10 @@ Time passes for the people on the ship, and for the ship.
       and cold-start, or ride it out; Number One objects to a red alert with
       a clear scanner
 
+## Milestone 191 — The Scrubbers Are Failing ✅ (Sep 2026)
+- [x] A card when the air scrubbers are low: swap the filters, breathe
+      shallow to port, or open the greenhouse to the deck
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
