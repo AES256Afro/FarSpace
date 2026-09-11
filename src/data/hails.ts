@@ -35,5 +35,5 @@ export function passingHail(w: World, n: Npc, alert: number, rng: RNG): { from: 
     if (alert === 2) pool.push(`${hailCallsign(n, kind)}: WHY ARE YOU AT RED ALERT. ... OH NO. WHY ARE YOU AT RED ALERT.`);
   }
   if (!pool.length) return null;
-  return { from: hailCallsign(n, kind), text: rng.pick(pool) };
+  return { from: hailCallsign(n, kind), text: rng.pick(pool).replace(/^(THIS IS )?(PATROL|LINER|HAULER) [A-Z]-\d+[:.] ?/, "") };
 }

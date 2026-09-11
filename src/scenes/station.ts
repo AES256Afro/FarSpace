@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS, roleLabel } from "../
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, tickAlumniMail, catGift, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, notableOutcome, ledger, ledgerAround, LEDGER_LABELS, dockingsAt, OLD_HAND_AT, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter, RACE_GATES, raceHolder, postDelivered, captainNickname, charterRoute, tickWorld, signGuestbook, regattaObjective, buyStake, collectStake, stakeDividend, stakePrice, totalShares, hasSpecialty, crewOwnHull, OWN_HULL_CREW_FEE, favourFor, favourDone, resolveBorder, pushInfluence, weekKey, borderStanding, replyToLetter, borderContest, collectRemoteStakes, lanesReport, isFriend, isRival, hangPicture, leaveLostItem, tickLostProperty, berthedCaptains, stardate, envoyOutcome, patientOutcome, beltRate, isBeltStation } from "../world";
+  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, tickAlumniMail, catGift, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, notableOutcome, ledger, ledgerAround, LEDGER_LABELS, dockingsAt, OLD_HAND_AT, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter, RACE_GATES, raceHolder, postDelivered, captainNickname, charterRoute, tickWorld, signGuestbook, regattaObjective, buyStake, collectStake, stakeDividend, stakePrice, totalShares, hasSpecialty, crewOwnHull, OWN_HULL_CREW_FEE, favourFor, favourDone, resolveBorder, pushInfluence, weekKey, borderStanding, replyToLetter, borderContest, collectRemoteStakes, lanesReport, isFriend, isRival, hangPicture, leaveLostItem, tickLostProperty, berthedCaptains, stardate, envoyOutcome, patientOutcome, beltRate, isBeltStation, receptionDue, receptionHeld } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
 import { BLUEPRINTS, MATERIALS, engGrade, nextCost, canAfford, upgrade } from "../data/engineering";
@@ -127,6 +127,7 @@ export class StationScene implements Scene {
     if (p.focus || p.briefed) { p.focus = null; p.briefed = false; }
     p.simUsed = false;
     { const fr = friendsAt(g.world, this.station.id); if (fr.length && Math.random() < hoursRate(this.station).lounge) g.toast(`${fr[0].name.toUpperCase()} IS IN THE LOUNGE AND WAVING YOU OVER`); }
+    if (receptionDue(g.world, this.station)) this.reception(g);
   }
 
   settleCrew(g: Game): void {
@@ -1835,6 +1836,20 @@ export class StationScene implements Scene {
   }
   // The week: the strategy layer on one page. Votes, the border, the regatta, holdings, your name.
   // the harbour view: what this port knows about you and your ship right now, without walking the deck
+  // a reception in your honour: a speech, a gift, or an early night
+  reception(g: Game): void {
+    const st = this.station; const fac = faction(st.factionId); const p = g.world.player;
+    receptionHeld(g.world, st);
+    const enc: Encounter = { id: "reception", where: "space", title: "A RECEPTION IN YOUR HONOUR", weight: 0,
+      text: `The harbourmaster meets you at the clamp in a clean jacket. The ${fac.name} would like a word, and by a word they mean a room on the upper ring with a long table, a hundred people who know your name, and a glass in your hand before you've said anything. Somebody taps the glass.`,
+      options: [
+        { label: "MAKE A SPEECH", hint: "Short is good. Short is very good.", result: (g2, rng) => { if (rng.chance(0.65)) { adjustRep(g2.world, st.factionId, 3); for (const c of p.crew) c.morale = Math.min(100, c.morale + 4); flag(g2, "diplomat"); logEntry(g2.world, `A reception at ${st.name}; the speech landed`); return `YOU KEEP IT SHORT: THE LANES, THE PEOPLE ON THEM, AND ONE JOKE ABOUT THE COFFEE. THEY LAUGH IN THE RIGHT PLACE. REP UP WITH THE ${fac.name.toUpperCase()}. THE CREW ARE INSUFFERABLE ABOUT IT FOR A DAY.`; } adjustRep(g2.world, st.factionId, 1); flag(g2, "diplomat"); logEntry(g2.world, `A reception at ${st.name}; the speech ran long`); return "YOU MEAN TO KEEP IT SHORT. IT IS NOT SHORT. SOMEWHERE IN THE FOURTH MINUTE YOU THANK THE CAT. THEY CLAP ANYWAY. REP UP, A LITTLE."; } },
+        { label: "BRING A GIFT FROM THE HOLD (1 LUXURIES)", requires: () => (p.cargo.lux ?? 0) >= 1, result: (g2) => { removeCargo(p, "lux", 1); adjustRep(g2.world, st.factionId, 4); flag(g2, "diplomat"); logEntry(g2.world, `A reception at ${st.name}; brought a gift`); return `A CRATE FROM THE HOLD, OPENED AT THE TABLE. THE HOST IS DELIGHTED IN THE WAY OF SOMEBODY WHO OWNS SEVERAL ALREADY. REP UP WITH THE ${fac.name.toUpperCase()}. NOBODY ASKS YOU TO SPEAK.`; } },
+        { label: "DECLINE POLITELY", hint: "An early night; they'll remember", result: (g2) => { adjustRep(g2.world, st.factionId, -1); return "YOU PLEAD A LONG DAY, WHICH IS TRUE. THE HARBOURMASTER NODS THE WAY PEOPLE NOD WHEN THEY'LL MENTION IT LATER. REP DOWN, A LITTLE."; } },
+      ] };
+    (g.scenes["encounter"] as EncounterScene).open(g, enc, "station", true);
+  }
+
   drawHarbour(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
     const w = g.world; const p = w.player; const st = this.station;
     const t = stationHour(st); const hr = hoursRate(st);

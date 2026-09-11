@@ -960,4 +960,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] The unnamed traffic hails as it passes: patrols formal, haulers belt or
       business, liners smug, and everybody has a word about the cat
 
+## Milestone 151 — Receptions ✅ (Sep 2026)
+- [x] Dock with standing and the faction throws a reception now and then:
+      a speech, a gift from the hold, or an early night
+
 ## Later

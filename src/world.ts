@@ -964,6 +964,14 @@ export function settlePassengers(p: PlayerState): string[] {
   settleRequests(p, out);
   return out;
 }
+// Receptions: dock with standing (rep 20+) and now and then the faction throws one in your honour, once a week.
+export function receptionDue(w: World, st: StationDef, now = Date.now()): boolean {
+  const p = w.player; if (st.factionId === "vex" || (p.rep[st.factionId] ?? 0) < 20) return false;
+  const key = `reception:${st.factionId}:${weekKey(now)}`;
+  if ((p.flags ?? {})[key]) return false;
+  return hashStr(`${key}:${w.seed}:${st.id}`) % 100 < 35;
+}
+export function receptionHeld(w: World, st: StationDef, now = Date.now()): void { (w.player.flags ??= {})[`reception:${st.factionId}:${weekKey(now)}`] = true; }
 // Alert status: green, yellow, red. Yellow readies the shields; red readies everything and wears the crew down.
 export type AlertLevel = 0 | 1 | 2;
 export const ALERT_NAME: Record<AlertLevel, string> = { 0: "GREEN", 1: "YELLOW ALERT", 2: "RED ALERT" };
