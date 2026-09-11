@@ -404,6 +404,14 @@ export const ENCOUNTERS: Encounter[] = [
     ],
   },
   {
+    id: "hundredth", where: "space", weight: 8, title: "THE HUNDREDTH", when: (g) => (p(g).lives ?? 0) >= 100 && !p(g).flags?.hundredth && p(g).crew.length >= 1,
+    text: "The medic comes onto the bridge with the ship's count open on a slate and doesn't say anything, just turns it round. A hundred. A hundred people who are somewhere tonight because this hull went where it went. The crew have seen the slate already. They're waiting to see what you do with your face.",
+    options: [
+      { label: "READ THE COUNT ALOUD. ALL OF IT", hint: "Morale and loyalty up, everyone; a keepsake; a log line", result: (g) => { (p(g).flags ??= {}).hundredth = true; for (const c of p(g).crew) { c.morale = Math.min(100, c.morale + 10); c.loyalty = (c.loyalty ?? 0) + 0.3; } (p(g).keepsakes ??= []).push("the slate with the hundredth on it, kept"); if (p(g).keepsakes!.length > 8) p(g).keepsakes!.shift(); logEntry(g.world, "A hundred lives on the ship's count; read it aloud on the bridge"); return "YOU READ IT. EVERY ENTRY, THE PODS AND THE PATIENTS AND THE FEVER FREIGHTER AND THE CAPSULE AND THE ONES WITH NO NAMES, AND IT TAKES A LONG TIME, AND NOBODY LEAVES THE BRIDGE. THE SLATE STAYS ON THE CONSOLE. MORALE UP. LOYALTY UP. THE SHIP HUMS A HALF-TONE HIGHER FOR A WATCH."; } },
+      { label: "'GOOD. NOW THE HUNDRED AND FIRST.'", hint: "Morale up a little; the crew grin; the medic writes it down", result: (g) => { (p(g).flags ??= {}).hundredth = true; for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 4); logEntry(g.world, "A hundred lives on the ship's count; asked for the hundred and first"); return "THE CREW GRIN, WHICH IS WHAT YOU WANTED. THE MEDIC WRITES 'GOOD. NOW THE HUNDRED AND FIRST' AT THE BOTTOM OF THE SLATE AND UNDERLINES IT, AND THAT'S THE NEW COUNT'S HEADING."; } },
+    ],
+  },
+  {
     id: "crewphoto", where: "space", weight: 2, title: "THE CREW PHOTO", when: (g) => p(g).crew.length >= 2 && !p(g).flags?.crewphoto,
     text: "A photographer's skiff at the gate, the kind that makes a living off liners, hailing every hull that comes through: 'CREW PHOTO, CAPTAIN? THE WHOLE CREW ON THE BRIDGE, THE SHIP'S NAME ON THE PLATE, FORTY CREDITS AND IT'S ON THE WALL BY THE NEXT PORT. EVERYBODY SAYS NO. EVERYBODY REGRETS IT.'",
     options: [

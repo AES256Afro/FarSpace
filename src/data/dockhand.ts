@@ -1,6 +1,7 @@
 // The dock-hand: whoever meets your ship at the clamp. They see the hull before you do,
 // and they say so. Regulars get a small favour on the house, once a week.
 
+import { isBeltStation } from "../world";
 import type { World, StationDef } from "../world";
 import { dockingsAt, hasIllegalCargo, cargoUsed, passengersAboard, weekKey, logEntry } from "../world";
 import { hull } from "./hulls";
@@ -15,6 +16,12 @@ export function dockhandLines(w: World, st: StationDef, rng: RNG, now = Date.now
   const docks = dockingsAt(p, st.id);
   const pool: string[] = [];
   if (p.hull < p.hullMax * 0.5) pool.push(`'What did you hit? No, don't tell me. I'll see it in the yard's invoice.'`, `'She's holed forward. I've put a bucket under it. That's a joke. Mostly.'`);
+  if (p.motto) pool.push(`'Read your plaque while I was under her. "${p.motto}". Don't see many that mean it. Yours might.'`);
+  if (p.flags?.freeman && isBeltStation(st)) pool.push(`'Freeman's hull. Yard rate's fifteen under and I've already taken it off. Don't thank me. Thank the rock.'`);
+  if (p.flags?.rockkid) pool.push(`'My kid's got your ship on the wall. With a dog. You don't have a dog, do you? ... Thought not.'`);
+  if (p.flags?.recorder) pool.push(`'Heard you brought a recorder home off a wreck. Good. Somebody should. Nobody brought mine.'`);
+  if ((p.prisoners ?? 0) > 0) pool.push(`'Marines were at your clamp last time. Prisoner run? ... Fed them, I heard. That gets round.'`);
+  if (p.systemNicks && Object.keys(p.systemNicks).length) pool.push(`'Your engineer told me the reactor's called ${Object.values(p.systemNicks)[0]}. I've written it on the work order. The yard'll love that.'`);
   if ((p.wear ?? 0) >= 40) pool.push(`'She rattles on the clamp. That's hours, not damage. Book her a service before she books herself one.'`);
   if (p.fuel < p.fuelMax * 0.2) pool.push(`'Came in on fumes, did we? The pump's that way. So's the bar. Pump first.'`);
   if (hasIllegalCargo(p)) pool.push(`'I didn't look in your hold. I never look in anyone's hold. That's why they keep me on.'`);

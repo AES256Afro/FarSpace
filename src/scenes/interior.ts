@@ -279,7 +279,7 @@ export class InteriorScene implements Scene {
       medic: ["RECITES THE SHIP'S ENTIRE MEDICAL LOG AS A LOVE POEM", "DOES A DEADPAN LECTURE ON THE CAPTAIN'S POSTURE"],
       gunner: ["SINGS. NOBODY KNEW. NOBODY WILL FORGET", "JUGGLES THREE SHIELD CELLS AND A CUP OF TEA"],
     };
-    const lines = acts.map((c) => `${c.name.split(" ")[0].toUpperCase()} ${rng.pick(ACT[c.role] ?? ACT.pilot)}.`);
+    const lines = acts.map((c, i) => `${c.name.split(" ")[0].toUpperCase()} ${i === 0 && p.catchphrase ? `DOES THE CAPTAIN SAYING '${p.catchphrase.toUpperCase()}' IN SIX MOODS, ENDING WITH 'RESIGNED'` : rng.pick(ACT[c.role] ?? ACT.pilot)}.`);
     const enc: Encounter = { id: "talent", where: "space", title: "TALENT NIGHT", weight: 0,
       text: `The galley's been cleared again, and this time there's a sheet up and a torch for a spotlight. Three acts. You're the judge, because somebody has to be and the ship recused itself.\n\n${lines.join("\n")}`,
       options: [

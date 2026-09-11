@@ -752,6 +752,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- With an undock word chosen, one act at talent night is a crew member doing
+  the captain saying it in six moods, ending with "resigned".
+- The dock-hand has lines about the plaque, the freeman's rate, the kid's
+  drawing, the recorder you brought home, the marines at your clamp, and
+  what your engineer calls the reactor.
+- At a hundred lives on the ship's count the medic turns the slate round on
+  the bridge: read it aloud (morale and loyalty up, the slate kept) or say
+  "good, now the hundred and first".
 - With a medic aboard the chronicle carries sickbay's note: the cots, the
   lives on the count, patients landed in time, and whether the captain sleeps.
 - At the comms panel aboard, when the band is on: sing along, badly. The

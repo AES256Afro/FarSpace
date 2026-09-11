@@ -1505,6 +1505,19 @@ Time passes for the people on the ship, and for the ship.
 - [x] Hand the ship to Number One at retirement and they say so on the band;
       a log line and a deed
 
+## Milestone 279 — Six Moods ✅ (Sep 2026)
+- [x] With an undock word chosen, one talent-night act is the captain saying
+      it in six moods, ending with "resigned"
+
+## Milestone 280 — The Dock-Hand Has Noticed ✅ (Sep 2026)
+- [x] Dock-hand lines about the plaque, the freeman's rate, the kid's
+      drawing, the recorder, the marines, and what the reactor is called
+
+## Milestone 281 — The Hundredth ✅ (Sep 2026)
+- [x] At a hundred lives on the ship's count the medic turns the slate round:
+      read it aloud (morale, loyalty, a keepsake) or ask for the hundred and
+      first
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
