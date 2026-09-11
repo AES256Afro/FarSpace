@@ -917,9 +917,9 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   and a price. Pay the three hundred, talk them down at parley odds, or go and
   get them (a red alert and an ambush, and the lifeboat comes free half the
   time). Three lives either way, if it works.
-- Any ship system under forty percent shows on the flight HUD, bottom left,
-  blinking between amber and red, so the emergency cards below don't come as
-  a surprise. The harbour view lists what the yard would like a word about.
+- The flight HUD's top-left warnings flag any ship system under forty
+  percent, so the emergency cards below don't come as a surprise; the
+  harbour view lists what the yard would like a word about.
 - The reactor is scramming: when the core is under forty-five percent, the
   lights go a colour lights aren't supposed to go. The engineer restarts it
   by hand (core +30, usually; a rough restart costs hull), vent and cold-start

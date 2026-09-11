@@ -637,7 +637,6 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
   if (fs.docking?.hold) { const line = `HOLDING SHORT OF BAY ${fs.docking.bay} - CONTROL WILL CALL YOU IN`; drawText(ctx, line, VW / 2 - textWidth(line) / 2, VH - 34, PAL.warn); }
   if (fs.race) { const r = fs.race; const line = r.started ? `RING RACE  ${r.idx}/${r.gates.length}  ${r.t.toFixed(1)}S  (PAR ${r.par}S)` : `RING RACE - FLY THROUGH RING 1 TO START THE CLOCK`; drawText(ctx, line, VW / 2 - textWidth(line) / 2, VH - 34, PAL.gold); }
   if (fs.alert > 0) { const a = ALERT_NAME[fs.alert]; const blink = fs.alert === 2 && Math.floor(g.world.time * 2) % 2 === 0; ctx.fillStyle = fs.alert === 2 ? (blink ? "rgba(120,20,20,0.75)" : "rgba(80,10,10,0.75)") : "rgba(90,70,10,0.7)"; ctx.fillRect(VW / 2 - textWidth(a) / 2 - 6, 28, textWidth(a) + 12, 11); drawText(ctx, a, VW / 2 - textWidth(a) / 2, 30, fs.alert === 2 ? PAL.white : PAL.warn); }
-  { const low = p.systems.filter((s) => s.health < 40); if (low.length) { const t = `SYSTEMS: ${low.map((s) => `${s.name.toUpperCase().replace(" CORE", "").replace("MAIN ", "").replace("AIR ", "").replace(" MOUNTS", "").replace(" BAY", "").replace(" ARRAY", "")} ${Math.round(s.health)}%`).join("  ")}`; drawText(ctx, t, 6, VH - 34, Math.floor(g.world.time * 2) % 2 ? PAL.warn : PAL.danger); } }
   if (g.toastTimer > 0) drawText(ctx, g.toastMsg, VW / 2 - textWidth(g.toastMsg) / 2, 40, PAL.ui);
 
   const active = p.missions.filter((m) => m.accepted && !m.done);

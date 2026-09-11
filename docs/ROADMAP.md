@@ -1141,9 +1141,9 @@ Time passes for the people on the ship, and for the ship.
 - [x] Comms down (the engineer, the sim rig's emitter, or fly quiet) and the
       mounts jammed (the gunner, a hard cycle, or run without guns)
 
-## Milestone 194 — Systems on the HUD ✅ (Sep 2026)
-- [x] Any system under forty shows on the flight HUD in warning colours;
-      the harbour view says what the yard would like a word about
+## Milestone 194 — What the Yard Would Say ✅ (Sep 2026)
+- [x] The harbour view lists the systems the yard would like a word about;
+      the HUD's top-left warnings already flag anything under forty
 
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
