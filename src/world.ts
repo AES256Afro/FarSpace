@@ -1221,6 +1221,12 @@ export function birthdaysDue(w: World): string[] {
 }
 // A board of inquiry: the navy convenes one at its own stations for every crew member who didn't make it to the pod.
 export function inquiryDue(w: World, st: StationDef): boolean { const p = w.player; return !!st.military && (p.lost ?? []).length > (p.inquiries ?? 0); }
+// Two crew who are close ask for the same leave, at a station with something to do, once a week.
+export function leavePair(w: World, now = Date.now()): [CrewMember, CrewMember] | null {
+  const p = w.player; if (p.crew.length < 3 || (p.flags ?? {})[`leavepair:${weekKey(now)}`]) return null;
+  for (let i = 0; i < p.crew.length; i++) for (let j = i + 1; j < p.crew.length; j++) { const a = p.crew[i], b = p.crew[j]; if (!a.sick && !b.sick && bond(a, b) >= 2) return [a, b]; }
+  return null;
+}
 // A transfer request: a crew member with a long record and a low mood asks, at a naval station, for a posting ashore.
 export function transferRequest(w: World): CrewMember | null {
   const p = w.player;

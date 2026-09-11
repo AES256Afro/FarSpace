@@ -1591,6 +1591,7 @@ export class FlightScene implements Scene {
     const tsys = g.world.systems[targetId];
     this.dockTimer = 0;
     if (tsys.permit) flag(g, "permit");
+    { const war = g.world.synWar; if (war && war.systemId === targetId && g.world.time < war.until && this.alert === 0) { this.alert = 1; this.alertT = 0; const gun = p.crew.find((c) => c.role === "gunner" && !c.sick); g.toast(`${gun ? gun.name.split(" ")[0].toUpperCase() : "TACTICAL"}: ${tsys.name.toUpperCase()} IS A WAR ZONE THIS CYCLE. I'VE GONE TO YELLOW. Y FOR RED IF IT COMES TO THAT.`); sfx.blip(); } }
     {
       const fss = hasModule(p, "fss") || !!hull(p.hullId).scanner;
       const gained = logSystem(p, tsys, fss ? 2 : 1);

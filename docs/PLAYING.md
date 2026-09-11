@@ -752,6 +752,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- Two crew with a strong bond may ask for the same leave at the clamp, once a
+  week: grant it (loyalty and the bond up, two berths empty until you collect
+  them), one at a time (morale down, both), or grant it on the ship's card.
+- With a cadet aboard, the boarding party at a derelict has a fourth choice:
+  the cadet, on a third less air, who comes back with a skill point.
+- Jump into a system where a syndicate war is on and tactical goes to
+  yellow alert and says so.
 - Some derelicts keep their recorder: a blinking box in a side room. E for
   the ship's last entry (a log line, data, a keepsake).
 - The harbour view tallies the rule: first contacts kept against broken, and

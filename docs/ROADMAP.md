@@ -1469,6 +1469,18 @@ Time passes for the people on the ship, and for the ship.
 - [x] Help lines for card night, talent night, the wall of record and the
       pause menu's flight actions
 
+## Milestone 270 — The Same Leave ✅ (Sep 2026)
+- [x] Two crew who are close ask for the same leave at the clamp: grant it
+      (loyalty, the bond), one at a time, or grant it with the ship's card
+
+## Milestone 271 — A Third of Your Air ✅ (Sep 2026)
+- [x] The cadet can come through a derelict's lock: less air, more skill,
+      and a story they'll tell for years
+
+## Milestone 272 — War-Zone Yellow ✅ (Sep 2026)
+- [x] Arriving in a system where a syndicate war is on, tactical goes to
+      yellow and says so
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
