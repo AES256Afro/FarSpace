@@ -1137,6 +1137,10 @@ Time passes for the people on the ship, and for the ship.
 - [x] Two more system cards: the hold depressurising (seal it, suit up, or
       dump the bay) and the drive coughing (retune, burn it clean, or nurse it)
 
+## Milestone 193 — Emergencies II ✅ (Sep 2026)
+- [x] Comms down (the engineer, the sim rig's emitter, or fly quiet) and the
+      mounts jammed (the gunner, a hard cycle, or run without guns)
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

@@ -417,6 +417,24 @@ export const ENCOUNTERS: Encounter[] = [
     ],
   },
   {
+    id: "commsdown", where: "space", weight: 5, title: "COMMS ARE DOWN", when: (g) => p(g).systems.some((s) => /comms/i.test(s.name) && s.health < 40),
+    text: "The band goes to static mid-sentence and stays there. The comms array is down: no hails, no control, no lounge, no ship's voice, and a crew who have just discovered how much of the day was somebody talking.",
+    options: [
+      { label: "THE ENGINEER REBUILDS THE ARRAY", hint: "Comms +30", requires: (g) => p(g).crew.some((c) => c.role === "engineer" && !c.sick), result: (g) => { const s = p(g).systems.find((x) => /comms/i.test(x.name))!; s.health = Math.min(100, s.health + 30); const x = crewXp(p(g), "engineer", 2); return `THE ENGINEER GOES UP THE MAST IN A SUIT AND THE STATIC RESOLVES INTO A HAULER SAYING 'ANYBODY? ANYBODY?' COMMS +30.${x ? " " + x : ""}`; } },
+      { label: "ROUTE THROUGH THE SIM RIG", hint: "The rig's emitter does for a while; comms +20, morale +2", requires: (g) => (p(g).furnishings ?? []).includes("simrig"), result: (g) => { const s = p(g).systems.find((x) => /comms/i.test(x.name))!; s.health = Math.min(100, s.health + 20); for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 2); return "YOU PATCH THE BAND THROUGH THE SIM RIG'S EMITTER, WHICH WORKS, AND MEANS EVERY HAIL FOR THE NEXT HOUR ARRIVES WITH A FAINT PIANO BEHIND IT. COMMS +20. THE CREW LIKE THE PIANO."; } },
+      { label: "FLY QUIET TO PORT", hint: "Nobody hails you; the crew talk to each other instead", result: (g) => { const s = p(g).systems.find((x) => /comms/i.test(x.name))!; s.health = Math.min(100, s.health + 6); for (const a of p(g).crew) for (const b of p(g).crew) if (a !== b) shiftBond(a, b, 0.1); return "YOU FLY QUIET. WITHOUT THE BAND THE CREW TALK TO EACH OTHER, WHICH THEY HADN'T, MUCH. THE ARRAY LIMPS BACK A LITTLE ON ITS OWN. COMMS +6, AND EVERY BOND ABOARD A HAIR CLOSER."; } },
+    ],
+  },
+  {
+    id: "mountsjam", where: "space", weight: 5, title: "THE MOUNTS ARE JAMMED", when: (g) => p(g).systems.some((s) => /weapon/i.test(s.name) && s.health < 40),
+    text: "The weapon mounts have seized: the turret tracks a target and then doesn't, with a grinding you can feel through the chair. Whatever is out there, you are currently a ship with opinions and no way to express them.",
+    options: [
+      { label: "THE GUNNER CLEARS THEM BY HAND", hint: "Mounts +30", requires: (g) => p(g).crew.some((c) => c.role === "gunner" && !c.sick), result: (g) => { const s = p(g).systems.find((x) => /weapon/i.test(x.name))!; s.health = Math.min(100, s.health + 30); const x = crewXp(p(g), "gunner", 2); return `THE GUNNER GOES OUT ON THE HULL WITH A PRY BAR AND A GRUDGE AND THE TURRET COMES FREE WITH A SOUND YOU HEAR THROUGH YOUR TEETH. MOUNTS +30.${x ? " " + x : ""}`; } },
+      { label: "CYCLE THE MOUNTS ON THE DRIVE (5 FUEL)", hint: "Mounts +15", requires: (g) => p(g).fuel >= 5, result: (g) => { const s = p(g).systems.find((x) => /weapon/i.test(x.name))!; p(g).fuel -= 5; s.health = Math.min(100, s.health + 15); return "YOU PUT THE DRIVE THROUGH A HARD CYCLE TO SHAKE THE MOUNTS LOOSE, WHICH IT DOES, AND WHICH COSTS FIVE UNITS OF FUEL AND EVERYONE'S COFFEE. MOUNTS +15."; } },
+      { label: "RUN WITHOUT GUNS", hint: "Yellow alert and a quiet route", result: (g) => { const fs = (g.scenes as Record<string, unknown>)["flight"] as { alert?: number } | undefined; if (fs && fs.alert === 2) fs.alert = 1; for (const c of p(g).crew) c.morale = Math.max(0, c.morale - 2); return "YOU FLY THE QUIET ROUTE WITH THE TURRET LOCKED FORWARD LIKE A DARE. NOBODY TAKES IT. THE CREW ARE NOT REASSURED. MORALE DOWN A LITTLE."; } },
+    ],
+  },
+  {
     id: "loop", where: "space", weight: 2, title: "THE SAME MINUTE, AGAIN", when: (g) => !p(g).flags?.loopDone,
     text: "The clock on the console reads a time it read a moment ago. The coffee is full again. Somebody on the band says the thing they just said, word for word, and then, seeing your face, says 'WHAT?' the same way. You have been here before. You will be here again unless something changes.",
     options: [

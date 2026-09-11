@@ -933,6 +933,11 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   everything. The drive is coughing (main engines under forty): the engineer
   retunes the injectors by ear, or burn it clean on eight fuel, or nurse it
   to port for wear.
+- Comms down (comms array under forty): the engineer goes up the mast,
+  the sim rig's emitter carries the band with a faint piano behind it, or
+  fly quiet to port and let the crew talk to each other. The mounts jammed
+  (weapon mounts under forty): the gunner clears them by hand, a hard drive
+  cycle on five fuel, or run without guns at yellow.
 - A distress call, unverified: the right words in the right order and a
   signal a little too strong. Answer it (real about half the time: four
   lives; otherwise two hulls come out from behind the hulk already talking),
