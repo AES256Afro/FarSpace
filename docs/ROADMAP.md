@@ -1541,6 +1541,19 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 287 — Codex Sweep ✅ (Sep 2026)
 - [x] The long ship and the rock's council get codex entries
 
+## Milestone 288 — Three Copies ✅ (Sep 2026)
+- [x] The crew fill in the office's form in four hands with a diagram; sign
+      it (data, a letter back: the office has pinned up the drawing) or burn
+      it
+
+## Milestone 289 — Letters to the Editor ✅ (Sep 2026)
+- [x] Newsletter letters from crew by trait: the tap, the plant, the ration
+      bars, the cards, the box, the laps
+
+## Milestone 290 — The Minutes ✅ (Sep 2026)
+- [x] After the council's vote the rock writes with the minutes; your name
+      is in them
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

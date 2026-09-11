@@ -145,6 +145,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "inspection", title: "A GOOD SHIP", desc: "Pass an inspection with three marks of four", check: (w) => !!w.player.flags?.inspection },
   { id: "freeman", title: "FREEMAN OF THE BELT", desc: "Earn a standing of three with the rocks", check: (w) => !!w.player.flags?.freeman },
   { id: "requisition", title: "COURTESY OF THE SERVICE", desc: "Requisition a full service at a naval station", check: (w) => !!w.player.flags?.requisition },
+  { id: "formFiled", title: "THREE COPIES", desc: "Deal with the office's form", check: (w) => !!w.player.flags?.formFiled },
   { id: "theplace", title: "THE PLACE", desc: "Say a lost crew member's name at the wreck", check: (w) => !!w.player.flags?.theplace },
   { id: "numberoneleg", title: "THAT'S A REQUEST", desc: "Give Number One the ship for a leg", check: (w) => !!w.player.flags?.numberoneleg },
   { id: "hundredth", title: "THE SLATE", desc: "See the hundredth life on the ship's count", check: (w) => !!w.player.flags?.hundredth },

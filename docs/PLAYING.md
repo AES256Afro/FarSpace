@@ -752,6 +752,12 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- After a letter from the office, the crew fill in its form in four hands
+  with a diagram of the fold. Sign it (data, and the office writes back
+  about the drawing) or burn all three copies.
+- The galley door prints letters to the editor from crew with traits.
+- After the council's vote the rock writes with the minutes. Your name is
+  in them.
 - The interior header shows the ship's name and the stardate.
 - Once the ship has a name or a roster line, about a third of undocks it
   reads a line from the galley door on the band.

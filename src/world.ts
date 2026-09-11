@@ -1194,6 +1194,9 @@ export function shipNewsletter(w: World): string[] {
   if (p.flags?.anniversary) out.push("THE ANNIVERSARY WAS MARKED. THE EDITOR TURNED THE GALLEY LIGHTS UP. NOBODY NOTICED. THE EDITOR NOTICED.");
   if ((p.wakes ?? 0) > 0) out.push("THE CUP IS STILL ON THE TABLE. THE EDITOR WILL NOT BE PRINTING ANYTHING FUNNY ABOUT THE CUP.");
   if (p.crew.some((c) => (c.docks ?? 0) === 0)) out.push("THE CADET HAS ASKED THE EDITOR FOR A COLUMN. THE EDITOR HAS SAID 'AFTER YOUR FIRST DOCKING'. THE EDITOR IS FAIR.");
+  { const t = (c: CrewMember, s: string) => (c.trait ?? "").includes(s); const L: string[] = [];
+    for (const c of p.crew) { const n = c.name.split(" ")[0].toUpperCase(); if (t(c, "litres")) L.push(`LETTER FROM ${n}: "SOMEBODY LEFT THE TAP RUNNING. TWO LITRES. THE EDITOR KNOWS WHO." THE EDITOR DOES.`); else if (t(c, "plant")) L.push(`LETTER FROM ${n}: "THE PLANT HAS A NEW LEAF. NOBODY TOUCH IT." THE EDITOR HAS TOUCHED IT.`); else if (t(c, "cooks")) L.push(`LETTER FROM ${n}: "TONIGHT'S RATION BARS ARE A SURPRISE." THE EDITOR ADVISES CAUTION.`); else if (t(c, "cards")) L.push(`LETTER FROM ${n}: "CARDS AFTER WATCH. MATCHSTICKS." THE EDITOR NOTES THE SIXES ARE STILL MARKED.`); else if (t(c, "bird")) L.push(`LETTER FROM ${n}: "DON'T OPEN THE BOX." THE EDITOR HAS NOT OPENED THE BOX. THE EDITOR WOULD LIKE TO.`); else if (t(c, "laps")) L.push(`LETTER FROM ${n}: "THREE LAPS BEFORE THE JUMP. ANYONE?" THE EDITOR IS A SHIP AND CANNOT RUN.`); }
+    if (L.length) out.push(L[Math.floor(w.time / 3600) % L.length]); }
   if (p.catchphrase) out.push(`THE CAPTAIN'S UNDOCK WORD REMAINS '${p.catchphrase.toUpperCase()}'. THE EDITOR HAS STOPPED COUNTING. THE EDITOR HAS NOT STOPPED COUNTING.`);
   const last = (p.log ?? []).slice(-3).reverse().map((e) => e.text); for (const t of last) out.push(`FROM THE LOG: ${t.toUpperCase()}`.slice(0, 118));
   if (out.length === 1) out.push("NOTHING HAPPENED THIS WEEK. THE EDITOR WOULD LIKE SOMETHING TO HAPPEN. NOT A FIRE.");
