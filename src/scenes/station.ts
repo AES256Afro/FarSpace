@@ -1,5 +1,5 @@
 import { loanHullChangeReason, loanReturnReason, loanSummary, plotLoanDepot, returnServiceCutter } from "../core/serviceloan";
-import { plotServiceOrder, serviceAudienceAt, serviceObjective } from "../core/service";
+import { plotServiceOrder, recordServiceFareDelivery, serviceAudienceAt, serviceObjective, syncServiceFares } from "../core/service";
 // Station scene: docked services — market, shipyard, ships, missions, bar (crew), storage, news.
 
 import { ask, confirmBox } from "../core/dialog";
@@ -895,6 +895,8 @@ export class StationScene implements Scene {
     if (!(m.kind === "passenger" && m.mood !== undefined)) g.toast(`MISSION COMPLETE +${m.reward}CR`);
     sfx.pickup();
     if (m.kind === "bounty" && (m.killsNeeded ?? 0) >= 4) void wire.post("bounty", `collected a ${m.killsNeeded}-corsair bounty`, g.world.systems[p.systemId].name);
+    recordServiceFareDelivery(g.world, m);
+    { const line = syncServiceFares(g.world); if (line) g.toast(line); }
     p.missions = p.missions.filter((x) => !x.done);
     p.hints.firstMission ||= true;
   }

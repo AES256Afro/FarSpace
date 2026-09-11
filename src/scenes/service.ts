@@ -1,13 +1,13 @@
 import { borrowServiceCutter, loanBorrowReason, loanReturnReason, loanSummary, plotLoanDepot, returnServiceCutter } from "../core/serviceloan";
 import type { Game, Scene } from "../game";
 import { VW, VH } from "../game";
-import { acceptServiceOrder, joinService, plotServiceOrder, reportServiceOrder, SERVICE_RANKS, serviceJoinReason, serviceObjective, serviceOffers, serviceOffice, serviceRank, serviceWorkReason, transferService, withdrawServiceOrder } from "../core/service";
+import { acceptServiceOrder, joinService, plotServiceOrder, reportServiceOrder, SERVICE_RANKS, serviceConflictingFares, serviceFareReport, serviceJoinReason, serviceObjective, serviceOffers, serviceOffice, serviceRank, serviceWorkReason, transferService, withdrawServiceOrder, type ServiceFareChoice, type ServiceOrder } from "../core/service";
 import { clamp } from "../core/mathx";
 import { sfx } from "../core/sfx";
 import { commandRank, findStation } from "../world";
 import { drawText } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { wrap } from "./encounter";
+import { EncounterScene, wrap } from "./encounter";
 import type { StationWalkScene } from "./stationwalk";
 
 interface Action { label: string; detail: string; run: () => string }
@@ -28,6 +28,29 @@ export class ServiceScene implements Scene {
     g.setScene("stationwalk"); const walk = g.scenes.stationwalk as StationWalkScene;
     walk.px = 145; walk.py = 35;
   }
+  takeOrder(g: Game, stationId: string, order: ServiceOrder): string {
+    const world = g.world, fares = serviceConflictingFares(world, order);
+    if (!fares.length) return acceptServiceOrder(g.world, stationId, order);
+    const first = fares[0], destination = first.singer ? "THE SINGERS' BERTH" : findStation(g.world, first.stationId ?? "")?.st.name ?? g.world.systems[first.systemId]?.name ?? "ANOTHER SYSTEM";
+    const choose = (g2: Game, choice: ServiceFareChoice): string => {
+      if (g2.world !== world) return "THE WATCH HAS CHANGED. READ THE CURRENT POSTING SHEET.";
+      if (g2.world.player.service?.order) return "YOUR CURRENT ORDERS ARE ALREADY SIGNED.";
+      const line = acceptServiceOrder(g2.world, stationId, order, choice, fares), accepted = g2.world.player.service?.order;
+      if (accepted?.id !== order.id) return line;
+      g2.autosave();
+      return choice === "fares-first" ? `THE CLERK AMENDS THE SHEET. YOUR ${fares.length} PRIOR FARES GO FIRST; THE WATCH WAITS. PAY ON REPORT: ${accepted.pay}CR. G/U FOLLOWS THEIR MANIFEST, THEN YOUR ORDERS. NO NEW DEADLINE.` : `THE CLERK SIGNS. THE AFFECTED FARES LOSE FIVE MOOD; THEIR BOOKINGS REMAIN. PAY ON REPORT: ${accepted.pay}CR. SERVICE COURSE SET.`;
+    };
+    (g.scenes.encounter as EncounterScene).open(g, {
+      id: `service-fares-${order.id}`, title: "THE FARES ALREADY ABOARD", weight: 0, where: "space",
+      text: `${first.name.toUpperCase()} BOOKED ${destination.toUpperCase()}${fares.length > 1 ? `; ${fares.length - 1} OTHER FARES ALSO NEED A DIFFERENT ROUTE` : ""}. THE CLERK TAPS YOUR MANIFEST. 'I CAN AMEND THE ORDERS. ANOTHER WATCH COVERS YOU FOR 100CR FROM THE REPORT PAY. OR YOU CAN TELL YOUR PASSENGERS WE GO FIRST.' EXISTING FARE CONDITIONS STILL APPLY.`,
+      options: [
+        { label: "CLEAR MY BOOKED FARES FIRST", hint: `${order.pay - 100}cr on report; orders wait for these fares`, result: g2 => choose(g2, "fares-first") },
+        { label: "TAKE THE ORDERS FIRST", hint: `${order.pay}cr on report; affected fares lose five mood`, result: g2 => choose(g2, "orders-first") },
+        { label: "LEAVE THE ORDERS FOR NOW", hint: "Keep the bookings and take no assignment", result: () => "THE CLERK PUTS THE SHEET BACK. 'THEY DID BOOK FIRST. COME BACK WHEN YOU HAVE ROOM IN YOUR DAY.'" },
+      ],
+    }, "service", true);
+    return "";
+  }
   actions(g: Game): Action[] {
     const w = g.world, st = serviceOffice(w, this.stationId), record = w.player.service;
     if (!st) return [];
@@ -37,13 +60,13 @@ export class ServiceScene implements Scene {
     else {
       if (record.order) {
         const order = record.order;
-        rows.push({ label: "READ CURRENT ORDERS", detail: order.description.toUpperCase(), run: () => `${order.description.toUpperCase()} REPORT AT ${findStation(w, order.fromStationId)?.st.name.toUpperCase()}. PAY ${order.pay}CR. ${serviceObjective(w)}.` });
+        rows.push({ label: "READ CURRENT ORDERS", detail: `${serviceObjective(w)}. PAY ${order.pay}CR. ${order.description}`.toUpperCase(), run: () => `${serviceObjective(w)}. PAY ${order.pay}CR.${serviceFareReport(w, order)}`.toUpperCase() });
         if (order.stage === "return" && order.fromStationId === st.id) rows.push({ label: "FILE THE COMPLETED REPORT", detail: `${order.pay}CR / +2 FACTION STANDING / ONE SERVICE CREDIT. ${order.report ?? ""}`.toUpperCase(), run: () => reportServiceOrder(w, order) });
         rows.push({ label: "PLOT THE SERVICE JOURNEY", detail: "N IN FLIGHT FOLLOWS THE COURSE. G/U RESTORES IT WHILE AWAY.", run: () => plotServiceOrder(w) ? "SERVICE COURSE RESTORED. N IN FLIGHT FOLLOWS THE ROUTE." : "THE ROUTE IS CLOSED. YOUR ORDERS CAN WAIT." });
         rows.push({ label: "RETURN ORDERS UNFINISHED", detail: "NO PAYMENT OR SERVICE CREDIT. KEEP YOUR EXISTING RECORD.", run: () => withdrawServiceOrder(w, order) });
       } else if (record.stationId !== st.id) rows.push({ label: "TAKE A POSTING HERE", detail: "MOVE YOUR SERVICE FILE HERE. COMPLETED WORK AND GRADE COME WITH YOU.", run: () => transferService(w, st.id) });
       else {
-        for (const order of serviceOffers(w, st.id)) rows.push({ label: order.title.toUpperCase(), detail: `${order.pay}CR ON REPORT. ${order.description}`.toUpperCase(), run: () => acceptServiceOrder(w, st.id, order) });
+        for (const order of serviceOffers(w, st.id)) rows.push({ label: order.title.toUpperCase(), detail: `${order.pay}CR ON REPORT. ${order.description}`.toUpperCase(), run: () => this.takeOrder(g, st.id, order) });
         if (rows.length === 0) rows.push({ label: "ASK FOR ORDERS", detail: serviceWorkReason(w, st.id) ?? "NO REACHABLE ASSIGNMENT ON THE CURRENT CHART.", run: () => serviceWorkReason(w, st.id) ?? "THE CHART HAS NO SUITABLE OPEN ROUTE. THE CLERK LEAVES YOUR NAME ON THE LIST." });
       }
       rows.push({ label: "READ YOUR LAST REPORT", detail: `${record.completed} ASSIGNMENTS COMPLETED. THE OFFICE KEEPS THE LAST TWELVE REPORTS.`, run: () => {

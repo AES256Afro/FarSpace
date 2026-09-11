@@ -1,12 +1,17 @@
 import type { ServiceLoan } from "./serviceloan";
-import type { PlayerState, StationDef, World } from "../world";
-import { adjustRep, commandRank, findStation, ledger, logEntry, navRoute, permitDenied } from "../world";
+import type { Mission, PlayerState, StationDef, World } from "../world";
+import { adjustRep, commandRank, findStation, ledger, logEntry, navRoute, passengersAboard, permitDenied } from "../world";
 
 export type ServiceKind = "liaison" | "patrol" | "survey";
+export type ServiceFareChoice = "fares-first" | "orders-first";
+export interface ServiceFare {
+  id: string; name: string; systemId: string; stationId?: string; singer: boolean; delivered?: boolean;
+}
 export interface ServiceOrder {
   id: string; serial: number; kind: ServiceKind; fromStationId: string; targetSystemId: string;
   targetStationId?: string; planetIndex?: number; title: string; description: string;
-  pay: number; need: number; progress: number; stage: "outbound" | "return"; report?: string;
+  pay: number; need: number; progress: number; stage: "fares" | "outbound" | "return"; report?: string;
+  civilianPlan?: { choice: ServiceFareChoice; fares: ServiceFare[]; amendmentCost: number };
 }
 export interface ServiceRecord {
   factionId: string; stationId: string; joinedAt: number; serial: number; completed: number;
@@ -84,24 +89,65 @@ export function serviceOffers(w: World, stationId: string): ServiceOrder[] {
   }
   return offers;
 }
-export function acceptServiceOrder(w: World, stationId: string, expected: ServiceOrder): string {
+export function serviceConflictingFares(w: World, order: ServiceOrder): ServiceFare[] {
+  return passengersAboard(w.player).filter(m => m.targetSystemId !== order.targetSystemId ||
+    (order.targetStationId !== undefined && m.targetStationId !== order.targetStationId)).map(m => ({
+      id: m.id, name: m.passengerName ?? m.title, systemId: m.targetSystemId, stationId: m.targetStationId, singer: m.passengerKind === "singer",
+    }));
+}
+export function acceptServiceOrder(w: World, stationId: string, expected: ServiceOrder, choice?: ServiceFareChoice, expectedFares?: ServiceFare[]): string {
   const reason = serviceWorkReason(w, stationId); if (reason) return reason;
   const offer = serviceOffers(w, stationId).find(o => o.id === expected.id && o.targetSystemId === expected.targetSystemId && o.targetStationId === expected.targetStationId && o.planetIndex === expected.planetIndex);
   if (!offer) return "THOSE ORDERS HAVE CHANGED. READ THE CURRENT POSTING SHEET.";
+  const fares = serviceConflictingFares(w, offer);
+  if (choice && JSON.stringify(fares) !== JSON.stringify(expectedFares)) return "THE BOOKED FARES HAVE CHANGED. READ THE POSTING SHEET AGAIN.";
+  if (fares.length && !choice) return "YOUR BOOKED FARES NEED A DIFFERENT DESTINATION. CHOOSE THEIR PRIORITY BEFORE ACCEPTING.";
+  if (fares.length && choice) {
+    offer.civilianPlan = { choice, fares, amendmentCost: choice === "fares-first" ? 100 : 0 };
+    if (choice === "fares-first") { offer.stage = "fares"; offer.pay -= 100; }
+    else for (const m of passengersAboard(w.player)) if (fares.some(f => f.id === m.id)) m.mood = Math.max(0, (m.mood ?? 60) - 5);
+    logEntry(w, `${offer.title}: ${choice === "fares-first" ? "booked fares first, service pay reduced by 100cr" : "orders first, affected fares lost five mood"}. Manifest: ${fares.map(f => f.name).join(", ")}`);
+  }
   w.player.service!.serial = offer.serial; w.player.service!.order = offer;
   const plotted = plotServiceOrder(w);
   logEntry(w, `Accepted service orders: ${offer.title}; report back to ${findStation(w, stationId)!.st.name}`);
   return `${offer.description.toUpperCase()} PAY ON REPORT: ${offer.pay}CR. ${plotted ? "COURSE SET." : "THE ROUTE IS CLOSED; THE ORDERS CAN WAIT."}`;
 }
-export function serviceDestination(w: World): { systemId: string; stationId?: string } | null {
+function pendingServiceFares(w: World): ServiceFare[] {
+  const aboard = passengersAboard(w.player);
+  return w.player.service?.order?.civilianPlan?.fares.filter(f => !f.delivered && aboard.some(m => m.id === f.id)) ?? [];
+}
+// Called by the actual hand-in paths before completed missions leave the manifest.
+export function recordServiceFareDelivery(w: World, m: Mission): void {
+  if (!m.done || !m.accepted || m.kind !== "passenger" || !w.player.missions.includes(m) || m.targetSystemId !== w.player.systemId ||
+    (m.passengerKind !== "singer" && m.targetStationId !== w.player.dockedAt)) return;
+  const fare = w.player.service?.order?.civilianPlan?.fares.find(f => f.id === m.id);
+  if (fare && !fare.delivered) { fare.delivered = true; logEntry(w, `Service manifest: ${fare.name} delivered to the booked destination`); }
+}
+export function syncServiceFares(w: World): string | null {
+  const order = w.player.service?.order;
+  if (order?.stage !== "fares" || pendingServiceFares(w).length) return null;
+  order.stage = "outbound";
+  const delivered = order.civilianPlan?.fares.filter(f => f.delivered).length ?? 0, total = order.civilianPlan?.fares.length ?? 0;
+  logEntry(w, `${order.title}: prior manifest closed, ${delivered}/${total} booked fares delivered${delivered < total ? "; remaining fares left without a delivery receipt" : ""}`);
+  return `PRIOR MANIFEST CLOSED: ${delivered}/${total} DELIVERED. SERVICE ORDERS NOW ACTIVE. G/U PLOTS THE COURSE.`;
+}
+export function serviceFareReport(w: World, order: ServiceOrder): string {
+  const plan = order.civilianPlan; if (!plan) return "";
+  const aboard = passengersAboard(w.player);
+  return ` ${plan.choice === "fares-first" ? "Booked fares first; 100cr amendment deducted" : "Orders first; affected fares lost five mood"}. ${plan.fares.map(f => `${f.name}: ${f.delivered ? "delivered" : aboard.some(m => m.id === f.id) ? "still aboard" : "left without a delivery receipt"}`).join("; ")}.`;
+}
+export function serviceDestination(w: World): { systemId: string; stationId?: string; singer?: boolean } | null {
   const order = w.player.service?.order; if (!order) return null;
+  if (order.stage === "fares") { const fare = pendingServiceFares(w)[0]; if (fare) return { systemId: fare.systemId, stationId: fare.stationId, singer: fare.singer }; }
   if (order.stage === "return") { const home = findStation(w, order.fromStationId); return home ? { systemId: home.sys.id, stationId: home.st.id } : null; }
   return { systemId: order.targetSystemId, stationId: order.targetStationId };
 }
 export function plotServiceOrder(w: World): boolean {
+  syncServiceFares(w);
   const dest = serviceDestination(w);
   if (!dest || !w.systems[dest.systemId] || permitDenied(w, dest.systemId) || !navRoute(w, w.player.systemId, dest.systemId)) return false;
-  w.player.navTarget = dest.systemId; w.player.singersCourse = false;
+  w.player.navTarget = dest.systemId; w.player.singersCourse = !!dest.singer;
   if (dest.stationId) w.player.navStationId = dest.stationId; else delete w.player.navStationId;
   return true;
 }
@@ -119,6 +165,7 @@ export function serviceAudience(w: World, expected: ServiceOrder, listen: boolea
   return `${order.report.toUpperCase()} RETURN TO ${findStation(w, order.fromStationId)!.st.name.toUpperCase()} AND FILE IT AT THE SERVICE OFFICE. G/U RESTORES THE COURSE.`;
 }
 export function tickServiceOrder(w: World, dt: number, flight: { cruise: boolean; docking: boolean; alert: number }): string | null {
+  const changed = syncServiceFares(w); if (changed) return changed;
   const p = w.player, order = p.service?.order;
   if (!order || order.stage !== "outbound" || order.kind === "liaison" || p.dockedAt || p.systemId !== order.targetSystemId || flight.cruise || flight.docking || Math.hypot(p.vx, p.vy) >= 60 || !Number.isFinite(dt) || dt <= 0) return null;
   if (order.kind === "survey") {
@@ -136,7 +183,7 @@ export function reportServiceOrder(w: World, expected: ServiceOrder): string {
   const record = w.player.service, order = record?.order;
   if (!record || !order || order !== expected || order.stage !== "return" || !serviceOffice(w, order.fromStationId)) return "REPORT IN PERSON AT THE NAVAL OFFICE THAT ISSUED THESE ORDERS.";
   const before = serviceRank(w.player).title;
-  record.completed++; record.history.push({ title: order.title, t: w.time, pay: order.pay, report: order.report ?? "Report received." });
+  record.completed++; record.history.push({ title: order.title, t: w.time, pay: order.pay, report: (order.report ?? "Report received.") + serviceFareReport(w, order) });
   record.history = record.history.slice(-12); delete record.order;
   w.player.credits += order.pay; ledger(w.player, "contracts", order.pay); adjustRep(w, record.factionId, 2);
   clearServiceCourse(w, { systemId: w.player.systemId, stationId: order.fromStationId });
@@ -147,7 +194,7 @@ export function reportServiceOrder(w: World, expected: ServiceOrder): string {
   return `THE CLERK READS EVERY LINE BEFORE SIGNING. +${order.pay}CR, +2 FACTION STANDING. ${record.completed} ASSIGNMENTS FILED.${before !== after ? ` SERVICE PROMOTION: ${after}.` : " 'THE NEXT SHEET WILL BE HERE WHEN YOU ARE.'"}`;
 }
 function clearServiceCourse(w: World, dest: { systemId: string; stationId?: string } | null): void {
-  if (dest && w.player.navTarget === dest.systemId && w.player.navStationId === dest.stationId) { delete w.player.navStationId; w.player.navTarget = null; }
+  if (dest && w.player.navTarget === dest.systemId && w.player.navStationId === dest.stationId) { delete w.player.navStationId; w.player.navTarget = null; w.player.singersCourse = false; }
 }
 export function withdrawServiceOrder(w: World, expected: ServiceOrder): string {
   const record = w.player.service, office = serviceOffice(w);
@@ -158,6 +205,7 @@ export function withdrawServiceOrder(w: World, expected: ServiceOrder): string {
 }
 export function serviceObjective(w: World): string | null {
   const order = w.player.service?.order; if (!order) return null;
+  if (order.stage === "fares") { const pending = pendingServiceFares(w); return pending.length ? `SERVICE AMENDED: ${pending.length} PRIOR FARES / G-U NEXT DESTINATION` : "SERVICE: PRIOR MANIFEST CLOSED / G-U NEXT ORDERS"; }
   if (order.stage === "return") return `SERVICE: FILE REPORT AT ${findStation(w, order.fromStationId)?.st.name.toUpperCase() ?? "THE SENDING OFFICE"}`;
   return `SERVICE: ${order.title.toUpperCase()}${order.need ? ` ${Math.floor(order.progress)}/${order.need}S` : " / HARBOURMASTER"}`;
 }

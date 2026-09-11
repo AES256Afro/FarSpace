@@ -2035,14 +2035,24 @@ Time passes for the people on the ship, and for the ship.
 - [x] Preserve custody through saves, lower standing and depot ownership changes.
       Keep the office's expanded list scrollable and provide a depot course.
 
+## Milestone 402: The Fares Already Aboard (Sep 2026)
+- [x] Compare service destinations with the accepted passenger manifest before
+      signing orders. Offer fares first, orders first, or no assignment.
+- [x] Amend the order for 100 fewer report credits and wait for its named fares,
+      or keep full pay with an explicit five-mood cost to affected passengers.
+- [x] Plot prior fares through G/U, including singers, then resume service work.
+      Preserve the original manifest and amendment through saves.
+- [x] Record real delivery receipts before completed missions are removed.
+      File the decision and distinguish arrived, aboard and missing fares.
+- [x] Keep existing passenger conditions and add no journey deadline.
+
 ## Later: Trek / Expanse / Orville (the fourth sitting)
 
 The third sitting shipped everything on the last list (M330–M386): the
 singers' home, the commission, the hearing, away partners, the rival's
 Number One, the long ship's launch, standing orders II and III, the ship on
-the roster, a command of their own. Next:
-
-- Service orders that conflict with a fare: an explicit decision with a record.
+the roster, a command of their own. The fourth sitting is now covered by
+M387-M402; subsequent work should start from verified playtest findings.
 
 The office's retirement and files, the wedding keepsake, the child named
 after the ship, and the cadet's path through command are covered by
@@ -2058,3 +2068,5 @@ The ship's interactive sim program is covered by M399.
 The naval career and postings are covered by M400.
 
 The service cutter and depot custody are covered by M401.
+
+The decision between service orders and booked fares is covered by M402.

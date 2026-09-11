@@ -1,5 +1,6 @@
 import { addCargo, cargoUsed, findStation, learnWord, logEntry, navRoute, passengersAboard, type Mission, type PlayerState, type StationDef, type World } from "../world";
 import { hashStr } from "./rng";
+import { recordServiceFareDelivery, syncServiceFares } from "./service";
 
 export const SINGERS_DOCK_RANGE = 160;
 export interface SingersAccount { light: number; dataShared: number; trades: number; joinedAt: number; homecomings?: number }
@@ -107,6 +108,7 @@ export function deliverSinger(w: World, m: Mission): string | null {
   const account = p.singersExchange!;
   const pay = m.lightReward ?? 25;
   m.done = true;
+  recordServiceFareDelivery(w, m); syncServiceFares(w);
   account.light += pay; account.homecomings = (account.homecomings ?? 0) + 1;
   p.fares = (p.fares ?? 0) + 1;
   const name = m.passengerName ?? "A singer";

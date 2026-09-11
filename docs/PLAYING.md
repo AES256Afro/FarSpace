@@ -1858,3 +1858,27 @@ There is no charge for returning a damaged cutter.
 The yard will not trade in, park, charter or scrap the borrowed cutter. Return
 it before buying another active hull, swapping to a parked ship or taking a
 liner to another hull. Your other owned ships remain in the fleet.
+
+
+## Orders and booked fares
+
+When an offered service assignment requires a different destination from
+passengers already aboard, the duty clerk asks for a decision before you sign.
+A liaison assignment compares the exact station; patrol and survey orders
+compare the system. Fares sharing that destination need no separate decision.
+
+- **Clear my booked fares first** reduces the eventual service report payment
+  by 100 credits. There is no upfront charge. The order waits for the named
+  fares to leave the manifest, and its watch or liaison cannot progress yet.
+  G then U plots the next prior fare, including the singers' berth, before
+  returning to the service journey. Passengers booked later do not extend it.
+- **Take the orders first** keeps the service quote and reduces each affected
+  passenger's mood by five once. Their bookings stay open.
+- **Leave the orders for now** makes no commitment and changes no fare.
+
+Existing passenger conditions still apply. The decision adds no deadline.
+The captain's log and filed report keep the choice and delivery receipts.
+A passenger delivered at the booked station or singers' berth counts as
+arrived even after the completed mission leaves the manifest. An abandoned
+or otherwise missing fare is recorded as leaving without a delivery receipt;
+the service order can resume, but it does not claim that passage was completed.
