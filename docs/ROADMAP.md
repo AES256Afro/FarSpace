@@ -932,4 +932,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Patient fares: get them to the clinic that can treat them within their
       dockings; a medic aboard buys one more; late halves the fare
 
+## Milestone 144 — Senior Staff ✅ (Sep 2026)
+- [x] E at the study with two crew aboard, once a leg: each department
+      reports and the captain sets a focus (engines, sickbay, tactical, helm)
+
 ## Later

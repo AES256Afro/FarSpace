@@ -605,7 +605,7 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
   }
   if (p.evacuees) drawText(ctx, `${p.evacuees.n} SURVIVORS ABOARD - DOCK TO HAND THEM OVER`, 4, 40, PAL.good);
   if (fs.cruise || fs.autopilot) {
-    const t = `${fs.hardBurn ? "HARD BURN" : ""}${fs.hardBurn && (fs.cruise || fs.autopilot) ? " - " : ""}${fs.cruise ? "CRUISE" : ""}${fs.cruise && fs.autopilot ? " - " : ""}${fs.autopilot ? `AUTOPILOT: ${fs.apLabel}` : ""}`;
+    const t = `${p.focus ? `FOCUS: ${p.focus.toUpperCase()}` : ""}${p.focus && (fs.hardBurn || fs.cruise || fs.autopilot) ? " - " : ""}${fs.hardBurn ? "HARD BURN" : ""}${fs.hardBurn && (fs.cruise || fs.autopilot) ? " - " : ""}${fs.cruise ? "CRUISE" : ""}${fs.cruise && fs.autopilot ? " - " : ""}${fs.autopilot ? `AUTOPILOT: ${fs.apLabel}` : ""}`;
     drawText(ctx, t, VW / 2 - textWidth(t) / 2, VH - 34, fs.cruise ? PAL.info : PAL.ui);
   }
   if (fs.dockTimer > 0.2) {

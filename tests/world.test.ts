@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  weekKey, genCrewCandidate, patientDeadline, patientOutcome, takeJuice, buyJuice, envoyOutcome, firstOfficer, stardate, cookMeal, LOST_KEEP_AFTER, LOST_REWARD, tickLostProperty, handInLostItem, leaveLostItem, passengersTookFire, passengersFed, askPassengerRequest, findStation, berthedCaptains, generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
+  weekKey, genCrewCandidate, setFocus, briefingReports, patientDeadline, patientOutcome, takeJuice, buyJuice, envoyOutcome, firstOfficer, stardate, cookMeal, LOST_KEEP_AFTER, LOST_REWARD, tickLostProperty, handInLostItem, leaveLostItem, passengersTookFire, passengersFed, askPassengerRequest, findStation, berthedCaptains, generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
   missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn, captainByName, helpCaptain, isFriend, friendsAt, tickMail, pickCaptainFor, canUpgradeInfra, upgradeInfra, rivalOf, isRival, rivalTakesFare, rivalBeatsYouTo, askRideAlong, tickRideAlong, setHomePort, isHome, donateRelic, hullHistoryFor, notableById, notableOutcome, canFundProject, fundProject, PROJECTS, settlementNeeds, ledger, ledgerAround, LEDGER_LABELS, catGift, stationBulletin, dockingsAt } from "../src/world";
 import { occasionFor, OCCASIONS } from "../src/data/occasions";
@@ -773,6 +773,17 @@ describe("station hours and the tannoy", () => {
     expect(stationHour(sts[0], at)).toEqual(stationHour(sts[0], at));
     for (const st of sts.slice(0, 5)) { const lines = tannoyLines(w, st, new RNG(1), at); expect(lines.length).toBeGreaterThan(5); for (const l of lines) expect(l.length).toBeLessThanOrEqual(130); }
     w.player.postRuns = 10; expect(tannoyLines(w, sts[0], new RNG(2), at).some((l) => l.includes("THE POSTMAN"))).toBe(true);
+  });
+  it("the senior staff report by department and a focus changes wear, fuel and the sick", () => {
+    const w = generateWorld(42, { realGalaxy: true }); const p = w.player;
+    p.crew = [{ ...genCrewCandidate(new RNG(1)), role: "engineer" }, { ...genCrewCandidate(new RNG(2)), role: "medic" }] as any; for (const c of p.crew) c.sick = null;
+    p.wear = 65; const rep = briefingReports(w);
+    expect(rep.length).toBe(4); expect(rep[0]).toContain("(ENGINES)"); expect(rep[0]).toContain("WEAR AT 65%"); expect(rep[1]).toContain("(SICKBAY)"); expect(rep[2]).toContain("NO PILOT"); expect(rep[3]).toContain("NO GUNNER");
+    const w0 = p.wear; p.focus = null; tickWear(p, 10); const plain = p.wear - w0;
+    p.wear = w0; p.focus = "engines"; tickWear(p, 10); expect(p.wear - w0).toBeCloseTo(plain * 0.8, 5);
+    const sys = w.systems[p.systemId]; const to = sys.links[0]; p.focus = null; const f0 = jumpFuelCost(w, sys.id, to); p.focus = "helm"; expect(jumpFuelCost(w, sys.id, to)).toBeLessThanOrEqual(f0);
+    p.crew[1].sick = { kind: "flu", until: w.time + 1000 }; p.crew[0].morale = 50;
+    expect(setFocus(w, "sickbay")).toContain("SICKBAY"); expect(p.crew[0].morale).toBe(54); expect(p.crew[1].sick!.until - w.time).toBeCloseTo(500, 5); expect(p.briefed).toBe(true);
   });
   it("patients: in time and the clinic takes over; a medic buys a docking; late halves the fare", () => {
     const w = generateWorld(41, { realGalaxy: true }); const p = w.player;

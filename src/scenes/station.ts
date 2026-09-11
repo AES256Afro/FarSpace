@@ -124,6 +124,7 @@ export class StationScene implements Scene {
     { const l = catGift(p, new RNG((g.world.seed ^ Math.floor(g.world.time * 79)) >>> 0)); if (l) g.toast(l); }
     { const m = tickMail(g.world); for (const l of m) g.toast(l); if (m.length) sfx.letter(); }
     { const kept = tickLostProperty(p); for (const l of kept) g.toast(l); if (kept.length) flag(g, "keepsake"); }
+    if (p.focus || p.briefed) { p.focus = null; p.briefed = false; }
     { const fr = friendsAt(g.world, this.station.id); if (fr.length && Math.random() < hoursRate(this.station).lounge) g.toast(`${fr[0].name.toUpperCase()} IS IN THE LOUNGE AND WAVING YOU OVER`); }
   }
 

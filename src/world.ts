@@ -330,6 +330,8 @@ export interface PlayerState {
   convoys?: number;                  // convoys walked through a gate
   catAway?: string | null;           // station id where the cat got left behind; she turns up again
   juice?: number;                    // doses of burn juice from a clinic: one hard burn each
+  focus?: FocusKind | null;          // the senior staff's focus for this leg, set at the briefing, cleared at the clamp
+  briefed?: boolean;                 // the briefing has been held this leg
   lostProperty?: LostItem[];         // what fares left in the cabin; hand it in, or keep it
   keepsakes?: string[];              // small things that stayed aboard: unclaimed lost property
   regatta?: number;                  // the regatta: 0 entered, 1 first course won, 2 second, 3 champion
@@ -939,6 +941,27 @@ export function settlePassengers(p: PlayerState): string[] {
   }
   settleRequests(p, out);
   return out;
+}
+// Senior staff: at the study, once a leg, each department reports and the captain picks a focus until the next dock.
+export type FocusKind = "engines" | "sickbay" | "tactical" | "helm";
+export const FOCUS_LABEL: Record<FocusKind, string> = { engines: "ENGINES: WEAR ACCRUES 20% SLOWER", sickbay: "SICKBAY: MORALE +4, THE SICK MEND FASTER", tactical: "TACTICAL: SHIELDS RECHARGE HALF AGAIN AS FAST", helm: "HELM: THE NEXT JUMPS COST 10% LESS FUEL" };
+export function briefingReports(w: World): string[] {
+  const p = w.player; const out: string[] = [];
+  const by = (role: CrewRole) => p.crew.find((c) => c.role === role && !c.sick);
+  const eng = by("engineer"); const med = by("medic"); const pil = by("pilot"); const gun = by("gunner");
+  const worst = [...p.systems].sort((a, b) => a.health - b.health)[0];
+  out.push(eng ? `${eng.name.split(" ")[0].toUpperCase()} (ENGINES): WEAR AT ${Math.round(p.wear ?? 0)}%${worst && worst.health < 70 ? `, ${worst.name.toUpperCase()} AT ${Math.round(worst.health)}%` : ", ALL SYSTEMS GREEN"}. ${(p.wear ?? 0) > 60 ? "SHE NEEDS A YARD, CAPTAIN." : "SHE'LL HOLD."}` : `NO ENGINEER ABOARD. WEAR AT ${Math.round(p.wear ?? 0)}%.`);
+  const sick = p.crew.filter((c) => c.sick).length; const morale = p.crew.length ? Math.round(p.crew.reduce((a, c) => a + c.morale, 0) / p.crew.length) : 0;
+  out.push(med ? `${med.name.split(" ")[0].toUpperCase()} (SICKBAY): ${sick ? `${sick} ON THE COTS` : "NOBODY ON THE COTS"}, MORALE ${morale}. ${morale < 50 ? "THEY NEED A WIN, OR A MEAL." : "THEY'RE ALL RIGHT."}` : `NO MEDIC ABOARD. ${sick ? `${sick} SICK.` : "NOBODY SICK."} MORALE ${morale}.`);
+  out.push(pil ? `${pil.name.split(" ")[0].toUpperCase()} (HELM): FUEL ${Math.round(p.fuel)}/${p.fuelMax}${p.navTarget ? `, COURSE FOR ${w.systems[p.navTarget]?.name.toUpperCase() ?? "?"}` : ", NO COURSE PLOTTED"}. ${p.fuel < p.fuelMax * 0.3 ? "WE'RE THIN ON FUEL." : "WE'RE GOOD FOR THE LEG."}` : `NO PILOT ABOARD. FUEL ${Math.round(p.fuel)}/${p.fuelMax}.`);
+  out.push(gun ? `${gun.name.split(" ")[0].toUpperCase()} (TACTICAL): SHIELDS ${Math.round(p.shield)}/${p.shieldMax}, ${p.kills} ON THE BOARD. ${p.hull < p.hullMax * 0.6 ? "THE HULL WON'T TAKE A SECOND FIGHT." : "READY IF IT COMES."}` : `NO GUNNER ABOARD. SHIELDS ${Math.round(p.shield)}/${p.shieldMax}.`);
+  return out;
+}
+export function setFocus(w: World, kind: FocusKind): string {
+  const p = w.player; p.focus = kind; p.briefed = true;
+  if (kind === "sickbay") { for (const c of p.crew) { c.morale = Math.min(100, c.morale + 4); if (c.sick) c.sick.until = w.time + Math.max(0, c.sick.until - w.time) * 0.5; } }
+  logEntry(w, `Senior staff briefing: focus on ${kind}`);
+  return `THE ROOM AGREES. ${FOCUS_LABEL[kind]}, UNTIL THE NEXT DOCK. "DISMISSED."`;
 }
 // The juice: a clinic sells it, a dose a time. One hard burn per leg: faster cruise, keener thrust,
 // and the crew and the frame pay for it.
@@ -1692,7 +1715,7 @@ export function wearRate(p: PlayerState): number {
   return 0.012 * Math.max(0.4, 1 - 0.15 * eng) * (hasSpecialty(p, "framewright") ? 0.7 : 1);
 }
 export function tickWear(p: PlayerState, dt: number): void {
-  p.wear = Math.min(130, (p.wear ?? 0) + wearRate(p) * dt);
+  p.wear = Math.min(130, (p.wear ?? 0) + wearRate(p) * dt * (p.focus === "engines" ? 0.8 : 1));
 }
 export function jumpWear(p: PlayerState): void {
   p.wear = Math.min(130, (p.wear ?? 0) + 2);
@@ -2137,7 +2160,7 @@ export function genCrewCandidate(rng: RNG): CrewMember {
 export function jumpFuelCost(w: World, fromId: string, toId: string): number {
   const ly = w.systems[fromId]?.ly?.[toId];
   const tuned = (1 - 0.08 * (w.player?.engineering?.fsd ?? 0)) * (hull(w.player?.hullId).fuelEff ?? 1);
-  const beacon = beaconDiscount(w, fromId, toId) * (isOccasion("lanes") ? 0.9 : 1) * (w.player && hasSpecialty(w.player, "gaterunner") ? 0.9 : 1);
+  const beacon = beaconDiscount(w, fromId, toId) * (isOccasion("lanes") ? 0.9 : 1) * (w.player && hasSpecialty(w.player, "gaterunner") ? 0.9 : 1) * (w.player?.focus === "helm" ? 0.9 : 1);
   if (ly === undefined) return Math.max(4, Math.round(10 * tuned * beacon));
   return clamp(Math.round((4 + ly * 1.4) * tuned * beacon), 3, 40);
 }

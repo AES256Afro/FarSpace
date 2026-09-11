@@ -4,7 +4,7 @@
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond, onWatch, watchIndex, captainNickname, borderStanding, passengersFed, cookMeal } from "../world";
+import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond, onWatch, watchIndex, captainNickname, borderStanding, passengersFed, cookMeal, briefingReports, setFocus } from "../world";
 import { commodity, faction } from "../data/data";
 import { crewChatter, soloChatter, MESS_LINES, passengerChatter } from "../data/chatter";
 import { RNG } from "../core/rng";
@@ -122,7 +122,7 @@ const PANELS: PanelDef[] = [
   { ch: "M", sysId: "comms", label: "COMMS ARRAY", desc: "Listen to the band" },
   { ch: "B", sysId: null, label: "BUNK", desc: "Sleep (skips 60s)" },
   { ch: "K", sysId: null, label: "GALLEY", desc: "Eat (needs provisions)" },
-  { ch: "S", sysId: null, label: "STUDY TERMINAL", desc: "Train a skill" },
+  { ch: "S", sysId: null, label: "STUDY TERMINAL", desc: "Senior staff briefing once a leg; train a skill" },
   { ch: "H", sysId: null, label: "HANGAR BAY", desc: "Escort drones" },
 ];
 
@@ -573,6 +573,18 @@ export class InteriorScene implements Scene {
         } else if (near.ch === "H") {
           const n = hull(p.hullId).drones ?? 0;
           this.say(n ? `HANGAR: ${n} ESCORT DRONES RACKED. THEY LAUNCH WITH YOU AND RE-ARM AT DOCK.` : "HANGAR: EMPTY RACKS");
+        } else if (near.ch === "S" && p.crew.length >= 2 && !p.briefed) {
+          // senior staff: reports round the table, then a focus for the leg
+          const enc: Encounter = { id: "briefing", where: "space", title: "SENIOR STAFF BRIEFING", weight: 0, text: briefingReports(g.world).join("\n"),
+            options: [
+              { label: "FOCUS: ENGINES", hint: "Wear accrues 20% slower until the next dock", result: (g2) => { sfx.select(); flag(g2, "briefing"); return setFocus(g2.world, "engines"); } },
+              { label: "FOCUS: SICKBAY", hint: "Morale +4 now; the sick mend twice as fast", result: (g2) => { sfx.select(); flag(g2, "briefing"); return setFocus(g2.world, "sickbay"); } },
+              { label: "FOCUS: TACTICAL", hint: "Shields recharge half again as fast", result: (g2) => { sfx.select(); flag(g2, "briefing"); return setFocus(g2.world, "tactical"); } },
+              { label: "FOCUS: HELM", hint: "The next jumps cost 10% less fuel", result: (g2) => { sfx.select(); flag(g2, "briefing"); return setFocus(g2.world, "helm"); } },
+              { label: "NO CHANGES. STUDY INSTEAD", result: (g2) => { g2.world.player.briefed = true; return "YOU THANK THEM AND LET THEM GO. THE STUDY IS QUIET AGAIN; E TO READ."; } },
+            ] };
+          (g.scenes["encounter"] as EncounterScene).open(g, enc, "interior", true);
+          return;
         } else if (near.ch === "S") {
           const which = (p.skills.piloting ?? 0) <= (p.skills.engineering ?? 0) ? "piloting" : "engineering";
           p.skills[which] = Math.min(10, (p.skills[which] ?? 0) + 0.5);

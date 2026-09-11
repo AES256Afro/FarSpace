@@ -307,7 +307,7 @@ export class FlightScene implements Scene {
     p.x += p.vx * dt;
     p.y += p.vy * dt;
 
-    p.shield = Math.min(p.shieldMax, p.shield + dt * 2);
+    p.shield = Math.min(p.shieldMax, p.shield + dt * (p.focus === "tactical" ? 3 : 2));
     if (p.fuel < 20) p.fuel = Math.min(20, p.fuel + dt * 0.4);
     // medic slowly patches the hull between fights
     if (crewBonus(p, "medic") > 0 && p.hull < p.hullMax) p.hull = Math.min(p.hullMax, p.hull + dt * 0.5);

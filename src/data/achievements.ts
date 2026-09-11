@@ -118,5 +118,6 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "treaty", title: "THE TREATY HOLDS", desc: "Land an envoy in time and unshot", check: (w) => !!w.player.flags?.treaty },
   { id: "juiced", title: "HARD BURN", desc: "Take the juice and burn for it", check: (w) => !!w.player.flags?.juiced },
   { id: "medevac", title: "MEDEVAC", desc: "Land a patient at the clinic in time", check: (w) => !!w.player.flags?.medevac },
+  { id: "briefing", title: "SENIOR STAFF", desc: "Hold a briefing and set a focus for the leg", check: (w) => !!w.player.flags?.briefing },
   { id: "elite", title: "ELITE", desc: "Top any career ladder", check: (w) => (["explorer", "trader", "miner"] as const).some((k) => rankOf(w.player, k).idx >= 8) },
 ];
