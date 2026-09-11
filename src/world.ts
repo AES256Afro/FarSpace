@@ -854,7 +854,7 @@ export const FURNISHINGS: { id: string; name: string; price: number; desc: strin
 ];
 
 // The sim rig: an hour somewhere else. Each program has its own way of going right, and its own way of going wrong.
-export type SimProgram = "beach" | "frontier" | "opera" | "home" | "unwinnable" | "pictures";
+export type SimProgram = "beach" | "frontier" | "opera" | "home" | "unwinnable" | "pictures" | "cats";
 export const SIM_PROGRAMS: { id: SimProgram; name: string; blurb: string }[] = [
   { id: "beach", name: "THE BEACH", blurb: "Sand, a sea that isn't wet, and a sun that doesn't burn" },
   { id: "frontier", name: "FRONTIER TOWN", blurb: "Dust, a saloon, and a duel at noon that nobody wins" },
@@ -862,11 +862,13 @@ export const SIM_PROGRAMS: { id: SimProgram; name: string; blurb: string }[] = [
   { id: "home", name: "HOME PORT, SPRING", blurb: "The promenade of wherever you call home, on a good day" },
   { id: "unwinnable", name: "THE UNWINNABLE", blurb: "A training scenario nobody has passed. That's the point. Probably." },
   { id: "pictures", name: "THE PICTURES", blurb: "An old film, the whole crew, the same jokes at the same lines" },
+  { id: "cats", name: "THE BRIDGE, BUT EVERYONE IS A CAT", blurb: "A program the engineer wrote at three in the morning. Nobody has deleted it." },
 ];
 export function runSim(w: World, program: SimProgram, rng: RNG): string {
   const p = w.player; p.simUsed = true;
   const all = (n: number) => { for (const c of p.crew) c.morale = Math.min(100, c.morale + n); };
   logEntry(w, `An hour in the sim rig: ${SIM_PROGRAMS.find((x) => x.id === program)?.name.toLowerCase() ?? program}`);
+  if (program === "cats") { all(7); (p.flags ??= {}).simCats = true; return rng.pick([`THE BRIDGE, BUT EVERYONE IS A CAT. THE GUNNER-CAT SITS ON THE TACTICAL CONSOLE AND REFUSES TO FIRE. THE PILOT-CAT KNOCKS THE COURSE OFF THE TABLE. ${p.cat ? `${p.cat.name.toUpperCase()}, WHO IS ALREADY A CAT, IS THE CAPTAIN, AND IS BETTER AT IT. ` : ""}MORALE UP. NOBODY DELETES THE PROGRAM.`, "AN HOUR AS CATS. THE ENGINEER-CAT FIXES NOTHING AND IS PRAISED FOR IT. THE MEDIC-CAT SLEEPS IN THE SUN THAT ISN'T THERE. THE CREW COME OUT STRETCHING. MORALE UP."]); }
   if (program === "beach") { all(6); return rng.pick([`AN HOUR ON THE BEACH. ${p.cat ? `${p.cat.name.toUpperCase()} HUNTS A CRAB THAT ISN'T THERE. ` : ""}EVERYBODY COMES OUT SQUINTING. MORALE UP.`, "AN HOUR ON THE BEACH. THE RIG ADDED A HORSE. NOBODY ASKED FOR THE HORSE. THE HORSE STAYS. MORALE UP."]); }
   if (program === "frontier") { all(5); const g = p.crew.find((c) => c.role === "gunner"); if (g) g.morale = Math.min(100, g.morale + 4); return rng.pick(["HIGH NOON IN FRONTIER TOWN. YOU LOSE THE DUEL TO THE PIANO PLAYER. TWICE. THE CREW WILL NOT LET THIS GO. MORALE UP.", `FRONTIER TOWN. ${g ? g.name.toUpperCase() + " WINS THE DUEL AND KEEPS THE HAT." : "THE SHERIFF'S HAT COMES OUT OF THE RIG SOMEHOW."} MORALE UP.`]); }
   if (program === "opera") { all(4); for (const m of passengersAboard(p)) m.mood = Math.min(100, (m.mood ?? 60) + 8); return passengersAboard(p).length ? "THE OPERA HOUSE. THE FARES DRESS UP FROM NOTHING AND WEEP AT THE SECOND ACT. MOOD UP ALL ROUND. THE CREW FALL ASLEEP IN THE BOX." : "THE OPERA HOUSE, EMPTY BUT FOR YOU AND THE CREW. THE SOPRANO SINGS TO SIX PEOPLE LIKE IT'S SIX THOUSAND. MORALE UP."; }
@@ -1256,7 +1258,7 @@ export function inspectionScore(p: PlayerState): { score: number; notes: string[
   const notes: string[] = []; let score = 0;
   if ((p.wear ?? 0) < 40) score++; else notes.push("THE FRAME RATTLES");
   const mood = p.crew.length ? p.crew.reduce((a, c) => a + c.morale, 0) / p.crew.length : 60; if (mood >= 60) score++; else notes.push("THE CREW LOOK WORN");
-  if ((p.furnishings ?? []).length >= 2) score++; else notes.push("THE DECK IS BARE");
+  if ((p.furnishings ?? []).length >= 2 || (p.motto && (p.ribbons ?? 0) > 0)) score++; else notes.push(p.motto ? "THE DECK IS BARE, THOUGH THE PLAQUE IS ENGRAVED" : "THE DECK IS BARE");
   if (p.hull >= p.hullMax * 0.7) score++; else notes.push("THE HULL IS PATCHED");
   return { score, notes };
 }

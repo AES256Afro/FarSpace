@@ -1588,6 +1588,15 @@ Time passes for the people on the ship, and for the ship.
 - [x] Number One's chronicle note mentions the leg they were given, the same
       leave, and the cadet
 
+## Milestone 300 — Everyone Is a Cat ✅ (Sep 2026)
+- [x] A seventh sim program the engineer wrote at three in the morning
+
+## Milestone 301 — The Inspector Credits the Plaque ✅ (Sep 2026)
+- [x] An engraved plaque and a ribbon count for the bare-deck check
+
+## Milestone 302 — Ribbons and All ✅ (Sep 2026)
+- [x] With three ribbons, the harbour greeting says so
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

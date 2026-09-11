@@ -752,6 +752,9 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- The sim rig has a seventh program: the bridge, but everyone is a cat.
+- An engraved plaque plus a ribbon counts for the inspector's bare-deck
+  check, and with three ribbons the harbour greeting says "ribbons and all".
 - A hundred deeds is itself a deed. Number One's note in the chronicle now
   mentions the leg you gave them, the same leave, and the cadet.
 - The first time you land with a given Number One aboard they object, once,
