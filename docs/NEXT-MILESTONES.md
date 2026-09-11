@@ -3,7 +3,7 @@
 Date: September 11, 2026. Status: approved implementation sequence.
 Baseline: v0.255.0, M415, release 9bef5b4540c4393de3654a710053bf6d0b66fb06.
 The preceding release has 404 passing tests and a verified hosted deployment.
-M416 and M417 are implemented through v0.257.1 and are undergoing release validation.
+M416 and M417 are released through v0.257.1 with 473 passing tests and a verified hosted deployment.
 M418-M427 remain planned. The user approved implementation after reviewing
 the three title concepts and choosing random selection between them.
 
@@ -409,8 +409,10 @@ system and real-time multiplayer outside this cycle.
 
 ## Current release follow-through
 
-v0.255.0 is deployed. BoxPilot PR259 contains the catalog update; its build and
-tests passed. At this planning checkpoint its registry check last failed twice
-on an unchanged MinIO image returning HTTP 401, while FarSpace returned 200.
-Recheck that external condition before catalog merge. It does not block local
-implementation of M416. No new timed automation is part of this plan.
+v0.257.1 is deployed. The title and save-library milestones are complete.
+M418 is next in the approved sequence. No new timed automation was created.
+
+BoxPilot PR259 targets 0.257.1. Local checks passed with 1,632 tests. The
+catalog registry check resolved FarSpace with HTTP 200, then failed on the
+unchanged MinIO image returning HTTP 401. Keep the PR open until its registry
+check passes. This catalog issue does not affect the hosted FarSpace release.

@@ -2,30 +2,63 @@
 
 ## Current checkpoint
 
-- Release: **v0.255.0**, milestones through **M415**.
-- Release commit: `9bef5b4540c4393de3654a710053bf6d0b66fb06` on `main`.
+- Release: **v0.257.1**, milestones through **M417**. M416 and M417 shipped
+  together; the patch also repairs cloud-code generation.
+- Release commit/tag: `28bb0ef4f40a9d5d369fa014ac28f97cb1f376bf`, `v0.257.1`.
+  Documentation checkpoints may advance `main` beyond that release commit.
 - Repository: `https://github.com/AES256Afro/FarSpace`.
 - Local workspace: `/Users/chris/Projects/FarSpace`.
-- Tests: **404 passing**. M415 adds ten settings regressions.
-- TypeScript and production build passed. Bundle: `index-DXes6cu-.js`,
-  1225.68 kB raw / 433.79 kB gzip. The existing Vite bundle-size notice remains.
-- Hosted CI `34639654631` passed, including the actual Cloudflare deploy step.
-  Container workflow `34639654701` passed for v0.255.0.
-- Live site: <https://farspace.fsociety.work>. Production matches the tested
-  local build, SHA-256
-  `6c8e6a97ed9ef923c5132e8d9cac1a94d2a229057c3828a9b43d87fc4eff4cb7`.
-  `/api/health` returned `{"ok":true}`.
-- BoxPilot catalog update: PR259 is open at
-  `f432d8abb2b19efa53a2109cc354503308b4b64a`. The `validate` check passed,
-  including `npm run check`. `tags-resolve` failed twice on the unchanged
-  `minio/minio:RELEASE.2025-09-07T16-13-09Z` image with HTTP 401. FarSpace
-  0.255.0 returned HTTP 200 on both attempts. A direct MinIO registry check
-  also returned 401. Do not treat this as a FarSpace image failure.
-  Remote BoxPilot main still references 0.254.0. Resume the catalog merge
-  after registry resolution passes for the exact PR head. This session did
-  not restart or redeploy Bigbox.
-- Save schema remains **14**. New state is optional and has migration and
-  round-trip coverage where it changes persistent behavior.
+- Tests: **473 passing**. TypeScript and production build passed.
+- JavaScript: `index-CnOESIfc.js`, 1242.31 kB raw / 438.78 kB gzip,
+  SHA-256 `1aab1fd10f95a2813d711dd1f7bc9a2fe210ca87644dc8b23a8c8c7f0d4a7704`.
+- CSS: `index-DLwGHPCy.css`, 3.68 kB raw / 1.29 kB gzip,
+  SHA-256 `24cedb831f94187ee7d3f4b1266b1d7e5d61324f770628c19e261646023bb73f`.
+  The existing Vite bundle-size notice remains.
+- Hosted CI `34649585007` passed, including the actual Cloudflare deploy step.
+  Container workflow `34649584851` passed for v0.257.1.
+- Live site: <https://farspace.fsociety.work>. Hosted HTML references those
+  assets; both hashes match the tested build. `/api/health` returned ok.
+  Native browser verification displayed v0.257.1 and changed title scenes
+  without console errors.
+- BoxPilot PR259 now targets 0.257.1 at
+  `8879c0ab68aca73ccd31a49b7614ca26b8a85375`. Local `npm run check` passed,
+  including 1,632 tests. Catalog image run `34649742916` resolved FarSpace
+  0.257.1 with HTTP 200 and failed on the unchanged
+  `minio/minio:RELEASE.2025-09-07T16-13-09Z` with HTTP 401. Keep the PR open
+  until registry resolution passes for its exact head. Remote BoxPilot main
+  still references 0.254.0. Bigbox was not restarted or redeployed.
+- Save schema remains **14**. Local, cloud and imported saves share required
+  playable-shape validation, including the Tern service cutter. Future
+  schemas are rejected; version-zero migration is covered.
+- Dev preview: <http://127.0.0.1:5199>, restarted at 0.257.1. Temporary
+  production servers on 5197/5198 are stopped. All synthetic browser fixtures
+  are closed. Preserved builds and logs: `/private/tmp/farspace-title-20260911`.
+
+## Approved plan and next implementation
+
+The user approved [M416-M427](NEXT-MILESTONES.md) after choosing random
+selection between the orbital, station and bridge-window title concepts.
+M416 and M417 are complete. Continue with M418's shared menu selection and
+viewport rules, then M419's HUD priorities and M420's contact intent/actions.
+M421-M427 remain planned. Do not report the entire plan as shipped.
+
+- The title uses scene-owned HTML controls over bounded pixel artwork. It
+  selects each scene once per cycle without consecutive repeats, preserves
+  view/page/focus/scroll through child menus, and honors reduced motion.
+- Native checks cover the three views, Settings return, 320x568 scrolling,
+  doubled menu text, long names and form key ownership. A frozen title build
+  ran 1203.133 real seconds with unchanged world JSON and saved bytes, zero
+  save writes, unchanged entity/cache counts and no scene rotation.
+- Save previews, slot choice and loading are separate. Copy/import/clear/start
+  over keep one recovery copy per affected slot. Restore swaps the bytes;
+  export can retain damaged originals. Cloud codes stay with their slots.
+- A failed cloud lookup offers local continuation. Slot changes and changed
+  local bytes invalidate open replacement choices. Failed persistence keeps
+  the previous save and active world. Save and quit stays paused on failure.
+- Native synthetic checks covered copying, recovery, cloud fallback, normal
+  flight return and quota failure. Test save/identity writes were captured
+  only in memory. Physical touch, physical gamepad and screen-reader operation
+  have not been exercised; M426 retains that device matrix.
 
 The authorized work window was 12:34:39 to 18:34:39 UTC on September 11
 (07:34:39 to 13:34:39 CDT). The continuation automation is
