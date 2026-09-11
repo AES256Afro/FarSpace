@@ -158,6 +158,7 @@ export interface Mission {
   passengerName?: string;
   passengerKind?: "vip" | "refugee" | "fugitive" | "tourist" | "courier" | "envoy" | "patient" | "prisoner";
   freed?: boolean;                    // a prisoner you let go at a rock; no fare, and the service remembers
+  dined?: boolean;                    // sat at the captain's table at a mess call
   treaty?: { a: string; b: string };  // an envoy between two factions: land them unshot and on time
   patrolT?: number;                   // seconds held on station in the target system
   patrolNeed?: number;
@@ -1139,6 +1140,11 @@ export function birthdaysDue(w: World): string[] {
 }
 // A board of inquiry: the navy convenes one at its own stations for every crew member who didn't make it to the pod.
 export function inquiryDue(w: World, st: StationDef): boolean { const p = w.player; return !!st.military && (p.lost ?? []).length > (p.inquiries ?? 0); }
+// A transfer request: a crew member with a long record and a low mood asks, at a naval station, for a posting ashore.
+export function transferRequest(w: World): CrewMember | null {
+  const p = w.player;
+  return p.crew.find((c) => c.morale < 40 && (c.docks ?? 0) >= 5 && !c.sick && !(p.flags ?? {})[`transfer:${c.name}`]) ?? null;
+}
 export function grievanceHeard(w: World, now = Date.now()): void { (w.player.flags ??= {})[`grievance:${weekKey(now)}`] = true; }
 // Receptions: dock with standing (rep 20+) and now and then the faction throws one in your honour, once a week.
 export function receptionDue(w: World, st: StationDef, now = Date.now()): boolean {

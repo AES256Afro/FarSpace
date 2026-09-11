@@ -1250,6 +1250,20 @@ Time passes for the people on the ship, and for the ship.
 - [x] Handbook section "The service and the belt"; a help line for naval
       stations and belt standing
 
+## Milestone 219 — The Captain's Table ✅ (Sep 2026)
+- [x] Talk to a fare during a mess call and there's a chair at your end of the
+      table: sit with me (mood up, a story by kind), sit with the crew, or the
+      lounge; envoys, patients and prisoners have lines aboard now (a crash
+      fixed: they had none)
+
+## Milestone 220 — A Representative ✅ (Sep 2026)
+- [x] After the third letter the office sends someone to the clamp, once, with
+      four questions and orders not to sit down
+
+## Milestone 221 — Transfer Requests ✅ (Sep 2026)
+- [x] At a naval station a long-serving, unhappy crew member asks for a posting
+      ashore: sign it (rep, a letter later), talk them round, or refuse
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

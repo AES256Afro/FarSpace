@@ -752,6 +752,15 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- Talk to a passenger during a mess call and it's the captain's table: sit
+  with me (their mood up a lot, and a story by kind), sit with the crew, or
+  send them to the lounge. Once per fare.
+- After the third letter from the office, a representative meets the ship at
+  a clamp, once: answer all four questions (data), ask what the office
+  actually does (morale; they don't know), or no comment (a sticker).
+- At a naval station a crew member with five dockings and a low mood may ask
+  for a posting ashore. Sign it (rep up, they write later with a spare), talk
+  them round (usually works), or refuse (morale and loyalty down).
 - A passing hail can be answered from the pause menu for two minutes after
   it lands: a civil word (rep and morale; ten of them is a deed), belt
   manners (standing, if there are rocks in the system; a wince if not), or

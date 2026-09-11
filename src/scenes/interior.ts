@@ -22,6 +22,15 @@ const PASSENGER_LINES: Record<string, { high: string[]; mid: string[]; low: stri
   tourist: { high: ["We've never seen anything like it. Any of it.", "The children want to know if you'll take us again next year.", "Is that another one? Slow down, slow down!"],
     mid: ["When do we see it?", "Are the viewports always this small?", "Someone in the party is asking about the toilets."],
     low: ["This isn't what the brochure said.", "We paid for sights, not corridors.", "The children have stopped asking questions. That's worse."] },
+  envoy: { high: ["The talks will go better for having arrived on a ship like this. That's not flattery. It's diplomacy.", "I've drafted the opening line three times. The hum helps."],
+    mid: ["How many dockings left? I ask only because the treaty does.", "If we're fired on, I'd like to be told before, not after."],
+    low: ["A treaty is a fragile thing. So, it turns out, is my stomach.", "I have been on worse ships. I am trying to remember when."] },
+  patient: { high: ["The medic says I'm holding. I believe the medic. I've decided to.", "Smooth flying. I felt it in the stitches, in a good way."],
+    mid: ["How far to the clinic? Roughly. In dockings.", "I'm fine. I'm saying that so somebody has."],
+    low: ["Tell the pilot the turns are the hard part.", "If we don't make it in time, it's not your fault. I wanted that said."] },
+  prisoner: { high: ["You feed your prisoners. That's rarer than you'd think.", "The irons are Guild pattern. I'm not going anywhere. I'm just saying I know."],
+    mid: ["The navy's version leaves things out. Everybody's does.", "Is there a gunner aboard? ... Just making conversation."],
+    low: ["I've been on worse ships. Those ships had worse captains, though.", "Two jumps from here there's a rock where nobody would ask. Just so you know it exists."] },
   courier: { high: ["I'll make the meeting with time to spare. Excellent.", "Efficient. I'll say so.", "Best run I've booked this quarter."],
     mid: ["I have a meeting. You understand.", "What's our ETA. Precisely.", "I'll be working, don't mind me."],
     low: ["The meeting is gone. You realise that.", "I'll be asking for a refund.", "Speed, Captain. It was the whole point."] },
@@ -203,6 +212,28 @@ export class InteriorScene implements Scene {
         else this.say("YOU EAT WITH THE CREW. MORALE UP.");
       }
     }
+  }
+  // the captain's table: a mess call with a fare aboard is a dinner, if you ask them
+  captainsTable(g: Game, m: import("../world").Mission): void {
+    const p = g.world.player; const name = (m.passengerName ?? "THE PASSENGER").toUpperCase(); const kind = m.passengerKind ?? "vip";
+    const story: Record<string, string> = {
+      vip: "THEY TALK ABOUT THE PORTS THEY OWN A PIECE OF, AND THEN, THREE COURSES IN, ABOUT THE ONE THEY GREW UP ON.",
+      refugee: "THEY DON'T TALK MUCH. THEY EAT EVERYTHING, AND THEN THEY TALK ABOUT THE HOUSE. THE CREW GO QUIET AND STAY QUIET.",
+      fugitive: "THEY TELL A STORY ABOUT A CARD GAME AND A HARBOURMASTER THAT CAN'T BE TRUE AND IS, AND NOBODY ASKS THE NAMES.",
+      tourist: "THEY ASK EVERY CREW MEMBER WHAT THEY DO AND WRITE IT DOWN. THE ENGINEER GETS TWO PAGES.",
+      courier: "THEY CHECK THE TIME FOUR TIMES AND THEN, SOMEWHERE IN THE SECOND COURSE, STOP.",
+      envoy: "THEY TELL YOU WHAT THE TREATY ACTUALLY SAYS, WHICH IS NOT WHAT EITHER SIDE THINKS IT SAYS, AND THAT THIS IS THE POINT OF TREATIES.",
+      patient: "THE MEDIC CUTS THEIR FOOD WITHOUT BEING ASKED AND THEY LET THEM. THEY TALK ABOUT WHAT THEY'LL DO WITH THE HAND WHEN IT'S FIXED.",
+      prisoner: "THE GUNNER SITS BESIDE THEM AND THE IRONS STAY ON, AND THEY EAT LIKE SOMEBODY WHO REMEMBERS OTHER TABLES. THEY SAY THANK YOU TO THE COOK, SPECIFICALLY.",
+    };
+    const enc: Encounter = { id: "captainstable", where: "space", title: "THE CAPTAIN'S TABLE", weight: 0,
+      text: `Mess call, and ${m.passengerName ?? "your passenger"} is standing in the galley hatch with a tray, not sure of the rule. There's a chair at your end of the table. There's always a chair.`,
+      options: [
+        { label: "SIT WITH ME", hint: "Their mood up a lot; the crew hear a story", result: (g2) => { m.dined = true; m.mood = Math.min(100, (m.mood ?? 60) + 12); for (const c of p.crew) c.morale = Math.min(100, c.morale + 2); flag(g2, "captainstable"); logEntry(g2.world, `${m.passengerName ?? "A passenger"} sat at the captain's table`); return `${name} SITS. ${story[kind] ?? story.vip} MOOD UP, THEIRS AND THE TABLE'S.`; } },
+        { label: "SIT WITH THE CREW; THEY'RE BETTER COMPANY", hint: "Mood up a little; loyalty up", result: () => { m.dined = true; m.mood = Math.min(100, (m.mood ?? 60) + 4); for (const c of p.crew) c.loyalty = (c.loyalty ?? 0) + 0.1; return `${name} SITS WITH THE CREW AND THE CREW MAKE ROOM, WHICH IS ITS OWN KIND OF WELCOME. YOU EAT AT YOUR END AND LISTEN.`; } },
+        { label: "PASSENGERS EAT IN THE LOUNGE", hint: "Mood down; the rule is the rule", result: () => { m.dined = true; m.mood = Math.max(0, (m.mood ?? 60) - 6); return `${name} TAKES THE TRAY BACK TO THE LOUNGE. THE RULE IS THE RULE. THE CREW EAT FASTER THAN USUAL.`; } },
+      ] };
+    (g.scenes["encounter"] as EncounterScene).open(g, enc, "interior", true);
   }
   // the dedication plaque: four mottos off the yard's list, or your own
   mottoMenu(g: Game): void {
@@ -589,7 +620,10 @@ export class InteriorScene implements Scene {
         // whoever you're standing beside
         const px = this.passengerNear(p)!;
         const mood = px.mood ?? 60;
-        const pool = mood >= 75 ? PASSENGER_LINES[px.passengerKind ?? "vip"].high : mood >= 35 ? PASSENGER_LINES[px.passengerKind ?? "vip"].mid : PASSENGER_LINES[px.passengerKind ?? "vip"].low;
+        const lines = PASSENGER_LINES[px.passengerKind ?? "vip"] ?? PASSENGER_LINES.vip;
+        const messOn = g.world.time < this.messUntil;
+        if (messOn && !px.dined) { this.captainsTable(g, px); return; }
+        const pool = mood >= 75 ? lines.high : mood >= 35 ? lines.mid : lines.low;
         const want = px.demand ? ` ...${commodity(px.demand).name} would make the trip, if you see any.` : px.passengerKind === "tourist" && !px.sightSeen ? " ...and when do we see it?" : "";
         this.talk = `${px.passengerName!.toUpperCase()}${(px.party ?? 1) > 1 ? ` (+${(px.party ?? 1) - 1})` : ""} (MOOD ${Math.round(mood)}): ${pool[Math.floor(Math.random() * pool.length)]}${want}`;
         px.mood = Math.min(100, mood + 2);
