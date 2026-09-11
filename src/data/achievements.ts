@@ -99,6 +99,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "favour", title: "A FAVOUR OWED", desc: "Carry a favour for a friend", check: (w) => !!w.player.flags?.favour },
   { id: "rally", title: "TO THE RALLY", desc: "Deliver a border rally", check: (w) => !!w.player.flags?.rally },
   { id: "convoy", title: "SHEPHERD", desc: "Walk a convoy through a gate", check: (w) => !!w.player.flags?.convoy },
+  { id: "stringer", title: "STRINGER", desc: "Sell a picture", check: (w) => !!w.player.flags?.stringer },
   { id: "first", title: "FIRST FOOTFALL", desc: "Be first to log a system", check: (w) => !!w.player.flags?.first },
   { id: "scout", title: "SCOUT", desc: "Reach Explorer rank Scout", check: (w) => rankOf(w.player, "explorer").idx >= 2 },
   { id: "dealer", title: "DEALER", desc: "Reach Trader rank Dealer", check: (w) => rankOf(w.player, "trader").idx >= 3 },

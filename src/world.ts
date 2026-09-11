@@ -137,7 +137,7 @@ export interface SystemDef {
   permit?: boolean; // entry needs ALLIED standing with the owning faction
 }
 
-export type MissionKind = "delivery" | "bounty" | "mining" | "escort" | "passenger" | "research" | "arc" | "ground" | "repair" | "post";
+export type MissionKind = "delivery" | "bounty" | "mining" | "escort" | "passenger" | "research" | "arc" | "ground" | "repair" | "post" | "photo";
 
 export interface Mission {
   id: string;
@@ -172,6 +172,8 @@ export interface Mission {
   returning?: boolean;      // rode with you before and asked for you by name
   favourFor?: string;       // a post run carried as a favour for this captain (NpcCaptain id)
   rally?: boolean;          // a border rally: supplies for a contested station, a big push for its faction
+  photo?: { systemId: string; wonderId?: string; planetIdx?: number; label: string }; // a picture wanted (F7 in the right place)
+  photoDone?: boolean;
   anomalyId?: string;
   syndicate?: string;                  // contract issued by an AI syndicate (tag)
   tenderDone?: boolean;                // repair tenders: the work is done, collect at the station
@@ -1002,6 +1004,17 @@ export function favourDone(w: World, m: Mission, rng: RNG): string | null {
   (w.mailQueue ??= []).push({ dueT: w.time + rng.int(200, 700), from: `${cap.name}, ${cap.ship}`, text: rng.pick([`It got there. She cried. I owe you more than this, but take this. Look me up at ${home}.`, `You didn't have to. That's why it matters. Drinks are on me for a year.`, `They said the box arrived in one piece. Nobody's managed that before. Thank you.`]), gift });
   logEntry(w, `Carried a favour for ${cap.name}`);
   return `${cap.name.toUpperCase()} WILL HEAR IT ARRIVED. THAT'S THE KIND OF THING THAT COMES BACK AROUND.`;
+}
+// A postcard taken: any picture missions it satisfies are marked done
+export function photoTaken(w: World, where: { systemId: string; x: number; y: number; orbitPlanetIdx?: number; inOrbit: boolean }): string[] {
+  const out: string[] = [];
+  for (const m of w.player.missions) {
+    if (m.kind !== "photo" || !m.accepted || m.done || m.photoDone || !m.photo || m.photo.systemId !== where.systemId) continue;
+    const ok = m.photo.wonderId ? !where.inOrbit && wondersIn(w, where.systemId).some((wd) => wd.id === m.photo!.wonderId && Math.hypot(wd.x - where.x, wd.y - where.y) <= WONDER_RANGE)
+      : where.inOrbit && where.orbitPlanetIdx === m.photo.planetIdx;
+    if (ok) { m.photoDone = true; out.push(`THAT'S THE PICTURE: ${m.photo.label.toUpperCase()}. TURN IT IN AT ${findStation(w, m.fromStationId)?.st.name.toUpperCase() ?? "THE STATION"}`); }
+  }
+  return out;
 }
 // Carry the post and sometimes a letter in the bag is for you: a stranger who saw your name on the manifest
 export function postDelivered(w: World, rng: RNG): string | null {
@@ -2292,6 +2305,25 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
   if (tier >= 1) kinds.push("research", "research");
   if (station.type === "research") kinds.push("ground");
   if (station.military) kinds.push("bounty", "bounty");
+  // a picture wanted: a magazine, a museum, a family; a postcard (F7) taken in the right place
+  if (!station.military && (station.type === "research" || station.type === "trade") && rng.chance(0.5)) {
+    const pool: { systemId: string; wonderId?: string; planetIdx?: number; label: string }[] = [];
+    for (const s2 of [sys, ...linked]) {
+      for (const wd of wondersIn(world, s2.id)) pool.push({ systemId: s2.id, wonderId: wd.id, label: `${wd.seen ? wd.name : "the thing they call " + wd.name} in ${s2.name}` });
+      s2.planets.forEach((pl, i) => { if (pl.palette >= 6 || rng.chance(0.25)) pool.push({ systemId: s2.id, planetIdx: i, label: `${pl.name} from orbit, ${s2.name}` }); });
+    }
+    if (pool.length) {
+      const ph = rng.pick(pool);
+      const client = rng.pick(["The Lanes Gazette", "A family who can't travel", "The station museum", "A postcard press", "Somebody's grandmother"]);
+      missions.push({
+        id: `photo-${station.id}-${world.missionCounter++}`, kind: "photo", accepted: false, done: false, tier: 0,
+        title: `Picture wanted: ${ph.label}`,
+        desc: `${client} wants a picture of ${ph.label}. Take a postcard (F7) ${ph.wonderId ? "within sight of it" : "from its orbit"} and bring it back here.`,
+        fromStationId: station.id, targetSystemId: ph.systemId, targetStationId: station.id, photo: ph,
+        reward: (ph.wonderId ? 520 : 320) + rng.int(0, 160), repReward: 2,
+      });
+    }
+  }
   // the rally: a contested station wants supplies, and the faction remembers who brings them
   { const bc = borderContest(world); if (bc && bc.systemId === sys.id && !station.military) {
     const exports = new Set(stationExports(station));
@@ -3110,6 +3142,7 @@ export function missionDeliverable(world: World, m: Mission, station: StationDef
   if (m.kind === "ground") return m.targetStationId === station.id && (m.groundDone ?? 0) >= (m.groundNeed ?? 1);
   if (m.kind === "repair") return m.targetStationId === station.id && !!m.tenderDone;
   if (m.kind === "post") return m.targetStationId === station.id;
+  if (m.kind === "photo") return !!m.photoDone && m.fromStationId === station.id;
   if (m.targetStationId !== station.id) return false;
   if (m.commodityId && m.qty) return (p.cargo[m.commodityId] ?? 0) >= m.qty;
   return false;

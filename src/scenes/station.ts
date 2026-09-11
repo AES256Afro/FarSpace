@@ -755,6 +755,7 @@ export class StationScene implements Scene {
     if (m.kind === "passenger" && m.passengerKind === "tourist") flag(g, "tourist");
     if (m.rally) { pushInfluence(g.world, p.systemId, st.factionId, 4); g.toast(`RALLY DELIVERED. THE ${faction(st.factionId).name.toUpperCase()} COUNT IT: A BIG PUSH TO HOLD ${g.world.systems[p.systemId].name.toUpperCase()}.`); flag(g, "rally"); }
     else if (m.kind === "delivery" || m.kind === "post" || m.kind === "passenger") { if (pushInfluence(g.world, p.systemId, st.factionId, m.kind === "delivery" ? 2 : 1)) g.toast(`THE ${faction(st.factionId).name.toUpperCase()} NOTE WHO KEEPS ${st.name.toUpperCase()} SUPPLIED. YOUR PUSH IN THE BORDER CONTEST COUNTS.`); }
+    if (m.kind === "photo") { flag(g, "stringer"); void wire.post("discover", `sold a picture of ${m.photo?.label ?? "something"}`, g.world.systems[p.systemId].name); }
     if (m.kind === "post" && m.favourFor) { const line = favourDone(g.world, m, new RNG((g.world.seed ^ Math.floor(g.world.time * 23)) >>> 0)); if (line) g.toast(line); flag(g, "favour"); }
     else if (m.kind === "post") { const note = postDelivered(g.world, new RNG((g.world.seed ^ Math.floor(g.world.time * 13)) >>> 0)); if (note) g.toast(note); if ((p.postRuns ?? 0) >= 10) flag(g, "postman"); }
     if (m.syndicate) {

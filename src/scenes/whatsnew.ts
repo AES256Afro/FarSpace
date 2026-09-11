@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.91 - PICTURES WANTED", [
+    "STATIONS POST PICTURE JOBS: A WONDER, A WORLD FROM ORBIT. F7 IN THE RIGHT PLACE, THEN BRING IT BACK.",
+  ]],
   ["0.90 - THE CONVOY", [
     "THREE SLOW HAULERS FORM ON YOUR STERN. KEEP THEM CLOSE, TAKE THEM TO ANY GATE, JUMP. THEY PAY ON THE OTHER SIDE.",
   ]],

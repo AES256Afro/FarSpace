@@ -2,7 +2,7 @@
 
 import { Input } from "./core/input";
 import { drawText as drawTextTo } from "./gfx/font";
-import { findStation } from "./world";
+import { findStation, photoTaken } from "./world";
 import { RNG } from "./core/rng";
 import { World, generateWorld, WreckDef } from "./world";
 import { loadSave, writeSave, saveKeyFor, activeSlot } from "./save";
@@ -96,6 +96,7 @@ export class Game {
       cx.restore();
       const p = this.world.player;
       p.postcards = (p.postcards ?? 0) + 1;
+      for (const line of photoTaken(this.world, { systemId: p.systemId, x: p.x, y: p.y, orbitPlanetIdx: this.orbitPlanetIdx, inOrbit: this.sceneName === "orbit" || this.sceneName === "surface" })) this.toast(line);
       if (isOccasion("lantern")) p.expData = (p.expData ?? 0) + 60;
       c.toBlob((blob) => {
         if (!blob) return;

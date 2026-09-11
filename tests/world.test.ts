@@ -15,7 +15,7 @@ import { STARS, starDistance } from "../src/data/stars";
 import { ACHIEVEMENTS } from "../src/data/achievements";
 import { ARCS, dailyContract, dailyKey, rankOf, logSystem, applyHull } from "../src/world";
 import { MODULES } from "../src/data/modules";
-import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook, leaveWreck, addWireWrecks, enterRegatta, regattaObjective, regattaProgress, buyStake, collectStake, stakePrice, STAKE_CAP, hasSpecialty, chooseSpecialty, wearRate, crewOwnHull, OWN_HULL_CREW_FEE, maydayAnswered, favourFor, favourDone, borderContest, pushInfluence, borderStanding, resolveBorder } from "../src/world";
+import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook, leaveWreck, addWireWrecks, enterRegatta, regattaObjective, regattaProgress, buyStake, collectStake, stakePrice, STAKE_CAP, hasSpecialty, chooseSpecialty, wearRate, crewOwnHull, OWN_HULL_CREW_FEE, maydayAnswered, favourFor, favourDone, borderContest, pushInfluence, borderStanding, resolveBorder, photoTaken, WONDER_RANGE } from "../src/world";
 import { RARES } from "../src/data/data";
 import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
@@ -979,6 +979,24 @@ describe("the border", () => {
     // a rally on the contested station's board this week, fetched from anywhere, not handed over
     const now = borderContest(w)!; const cst = w.systems[now.systemId].stations.find((x) => !x.military);
     if (cst) { const board = genMissionsFor(w, cst, new RNG(3)); const r = board.find((m) => m.rally)!; expect(r).toBeTruthy(); expect(r.targetStationId).toBe(cst.id); expect(r.qty).toBeGreaterThanOrEqual(6); }
+  });
+});
+
+describe("pictures wanted", () => {
+  it("a photo mission is done by a postcard in the right place and turned in where it was posted", () => {
+    const w = generateWorld(40, { realGalaxy: true });
+    const sts = Object.values(w.systems).flatMap((s) => s.stations).filter((x) => !x.military && (x.type === "research" || x.type === "trade"));
+    let m: import("../src/world").Mission | undefined;
+    for (const st of sts) { for (let seed = 0; seed < 6 && !m; seed++) m = genMissionsFor(w, st, new RNG(seed)).find((x) => x.kind === "photo"); if (m) break; }
+    expect(m).toBeTruthy();
+    m!.accepted = true; w.player.missions = [m!];
+    const from = findStation(w, m!.fromStationId)!.st;
+    expect(missionDeliverable(w, m!, from)).toBe(false);
+    const ph = m!.photo!;
+    if (ph.wonderId) { const wd = wondersIn(w, ph.systemId).find((x) => x.id === ph.wonderId)!; expect(photoTaken(w, { systemId: ph.systemId, x: wd.x + WONDER_RANGE * 2, y: wd.y, inOrbit: false }).length).toBe(0); expect(photoTaken(w, { systemId: ph.systemId, x: wd.x + 10, y: wd.y, inOrbit: false }).length).toBe(1); }
+    else { expect(photoTaken(w, { systemId: ph.systemId, x: 0, y: 0, inOrbit: false }).length).toBe(0); expect(photoTaken(w, { systemId: ph.systemId, x: 0, y: 0, inOrbit: true, orbitPlanetIdx: ph.planetIdx }).length).toBe(1); }
+    expect(m!.photoDone).toBe(true);
+    expect(missionDeliverable(w, m!, from)).toBe(true);
   });
 });
 

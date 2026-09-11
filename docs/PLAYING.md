@@ -229,6 +229,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Pictures wanted
+
+- Research and trade stations post picture jobs: a wonder in a nearby system,
+  a world from orbit. Take a postcard (F7) within sight of the wonder, or
+  from that planet's orbit, and the job is done; turn it in where it was
+  posted. Sell one and you're a STRINGER.
+
 ## The convoy
 
 - Slow haulers would rather not cross a system alone. When they ask (a card

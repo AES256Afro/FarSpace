@@ -727,4 +727,7 @@ Time passes for the people on the ship, and for the ship.
 - [x] A real escort activity: three haulers form on your stern and pay at the
       gate; SHEPHERD
 
+## Milestone 91 — Pictures Wanted ✅ (Sep 2026)
+- [x] Photo missions completed by F7 postcards in the right place; STRINGER
+
 ## Later
