@@ -1086,6 +1086,10 @@ Time passes for the people on the ship, and for the ship.
       100: envoys' roads, dry rocks, ledgers' debts, outer signals, the hull
       that sang
 
+## Milestone 181 — The Clinic and the Ready Room ✅ (Sep 2026)
+- [x] Where the crisis is medicine the clamp asks for your medic or your
+      crates; the ready room on the pause menu is a word with Number One
+
 ## Later: Trek / Expanse / Orville
 
 - A second story arc per faction (first contact proper: the singers' home)

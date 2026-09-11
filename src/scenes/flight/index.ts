@@ -138,6 +138,7 @@ export class FlightScene implements Scene {
       { label: "THE CHRONICLE", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("chronicle"); } },
       { label: "THE ROSTER", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("roster"); } },
       ...(g.world.player.crew.length >= 1 && !this.addressed && !this.docking ? [{ label: "ADDRESS THE CREW", act: () => { this.paused = false; this.addressCrew(g); } }] : []),
+      ...(firstOfficer(g.world.player) && !this.readyRoom && !this.docking ? [{ label: "THE READY ROOM (NUMBER ONE)", act: () => { this.paused = false; this.readyRoomTalk(g); } }] : []),
       ...((g.world.player.juice ?? 0) > 0 && !this.hardBurn && !this.docking ? [{ label: `HARD BURN (JUICE X${g.world.player.juice})`, act: () => { this.paused = false; const l = takeJuice(g.world.player); if (l) { this.hardBurn = true; noteLeg(g.world.player, "burns", g.world.time); g.toast(l); sfx.alarm(); flag(g, "juiced"); logEntry(g.world, "Hard burn on the juice"); } } }] : []),
       ...(() => {
         const p = g.world.player; const sys = g.world.systems[p.systemId];
@@ -637,6 +638,25 @@ export class FlightScene implements Scene {
 
   // ---------- Interactions ----------
 
+  // the ready room: a word with Number One, once a leg. They say what they see.
+  readyRoomTalk(g: Game): void {
+    const p = g.world.player; const fo = firstOfficer(p); if (!fo) return;
+    this.readyRoom = true;
+    const first = fo.name.split(" ")[0].toUpperCase();
+    const worst = [...p.crew].sort((a, b) => a.morale - b.morale)[0];
+    const lines: string[] = [];
+    if (p.fuel < p.fuelMax * 0.3) lines.push("WE'RE THIN ON FUEL. I'D DOCK BEFORE THE NEXT GATE, NOT AFTER.");
+    if ((p.wear ?? 0) > 60) lines.push("SHE NEEDS A YARD. THE ENGINEER WON'T SAY IT TO YOUR FACE. I WILL.");
+    if (worst && worst !== fo && worst.morale < 40) lines.push(`${worst.name.split(" ")[0].toUpperCase()} IS NOT ALL RIGHT. A WORD FROM YOU WOULD GO FURTHER THAN ONE FROM ME.`);
+    if (passengersAboard(p).some((m) => m.request && !m.requestMet && !m.requestSettled)) lines.push("THE FARE IN THE LOUNGE ASKED FOR SOMETHING. WE COULD MANAGE IT. IT WOULD BE NOTICED.");
+    if (this.alert === 2) lines.push("WE'VE BEEN AT RED A WHILE. THE CREW CAN'T HOLD IT FOREVER. NEITHER CAN I, HONESTLY.");
+    if (!lines.length) lines.push("NOTHING TO REPORT THAT YOU DON'T KNOW. THE SHIP'S GOOD. THE CREW ARE GOOD. YOU LOOK TIRED, CAPTAIN. THAT'S ALL.");
+    fo.morale = Math.min(100, fo.morale + 2); fo.loyalty = (fo.loyalty ?? 0) + 0.1;
+    const enc: Encounter = { id: "readyroom", where: "space", title: "THE READY ROOM", weight: 0,
+      text: `${fo.name} shuts the door, doesn't sit until you do, and says what they see.\n${lines.join("\n")}`,
+      options: [{ label: "THANK YOU, NUMBER ONE", result: () => `${first} NODS, STANDS, AND OPENS THE DOOR. THE BRIDGE PRETENDS IT WASN'T LISTENING.` }] };
+    (g.scenes["encounter"] as EncounterScene).open(g, enc, "flight", true);
+  }
   // the captain on the ship's band: rally them, warn them, or thank them. Once a leg.
   addressCrew(g: Game): void {
     const p = g.world.player;
@@ -687,10 +707,10 @@ export class FlightScene implements Scene {
   hardBurn = false;
   bridgeT = 40;
   alert: AlertLevel = 0; alertT = 0; autoAlertT = 0; klaxonT = 0; flipT = 0;
-  addressed = false; reported = false;
+  addressed = false; reported = false; readyRoom = false;
   hailT = 25;
   dockAt(g: Game, st: StationDef): boolean {
-    this.hardBurn = false; this.alert = 0; this.addressed = false; this.reported = false;
+    this.hardBurn = false; this.alert = 0; this.addressed = false; this.reported = false; this.readyRoom = false;
     const p = g.world.player;
     const rep = p.rep?.[st.factionId] ?? 0;
     if (st.military && rep < -20) { g.toast("DOCKING DENIED - YOUR RECORD PRECEDES YOU"); return false; }

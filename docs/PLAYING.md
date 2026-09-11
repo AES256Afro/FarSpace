@@ -687,6 +687,10 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 
 - When a hostile closes and the ship is still at green, tactical goes to
   yellow on its own and says so; red is still your call.
+- THE READY ROOM on the pause menu, once a leg with a Number One aboard:
+  they shut the door and say what they see (fuel, the yard, whoever's not all
+  right, the fare's request, how long you've held red). Number One is a
+  little better for being asked.
 - ADDRESS THE CREW on the pause menu, once a leg with anyone aboard: rally
   them (morale +5 and the next red alert costs less for a minute), warn them
   (yellow alert and nobody surprised), or thank them by name (loyalty up).
@@ -728,6 +732,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   menu takes a dose: cruise runs 40% faster and thrust is keener until you
   dock or jump. The crew lose morale, the frame takes wear, and the HUD says
   HARD BURN the whole way. Couriers and envoys on a deadline will forgive you.
+
+## The clinic is overrun
+
+- Where a station's crisis is medicine, the harbourmaster meets you at the
+  clamp with a mask on. Send the medic down for a shift (rep, six lives, the
+  medic learns, the ship waits an hour, a deed), hand over up to four crates
+  of med supplies (rep and a life a crate), or keep the mask on and sell the
+  medicine at the market instead. Once a week per station.
 
 ## Medical runs
 

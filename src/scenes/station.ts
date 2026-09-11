@@ -133,7 +133,7 @@ export class StationScene implements Scene {
     if (receptionDue(g.world, this.station)) this.reception(g);
     else if (grievanceDue(g.world)) this.grievance(g);
     else if (spinOutageDue(g.world, this.station)) this.spinOutage(g);
-    else { const sec = secessionAt(g.world, this.station.id); if (sec && !(p.flags ?? {})[`register:${this.station.id}:${Math.round(sec.until)}`]) this.register(g, sec); }
+    else { const sec = secessionAt(g.world, this.station.id); if (sec && !(p.flags ?? {})[`register:${this.station.id}:${Math.round(sec.until)}`]) this.register(g, sec); else { const cr = crisisAt(g.world, this.station.id); if (cr && cr.commodityId === "med" && !(p.flags ?? {})[`overrun:${this.station.id}:${weekKey()}`]) this.overrun(g); } }
   }
 
   settleCrew(g: Game): void {
@@ -1842,6 +1842,21 @@ export class StationScene implements Scene {
   }
   // The week: the strategy layer on one page. Votes, the border, the regatta, holdings, your name.
   // the harbour view: what this port knows about you and your ship right now, without walking the deck
+  // the clinic is overrun: a medical crisis at the clamp, and a medic aboard is worth more than a crate
+  overrun(g: Game): void {
+    const st = this.station; const p = g.world.player;
+    (p.flags ??= {})[`overrun:${st.id}:${weekKey()}`] = true;
+    const medic = p.crew.find((c) => c.role === "medic" && !c.sick);
+    const enc: Encounter = { id: "overrun", where: "space", title: "THE CLINIC IS OVERRUN", weight: 0,
+      text: `The harbourmaster meets you at the clamp with a mask on and hands you one. ${st.name}'s clinic has more patients than cots and more cots than medicine: a fever off a hauler, three days in, half the promenade coughing. They'll take crates. They'd take a medic faster.`,
+      options: [
+        { label: "SEND THE MEDIC DOWN FOR A SHIFT", hint: "Rep +4, lives saved, the medic learns; the ship waits an hour", requires: () => !!medic, result: (g2) => { adjustRep(g2.world, st.factionId, 4); p.lives = (p.lives ?? 0) + 6; g2.world.time += 3600; const x = crewXp(p, "medic", 3); flag(g2, "overrun"); logEntry(g2.world, `${medic!.name} worked a shift in the overrun clinic at ${st.name}`); return `${medic!.name.toUpperCase()} GOES DOWN WITH A BAG AND COMES BACK AN HOUR LATER WITH NONE OF WHAT WAS IN IT AND SIX PEOPLE WHO'D HAVE DIED WITHOUT IT.${x ? " " + x : ""} REP UP. SIX LIVES.`; } },
+        { label: "HAND OVER MED SUPPLIES (UP TO 4)", hint: "Rep and the crisis eased, a crate at a time", requires: () => (p.cargo.med ?? 0) >= 1, result: (g2) => { const n = Math.min(4, p.cargo.med ?? 0); removeCargo(p, "med", n); adjustRep(g2.world, st.factionId, n); p.lives = (p.lives ?? 0) + n; logEntry(g2.world, `Handed ${n} med supplies to the overrun clinic at ${st.name}`); return `${n} CRATE${n > 1 ? "S" : ""} GO DOWN THE GANGWAY ON A TROLLEY THAT SOMEBODY RUNS WITH. REP UP, ${n} LI${n > 1 ? "VES" : "FE"}. THE HARBOURMASTER DOESN'T TAKE THE MASK OFF TO THANK YOU.`; } },
+        { label: "KEEP THE MASK AND GO ABOUT YOUR BUSINESS", result: () => "YOU KEEP THE MASK ON AND THE HOLD SHUT. THE PROMENADE COUGHS AROUND YOU. THE MARKET STILL PAYS FOR MEDICINE, IF YOU WANT TO SELL IT INSTEAD." },
+      ] };
+    (g.scenes["encounter"] as EncounterScene).open(g, enc, "station", true);
+  }
+
   // the register: an independent rock for the week asks who's with it
   register(g: Game, sec: GalaxyEvent): void {
     const st = this.station; const p = g.world.player; const fac = faction(st.factionId);
