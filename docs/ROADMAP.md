@@ -948,4 +948,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Two of the crew trade a line on the band in flight now and then; the
       codex page fits its six groups
 
+## Milestone 148 — The Belt Remembers ✅ (Sep 2026)
+- [x] Mining and refinery stations are the belt: their own tannoy, and a
+      yard rate 10% under for anyone who shared air or water with a hopper
+
 ## Later

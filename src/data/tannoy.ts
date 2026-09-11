@@ -3,7 +3,7 @@
 // a station says: bay calls, lost property, last calls, and the odd kindness.
 
 import type { World, StationDef } from "../world";
-import { crisisAt, galaxyEventAt, findStation, captainNickname, borderContest, weekKey, berthedCaptains, isRival } from "../world";
+import { crisisAt, galaxyEventAt, findStation, captainNickname, borderContest, weekKey, berthedCaptains, isRival, isBeltStation } from "../world";
 import { hull } from "./hulls";
 import { commodity, faction } from "./data";
 const facName = (id: string) => faction(id).name;
@@ -50,6 +50,7 @@ export function tannoyLines(w: World, st: StationDef, rng: RNG, now = Date.now()
   const links = sys.links.map((l) => w.systems[l]).filter(Boolean);
   if (links.length) pool.push(`LAST CALL FOR THE LINER TO ${rng.pick(links).name.toUpperCase()}. BAY ${rng.int(1, 9)}. LAST CALL.`);
   if (isOccasion("lanes", now)) pool.push("RACE DAY. THE MARSHAL PAYS HALF AGAIN AT THE RINGS. NO, HE DOESN'T KNOW WHY EITHER.");
+  if (isBeltStation(st)) pool.push("WATER RATION IS WATER RATION. THE BAR DOES NOT COUNT. THE BAR NEVER COUNTS.", "INNER-SYSTEM CREWS ARE REMINDED THAT THE SPIN HERE IS LOW AND THE CEILINGS ARE NOT. MIND YOUR HEADS.", "SCRUBBER FILTERS ARE ON THE BOARD AT COST. NOBODY GOES SHORT OF AIR ON THIS ROCK. NOBODY.", p.flags?.belt ? "THE CAPTAIN WHO SHARED AIR OUT ON THE LANE IS IN. THE YARD KNOWS. THE YARD REMEMBERS." : "A HOPPER CAME IN ON HALF A TANK LAST WEEK. IF YOU'RE THE ONE WHO SHARED, THE BELT'S BUYING.");
   if (t.night) pool.push("NIGHT SHIFT. KEEP THE NOISE DOWN ON THE PROMENADE. THE DAY CREW ARE ASLEEP ABOVE YOU.", "THE BAR IS OPEN. NOTHING ELSE IS. GOODNIGHT.");
   else if (t.h < 11) pool.push("GOOD MORNING. THE WATER RATION IS NORMAL. THE COFFEE RATION IS NOT.");
   else if (t.h >= 17) pool.push("EVENING. THE MARKET CLOSES IN AN HOUR. THE BAR DOES NOT.");

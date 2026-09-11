@@ -964,6 +964,9 @@ export function settlePassengers(p: PlayerState): string[] {
   settleRequests(p, out);
   return out;
 }
+// The Belt: mining and refinery stations run on air, water and grudges. Share once and the belt remembers.
+export function isBeltStation(st: StationDef): boolean { return st.type === "mining" || st.type === "refinery"; }
+export function beltRate(p: PlayerState, st: StationDef): number { return isBeltStation(st) && p.flags?.belt ? 0.9 : 1; }
 // Senior staff: at the study, once a leg, each department reports and the captain picks a focus until the next dock.
 export type FocusKind = "engines" | "sickbay" | "tactical" | "helm";
 export const FOCUS_LABEL: Record<FocusKind, string> = { engines: "ENGINES: WEAR ACCRUES 20% SLOWER", sickbay: "SICKBAY: MORALE +4, THE SICK MEND FASTER", tactical: "TACTICAL: SHIELDS RECHARGE HALF AGAIN AS FAST", helm: "HELM: THE NEXT JUMPS COST 10% LESS FUEL" };
