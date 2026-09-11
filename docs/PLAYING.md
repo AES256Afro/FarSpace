@@ -638,6 +638,9 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   while they're aboard, arrive without taking fire, or pass anything the
   sights log counts, and they say so at the next dock and tip on top of the
   fare at the end. Miss it and they note it, quietly, and their mood dips.
+- The request rides on the fare's line on the flight HUD: what they want in
+  gold, done in green, and a quiet run gone red the moment the hull takes
+  fire.
 
 ## Corridor talk
 

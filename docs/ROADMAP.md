@@ -907,4 +907,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] H on RECORD: the clock and rate, who's in the bays, lost property and
       keepsakes, open requests, and what the tannoy would page you about
 
+## Milestone 138 — Requests on the HUD ✅ (Sep 2026)
+- [x] A fare's open request rides on their line on the flight HUD: wanted,
+      done, or a quiet run broken
+
 ## Later
