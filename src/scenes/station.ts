@@ -1841,8 +1841,8 @@ export class StationScene implements Scene {
     const first = Math.min(this.cursor, Math.max(0, log.length - 16));
     log.slice(first, first + 16).forEach((e, i) => {
       const y = top + 12 + i * 10;
-      drawText(ctx, `T+${Math.floor(e.t / 60)}M`, 8, y, PAL.greyDark);
-      drawText(ctx, e.text.toUpperCase().slice(0, 100), 44, y, i === 0 && first === 0 ? PAL.white : PAL.grey);
+      drawText(ctx, `SD ${(41000 + e.t / 360).toFixed(1)}`, 8, y, PAL.greyDark);
+      drawText(ctx, e.text.toUpperCase().slice(0, 84), 64, y, i === 0 && first === 0 ? PAL.white : PAL.grey);
     });
   }
 

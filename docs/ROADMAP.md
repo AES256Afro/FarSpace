@@ -1654,6 +1654,17 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 317 — The Commissioning Line ✅ (Sep 2026)
 - [x] The chronicle notes the commissioning stardate and hours under way
 
+## Milestone 318 — The Ship's Review II ✅ (Sep 2026)
+- [x] The ship's review of the captain adds a line for the quiet leg kept,
+      the hundredth, the ribbons or the undock word
+
+## Milestone 319 — Stardates in the Log ✅ (Sep 2026)
+- [x] The RECORD log shows a stardate on every entry instead of minutes
+
+## Milestone 320 — The Hull With the Dent ✅ (Sep 2026)
+- [x] With the hull under three quarters, passing hails sometimes call the
+      ship by its dent
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

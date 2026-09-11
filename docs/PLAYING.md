@@ -752,6 +752,10 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- The RECORD log shows a stardate on every entry. The ship's review of the
+  captain at the wall of record has an extra line for the quiet leg, the
+  hundredth, three ribbons or your undock word. And with the hull under three
+  quarters, passing hails sometimes call you the hull with the dent.
 - The harbour view (O on the RECORD tab) counts water sold to the belt and
   lists who's aboard: the cadet, a prisoner and whether they're guarded,
   Number One, and your undock word.

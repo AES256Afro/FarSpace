@@ -17,7 +17,7 @@ export function passingHail(w: World, n: Npc, alert: number, rng: RNG): { from: 
   const p = w.player; const sys = w.systems[p.systemId]; if (!sys) return null;
   const belt = sys.stations.length > 0 && sys.stations.filter(isBeltStation).length * 2 >= sys.stations.length;
   const night = sys.stations[0] ? stationHour(sys.stations[0]).night : false;
-  const ship = (p.shipName ?? hull(p.hullId).name).toUpperCase();
+  const ship = p.hull < p.hullMax * 0.75 && rng.chance(0.4) ? "THE HULL WITH THE DENT" : (p.shipName ?? hull(p.hullId).name).toUpperCase();
   const nick = captainNickname(w);
   const pool: string[] = [];
   let kind = n.kind === "patrol" ? "patrol" : rng.chance(0.25) ? "liner" : "hauler";
