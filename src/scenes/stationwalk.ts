@@ -253,11 +253,14 @@ export class StationWalkScene implements Scene {
 
     this.tickGossip(g, dt);
     this.tickTannoy(g, dt);
+    // the cat comes first, kiosk or no kiosk
+    if (inp.wasPressed("e")) {
+      const cat = this.npcs.find((n) => n.tag === "YOUR CAT" && dist(this.px, this.py, n.x, n.y) < 16);
+      if (cat) { this.npcs = this.npcs.filter((n) => n !== cat); this.msg = cat.line!; this.msgTimer = 5; sfx.purr(); for (const c of g.world.player.crew) c.morale = Math.min(100, c.morale + 1); return; }
+    }
     // kiosk interaction
     const near = this.nearestKiosk();
     if (inp.wasPressed("e") && !near) {
-      const cat = this.npcs.find((n) => n.tag === "YOUR CAT" && dist(this.px, this.py, n.x, n.y) < 16);
-      if (cat) { this.npcs = this.npcs.filter((n) => n !== cat); this.msg = cat.line!; this.msgTimer = 5; sfx.purr(); for (const c of g.world.player.crew) c.morale = Math.min(100, c.morale + 1); return; }
       const who = this.npcs.find((n) => dist(this.px, this.py, n.x, n.y) < 16);
       if (who) { if (!who.line) who.line = `${who.name.toUpperCase()}: ${concourseGossip(g.world, this.station, new RNG((Math.random() * 1e9) >>> 0))[0]}`; this.msg = who.line; this.msgTimer = 6; who.pause = Math.max(who.pause, 4); }
     }
