@@ -2,32 +2,37 @@
 
 ## Current checkpoint
 
-- Release: **v0.254.0**, milestones through **M414**.
-- Release commit: `c2cf48be65bc2206e93bca783cdff44d8400cb08` on `main`.
+- Release: **v0.255.0**, milestones through **M415**.
+- Release commit: `9bef5b4540c4393de3654a710053bf6d0b66fb06` on `main`.
 - Repository: `https://github.com/AES256Afro/FarSpace`.
 - Local workspace: `/Users/chris/Projects/FarSpace`.
-- Tests: **394 passing**. M414 adds nine direction regressions.
-- TypeScript and production build passed. Bundle: `index-COueUCNG.js`,
-  1223.13 kB raw / 432.89 kB gzip. The existing Vite bundle-size notice remains.
-- Hosted CI `34636708007` passed, including the actual Cloudflare deploy step.
-  Container workflow `34636707994` passed for v0.254.0.
+- Tests: **404 passing**. M415 adds ten settings regressions.
+- TypeScript and production build passed. Bundle: `index-DXes6cu-.js`,
+  1225.68 kB raw / 433.79 kB gzip. The existing Vite bundle-size notice remains.
+- Hosted CI `34639654631` passed, including the actual Cloudflare deploy step.
+  Container workflow `34639654701` passed for v0.255.0.
 - Live site: <https://farspace.fsociety.work>. Production matches the tested
   local build, SHA-256
-  `8eb547a9a3eb37373f69606cb224953a01fa0c7d78be715cb2bc80f1d77b6bdf`.
+  `6c8e6a97ed9ef923c5132e8d9cac1a94d2a229057c3828a9b43d87fc4eff4cb7`.
   `/api/health` returned `{"ok":true}`.
-- BoxPilot catalog: **0.254.0**, PR258 merged as
-  `fb09e210e33d1b613586477772635995fc9e9de1`; validate and tags-resolve passed.
-  Remote main's manifest names the exact 0.254.0 image. Catalog publication
-  is separate from installation on Bigbox; this session did not restart or
-  redeploy that server.
+- BoxPilot catalog update: PR259 is open at
+  `f432d8abb2b19efa53a2109cc354503308b4b64a`. The `validate` check passed,
+  including `npm run check`. `tags-resolve` failed twice on the unchanged
+  `minio/minio:RELEASE.2025-09-07T16-13-09Z` image with HTTP 401. FarSpace
+  0.255.0 returned HTTP 200 on both attempts. A direct MinIO registry check
+  also returned 401. Do not treat this as a FarSpace image failure.
+  Remote BoxPilot main still references 0.254.0. Resume the catalog merge
+  after registry resolution passes for the exact PR head. This session did
+  not restart or redeploy Bigbox.
 - Save schema remains **14**. New state is optional and has migration and
   round-trip coverage where it changes persistent behavior.
 
 The authorized work window was 12:34:39 to 18:34:39 UTC on September 11
 (07:34:39 to 13:34:39 CDT). The continuation automation is
 `farspace-six-hour-development`, attached to task
-`01a08fcd-5c4c-7161-85da-481557fa6a42`. It is paused. M413 (station scrolling)
-and M414 (ship appearance and heading) are separate user-requested follow-ups.
+`01a08fcd-5c4c-7161-85da-481557fa6a42`. It is paused. M413 (station scrolling),
+M414 (ship appearance and heading), and M415 (settings scrolling) are separate
+user-requested follow-ups.
 
 The detailed release and native-test evidence is in
 [the September 11 work log](WORKLOG-2026-09-11.md). Earlier handoff content is
@@ -128,7 +133,27 @@ state with normal animation frames, since the browser tool's key press does
 not remain down across an update. Physical held-key feel, touch and gamepad
 were not tested. No console errors or persistent test saves.
 
+## M415 follow-up: settings scrolling
+
+Settings previously drew all 34 rows past the canvas, ignored the wheel and
+let pointer hover replace keyboard selection. It now shows fourteen rows,
+scrolls with wheel/arrows, and supports page keys, Home/End and pointer page
+controls. The selected row stays visible. The range count and scroll
+indicator show position, and the bindings heading follows the actual group.
+
+Ten tests cover navigation, scrolled actions, inert clicks, reset, cancellation,
+volume and return routing. Native input on the exact release preview reached
+every row with pointer drift, rebound and reset the final flight key, cancelled
+bindings both ways, adjusted volume and returned to title and flight. Test
+writes stayed in memory; persistent settings were unchanged and no save was
+created. The work log has the full evidence. Touch/gamepad remain untested.
+
 ## State boundaries to preserve
+
+- `SettingsScene` keeps fourteen actual row indices in view. Its section
+  headings derive from row metadata. Pointer motion cannot select a row;
+  click hit areas must remain aligned after scrolling. While binding, Back
+  cancels instead of leaving the menu. Navigation must not save settings.
 
 - Ship profiles live in `src/gfx/shipdesign.ts`; `genShip` must receive the hull
   id in every preview and flight path. The nose is +x before rotation.
@@ -194,7 +219,7 @@ and a Bigbox installation are separate claims.
 ## Local runtime and next work
 
 The dev server was restarted at <http://127.0.0.1:5199> so its version define
-reads 0.254.0. The separate production-build preview on port 5198 was stopped.
+reads 0.255.0. The separate production-build preview on port 5198 was stopped.
 All temporary browser tabs are closed. No test saves or linked cloud codes
 were created. The next substantive task should start with a native playtest
 and a specific user priority or confirmed defect, rather than replaying the
