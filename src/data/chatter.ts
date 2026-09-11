@@ -32,6 +32,10 @@ export function crewChatter(w: World, a: CrewMember, b: CrewMember, rng: RNG): s
   if (p.cat && p.catAway) pool.push(`WHERE'S ${p.cat.name.toUpperCase()}? ... WE LEFT HER? WE LEFT HER. THE SKIPPER LEFT THE CAT.`, `THE SHIP'S WRONG WITHOUT ${p.cat.name.toUpperCase()}. WE'RE GOING BACK FOR HER, RIGHT?`);
   else if (p.cat) pool.push(`${p.cat.name.toUpperCase()} WAS IN THE VENTS AGAIN.`, `WHO'S FEEDING ${p.cat.name.toUpperCase()}? NOT ME. I FED HER TWICE.`);
   if (passengersAboard(p).length) pool.push("KEEP IT DOWN, WE'VE GOT PAYING PEOPLE ABOARD.", "THE ONE IN THE LOUNGE ASKED IF WE HAVE A POOL.");
+  if (p.flags?.simCats) pool.push("THE CAT PROGRAM'S STILL IN THE RIG. I WAS A GOOD CAT. I WAS THE BEST CAT. DON'T LOOK AT ME LIKE THAT.");
+  if (p.flags?.cadetMistake) pool.push("TWO COLOURS ON THE VALVES NOW. TOOK A CADET. TOOK A BANG. TOOK YEARS OF ME SAYING IT.");
+  if (Object.keys(p.flags ?? {}).some((k) => k.startsWith("talent:"))) pool.push(`${B}, YOU WERE ROBBED AT TALENT NIGHT. NO, YOU WERE. THE JUDGE WAS THE CAPTAIN. THE JUDGE WAS ROBBED TOO, PROBABLY.`);
+  if (p.flags?.firstdock) pool.push("THE CADET SIGNED THE BAR'S BOOK UPSIDE DOWN. WE'RE NOT TELLING THEM. IT'S TRADITION NOW.");
   if (p.catchphrase) pool.push(`'${p.catchphrase.toUpperCase()}.' THE SKIPPER SAYS IT EVERY TIME. I'VE STARTED SAYING IT IN MY SLEEP.`, `${B}, DO THE SKIPPER'S UNDOCK VOICE. NO, THE OTHER ONE. YES. THAT ONE.`);
   if (p.motto) pool.push(`READ THE PLAQUE THIS MORNING. '${p.motto.toUpperCase().slice(0, 30)}'. I THINK ABOUT IT ON WATCH. DON'T TELL ANYONE.`);
   if (p.numberOne && p.numberOne !== a.name && p.numberOne !== b.name) pool.push(`${p.numberOne.split(" ")[0].toUpperCase()} HAS THE CONN AGAIN. THEY'RE GOOD. DON'T TELL THEM I SAID.`);

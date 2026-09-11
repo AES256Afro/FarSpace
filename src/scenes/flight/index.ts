@@ -668,6 +668,11 @@ export class FlightScene implements Scene {
     if (p.fuel < p.fuelMax * 0.3) lines.push("WE'RE THIN ON FUEL. I'D DOCK BEFORE THE NEXT GATE, NOT AFTER.");
     if ((p.wear ?? 0) > 60) lines.push("SHE NEEDS A YARD. THE ENGINEER WON'T SAY IT TO YOUR FACE. I WILL.");
     if (worst && worst !== fo && worst.morale < 40) lines.push(`${worst.name.split(" ")[0].toUpperCase()} IS NOT ALL RIGHT. A WORD FROM YOU WOULD GO FURTHER THAN ONE FROM ME.`);
+    { const cadet = p.crew.find((c) => (c.docks ?? 0) === 0 && c !== fo); if (cadet) lines.push(`THE CADET, ${cadet.name.split(" ")[0].toUpperCase()}: GOOD HANDS, NO SENSE YET. GIVE THEM THE LOCK ON THE NEXT WRECK. THEY'LL EITHER GROW OR THEY WON'T, AND I'D RATHER KNOW.`); }
+    if (p.missions.some((m) => m.passengerKind === "prisoner" && m.accepted && !m.done) && !p.crew.some((c) => c.role === "gunner" && !c.sick)) lines.push("WE'VE A PRISONER AND NO GUNNER. I'VE PUT MYSELF ON THE BUNK ROOM DOOR. I'D LIKE THAT NOTED, AND A GUNNER, IN THAT ORDER.");
+    if (p.shipAskedQuiet) lines.push("THE SHIP ASKED FOR A QUIET LEG. I HEARD IT TOO. I'D LIKE TO GIVE IT ONE. NO RED UNLESS THEY SHOOT FIRST.");
+    if ((p.wakes ?? 0) < (p.lost ?? []).length) lines.push("THERE'S A CUP THAT NEEDS PUTTING ON THE TABLE. THE CREW WON'T DO IT UNTIL YOU'RE IN THE ROOM. THAT'S NOT A COMPLAINT.");
+    if (p.crewPick && findStation(g.world, p.crewPick)) lines.push(`THE NOTE ON THE CONSOLE SAYS ${findStation(g.world, p.crewPick)!.st.name.toUpperCase()}. I DIDN'T SIGN IT. I AGREE WITH IT.`);
     if (passengersAboard(p).some((m) => m.request && !m.requestMet && !m.requestSettled)) lines.push("THE FARE IN THE LOUNGE ASKED FOR SOMETHING. WE COULD MANAGE IT. IT WOULD BE NOTICED.");
     if (this.alert === 2) lines.push("WE'VE BEEN AT RED A WHILE. THE CREW CAN'T HOLD IT FOREVER. NEITHER CAN I, HONESTLY.");
     if (!lines.length) lines.push("NOTHING TO REPORT THAT YOU DON'T KNOW. THE SHIP'S GOOD. THE CREW ARE GOOD. YOU LOOK TIRED, CAPTAIN. THAT'S ALL.");

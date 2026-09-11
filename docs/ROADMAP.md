@@ -1620,6 +1620,18 @@ Time passes for the people on the ship, and for the ship.
 - [x] Ship's-voice lines for the cat program, the valve labels, the science
       officer and the bar's book
 
+## Milestone 309 — The Ready Room Knows the Ship ✅ (Sep 2026)
+- [x] Number One's ready-room lines cover the cadet, a prisoner with no
+      gunner, the ship's quiet leg, the cup, and the crew's pick
+
+## Milestone 310 — The Rock's Tannoy II ✅ (Sep 2026)
+- [x] Belt tannoy lines for the long ship, freeman's runs and the kids'
+      drawings on the clamp wall
+
+## Milestone 311 — The Crew Talk III ✅ (Sep 2026)
+- [x] Chatter about the cat program, the valves, talent night and the bar's
+      book
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
