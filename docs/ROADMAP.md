@@ -1686,20 +1686,42 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 326 — When It Counts ✅ (Sep 2026)
 - [x] A hot meal on a long leg is worth three more morale, and says so
 
+## Milestone 327 — Round Trip ✅ (Sep 2026)
+- [x] A test that everything the second sitting adds to the save survives a
+      JSON round trip and every new function runs on the result
+
+## Milestone 328 — The Third Sitting's Backlog ✅ (Sep 2026)
+- [x] The roadmap's Trek/Expanse/Orville backlog rewritten for what's next
+
+## Milestone 329 — The Ship's Hint ✅ (Sep 2026)
+- [x] The ship says so on a long leg: not a complaint, a hint
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
 
-## Later: Trek / Expanse / Orville
+## Later: Trek / Expanse / Orville (the third sitting)
 
-- A second story arc per faction (first contact proper: the singers' home)
-- A science officer role, or a science specialty for pilots: better scans,
-  anomaly readings on the HUD
-- Shore leave on the ground with the crew: a beach that isn't a sim
-- A second contact on the ground (the quiet ones: trade in light)
-- Belt politics: a rock that goes independent, and what the inners do
-- The ship's AI as crew: a seat on the roster, an opinion at the briefing
-- Talent night II: the band tours the promenade at night
-- A hostage negotiation card; a boarding party with a chosen crew member
+Everything in the first list shipped (M139–M329). Next, in rough order of
+value:
+
+- The singers' home: a proper first-contact arc with a destination, a
+  language you learn card by card, and an embassy berth at the end
+- A naval commission: at commodore rank, a squadron of your own parked hulls
+  with orders, and a fleet review where you're in the middle of the line
+- The belt's own board of deeds: rock hopper races with the kids cheering,
+  a tithe of water at every rock, a seat on the council you can lose
+- A courtroom: a hearing at a naval station over a first contact broken,
+  with Number One as your advocate and the board of ethics as witness
+- Away missions with a chosen team: pick who goes down, and what they bring
+  back (the surface scene with two crew sprites following the rover)
+- A rival captain with a Number One of their own, met at receptions and
+  reviews, who writes to yours
+- The generation ship leaves: an event, a last hail from the scaffold, and
+  your plate going with it
+- Standing orders II: a settings page of orders for Number One (answer
+  hails, take the leg at eight hours, keep the quiet leg)
+- The ship's voice as a real crew line on the roster (mood, a review of
+  every crew member, a vote at the briefing)
 
 ## Later

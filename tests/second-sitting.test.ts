@@ -57,6 +57,16 @@ describe("the second sitting", () => {
     const rep = briefingReports(w); expect(rep.some((l) => l.includes("(NUMBER ONE)"))).toBe(true); expect(rep.some((l) => l.includes("(SCIENCE)"))).toBe(true);
     const m0 = p.crew[0].morale; runSim(w, "cats", new RNG(1)); expect(p.crew[0].morale).toBeGreaterThan(m0);
   });
+  it("everything the second sitting adds survives a JSON round trip", () => {
+    const { w, p } = mk();
+    p.numberOne = p.crew[0].name; p.motto = MOTTOS[1]; p.catchphrase = "Go"; p.systemNicks = { reactor: "Doris" }; p.prisoners = 1; p.wakes = 1; p.lost = [{ name: "R", role: "engineer", where: "X", t: 1 }];
+    p.crewPick = Object.values(w.systems)[0].stations[0]?.id; p.numberOneLeg = true; p.shipAskedQuiet = true; p.commissionedAt = 10; p.ribbons = 2; p.waterToBelt = 12; p.officeLetters = 2; p.keepsakes = ["a pen"];
+    officeWrites(w, "a fold"); w.galaxyEvent = { kind: "review", systemId: "s", stationId: "st", until: w.time + 5 };
+    const back = JSON.parse(JSON.stringify(w)) as typeof w;
+    expect(back.player.numberOne).toBe(p.numberOne); expect(back.player.systemNicks?.reactor).toBe("Doris"); expect(back.mailQueue?.length).toBe(w.mailQueue?.length);
+    expect(() => { briefingReports(back); shipNewsletter(back); dedication(back); anniversaryDue(back); birthdaysDue(back); leavePair(back); transferRequest(back); }).not.toThrow();
+    expect(systemLabel(back.player, back.player.systems[0])).toContain("DORIS");
+  });
   it("observation, emergency and freeman runs generate with their fields", () => {
     const { w, p } = mk(); const stations = Object.values(w.systems).flatMap((s) => s.stations);
     const rs = stations.find((s) => s.type === "research")!; p.rep[rs.factionId] = 40;
