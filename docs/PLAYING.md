@@ -229,6 +229,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Ghosts on the lanes
+
+- In the real galaxy, when another pilot has posted to the fleet wire from the
+  system you're in within the last two days, their ship is out there too: a
+  hauler with their call sign over it, going about its business, hailing you
+  once with what they last did. Not multiplayer. Company.
+
 ## Passage on a liner
 
 - A hull parked at another station is no longer a walk away. On the SHIPS tab,

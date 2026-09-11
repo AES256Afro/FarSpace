@@ -77,6 +77,9 @@ export async function fetchWire(force = false): Promise<WireEvent[]> {
   }
 }
 
+// Whatever the last fetch brought back, without waiting for another
+export function cachedWire(): WireEvent[] { return cache?.events ?? []; }
+
 // Posts are silently dropped without a call sign; the title screen offers one.
 export async function post(kind: string, text: string, system: string): Promise<void> {
   const callsign = getCallsign();

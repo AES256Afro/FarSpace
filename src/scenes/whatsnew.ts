@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.71 - GHOSTS ON THE LANES", [
+    "IN THE REAL GALAXY, PILOTS WHO POSTED FROM YOUR SYSTEM LATELY HAVE THEIR SHIPS OUT HERE TOO. THEY HAIL ONCE.",
+  ]],
   ["0.70 - PASSAGE", [
     "L ON THE SHIPS TAB: TAKE A LINER TO YOUR OTHER PARKED SHIP. A FARE A JUMP, HOURS PASS, THIS ONE STAYS HERE.",
   ]],

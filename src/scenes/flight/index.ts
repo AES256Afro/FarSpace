@@ -25,6 +25,7 @@ import * as wire from "../../core/wire";
 import { presence } from "../../core/presence";
 import { pickEncounter } from "../../data/encounters";
 import { pickChatter } from "../../core/chatter";
+import { spawnGhost } from "./ai";
 import { pickShipLine } from "../../core/shipvoice";
 import { keeperScan, KEEPER_OWNER } from "../../core/keeper";
 import { isOccasion } from "../../data/occasions";
@@ -56,6 +57,7 @@ export class FlightScene implements Scene {
   scanTimer = 0;
   scanMsg = "";
   spawnTimer = 4;
+  ghostsSeen = new Set<string>();
   camShake = 0;
   sosTimer = 45;
   sos: Sos | null = null;
@@ -87,6 +89,7 @@ export class FlightScene implements Scene {
     this.comms = [];
     this.wonderSeen.clear();
     this.docking = null;
+    if (g.world.realGalaxy) void wire.fetchWire();
     { const sysNow = g.world.systems[g.world.player.systemId]; if (!this.loreSeen.has(sysNow.id)) { this.loreSeen.add(sysNow.id); this.comms.push({ from: "CHART", text: systemLore(g.world, sysNow).toUpperCase(), life: 9, color: PAL.greyDark }); } }
     if (g.justUndocked) {
       // launch sequence: out of the bay along your nose, control on the band
@@ -423,6 +426,12 @@ export class FlightScene implements Scene {
       this.spawnTimer = 20 + Math.random() * 25;
       const alive = this.npcs.filter((n) => n.kind === "pirate").length;
       if (alive < sys.pirateActivity * 6) spawnPirateNearBelt(this, g);
+      // somebody real was here lately: their ship is on the lanes
+      if (g.world.realGalaxy && !this.npcs.some((n) => n.ghost) && Math.random() < 0.35) {
+        const me = wire.getCallsign();
+        const recent = wire.cachedWire().filter((e) => e.system.toLowerCase() === sys.name.toLowerCase() && e.callsign !== me && Date.now() - e.t < 48 * 3600_000 && !this.ghostsSeen.has(e.callsign));
+        if (recent.length) { const ev = recent[Math.floor(Math.random() * recent.length)]; this.ghostsSeen.add(ev.callsign); spawnGhost(this, g, new RNG((g.world.seed ^ Math.floor(g.world.time * 3)) >>> 0), ev); }
+      }
     }
 
     if (this.scanTimer > 0) {
@@ -910,6 +919,12 @@ export class FlightScene implements Scene {
           return;
         }
       }
+    }
+    // other real pilots' ships hail once with what they posted
+    for (const n of this.npcs) {
+      if (!n.ghost || n.hailed || n.hull <= 0 || dist(p.x, p.y, n.x, n.y) > 360) continue;
+      n.hailed = true;
+      this.comms.push({ from: n.name ?? "PILOT", text: `${(n.name ?? "PILOT").toUpperCase()} HERE. STILL OUT THIS WAY. LAST I ${n.ghost.toUpperCase().slice(0, 70)}. SAFE LANES.`, life: 9, color: PAL.info });
     }
     // the regulars hail you when they pass close; friends have more to say
     for (const n of this.npcs) {

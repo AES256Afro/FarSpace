@@ -175,6 +175,21 @@ export function spawnTrader(fs: FlightScene, g: Game, rng: RNG): void {
   });
 }
 
+// Ghosts on the lanes: a real pilot posted from this system lately; their ship is out here too.
+// Not multiplayer. A hauler with their call sign on it, going about its business, hailing once.
+export function spawnGhost(fs: FlightScene, g: Game, rng: RNG, ev: { callsign: string; text: string }): void {
+  const sys = g.world.systems[g.world.player.systemId];
+  if (!sys.stations.length) return;
+  const from = rng.pick(sys.stations);
+  const sx = Math.cos(from.angle) * from.orbit, sy = Math.sin(from.angle) * from.orbit;
+  const a = rng.range(0, TAU);
+  fs.npcs.push({
+    kind: "trader", x: sx + Math.cos(a) * 320, y: sy + Math.sin(a) * 320, vx: 0, vy: 0, angle: a,
+    hull: 80, hullMax: 80, fireCd: 0, targetIdx: (sys.stations.indexOf(from) + 1) % Math.max(1, sys.stations.length),
+    cargo: { id: "parts", qty: 2 }, originStationId: from.id, name: ev.callsign, ghost: ev.text,
+  });
+}
+
 // Through-traffic: a hauler comes in one gate, swings past the structure, and leaves by another.
 export function spawnTransit(fs: FlightScene, g: Game, rng: RNG, inf: Infra): void {
   const sys = g.world.systems[g.world.player.systemId];

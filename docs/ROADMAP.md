@@ -646,4 +646,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] L on the SHIPS tab: take a liner to your nearest parked hull (fare per
       jump and head, time passes, this ship parks here)
 
+## Milestone 71 — Ghosts on the Lanes ✅ (Sep 2026)
+- [x] Other real pilots' recent wire posts from this system spawn their ship
+      here, labelled and hailing once
+
 ## Later
