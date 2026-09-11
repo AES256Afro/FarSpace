@@ -688,6 +688,7 @@ describe("the ring race", () => {
     const par = racePar(gates);
     expect(par).toBeGreaterThan(8);
     expect(racePrize(par - 5, par)).toBeGreaterThan(racePrize(par + 5, par));
+    expect(racePrize(par, par, Date.UTC(2026, 8, 9, 12))).toBeGreaterThan(0);
     expect(recordRace(w.player, st.id, 40.26)).toBe(true);
     expect(recordRace(w.player, st.id, 45)).toBe(false);
     expect(recordRace(w.player, st.id, 39)).toBe(true);
@@ -702,6 +703,7 @@ describe("the ring race", () => {
     const line = beatHolder(w, st, h.t - 1);
     expect(line).toBeTruthy();
     if (h.captain) expect(h.captain.disposition).toBe(-3);
+    if (h.captain) expect((w.mailQueue ?? []).some((l) => l.from.startsWith(h.captain!.name))).toBe(true);
     expect(beatHolder(w, st, h.t - 2)).toBeNull();
     expect(w.player.raceBeaten![st.id]).toBe(true);
   });

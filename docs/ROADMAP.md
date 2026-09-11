@@ -794,4 +794,8 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 108 — Writing Back ✅ (Sep 2026)
 - [x] R on the NEWS tab replies to letters; captains and old shipmates notice
 
+## Milestone 109 — Loose Ends ✅ (Sep 2026)
+- [x] Record holders write when beaten; race day pays half again; tourists
+      love a postcard of their sight
+
 ## Later

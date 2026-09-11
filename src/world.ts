@@ -174,6 +174,7 @@ export interface Mission {
   rally?: boolean;          // a border rally: supplies for a contested station, a big push for its faction
   photo?: { systemId: string; wonderId?: string; planetIdx?: number; label: string }; // a picture wanted (F7 in the right place)
   photoDone?: boolean;
+  postcarded?: boolean;     // a tourist party that got a picture of their sight
   anomalyId?: string;
   syndicate?: string;                  // contract issued by an AI syndicate (tag)
   tenderDone?: boolean;                // repair tenders: the work is done, collect at the station
@@ -1038,6 +1039,13 @@ export function favourDone(w: World, m: Mission, rng: RNG): string | null {
 // A postcard taken: any picture missions it satisfies are marked done
 export function photoTaken(w: World, where: { systemId: string; x: number; y: number; orbitPlanetIdx?: number; inOrbit: boolean }): string[] {
   const out: string[] = [];
+  // tourists aboard who've just seen their sight love a picture of it
+  for (const m of passengersAboard(w.player)) {
+    if (m.passengerKind !== "tourist" || !m.sightSeen || m.postcarded || m.sightSystemId !== undefined && m.sightSystemId !== where.systemId) continue;
+    if (m.targetSystemId !== where.systemId && m.sightSystemId !== where.systemId) continue;
+    m.postcarded = true; m.mood = Math.min(100, (m.mood ?? 60) + 8);
+    out.push(`${(m.passengerName ?? "YOUR TOURISTS").toUpperCase()} WANT A COPY OF THAT ONE. MOOD UP.`);
+  }
   for (const m of w.player.missions) {
     if (m.kind !== "photo" || !m.accepted || m.done || m.photoDone || !m.photo || m.photo.systemId !== where.systemId) continue;
     const ok = m.photo.wonderId ? !where.inOrbit && wondersIn(w, where.systemId).some((wd) => wd.id === m.photo!.wonderId && Math.hypot(wd.x - where.x, wd.y - where.y) <= WONDER_RANGE)
@@ -1148,8 +1156,8 @@ export function racePar(gates: { x: number; y: number }[]): number {
   for (let i = 1; i < gates.length; i++) len += Math.hypot(gates[i].x - gates[i - 1].x, gates[i].y - gates[i - 1].y);
   return Math.round(len / 150 + gates.length);
 }
-export function racePrize(t: number, par: number): number {
-  return Math.round(250 + (t <= par ? 200 : 0) + Math.max(0, par - t) * 25);
+export function racePrize(t: number, par: number, now = Date.now()): number {
+  return Math.round((250 + (t <= par ? 200 : 0) + Math.max(0, par - t) * 25) * (isOccasion("lanes", now) ? 1.5 : 1));
 }
 // The border: every week one system on a faction seam is contested. The house lean of each side plus
 // what captains do there (deliveries, votes, stakes) decides it on Monday; if the challenger wins, the
@@ -1293,8 +1301,8 @@ export function beatHolder(w: World, st: StationDef, t: number): string | null {
   const p = w.player;
   if ((p.raceBeaten ??= {})[st.id]) return null;
   p.raceBeaten[st.id] = true;
-  if (h.captain && isRival(h.captain)) { h.captain.disposition = Math.max(-5, h.captain.disposition - 1); return `${h.captain.name.toUpperCase()}: 'ENJOY IT WHILE IT LASTS.'`; }
-  if (h.captain) { h.captain.met++; return `${h.captain.name.toUpperCase()}: 'ABOUT TIME SOMEBODY DID. DRINKS ON ME, NEXT TIME WE'RE IN TOGETHER.'`; }
+  if (h.captain && isRival(h.captain)) { h.captain.disposition = Math.max(-5, h.captain.disposition - 1); (w.mailQueue ??= []).push({ dueT: w.time + 300, from: `${h.captain.name}, ${h.captain.ship}`, text: "You took my time at the rings. Fine. I'll take it back. Don't get comfortable." }); return `${h.captain.name.toUpperCase()}: 'ENJOY IT WHILE IT LASTS.'`; }
+  if (h.captain) { h.captain.met++; (w.mailQueue ??= []).push({ dueT: w.time + 300, from: `${h.captain.name}, ${h.captain.ship}`, text: "You took my time at the rings. Fair and square. First round's on me, next port we share.", gift: { credits: 80 } }); return `${h.captain.name.toUpperCase()}: 'ABOUT TIME SOMEBODY DID. DRINKS ON ME, NEXT TIME WE'RE IN TOGETHER.'`; }
   return `THE BAR HEARS ABOUT IT BEFORE YOU'VE DOCKED. ${h.name.toUpperCase()}'S TIME HAD STOOD FOR YEARS.`;
 }
 // Returns true when this is a new best at that station

@@ -229,6 +229,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Loose ends
+
+- Beat a course record and the holder writes: a rival to warn you off, a
+  friend with the first round on them. On the lanes occasion the marshal pays
+  half again for a race. Tourists who've just seen their sight want a copy of
+  the postcard you take there, and their mood shows it.
+
 ## Writing back
 
 - Letters land on the NEWS tab. R writes back to the latest one you haven't
