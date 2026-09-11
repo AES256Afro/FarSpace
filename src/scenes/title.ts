@@ -4,7 +4,9 @@ import { TitleBackdrop } from "../gfx/titlebackdrop";
 import { TitleViews, TitleView, presentationRandom } from "../core/titleviews";
 import { titlePreview, TitlePreview, saveAge } from "../core/titlepreview";
 import { settings, toggleFullscreen } from "../core/settings";
-import { activeSlot } from "../save";
+import { activeSlot, setActiveSlot, SLOTS } from "../save";
+import { readSavePreview, preserveSlot, replaceSlot, clearSavedSlot, restoreSlot, SaveOperation } from "../core/savelibrary";
+import { hull } from "../data/hulls";
 import { music } from "../core/music";
 import { sfx } from "../core/sfx";
 import * as cloud from "../core/cloud";
@@ -12,11 +14,11 @@ import * as wire from "../core/wire";
 import type { World } from "../world";
 import "../ui/title.css";
 
-type Page = "home" | "new" | "library" | "help" | "identity" | "cloud" | "form" | "confirm" | "loading";
+type Page = "home" | "new" | "library" | "slots" | "slot" | "copy" | "help" | "identity" | "cloud" | "form" | "confirm" | "loading";
 interface Action { id: string; label: string; sub?: string; act: () => void; primary?: boolean; disabled?: boolean }
 const VERSION = typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "?";
 const DECK_KEY = "farspace-title-views";
-const CHILDREN = new Set(["settings", "help", "almanac", "slots", "whatsnew", "chronicle"]);
+const CHILDREN = new Set(["settings", "help", "almanac", "whatsnew", "chronicle"]);
 
 export class TitleScene implements Scene {
   touchMode = "menu" as const;
@@ -36,6 +38,9 @@ export class TitleScene implements Scene {
   private scroll = 0;
   private request = 0;
   private message = "";
+  private cloudUnavailable = false;
+  private selectedSlot = 0;
+  private slotReturn: "new" | "library" = "library";
   private form?: { title: string; label: string; value: string; max: number; submit: (value: string) => void; back: Page };
   private confirmation?: { title: string; detail: string; accept: string; act: () => void; back: Page };
 
@@ -47,6 +52,7 @@ export class TitleScene implements Scene {
       this.deck = new TitleViews(presentationRandom(), saved);
     }
     if (!this.resume) { this.advanceView(); this.page = "home"; this.focusId = ""; this.scroll = 0; }
+    if (this.page === "slot" || this.page === "copy") this.preview = titlePreview(this.selectedSlot);
     this.resume = false; this.message = this.preview.error ?? "";
     this.backdrop ??= new TitleBackdrop();
     g.input.flush(); g.input.down.clear(); g.input.lastRawKey = null;
@@ -105,15 +111,20 @@ export class TitleScene implements Scene {
     const b = document.createElement("button"); b.type = "button"; b.dataset.action = a.id; b.disabled = a.disabled ?? false;
     b.className = a.primary ? "primary" : ""; b.textContent = a.label;
     if (a.sub) { const sub = document.createElement("small"); sub.textContent = a.sub; b.append(sub); }
-    b.onclick = () => { if (b.disabled) return; this.focusId = a.id; sfx.select(); a.act(); };
+    b.onclick = () => { if (b.disabled || !b.isConnected) return; this.focusId = a.id; sfx.select(); a.act(); };
     return b;
   }
 
-  private show(g: Game, page: Page): void { this.page = page; this.message = ""; this.focusId = ""; this.scroll = 0; this.render(g); }
+  private show(g: Game, page: Page): void {
+    this.page = page; this.message = ""; this.focusId = ""; this.scroll = 0;
+    if (page !== "confirm" && page !== "form") this.preview = titlePreview(page === "slot" || page === "copy" ? this.selectedSlot : activeSlot());
+    this.render(g);
+  }
   private open(g: Game, scene: string): void { g.settingsReturn = "title"; g.setScene(scene); }
   private back(g: Game): void {
     this.request++;
     const page = this.page === "form" ? this.form?.back ?? "home" : this.page === "confirm" ? this.confirmation?.back ?? "home"
+      : this.page === "copy" ? "slot" : this.page === "slot" ? "slots" : this.page === "slots" ? this.slotReturn
       : this.page === "cloud" || this.page === "identity" ? "library" : "home";
     this.show(g, page);
   }
@@ -127,8 +138,38 @@ export class TitleScene implements Scene {
 
   actions(g: Game): Action[] {
     const p = this.preview, code = cloud.getCode();
+    if (this.page === "slots") return Array.from({ length: SLOTS }, (_, slot) => {
+      const r = readSavePreview(slot), w = r.world;
+      return { id: `slot-${slot}`, label: `Slot ${slot + 1}${slot === activeSlot() ? " · active" : ""}`,
+        sub: w ? `${w.player.shipName || hull(w.player.hullId).name} · ${w.systems[w.player.systemId].name} · ${saveAge(w.savedAt ?? null, Date.now())}` : r.present ? "Unreadable save · original kept" : "Empty slot",
+        act: () => { this.selectedSlot = slot; this.show(g, "slot"); } };
+    });
+    if (this.page === "slot") {
+      const slot = this.selectedSlot, r = readSavePreview(slot), w = r.world;
+      return [
+        { id: "use-slot", label: `Choose slot ${slot + 1}`, sub: "Select this slot and return. Loading is a separate action.", primary: true, act: () => {
+          if (!setActiveSlot(slot)) { this.say("The active slot could not be stored. Your previous selection was kept."); return; }
+          this.preview = titlePreview(); this.root!.querySelector(".title-slot")!.textContent = `LOCAL SLOT ${slot + 1}`;
+          this.show(g, this.slotReturn === "new" ? "new" : "home");
+        } },
+        { id: "copy-save", label: "Copy this saved voyage", sub: "Choose another local slot. Its cloud code stays with that slot.", disabled: !w, act: () => this.show(g, "copy") },
+        { id: "export-slot", label: "Export this slot", sub: "Download its stored bytes, even if it cannot be loaded.", disabled: !r.present, act: () => { if (r.raw) { cloud.exportStoredFile(r.raw, slot, w?.player.shipName); this.say("Save file downloaded."); } } },
+        { id: "restore-save", label: "Restore recovery copy", sub: "Swap back to the voyage kept before the last replacement or clear.", disabled: !r.recovery, act: () => this.confirm(g, `Restore slot ${slot + 1}?`, "The current saved voyage becomes the recovery copy. This slot keeps its cloud code.", "Restore voyage", () => this.finishSlotOperation(g, restoreSlot(slot), "Recovery copy restored."), "slot") },
+        { id: "export-recovery", label: "Export recovery copy", sub: "Download the original stored bytes for safekeeping.", disabled: !r.recovery, act: () => { const saved = readSavePreview(slot, true); if (saved.raw) cloud.exportStoredFile(saved.raw, slot, "recovery"); else this.say(saved.error ?? "No recovery copy is available."); } },
+        { id: "clear-save", label: "Clear this slot", sub: "Keeps one recovery copy and this slot's cloud code.", disabled: !r.present, act: () => this.confirm(g, `Clear slot ${slot + 1}?`, "The saved voyage moves to this slot's recovery copy. You can restore it from this page.", "Clear slot", () => this.finishSlotOperation(g, clearSavedSlot(slot), "Slot cleared. Recovery copy available."), "slot") },
+      ];
+    }
+    if (this.page === "copy") return Array.from({ length: SLOTS }, (_, slot) => slot).filter(slot => slot !== this.selectedSlot).map(slot => ({
+      id: `copy-to-${slot}`, label: `Copy into slot ${slot + 1}`, sub: readSavePreview(slot).present ? "Replaces this destination after keeping a recovery copy." : "Empty destination.",
+      act: () => {
+        const source = readSavePreview(this.selectedSlot);
+        if (!source.raw || !source.world) { this.say("The source save is no longer available."); return; }
+        this.confirm(g, `Copy slot ${this.selectedSlot + 1} into slot ${slot + 1}?`, "Copies the stored voyage. The destination keeps its cloud code and a recovery copy of its previous save.", "Copy voyage", () => this.finishSlotOperation(g, replaceSlot(slot, source.raw!), `Copied into slot ${slot + 1}.`), "copy");
+      },
+    }));
     if (this.page === "home") return [
       ...(p.world ? [{ id: "continue", label: "Continue voyage", sub: `${p.ship} · ${p.location} · ${saveAge(p.savedAt, Date.now())}`, primary: true, act: () => this.continue(g) }] : []),
+      ...(p.world && this.cloudUnavailable ? [{ id: "local-home", label: "Continue local save", sub: "Use this device's copy without checking the cloud.", act: () => this.loadLocal(g) }] : []),
       { id: "new", label: "New voyage", primary: !p.world, act: () => this.show(g, "new") },
       { id: "library", label: "Save library", act: () => this.show(g, "library") },
       { id: "settings", label: "Settings", act: () => this.open(g, "settings") },
@@ -139,10 +180,10 @@ export class TitleScene implements Scene {
       { id: "sol50", label: "Sol 50 light-years", sub: "A larger region for longer journeys.", act: () => this.start(g, true, 50) },
       { id: "uncharted", label: "Uncharted", sub: "A generated galaxy to explore.", act: () => this.start(g, false, 20) },
       { id: "difficulty", label: "Change difficulty in Settings", act: () => this.open(g, "settings") },
-      { id: "choose-slot", label: "Choose a different slot", act: () => this.open(g, "slots") },
+      { id: "choose-slot", label: "Choose a different slot", act: () => { this.slotReturn = "new"; this.show(g, "slots"); } },
     ];
     if (this.page === "library") return [
-      { id: "slots", label: "Browse save slots", sub: `Three local games. Active slot: ${p.slot + 1}.`, primary: true, act: () => this.open(g, "slots") },
+      { id: "slots", label: "Browse save slots", sub: `Three local games. Active slot: ${p.slot + 1}.`, primary: true, act: () => { this.slotReturn = "library"; this.show(g, "slots"); } },
       ...(p.world ? [{ id: "chronicle", label: "The Chronicle", sub: "The selected voyage's career so far.", act: () => { g.world = p.world!; this.open(g, "chronicle"); } }] : []),
       { id: "cloud", label: "Cloud saves", sub: code ? "This slot has a linked code." : "Move a voyage between devices using a save code.", act: () => this.show(g, "cloud") },
       { id: "export", label: "Export save file", sub: "Download this slot's saved voyage.", disabled: !p.world, act: () => { if (p.world) { cloud.exportFile(p.world); this.say("Save file downloaded."); } } },
@@ -161,9 +202,9 @@ export class TitleScene implements Scene {
     if (this.page === "cloud") return code ? [
       { id: "show-code", label: "Show this slot's save code", act: () => this.say(`Save code: ${code}`) },
       { id: "download", label: "Download cloud copy", sub: "Review before replacing the local voyage.", act: () => { void this.download(g, code, false); } },
-      { id: "unlink", label: "Unlink this device", sub: "The cloud copy stays available with its code.", act: () => { cloud.setCode(null); this.render(g); this.say("This slot is unlinked."); } },
+      { id: "unlink", label: "Unlink this device", sub: "The cloud copy stays available with its code.", act: () => { const ok = cloud.setCode(null); this.render(g); this.say(ok ? "This slot is unlinked." : "The cloud link could not be changed. Please try again."); } },
     ] : [
-      { id: "create-code", label: "Create a save code", sub: "Saving during a voyage will upload to this code.", act: () => { const code = cloud.newCode(); this.render(g); this.say(`Save code: ${code}. Save during your voyage to upload.`); } },
+      { id: "create-code", label: "Create a save code", sub: "Saving during a voyage will upload to this code.", act: () => { const code = cloud.newCode(); this.render(g); this.say(code ? `Save code: ${code}. Save during your voyage to upload.` : "The save code could not be stored. Please free browser storage and try again."); } },
       { id: "link-code", label: "Link with a code", act: () => this.ask(g, "Link a cloud save", "Save code", "", 12, value => {
         const code = value.trim().toUpperCase(); if (!cloud.validCode(code)) { this.say("Enter a valid FarSpace save code."); return; }
         void this.download(g, code, true);
@@ -183,14 +224,14 @@ export class TitleScene implements Scene {
   private render(g: Game, restore = false): void {
     if (!this.root) return;
     this.menu.replaceChildren();
-    const titles: Partial<Record<Page, string>> = { new: "New voyage", library: "Save library", help: "Help & handbook", cloud: "Cloud saves", identity: "Callsign & squadron", loading: "Checking cloud save" };
+    const titles: Partial<Record<Page, string>> = { new: "New voyage", library: "Save library", slots: "Choose a saved voyage", slot: `Slot ${this.selectedSlot + 1}`, copy: "Copy destination", help: "Help & handbook", cloud: "Cloud saves", identity: "Callsign & squadron", loading: "Checking cloud save" };
     if (this.page !== "home") {
       this.menu.append(this.button({ id: "back", label: "← Back", act: () => this.back(g) }));
       const title = document.createElement("h2"); title.textContent = this.page === "form" ? this.form!.title : this.page === "confirm" ? this.confirmation!.title : titles[this.page] ?? "";
       this.menu.append(title);
     }
     const note = this.page === "new" ? `Slot ${activeSlot() + 1} · ${settings().hardcore ? "Hardcore: destruction erases the save" : "Standard difficulty"}`
-      : this.page === "confirm" ? this.confirmation!.detail : this.page === "library" ? this.preview.error ?? `${this.preview.world ? this.preview.ship + " · " + this.preview.location : "No valid save in this slot"}` : "";
+      : this.page === "slot" ? this.slotDescription() : this.page === "confirm" ? this.confirmation!.detail : this.page === "library" ? this.preview.error ?? `${this.preview.world ? this.preview.ship + " · " + this.preview.location : "No valid save in this slot"}` : "";
     if (note) { const p = document.createElement("p"); p.className = "title-note"; p.textContent = note; this.menu.append(p); }
     if (this.page === "form" && this.form) {
       const config = this.form, form = document.createElement("form"), label = document.createElement("label"), input = document.createElement("input");
@@ -228,8 +269,12 @@ export class TitleScene implements Scene {
   }
 
   private start(g: Game, real: boolean, maxLy: number): void {
-    const launch = () => { g.newGame(real, maxLy); g.setScene("flight"); };
-    if (this.preview.present) this.confirm(g, `Start over in slot ${activeSlot() + 1}?`, "The next save will replace this slot's voyage. Cancel and choose another slot to keep it.", "Start new voyage", launch, "new");
+    const slot = activeSlot(), launch = () => {
+      if (slot !== activeSlot()) { this.show(g, "new"); this.say("The active slot changed. Please choose again."); return; }
+      const backup = preserveSlot(slot); if (!backup.ok) { this.say(backup.error); return; }
+      g.newGame(real, maxLy); g.setScene("flight");
+    };
+    if (readSavePreview(slot).present) this.confirm(g, `Start over in slot ${slot + 1}?`, "Keep a recovery copy of this slot, then start a new voyage. The next save replaces the slot's voyage and updates its linked cloud copy.", "Start new voyage", launch, "new");
     else launch();
   }
   private loadLocal(g: Game): void {
@@ -245,22 +290,39 @@ export class TitleScene implements Scene {
     const ticket = ++this.request, slot = activeSlot(); this.show(g, "loading");
     const remote = await cloud.pull(code);
     if (ticket !== this.request || g.scene !== this || slot !== activeSlot()) return;
-    if (!remote) { this.show(g, continuing ? "home" : "cloud"); this.say("Cloud save unavailable. A valid local save can still be continued."); return; }
+    this.preview = titlePreview();
+    if (!remote) { this.cloudUnavailable = true; this.show(g, continuing ? "home" : "cloud"); this.say("Cloud save unavailable. A valid local save can still be continued."); return; }
+    this.cloudUnavailable = false;
     if (continuing && remote.updatedAt <= (this.preview.savedAt ?? 0) + 1000) { this.loadLocal(g); return; }
-    this.confirm(g, link ? "Use this cloud voyage?" : "Use the cloud copy?", `Cloud saved ${new Date(remote.updatedAt).toLocaleString()}. Loading it replaces local slot ${slot + 1}.`, "Load cloud voyage", () => {
+    const localRaw = readSavePreview(slot).raw;
+    this.confirm(g, link ? "Use this cloud voyage?" : "Use the cloud copy?", `Local: ${this.preview.savedAt ? new Date(this.preview.savedAt).toLocaleString() : "no recorded save time"}. Cloud: ${new Date(remote.updatedAt).toLocaleString()}. Load the cloud voyage into slot ${slot + 1}, keeping the previous local save as its recovery copy.`, "Load cloud voyage", () => {
       if (slot !== activeSlot()) { this.show(g, "home"); this.say("The active slot changed. Please choose again."); return; }
-      if (link) cloud.setCode(code); g.adoptWorld(remote.world);
+      if (readSavePreview(slot).raw !== localRaw) { this.preview = titlePreview(); this.show(g, "home"); this.say("The local save changed while this choice was open. Please review it again."); return; }
+      const previous = cloud.getCode();
+      if (link && !cloud.setCode(code)) { this.say("The cloud link could not be stored. The local voyage was kept."); return; }
+      if (!g.adoptWorld(remote.world)) { if (link) cloud.setCode(previous); this.say(g.toastMsg || "The save could not be stored. The local voyage was kept."); }
     }, continuing ? "home" : "cloud");
   }
   private async importFile(g: Game): Promise<void> {
     const ticket = ++this.request, slot = activeSlot();
     const world: World | null = await cloud.importFile();
     if (ticket !== this.request || g.scene !== this || slot !== activeSlot()) return;
-    if (!world) { this.say("No valid save file was chosen."); return; }
-    this.confirm(g, "Use the imported voyage?", `Loading this file replaces local slot ${slot + 1}.`, "Load imported voyage", () => {
+    if (!world) { this.say("No file was selected, or the save is damaged or from a newer game version. The local save was kept."); return; }
+    const localRaw = readSavePreview(slot).raw;
+    this.confirm(g, "Use the imported voyage?", `Load this file into slot ${slot + 1}, keeping the previous voyage as its recovery copy. This slot keeps its cloud code.`, "Load imported voyage", () => {
       if (slot !== activeSlot()) { this.show(g, "home"); this.say("The active slot changed. Please choose again."); return; }
-      g.adoptWorld(world);
+      if (readSavePreview(slot).raw !== localRaw) { this.preview = titlePreview(); this.show(g, "home"); this.say("The local save changed while this choice was open. Please review it again."); return; }
+      if (!g.adoptWorld(world)) this.say(g.toastMsg || "The save could not be stored. The local voyage was kept.");
     }, "library");
+  }
+  private slotDescription(): string {
+    const r = readSavePreview(this.selectedSlot), w = r.world;
+    if (!w) return r.error ?? "No saved voyage in this slot. Choose it to start a new voyage.";
+    const p = w.player;
+    return `${p.shipName || hull(p.hullId).name} · ${w.systems[p.systemId].name}. ${p.captainName ? `Captain ${p.captainName}. ` : ""}${p.credits}cr · ${p.crew.length} crew · ${Math.floor(w.time / 3600)}h ${Math.floor(w.time % 3600 / 60)}m under way. ${p.lineage?.length ? `Captain ${p.lineage.length + 1} of the line. ` : ""}${p.cat ? `${p.cat.name} aboard. ` : ""}${w.hardcore ? "Hardcore" : "Standard"}. Saved ${w.savedAt ? new Date(w.savedAt).toLocaleString() : "at an unknown time"}.`;
+  }
+  private finishSlotOperation(g: Game, result: SaveOperation, success: string): void {
+    this.preview = titlePreview(); this.show(g, "slot"); this.say(result.ok ? success : result.error);
   }
   private callsign(g: Game): void {
     this.ask(g, "Choose a callsign", "Callsign: 2-16 letters, digits, spaces, - or _", wire.getCallsign() ?? "", 16, value => {

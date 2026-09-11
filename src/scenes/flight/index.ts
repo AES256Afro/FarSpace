@@ -184,7 +184,7 @@ export class FlightScene implements Scene {
         const near = g.world.realGalaxy && wire.getCallsign() ? wondersIn(g.world, sys.id).find((wd) => dist(p.x, p.y, wd.x, wd.y) <= WONDER_RANGE) : undefined;
         return near ? [{ label: `LEAVE A NOTE AT ${near.name.toUpperCase()}`, act: () => { this.paused = false; const text = ask(`A line tied to ${near.name} for whoever comes next (72 characters, sixty days):`, ""); if (!text || text.trim().length < 3) return; void wire.postNote(sys.name, near.name, text.trim().slice(0, 72)).then((ok) => g.toast(ok ? `YOUR NOTE IS TIED TO ${near.name.toUpperCase()}. SIXTY DAYS, OR UNTIL YOU WRITE ANOTHER HERE.` : "THE WIRE DIDN'T TAKE IT. TRY AGAIN IN A MOMENT.")); if (text) { flag(g, "note"); logEntry(g.world, `Left a note at ${near.name}: "${text.trim().slice(0, 72)}"`); } } }] : [];
       })(),
-      { label: "SAVE AND QUIT TO TITLE", act: () => { g.save(); this.paused = false; g.setScene("title"); } },
+      { label: "SAVE AND QUIT TO TITLE", act: () => { if (!g.save()) return; this.paused = false; g.setScene("title"); } },
     ];
   }
 

@@ -233,7 +233,7 @@ describe("save migrations", () => {
   it("rejects garbage", () => {
     expect(migrateSave(null)).toBeNull();
     expect(migrateSave({})).toBeNull();
-    expect(migrateSave({ player: {}, systems: {}, version: 999 })).not.toBeNull();
+    expect(migrateSave({ player: {}, systems: {}, version: 999 })).toBeNull();
   });
 });
 

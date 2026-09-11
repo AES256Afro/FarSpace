@@ -144,7 +144,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestones 1-416 are implemented (v0.256.0). See the [roadmap](docs/ROADMAP.md) for what's next.
+Milestones 1-417 are implemented (v0.257.0). See the [roadmap](docs/ROADMAP.md) for what's next.
 The [approved M416-M427 plan](docs/NEXT-MILESTONES.md) starts with randomized
 title scenes, clearer menus and saves, then support jobs and visible port changes.
 

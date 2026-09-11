@@ -2,7 +2,7 @@
 // serves the game — the API lives on fsociety.work and allows CORS.
 
 import type { World } from "../world";
-import { migrateSave } from "../save";
+import { decodeSave } from "../save";
 
 const CODE_KEY = "farspace-cloud-code";
 import { activeSlot } from "../save";
@@ -24,20 +24,20 @@ export function getCode(): string | null {
   try { return localStorage.getItem(codeKey()); } catch { return null; }
 }
 
-export function setCode(code: string | null): void {
+export function setCode(code: string | null): boolean {
   try {
     if (code) localStorage.setItem(codeKey(), code.toUpperCase());
     else localStorage.removeItem(codeKey());
-  } catch { /* ignore */ }
+    return true;
+  } catch { return false; }
 }
 
-export function newCode(): string {
+export function newCode(): string | null {
   const bytes = new Uint8Array(10);
   crypto.getRandomValues(bytes);
   let out = "";
   for (const b of bytes) out += ALPHABET[b % ALPHABET.length];
-  setCode(out);
-  return out;
+  return setCode(out) ? out : null;
 }
 
 export function validCode(code: string): boolean {
@@ -70,8 +70,8 @@ export async function pull(code: string): Promise<{ world: World; updatedAt: num
     const r = await fetch(`${cloudBase()}/api/save/${code.toUpperCase()}`, { signal: controller.signal });
     if (!r.ok) return null;
     const j = (await r.json()) as { updatedAt: number; world: unknown };
-    const world = migrateSave(j.world);
-    if (!world) return null;
+    const world = decodeSave(JSON.stringify(j.world)).world;
+    if (!world || !Number.isFinite(j.updatedAt)) return null;
     return { world, updatedAt: j.updatedAt };
   } catch {
     return null;
@@ -80,13 +80,17 @@ export async function pull(code: string): Promise<{ world: World; updatedAt: num
 
 // ---- file export / import (offline moves, the self-hosted copy, backups)
 
-export function exportFile(world: World): void {
-  const blob = new Blob([JSON.stringify(world)], { type: "application/json" });
+export function exportFile(world: World, slot = activeSlot()): void {
+  exportStoredFile(JSON.stringify(world), slot, world.player.shipName || world.player.hullId);
+}
+export function exportStoredFile(raw: string, slot: number, shipName = "saved-voyage"): void {
+  const blob = new Blob([raw], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, "-");
   a.href = url;
-  a.download = `farspace-save-${stamp}.json`;
+  const name = shipName.replace(/[^a-z0-9_-]+/gi, "-").slice(0, 48);
+  a.download = `farspace-slot-${slot + 1}-${name}-${stamp}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -101,7 +105,7 @@ export function importFile(): Promise<World | null> {
     input.onchange = async () => {
       const f = input.files?.[0];
       if (!f) return resolve(null);
-      try { resolve(migrateSave(JSON.parse(await f.text()))); } catch { resolve(null); }
+      try { resolve(decodeSave(await f.text()).world); } catch { resolve(null); }
     };
     input.oncancel = () => resolve(null);
     input.click();

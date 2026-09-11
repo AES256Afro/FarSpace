@@ -6,7 +6,8 @@ import { titlePreview } from "../src/core/titlepreview";
 import { updateVoyageSystems } from "../src/core/runtime";
 import { Game } from "../src/game";
 import { generateWorld } from "../src/world";
-import { SAVE_VERSION, setActiveSlot } from "../src/save";
+import { SAVE_VERSION, setActiveSlot, activeSlot, saveKeyFor } from "../src/save";
+import { recoveryKeyFor } from "../src/core/savelibrary";
 import * as cloud from "../src/core/cloud";
 import { music } from "../src/core/music";
 import { Storage as TestStorage } from "happy-dom";
@@ -69,7 +70,7 @@ describe("title preview", () => {
   it("offers the neutral Wren for an empty slot", () => { expect(titlePreview()).toMatchObject({ ship: "Wren Scout", present: false, world: null }); });
   it.each(["{bad json", JSON.stringify({ version: 14, player: {}, systems: {} })])("retains an unreadable slot and reports it", raw => {
     localStorage.setItem("farspace-save", raw); expect(titlePreview()).toMatchObject({ world: null, present: true });
-    expect(titlePreview().error).toContain("could not be read"); expect(localStorage.getItem("farspace-save")).toBe(raw);
+    expect(titlePreview().error).toContain("incomplete or damaged"); expect(localStorage.getItem("farspace-save")).toBe(raw);
   });
   it("does not continue a save from a newer schema", () => {
     const w = saved(); w.version = SAVE_VERSION + 1; localStorage.setItem("farspace-save", JSON.stringify(w)); expect(titlePreview().world).toBeNull();
@@ -152,5 +153,47 @@ describe("title asynchronous save actions", () => {
   it("checks the active slot again when accepting an imported file", async () => {
     vi.mocked(cloud.importFile).mockResolvedValue(generateWorld(900)); const { g } = fixture(); click("library"); click("import"); await settled();
     setActiveSlot(1); click("accept"); expect(g.adoptWorld).not.toHaveBeenCalled(); expect(document.querySelector('[role="status"]')!.textContent).toContain("active slot changed");
+  });
+});
+
+describe("save library menu", () => {
+  it("keeps preview clicks read-only and requires a separate slot choice", () => {
+    saved(); const { g } = fixture(), original = JSON.stringify(g.world), raw = localStorage.getItem(saveKeyFor(0));
+    const write = vi.spyOn(localStorage, "setItem"); click("library"); click("slots"); click("slot-2");
+    expect(activeSlot()).toBe(0); expect(write).not.toHaveBeenCalled(); expect(JSON.stringify(g.world)).toBe(original);
+    click("use-slot"); expect(activeSlot()).toBe(2); expect(write.mock.calls.map(([key]) => key)).toEqual(["farspace-slot"]);
+    expect(JSON.stringify(g.world)).toBe(original); expect(localStorage.getItem(saveKeyFor(0))).toBe(raw); expect(localStorage.getItem(saveKeyFor(2))).toBeNull();
+  });
+  it("returns an empty slot choice to new-voyage setup without parking a placeholder", () => {
+    saved(); const { g, scene } = fixture(); click("new"); click("choose-slot"); click("slot-1"); click("use-slot");
+    expect(scene.page).toBe("new"); expect(activeSlot()).toBe(1); click("uncharted");
+    expect(g.newGame).toHaveBeenCalledWith(false, 20); expect(localStorage.getItem(saveKeyFor(1))).toBeNull();
+    expect(localStorage.getItem(recoveryKeyFor(0))).toBeNull();
+  });
+  it("keeps a recovery copy before launching over an occupied slot", () => {
+    saved(); const raw = localStorage.getItem(saveKeyFor(0)), { g } = fixture(); click("new"); click("sol20"); click("accept");
+    expect(g.newGame).toHaveBeenCalledOnce(); expect(localStorage.getItem(recoveryKeyFor(0))).toBe(raw);
+  });
+  it("copies the previewed save only after choosing a destination and confirming it", () => {
+    saved(); const raw = localStorage.getItem(saveKeyFor(0))!; localStorage.setItem(saveKeyFor(1), JSON.stringify(generateWorld(900)));
+    const previous = localStorage.getItem(saveKeyFor(1)); fixture(); click("library"); click("slots"); click("slot-0"); click("copy-save"); click("copy-to-1");
+    expect(localStorage.getItem(saveKeyFor(1))).toBe(previous); click("accept"); expect(localStorage.getItem(saveKeyFor(1))).toBe(raw);
+    expect(localStorage.getItem(recoveryKeyFor(1))).toBe(previous); expect(activeSlot()).toBe(0);
+  });
+  it("clears and restores from the same slot page", () => {
+    saved(); const raw = localStorage.getItem(saveKeyFor(0)); fixture(); click("library"); click("slots"); click("slot-0"); click("clear-save"); click("accept");
+    expect(localStorage.getItem(saveKeyFor(0))).toBeNull(); expect(button("restore-save").disabled).toBe(false);
+    click("restore-save"); click("accept"); expect(localStorage.getItem(saveKeyFor(0))).toBe(raw); expect(button("copy-save").disabled).toBe(false);
+  });
+  it("prevents a changed local save from being overwritten by an open cloud choice", async () => {
+    const w = saved(); cloud.setCode("ABCDEFGH23"); vi.mocked(cloud.pull).mockResolvedValue({ world: w, updatedAt: Date.now() + 10000 });
+    const { g } = fixture(); click("continue"); await settled(); const newer = JSON.stringify(generateWorld(919)); localStorage.setItem(saveKeyFor(0), newer);
+    click("accept"); expect(g.adoptWorld).not.toHaveBeenCalled(); expect(localStorage.getItem(saveKeyFor(0))).toBe(newer);
+    expect(document.querySelector('[role="status"]')!.textContent).toContain("local save changed");
+  });
+  it("does not activate twice after a successful imported save", async () => {
+    saved(); const imported = generateWorld(918); vi.mocked(cloud.importFile).mockResolvedValue(imported);
+    const { g } = fixture(); g.adoptWorld = vi.fn(Game.prototype.adoptWorld); click("library"); click("import"); await settled();
+    const accept = button("accept"); accept.click(); accept.click(); expect(g.adoptWorld).toHaveBeenCalledOnce(); expect(g.world.seed).toBe(918);
   });
 });

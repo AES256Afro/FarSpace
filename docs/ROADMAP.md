@@ -2204,15 +2204,25 @@ The decision between service orders and booked fares is covered by M402.
 - Read the selected save for its hull and caption. Keep title navigation from
   updating voyage systems, and ignore stale cloud/import responses.
 
-## Approved next cycle: M417-M427
+### M417: A Clear Save Library
+
+- Read one validated preview from each slot's actual bytes. Preview, selection
+  and loading are separate actions; empty-slot selection never writes a world.
+- Keep a local recovery copy before replacement, import, copying, clear or
+  starting over. Restore and export are available from each slot's page.
+- Preserve per-slot cloud codes, show local/cloud timestamps and provide
+  local continuation after network failure. Reject stale replacement choices.
+- Explain damaged saves, unsupported schema versions and storage failures
+  without replacing the last valid save or active in-memory world.
+
+## Approved next cycle: M418-M427
 
 The [next development plan](NEXT-MILESTONES.md) contains dependencies,
 implementation boundaries, acceptance checks, effort ranges and release gates.
-M416 is implemented in v0.256.0. M417-M427 remain planned.
+M416 and M417 are implemented through v0.257.0. M418-M427 remain planned.
 
 | Milestone | Planned outcome |
 | --- | --- |
-| M417: A clear save library | Read-only previews, deliberate activation and understandable local/cloud choices. |
 | M418: Menus with one set of rules | Shared navigation, complete lists and consistent focus restoration. |
 | M419: A readable flight deck | Prioritized heading, route, threats and messages. |
 | M420: Know the contact | Identity, current intent, hostility reasons and valid actions. |

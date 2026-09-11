@@ -10,6 +10,7 @@ import * as cloud from "./core/cloud";
 import { syncScores } from "./core/wire";
 import { settings } from "./core/settings";
 import { titlePreview } from "./core/titlepreview";
+import { storeImportedWorld } from "./core/savelibrary";
 import { hull } from "./data/hulls";
 import { isOccasion } from "./data/occasions";
 import {
@@ -79,9 +80,10 @@ export class Game {
   infraTarget: import("./world").Infra | null = null; // the structure you walked into
   settingsReturn = "title"; // where SETTINGS and the HANDBOOK go back to
 
-  save(): void {
-    this.autosave();
+  save(): boolean {
+    if (!this.autosave()) return false;
     this.toast(cloud.getCode() ? "GAME SAVED - SYNCING" : "GAME SAVED");
+    return true;
   }
 
   // Quiet save: local always, cloud when linked. Runs on dock and after jumps.
@@ -125,8 +127,10 @@ export class Game {
     return `${where} - ${ship}${nick ? ` (${nick})` : ""} - ${h}H ${m}M UNDER WAY`;
   }
 
-  autosave(): void {
-    writeSave(this.world);
+  autosave(): boolean {
+    if (this.frontend) return false;
+    try { writeSave(this.world); }
+    catch { this.toast("LOCAL SAVE FAILED - PREVIOUS SAVE KEPT. FREE BROWSER STORAGE OR EXPORT FROM SAVE LIBRARY."); return false; }
     syncScores(this.world);
     if (cloud.getCode()) {
       this.cloudStatus = "SYNCING";
@@ -135,6 +139,7 @@ export class Game {
         if (!r.ok) this.toast(`CLOUD SYNC FAILED (${r.error ?? "?"}) - SAVED LOCALLY`);
       });
     }
+    return true;
   }
 
   // Hardcore death: the save is gone, locally and in the cloud if linked
@@ -145,27 +150,13 @@ export class Game {
   }
 
   // Adopt a world from the cloud or a file: persist locally and jump in
-  adoptWorld(w: World): void {
+  adoptWorld(w: World): boolean {
+    const result = storeImportedWorld(activeSlot(), w);
+    if (!result.ok) { this.toast(result.error); return false; }
     this.world = w;
     this.spriteCache.clear();
-    writeSave(w);
     this.setScene(w.player.dockedAt ? "station" : "flight");
-  }
-
-  /** CONTINUE: prefer the cloud copy when it is newer than the local one. */
-  async continueGame(): Promise<void> {
-    const code = cloud.getCode();
-    if (code) {
-      this.toast("CHECKING CLOUD...");
-      const remote = await cloud.pull(code);
-      const localAt = this.world.savedAt ?? 0;
-      if (remote && remote.updatedAt > localAt + 1000) {
-        this.toast("CLOUD SAVE IS NEWER - LOADED IT");
-        this.adoptWorld(remote.world);
-        return;
-      }
-    }
-    this.setScene(this.world.player.dockedAt ? "station" : "flight");
+    return true;
   }
 
   load(): void {
@@ -184,7 +175,7 @@ export class Game {
 
   setScene(name: string): void {
     this.scene?.onSceneLeave?.(this, name);
-    this.frontend = name === "title" || (this.frontend && ["settings", "help", "almanac", "slots", "whatsnew", "chronicle"].includes(name));
+    this.frontend = name === "title" || (this.frontend && ["settings", "help", "almanac", "whatsnew", "chronicle"].includes(name));
     this.scene = this.scenes[name];
     this.sceneName = name;
     this.scene.enter?.(this);

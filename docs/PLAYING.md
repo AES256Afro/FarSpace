@@ -1537,6 +1537,22 @@ place when returning from a story card or a site.
 
 ## Music and slots
 
+- **Save library > Browse save slots** shows the saved bytes for each voyage.
+  Previewing a slot changes neither the active slot nor the world. **Choose
+  slot** makes it active; Continue and New voyage remain separate actions.
+- Copy, import, clear and starting over keep one local recovery copy per
+  affected slot. Open that slot and choose **Restore recovery copy** to swap
+  it back. Export the slot or its recovery copy for a separate file, including
+  original bytes that cannot be loaded. A later replacement updates that
+  slot's single recovery copy.
+- Each slot retains its own cloud code. A local copy does not transfer the
+  source's code. Starting a new voyage in a linked slot will update that
+  slot's cloud copy on the next save. Cloud replacement shows both save times
+  and keeps the previous local save for recovery. **Continue local save**
+  remains available if the cloud lookup fails or times out.
+- File exports include the slot and ship name. Invalid or unsupported saves
+  do not replace the current voyage. If browser storage cannot hold a recovery
+  copy or replacement, the operation stops and keeps the previous save.
 - The hum changes for the places you go: a room with people in it at your
   waystation, something very old aboard the Ark, something vast near a
   wonder.

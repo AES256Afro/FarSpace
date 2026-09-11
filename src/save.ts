@@ -2,8 +2,9 @@
 // migration step so no player loses a game to an update.
 
 import type { World, SystemDef } from "./world";
-import { assignRares, assignSyndicates, assignWonders, assignCaptains, assignNotables, captainNickname } from "./world";
+import { assignRares, assignSyndicates, assignWonders, assignCaptains, assignNotables } from "./world";
 import { RNG } from "./core/rng";
+import { HULLS } from "./data/hulls";
 
 export const SAVE_VERSION = 14;
 export const SAVE_KEY = "farspace-save";
@@ -12,34 +13,15 @@ const SLOT_KEY = "farspace-slot";
 
 // Save slots: slot 0 keeps the historic key so existing saves stay where they are.
 export function activeSlot(): number {
-  try { const n = Number(localStorage.getItem(SLOT_KEY)); return n >= 0 && n < SLOTS ? n : 0; } catch { return 0; }
+  try { const n = Number(localStorage.getItem(SLOT_KEY)); return Number.isInteger(n) && n >= 0 && n < SLOTS ? n : 0; } catch { return 0; }
 }
-export function setActiveSlot(n: number): void {
-  try { localStorage.setItem(SLOT_KEY, String(Math.max(0, Math.min(SLOTS - 1, n)))); } catch { /* ignore */ }
+export function setActiveSlot(n: number): boolean {
+  if (!Number.isInteger(n) || n < 0 || n >= SLOTS) return false;
+  try { localStorage.setItem(SLOT_KEY, String(n)); return true; } catch { return false; }
 }
 export function saveKeyFor(slot: number): string {
   return slot === 0 ? SAVE_KEY : `${SAVE_KEY}-${slot}`;
 }
-export interface SlotSummary { slot: number; empty: boolean; credits?: number; hullId?: string; systemName?: string; savedAt?: number; hardcore?: boolean; discoveries?: number; bytes?: number; nick?: string | null; shipName?: string; captain?: string; crew?: number; hours?: number; captains?: number; cat?: string }
-export function slotSummaries(): SlotSummary[] {
-  const out: SlotSummary[] = [];
-  for (let i = 0; i < SLOTS; i++) {
-    try {
-      const raw = localStorage.getItem(saveKeyFor(i));
-      if (!raw) { out.push({ slot: i, empty: true }); continue; }
-      const w = JSON.parse(raw) as { player?: { credits?: number; hullId?: string; systemId?: string; discoveries?: number; shipName?: string; captainName?: string; crew?: unknown[]; lineage?: unknown[]; cat?: { name: string } | null }; systems?: Record<string, { name?: string }>; savedAt?: number; hardcore?: boolean; time?: number };
-      out.push({ slot: i, empty: false, nick: (() => { try { return captainNickname(w as World); } catch { return null; } })(), credits: w.player?.credits, hullId: w.player?.hullId, systemName: w.systems?.[w.player?.systemId ?? ""]?.name, savedAt: w.savedAt, hardcore: w.hardcore, discoveries: w.player?.discoveries, bytes: raw.length, shipName: w.player?.shipName, captain: w.player?.captainName, crew: w.player?.crew?.length ?? 0, hours: (w.time ?? 0) / 3600, captains: (w.player?.lineage?.length ?? 0) + 1, cat: w.player?.cat?.name });
-    } catch { out.push({ slot: i, empty: true }); }
-  }
-  return out;
-}
-export function deleteSlot(slot: number): void {
-  try { localStorage.removeItem(saveKeyFor(slot)); } catch { /* ignore */ }
-}
-export function copySlot(from: number, to: number): boolean {
-  try { const raw = localStorage.getItem(saveKeyFor(from)); if (!raw) return false; localStorage.setItem(saveKeyFor(to), raw); return true; } catch { return false; }
-}
-
 type Migration = (w: Record<string, unknown>) => void;
 
 // Each entry upgrades from version N to N+1 (index = from-version).
@@ -177,6 +159,7 @@ export function migrateSave(raw: unknown): World | null {
   const w = raw as Record<string, unknown>;
   if (!w.player || !w.systems) return null;
   let v = typeof w.version === "number" ? w.version : 0;
+  if (!Number.isInteger(v) || v < 0 || v > SAVE_VERSION) return null;
   while (v < SAVE_VERSION) {
     const step = MIGRATIONS[v];
     if (!step) return null; // unknown gap: refuse rather than corrupt
@@ -191,10 +174,35 @@ export function loadSave(slot = activeSlot()): World | null {
   try {
     const raw = localStorage.getItem(saveKeyFor(slot));
     if (!raw) return null;
-    return migrateSave(JSON.parse(raw));
+    return decodeSave(raw).world;
   } catch {
     return null;
   }
+}
+
+export interface SaveRead { world: World | null; error: string | null }
+// Validate the required playable shape after migration, before preview or adoption.
+export function decodeSave(raw: string): SaveRead {
+  const invalid = { world: null, error: "This save is incomplete or damaged. Keep the original file and choose another save." };
+  try {
+    const parsed = JSON.parse(raw);
+    if (typeof parsed?.version === "number" && parsed.version > SAVE_VERSION)
+      return { world: null, error: "This save was made by a newer FarSpace version. Update the game before loading it." };
+    const w = migrateSave(parsed), p = w?.player;
+    if (!w || !p || !HULLS.some(h => h.id === p.hullId) || !w.systems?.[p.systemId]) return invalid;
+    if (![w.seed, w.time, w.econTick, w.shockTick, w.warTick, w.missionCounter,
+      p.x, p.y, p.vx, p.vy, p.angle, p.credits, p.hull, p.hullMax, p.shield, p.shieldMax,
+      p.fuel, p.fuelMax, p.oxygen, p.oxygenMax, p.cargoMax].every(Number.isFinite)) return invalid;
+    if (![w.news, w.events, w.wars, p.crew, p.systems, p.missions, p.breaches, p.fires].every(Array.isArray)) return invalid;
+    if (![p.cargo, p.rep, p.hints, p.skills, p.storage, p.arcs].every(o => o && typeof o === "object" && !Array.isArray(o))) return invalid;
+    if (p.shipName !== undefined && typeof p.shipName !== "string") return invalid;
+    if (p.paint !== undefined && (typeof p.paint !== "string" || !/^#[\da-f]{6}$/i.test(p.paint))) return invalid;
+    for (const sys of Object.values(w.systems)) {
+      if (!sys || typeof sys.name !== "string" || ![sys.planets, sys.stations, sys.jumpPoints, sys.asteroids, sys.wrecks, sys.anomalies].every(Array.isArray)) return invalid;
+    }
+    if (p.dockedAt && !w.systems[p.systemId].stations.some(st => st.id === p.dockedAt)) return invalid;
+    return { world: w, error: null };
+  } catch { return invalid; }
 }
 
 export function writeSave(world: World, slot = activeSlot()): void {
