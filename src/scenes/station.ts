@@ -1,3 +1,4 @@
+import type { ReaderScene } from "./reader";
 import { recordOffence, closeLawCases } from "../core/law";
 import { loanHullChangeReason, loanReturnReason, loanSummary, plotLoanDepot, returnServiceCutter } from "../core/serviceloan";
 import { beginDockVisit, currentDockVisit, type DockVisit } from "../core/docking";
@@ -591,19 +592,16 @@ export class StationScene implements Scene {
         break;
       }
       case "MISSIONS": {
+        if (inp.wasPressed("j") || (inp.mousePressed && inp.mouseX >= 392 && inp.mouseX < 476 && inp.mouseY >= 54 && inp.mouseY < 67)) { this.openMissionLog(g); return; }
         if (inp.wasPressed("u") && p.service?.order) { g.toast(plotServiceOrder(g.world) ? "SERVICE COURSE SET. N IN FLIGHT FOLLOWS THE ROUTE." : "THE SERVICE ROUTE IS CLOSED. THE ORDERS CAN WAIT."); g.autosave(); return; }
         if (inp.wasPressed("c") && p.council?.mandate) { g.toast(plotCouncilMandate(g.world) ? "COUNCIL COURSE SET. N IN FLIGHT FOLLOWS THE ROUTE." : "THE COUNCIL ROUTE IS CLOSED. THE PAPERS CAN WAIT."); g.autosave(); return; }
         if (Date.now() - this.goalFetched > 60_000) { this.goalFetched = Date.now(); this.flushGoal(); void wire.fetchGoal(this.goal.id).then((st) => { if (st) this.goalState = st; }); }
-        const avail = this.boardMissions.filter((m) => !m.accepted);
-        const deliverable = p.missions.filter((m) => missionDeliverable(g.world, m, st));
-        const rows = deliverable.length + avail.length;
-        this.cursor = clamp(this.cursor, 0, Math.max(0, rows - 1));
+        const rows = this.missionRows(g);
+        this.cursor = clamp(this.cursor, 0, Math.max(0, rows.length - 1));
         if (enter) {
-          if (this.cursor < deliverable.length) this.completeMission(g, deliverable[this.cursor]);
-          else {
-            const m = avail[this.cursor - deliverable.length];
-            if (m) this.acceptMission(g, m);
-          }
+          const row = rows[this.cursor];
+          if (row?.ready) this.completeMission(g, row.m);
+          else if (row) this.acceptMission(g, row.m);
         }
         break;
       }
@@ -1523,70 +1521,81 @@ export class StationScene implements Scene {
     drawText(ctx, `UP/DOWN OR WHEEL: ${this.cursor + 1}/${rows.length} - CLICK A VISIBLE ROW`, 8, VH - 32, PAL.greyDark);
   }
 
-  drawMissions(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
-    const p = g.world.player;
-    const st = this.station;
-    const deliverable = p.missions.filter((m) => missionDeliverable(g.world, m, st));
-    const avail = this.boardMissions.filter((m) => !m.accepted);
-    const tier = missionTier(p.rep[st.factionId] ?? 0);
-    let y = top;
-    let idx = 0;
-    {
-      const so = storyObjective(g.world);
-      if (so && (p.tutorial ?? -1) < 0) { drawText(ctx, `${so.startsWith("THE KEEPER") ? "" : (p.story ?? 0) < 7 ? "THE SIGNAL - " : "THE MISSING CONVOY - "}${so}`.slice(0, 100), 8, y, PAL.info); y += 10; }
-      { const ro = regattaObjective(g.world); if (ro) { drawText(ctx, ro.slice(0, 100), 8, y, PAL.gold); y += 10; } }
-      const service = serviceObjective(g.world);
-      if (service) { drawText(ctx, `${service} - U: PLOT`.slice(0, 112), 8, y, PAL.ui); y += 10; }
-      const co = councilObjective(g.world);
-      if (co) { drawText(ctx, `${co} - C: PLOT`.slice(0, 112), 8, y, PAL.gold); y += 10; }
-      const cr = g.world.crisis;
-      if (cr && cr.delivered < cr.need && g.world.time < cr.until) { const f = findStation(g.world, cr.stationId); drawText(ctx, `CRISIS: ${(f?.st.name ?? "?").toUpperCase()}, ${(f?.sys.name ?? "?").toUpperCase()} NEEDS ${cr.need - cr.delivered} ${commodity(cr.commodityId).name.toUpperCase()} - ${Math.max(0, Math.round((cr.until - g.world.time) / 60))}M LEFT, PAYS x${CRISIS_PREMIUM}`.slice(0, 104), 8, y, PAL.danger); y += 10; }
-    }
-    {
-      const gl = this.goal;
-      const prog = this.goalState?.progress ?? 0;
-      const mine = p.goalContrib?.[gl.id] ?? 0;
-      drawText(ctx, gl.title.toUpperCase(), 8, y, PAL.info);
-      const done = prog >= gl.target;
-      drawText(ctx, done ? "GOAL MET - PREMIUM STILL PAYS" : `${prog}/${gl.target} UNITS`, 300, y, done ? PAL.good : PAL.grey);
-      ctx.fillStyle = PAL.greyDark; ctx.fillRect(380, y + 1, 90, 4);
-      ctx.fillStyle = done ? PAL.good : PAL.info; ctx.fillRect(380, y + 1, Math.round(90 * Math.min(1, prog / gl.target)), 4);
-      y += 9;
-      const top5 = this.goalState?.top.map((t) => `${t.callsign} ${t.amount}`).join("  ") ?? "";
-      drawText(ctx, `${gl.desc.toUpperCase().slice(0, 88)}`, 8, y, PAL.greyDark); y += 9;
-      drawText(ctx, `${mine ? `YOU: ${mine} UNITS.  ` : ""}${top5 ? `TOP: ${top5}` : this.goalState ? "NO CONTRIBUTIONS YET - BE FIRST" : "GOAL BOARD OFFLINE"}`, 8, y, mine ? PAL.gold : PAL.greyDark); y += 12;
-    }
-    if (deliverable.length) {
-      drawText(ctx, "READY TO TURN IN:", 8, y, PAL.good); y += 10;
-      for (const m of deliverable) {
-        this.row(ctx, y, idx === this.cursor);
-        drawText(ctx, `${m.title}  +${m.reward}CR`, 12, y, PAL.gold);
-        y += 11; idx++;
+  missionRows(g: Game): { m: Mission; ready: boolean }[] {
+    return [
+      ...g.world.player.missions.filter(m => missionDeliverable(g.world, m, this.station)).map(m => ({ m, ready: true })),
+      ...this.boardMissions.filter(m => !m.accepted && !m.done).map(m => ({ m, ready: false })),
+    ];
+  }
+
+  missionWindow(g: Game, top = 56) {
+    const rows = this.missionRows(g), cursor = clamp(this.cursor, 0, Math.max(0, rows.length - 1));
+    const offset = Math.max(0, cursor - 6);
+    return rows.slice(offset, offset + 7).map((row, i) => ({ ...row, index: offset + i, y: top + 28 + i * 20 }));
+  }
+
+  missionSections(g: Game): { title: string; lines: string[]; mission?: Mission }[] {
+    const w = g.world, p = w.player;
+    const objectives = [storyObjective(w), regattaObjective(w), serviceObjective(w), councilObjective(w),
+      ...p.crew.map(c => arcObjective(w, c))].filter((line): line is string => !!line);
+    const cr = w.crisis;
+    if (cr && cr.delivered < cr.need && w.time < cr.until) objectives.push(`CRISIS: ${findStation(w, cr.stationId)?.st.name ?? cr.stationId} NEEDS ${cr.need - cr.delivered} ${commodity(cr.commodityId).name}. ${Math.ceil((cr.until - w.time) / 60)} MINUTES LEFT. PAYS X${CRISIS_PREMIUM}.`);
+    const sections: { title: string; lines: string[]; mission?: Mission }[] = [
+      { title: "CURRENT OBJECTIVES", lines: objectives.length ? objectives : ["NO ADDITIONAL OBJECTIVES AT PRESENT."] },
+      { title: "COMMUNITY GOAL", lines: [this.goal.title, this.goal.desc,
+        this.goalState ? `${this.goalState.progress}/${this.goal.target} UNITS. ${this.goalState.progress >= this.goal.target ? "GOAL MET. PREMIUM STILL PAYS." : "GOAL IN PROGRESS."}` : "LIVE PROGRESS IS UNAVAILABLE.",
+        `YOUR CONTRIBUTION: ${p.goalContrib?.[this.goal.id] ?? 0} UNITS.`,
+        ...(this.goalState?.top.length ? [`TOP CONTRIBUTORS: ${this.goalState.top.map(t => `${t.callsign} ${t.amount}`).join("; ")}`] : []),
+      ] },
+    ];
+    const active = p.missions.filter(m => m.accepted && !m.done), offered = this.boardMissions.filter(m => !m.accepted && !m.done);
+    if (!active.length) sections.push({ title: "ACTIVE MISSIONS", lines: ["YOUR MISSION LOG IS EMPTY."] });
+    for (const m of [...active, ...offered]) {
+      const lines = [m.desc,
+        `DESTINATION: ${m.passengerKind === "singer" ? "THE SINGERS' BERTH" : findStation(w, m.targetStationId ?? "")?.st.name ?? "SYSTEM OBJECTIVE"}, ${w.systems[m.targetSystemId]?.name ?? m.targetSystemId}.`,
+        m.passengerKind === "singer" ? `REWARD: ${m.lightReward ?? 25} LIGHT AT HOME.` : `BASE REWARD: ${m.reward}CR. ORIGINAL MISSION CONDITIONS APPLY.`,
+        `STATUS: ${m.accepted ? missionDeliverable(w, m, this.station) ? "READY TO TURN IN HERE" : "ACCEPTED" : (m.tier ?? 0) > missionTier(p.rep[this.station.factionId] ?? 0) ? "POSTED, HIGHER STANDING REQUIRED" : "POSTED, NOT ACCEPTED"}.`,
+      ];
+      if (m.commodityId && m.qty) lines.push(`CARGO: ${m.qty} ${commodity(m.commodityId).name}. ABOARD: ${p.cargo[m.commodityId] ?? 0}.`);
+      if (m.killsNeeded) lines.push(`TARGETS: ${m.kills ?? 0}/${m.killsNeeded}.`);
+      if (m.groundNeed) lines.push(`GROUND WORK: ${m.groundDone ?? 0}/${m.groundNeed}.`);
+      if (m.shipTotal) lines.push(`SHIPMENTS COMPLETED: ${m.shipDone ?? 0}/${m.shipTotal}.`);
+      if (m.escortDone) lines.push("ESCORT COMPLETE. RETURN TO THE ISSUING PORT.");
+      if (m.kind === "passenger") {
+        if (m.mood !== undefined) lines.push(`PASSENGER MOOD: ${Math.round(m.mood)}.`);
+        if (m.demand) lines.push(`REQUESTED ABOARD: ${commodity(m.demand).name}.`);
+        if (m.passengerKind === "tourist") lines.push(m.sightSeen ? "BOOKED SIGHT SEEN." : "BOOKED SIGHT STILL PENDING.");
       }
-      y += 4;
+      sections.push({ title: `${m.accepted ? "ACTIVE" : "POSTING"}: ${m.title}`, lines, mission: m });
     }
-    drawText(ctx, `MISSION BOARD (YOUR TIER: ${["CIVILIAN", "TRUSTED", "MILITARY"][tier]}):`, 8, y, PAL.greyDark); y += 10;
-    if (!avail.length) drawText(ctx, "NO POSTINGS. CHECK BACK LATER.", 12, y, PAL.greyDark);
-    for (const m of avail) {
-      const locked = (m.tier ?? 0) > tier;
-      this.row(ctx, y, idx === this.cursor);
-      drawText(ctx, (m.kind === "arc" || m.rally ? "* " : "") + m.title + (locked ? "  [LOCKED]" : ""), 12, y, m.kind === "arc" || m.rally ? PAL.gold : locked ? PAL.greyDark : PAL.white);
-      drawText(ctx, `+${m.reward}CR`, VW - textWidth(`+${m.reward}CR`) - 8, y, PAL.gold);
-      y += 8;
-      drawText(ctx, m.desc.slice(0, 112), 12, y, PAL.greyDark);
-      y += 12; idx++;
-      if (y > VH - 50) break;
+    return sections;
+  }
+
+  openMissionLog(g: Game): void {
+    const reader = g.scenes.missionlog as ReaderScene, sections = this.missionSections(g);
+    const selected = this.missionRows(g)[this.cursor]?.m;
+    reader.sections.splice(0, reader.sections.length, ...sections.map(s => [s.title, s.lines] as [string, string[]]));
+    g.settingsReturn = "station"; g.setScene("missionlog");
+    const index = sections.findIndex(s => s.mission === selected && !!selected);
+    if (index >= 0) reader.scroll = Math.min(reader.maxScroll(), reader.blocks[index].top);
+  }
+
+  drawMissions(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
+    const p = g.world.player, tier = missionTier(p.rep[this.station.factionId] ?? 0), rows = this.missionRows(g);
+    drawText(ctx, `MISSION BOARD - ${["CIVILIAN", "TRUSTED", "MILITARY"][tier]}`, 8, top, PAL.grey);
+    drawText(ctx, "[ J FULL LOG ]", 400, top, PAL.ui);
+    drawText(ctx, `${rows.filter(r => r.ready).length} READY HERE / ${rows.filter(r => !r.ready).length} POSTED / ${p.missions.filter(m => m.accepted && !m.done).length} ACTIVE`, 8, top + 12, PAL.greyDark);
+    for (const { m, ready, index, y } of this.missionWindow(g, top)) {
+      const locked = !ready && (m.tier ?? 0) > tier;
+      this.row(ctx, y, index === this.cursor, index);
+      drawText(ctx, `${ready ? "TURN IN: " : locked ? "LOCKED: " : "POSTED: "}${m.title}`.slice(0, 91), 12, y, ready ? PAL.good : locked ? PAL.greyDark : PAL.white);
+      const reward = m.passengerKind === "singer" ? `+${m.lightReward ?? 25} LIGHT` : `+${m.reward}CR`;
+      drawText(ctx, reward, VW - textWidth(reward) - 8, y, PAL.gold);
+      drawText(ctx, m.desc.slice(0, 112), 12, y + 8, PAL.greyDark);
     }
-    y += 2;
-    drawText(ctx, "YOUR LOG:", 8, y, PAL.greyDark); y += 10;
-    for (const c of p.crew) { const ao = arcObjective(g.world, c); if (ao) { drawText(ctx, `> ${ao}`.slice(0, 112), 12, y, PAL.gold); y += 9; } }
-    const log = p.missions.filter((m) => m.accepted && !m.done);
-    if (!log.length && !p.crew.some((c) => arcObjective(g.world, c))) drawText(ctx, "EMPTY", 12, y, PAL.greyDark);
-    for (const m of log.slice(0, 4)) {
-      const prog = m.killsNeeded ? ` (${m.kills}/${m.killsNeeded})` : m.kind === "ground" ? ` (${m.groundDone ?? 0}/${m.groundNeed ?? 1})` : m.shipTotal ? ` (SHIPMENT ${(m.shipDone ?? 0) + 1}/${m.shipTotal})` : m.escortDone ? " (DONE - RETURN)" : m.kind === "passenger" && m.mood !== undefined ? ` (MOOD ${Math.round(m.mood)}${m.passengerKind === "tourist" ? `, ${m.sightSeen ? "SIGHT SEEN" : "SIGHT PENDING"}` : ""}${m.demand ? ", WANTS " + commodity(m.demand).name.toUpperCase() : ""})` : "";
-      drawText(ctx, `> ${m.title}${prog} - ${g.world.systems[m.targetSystemId].name}`, 12, y, PAL.uiDim);
-      y += 9;
-    }
+    if (!rows.length) drawText(ctx, "NO POSTINGS OR HAND-INS HERE. J READS YOUR CURRENT LOG.", 12, top + 30, PAL.greyDark);
+    drawText(ctx, `${rows.length ? `${this.cursor + 1}/${rows.length} - ` : ""}ENTER: ACCEPT / TURN IN   U: SERVICE COURSE   C: COUNCIL COURSE`, 8, 222, PAL.grey);
+    drawText(ctx, `${this.goal.title} - ${this.goalState ? `${this.goalState.progress}/${this.goal.target}` : "LIVE PROGRESS UNAVAILABLE"}`.slice(0, 116), 8, 233, PAL.info);
   }
 
   drawBar(g: Game, ctx: CanvasRenderingContext2D, top: number): void {

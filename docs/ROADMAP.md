@@ -2153,3 +2153,12 @@ The decision between service orders and booked fares is covered by M402.
   transfer direction, quantities and fitted hold capacity.
 - Preserve the selected stored commodity when loading creates a new hold row.
   Keep transfers to one unit and leave stock unchanged when the hold is full.
+
+### M412: Every Posting on the Board
+
+- Keep every posting and ready hand-in selectable within the canvas, including
+  pointer hit areas after scrolling.
+- Open a complete mission log with objectives, community goal, every active
+  mission and all postings. Preserve descriptions and passenger progress.
+- Return to the same board selection without accepting or paying a mission
+  through reading. Keep existing acceptance and completion requirements.

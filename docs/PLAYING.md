@@ -2017,3 +2017,19 @@ Up/Down or the wheel moves the selection. Enter or a pointer click transfers
 one unit: hold rows store, warehouse rows load. Loading a new commodity keeps
 its warehouse row selected while stock remains. A full hold leaves warehouse
 stock untouched. Each station keeps its own stored goods.
+
+## Mission board and complete log
+
+The station Missions tab scrolls every posting and ready hand-in into view.
+Up/Down or the wheel moves selection; Enter or a pointer click accepts or
+turns in the selected job. Standing, cargo, cabin and mission-count limits
+still apply.
+
+J or the Full log button opens the selected mission's complete description.
+The same reader includes story, service, council, crew and crisis objectives,
+community goal details, every active mission and all current postings. Scroll,
+jump sections or search to find other entries. Passenger details include mood,
+requested goods, tourist sight status and singer light rewards where applicable.
+Credit figures are base rewards, subject to the original mission conditions.
+Escape returns to the same Missions tab and selection. Reading does not accept
+or turn in a job; U and C on the board retain service and council course plotting.

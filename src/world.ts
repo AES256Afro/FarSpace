@@ -3907,7 +3907,7 @@ export function dailyContract(w: World, now = Date.now()): Mission {
 // Whether an accepted mission can be turned in at this station
 export function missionDeliverable(world: World, m: Mission, station: StationDef): boolean {
   const p = world.player;
-  if (!m.accepted || m.done) return false;
+  if (!m.accepted || m.done || m.passengerKind === "singer") return false;
   if (m.id.startsWith("daily-")) return !!m.commodityId && !!m.qty && (p.cargo[m.commodityId] ?? 0) >= m.qty;
   if (m.kind === "bounty" || (m.kind === "arc" && m.killsNeeded)) {
     return (m.kills ?? 0) >= (m.killsNeeded ?? 1) && m.fromStationId === station.id;
