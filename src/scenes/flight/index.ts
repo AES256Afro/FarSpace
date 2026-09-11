@@ -1,3 +1,5 @@
+import { SystemMap, resolveLocalTarget, type LocalMapTarget } from "../systemmap";
+import { wreckFromSignal } from "../../core/derelicts";
 import { grantPiratePassage, piratePassageRemaining, piratesPeaceful, tickPiratePassage } from "../../core/piracy";
 import { LAW_COOLDOWN, lawActive, lawCases, lawSettlement, recordOffence, settleLaw, tickLawCooldown } from "../../core/law";
 import { tickServiceOrder } from "../../core/service";
@@ -63,6 +65,8 @@ export class FlightScene implements Scene {
   platforms: Platform[] = [];
   fireCd = 0;
   mapOpen = false;
+  systemMap = new SystemMap();
+  localTarget: LocalMapTarget | null = null;
   zoom = 1;
   scanTimer = 0;
   scanMsg = "";
@@ -97,6 +101,7 @@ export class FlightScene implements Scene {
       this.logged = new WeakSet(); this.lastWatch = -1;
       this.addressed = false; this.reported = false; this.readyRoom = false; this.cutterSpoke = false;
     }
+    this.localTarget = null;
     const population = this.resetPopulation(g);
     this.mapOpen = false;
     this.cruise = false; this.autopilot = false;
@@ -245,6 +250,10 @@ export class FlightScene implements Scene {
     const w = g.world;
     const p = w.player;
     const sys = w.systems[p.systemId];
+    if (this.mapOpen) { this.systemMap.update(g, dt); return; }
+    if (!this.paused && !this.logOpen && !this.docking && this.launching <= 0 && g.input.wasPressed("Tab")) {
+      this.mapOpen = true; this.systemMap.enter(g); return;
+    }
     w.time += dt;
     tickWorld(w, dt);
 
@@ -279,7 +288,6 @@ export class FlightScene implements Scene {
     }
     if (g.input.wasPressed("l")) { this.logOpen = !this.logOpen; sfx.blip(); }
     if (this.logOpen) { if (g.input.wasPressed("Escape")) this.logOpen = false; this.updateAmbient(g, dt); return; }
-    if (g.input.wasPressed("Tab")) this.mapOpen = !this.mapOpen;
     if (g.input.wasPressed("g")) { g.setScene("galaxy"); return; }
     if (g.input.wasPressed("i")) { g.setScene("interior"); return; }
     if (g.input.wasPressed("u")) { this.contactTrafficControl(g); return; }
@@ -1046,7 +1054,7 @@ export class FlightScene implements Scene {
       return;
     }
     if (n.disabled) {
-      opts.push({ label: "BOARD AND REPAIR IT YOURSELF", hint: "Three dead systems, a suit clock, maybe a fire", result: (g2) => { g2.repairTarget = n; setTimeout(() => g2.setScene("repair"), 0); return ""; } });
+      opts.push({ label: "BOARD AND REPAIR IT YOURSELF", hint: "Board their ship, find the damaged systems, and restore them", result: (g2) => { g2.repairTarget = n; setTimeout(() => g2.setScene("repair"), 0); return ""; } });
       if (eng) opts.push({ label: `SEND ${eng.name.toUpperCase()} ACROSS (ENGINEER ${eng.skill})`, hint: g.world.systems[p.systemId].pirateActivity > 0.4 ? "You stand guard; corsairs work this system" : "You stand guard; it's usually quiet out here", result: () => { this.repairJob = { npc: n, crewName: eng.name, progress: 0, need: 45 / (0.6 + 0.4 * eng.skill), wave: 0, kind: "repair" }; return `${eng.name.toUpperCase()} SUITS UP AND CROSSES. KEEP THEM SAFE.`; } });
       else opts.push({ label: "NO ENGINEER ABOARD TO SEND", hint: "Hire one at a station bar", requires: () => false, result: () => "" });
       opts.push({ label: "TOW THEM TO A STATION", hint: "They follow you; top speed drops; dock anywhere", result: () => { this.towing = n; n.disabled = true; return "TOW LINE ATTACHED. TAKE IT SLOW - THE LINE WON'T SURVIVE A JUMP OR A FIREFIGHT AT SPEED."; } });
@@ -1123,6 +1131,7 @@ export class FlightScene implements Scene {
   finishRepair(g: Game, n: Npc, by: string): void {
     const p = g.world.player;
     n.disabled = false; n.hull = n.hullMax;
+    if (n.repairInterior) { n.repairInterior.health = {}; n.repairInterior.fires = []; }
     const reward = (this.sos && this.sos.trader === n ? this.sos.reward : 300) + Math.floor(Math.random() * 200);
     this.thankYou(g, n, reward);
     { const l = helpCaptain(g.world, n.kind === "trader" ? n.name : undefined, "repair", new RNG((g.world.seed ^ Math.floor(g.world.time * 41)) >>> 0)); if (l) g.toast(l); }
@@ -1456,7 +1465,13 @@ export class FlightScene implements Scene {
 
   // Autopilot flies to the next gate on your course (or the nearest station),
   // engaging cruise for the long middle and braking at the end.
-  apTarget(g: Game): { x: number; y: number; label: string } | null {
+  apTarget(g: Game): { x: number; y: number; label: string; range?: number } | null {
+    if (this.localTarget) {
+      const contact = resolveLocalTarget(g, this.localTarget);
+      if (contact) return { x: contact.x, y: contact.y, label: contact.name.toUpperCase(), range: contact.range };
+      this.localTarget = null; this.autopilot = false;
+      g.toast("LOCAL DESTINATION IS NO LONGER AVAILABLE."); return null;
+    }
     const p = g.world.player;
     const sys = g.world.systems[p.systemId];
     const berth = singersBerth(g.world);
@@ -1502,7 +1517,7 @@ export class FlightScene implements Scene {
     const spd = Math.hypot(p.vx, p.vy);
     const toward = Math.atan2(t.y - p.y, t.x - p.x);
     this.apThrust = false; this.apBrake = false;
-    if (d > 140) {
+    if (d > (t.range ?? 140)) {
       // point along the desired velocity, correcting for drift
       const wantSpd = Math.min(d > 900 ? 2000 : 180, d * 0.9);
       const dvx = Math.cos(toward) * wantSpd - p.vx, dvy = Math.sin(toward) * wantSpd - p.vy;
@@ -1627,16 +1642,19 @@ export class FlightScene implements Scene {
     }
     for (const an of sys.anomalies) {
       if (an.discovered && !an.claimed && dist(p.x, p.y, an.x, an.y) < 60) {
+        if (an.kind === "derelict") {
+          const wreck = sys.wrecks.find(w => w.id === `derelict:${an.id}`) ?? wreckFromSignal(an);
+          if (!sys.wrecks.includes(wreck)) sys.wrecks.push(wreck);
+          an.claimed = true; p.discoveries = (p.discoveries ?? 0) + 1;
+          logEntry(g.world, `Located the derelict ${an.name}`);
+          p.vx = 0; p.vy = 0; g.wreckTarget = wreck; g.setScene("wreck"); return;
+        }
         an.claimed = true;
         const reward = an.reward;
         gainMaterials(g, { polonium: 1, germanium: Math.random() < 0.6 ? 1 : 0 });
         if (an.kind === "data") {
           g.toast(`${an.name}: DATA CORE RECOVERED`);
           this.loot.push({ x: an.x, y: an.y, commodityId: "data", qty: 2, life: 60 });
-        } else if (an.kind === "derelict") {
-          g.toast(`${an.name}: SALVAGE CACHE`);
-          this.loot.push({ x: an.x, y: an.y, commodityId: "parts", qty: 3, life: 60 });
-          this.loot.push({ x: an.x + 10, y: an.y, commodityId: "metals", qty: 3, life: 60 });
         } else if (an.kind === "fold" || an.kind === "lens" || an.kind === "echo") {
           const line = strangeReading(g.world, an, new RNG((g.world.seed ^ Math.floor(g.world.time * 13)) >>> 0));
           if (line) { g.toast(line); this.comms.push({ from: shipVoiceName(p), text: line, life: 9, color: PAL.info }); }

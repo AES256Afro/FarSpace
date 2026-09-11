@@ -1,6 +1,41 @@
 # FarSpace handoff, September 11, 2026
 
-## Current checkpoint
+## Current checkpoint: v0.258.0
+
+The user requested more wreck and derelict actions, generated repair interiors,
+and improvements to both maps. This follow-up is implemented in v0.258.0.
+The remaining M418-M427 plan is still open; this release covers portions of
+map navigation and boarding work, not those entire milestones.
+
+- Both maps use bounded viewports, zoom, pan and labels placed without overlap.
+  Galaxy selection and plotting are separate. F searches names. Details scroll
+  independently. N plots a course, B bookmarks, Home fits the chart.
+- The system map lists and filters contacts. N sets a local destination; close
+  the map and press N to engage autopilot. Local destinations use live object
+  positions and interaction ranges. Missing targets stop autopilot.
+- Ship repair jobs and derelicts use seeded decks with six connected rooms.
+  Room sizes, doors, room assignments and airlock side vary. All required work
+  remains reachable. A repaired ship retains its layout seed for later faults.
+- Wreck work includes emergency power, breach sealing, fuel recovery, recorders,
+  cargo and occasional survivor rescue. Power must be restored before opening
+  a cryo pod. Sealing a breach consumes one part. Derelict signals produce
+  boardable ships instead of loose cargo alone.
+- Wreck progress and station tender panel progress survive saves. NPC repair
+  progress lasts with that live ship during the current system visit; NPCs are
+  still rebuilt on load or a real system entry. Save schema remains 14.
+- 494 tests pass. TypeScript and production build pass. Connectivity checks
+  cover 300 repair decks and 150 wreck decks with crates left in place.
+- Browser checks used isolated in-memory voyages. A repair walk restored all
+  three systems in 19.657 real seconds and returned to the same live freighter.
+  A production-build wreck walk restored power, evacuated a survivor, recovered
+  fuel, both crates and a recorder, and sealed both breaches. Progress survived
+  a JSON save round trip. No real player saves or identity settings were written.
+- Current JavaScript: `index-Du38lKfO.js`. CSS: `index-DLwGHPCy.css`.
+  Release deployment evidence is recorded in the September 11 work log.
+- Bigbox remains a separate installation. This task does not update its running
+  container. The FarSpace release manifest targets 0.258.0.
+
+## Previous checkpoint: v0.257.1
 
 - Release: **v0.257.1**, milestones through **M417**. M416 and M417 shipped
   together; the patch also repairs cloud-code generation.

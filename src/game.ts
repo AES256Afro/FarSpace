@@ -182,6 +182,7 @@ export class Game {
   }
 
   touchMode(): "flight" | "walk" | "menu" {
+    if (this.sceneName === "flight" && (this.scene as Scene & { mapOpen?: boolean }).mapOpen) return "menu";
     return this.scene?.touchMode ?? "menu";
   }
 

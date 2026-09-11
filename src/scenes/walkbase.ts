@@ -97,8 +97,9 @@ export function nearestTile(deck: string[], px: number, py: number, chars: strin
 
 export function tooltip(ctx: CanvasRenderingContext2D, ox: number, oy: number, tx: number, ty: number, label: string, hint: string, col: string = PAL.ui): void {
   const kx = ox + tx * T + T / 2;
-  drawText(ctx, label, kx - textWidth(label) / 2, oy + ty * T - 9, col);
-  drawText(ctx, hint, kx - textWidth(hint) / 2, oy + ty * T + T + 3, PAL.gold);
+  const left = (text: string) => Math.max(4, Math.min(VW - textWidth(text) - 4, kx - textWidth(text) / 2));
+  drawText(ctx, label, left(label), oy + ty * T - 9, col);
+  drawText(ctx, hint, left(hint), oy + ty * T + T + 3, PAL.gold);
 }
 
 export function footer(ctx: CanvasRenderingContext2D, g: Game, msg: string): void {

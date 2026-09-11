@@ -14,6 +14,7 @@ export class Input {
   wheel = 0;
   mouseRight = false;
   mouseRightPressed = false;
+  textEvents: string[] = [];
   lastRawKey: string | null = null; // unmapped key of the most recent keydown (for rebinding)
   padConnected = false;
   private padHeld = new Set<string>();
@@ -25,6 +26,7 @@ export class Input {
       }
       const raw = e.key.length === 1 ? e.key.toLowerCase() : e.key;
       this.lastRawKey = raw;
+      if (!e.ctrlKey && !e.metaKey && !e.altKey && raw.length === 1) this.textEvents.push(raw);
       const k = this.map(raw);
       if (!this.down.has(k)) this.pressed.add(k);
       this.down.add(k);
@@ -110,6 +112,7 @@ export class Input {
 
   flush(): void {
     this.pressed.clear();
+    this.textEvents = [];
     this.mousePressed = false;
     this.mouseRightPressed = false;
     this.wheel = 0;

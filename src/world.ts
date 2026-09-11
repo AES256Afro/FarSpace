@@ -102,6 +102,7 @@ export interface JumpPointDef {
 }
 
 export interface WreckDef {
+  boarding?: import("./core/derelicts").WreckBoarding;
   id: string;
   x: number; y: number;
   looted: boolean;
@@ -201,6 +202,7 @@ export interface Mission {
   postcarded?: boolean;     // a tourist party that got a picture of their sight
   anomalyId?: string;
   syndicate?: string;                  // contract issued by an AI syndicate (tag)
+  repairInterior?: import("./core/shipdeck").RepairProgress;
   tenderDone?: boolean;                // repair tenders: the work is done, collect at the station
   shipTotal?: number;                  // standing orders: shipments in the contract
   shipDone?: number;
