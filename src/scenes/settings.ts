@@ -35,8 +35,8 @@ export class SettingsScene implements Scene {
       { label: "THE LANES", value: (s.lanes ?? "normal") === "gentle" ? "GENTLE - HALF THE CORSAIRS" : (s.lanes ?? "normal") === "rough" ? "ROUGH - HALF AGAIN AS MANY" : "NORMAL", act: () => saveSettings({ lanes: (s.lanes ?? "normal") === "normal" ? "gentle" : (s.lanes ?? "normal") === "gentle" ? "rough" : "normal" }) },
       { label: "COMMS BAND", value: (s.chatter ?? "normal") === "quiet" ? "QUIET - HALF THE CHATTER" : (s.chatter ?? "normal") === "busy" ? "BUSY - TWICE THE CHATTER" : "NORMAL", act: () => saveSettings({ chatter: (s.chatter ?? "normal") === "normal" ? "quiet" : (s.chatter ?? "normal") === "quiet" ? "busy" : "normal" }) },
       { label: "THE SHIP'S VOICE", value: (s.voice ?? true) ? "ON - SHE SPEAKS NOW AND THEN" : "OFF - SHE KEEPS IT TO HERSELF", act: () => saveSettings({ voice: !(s.voice ?? true) }) },
-      { label: "STANDING ORDER: LEAVE THE CLAMP AT", value: (s.alertOnUndock ?? "green") === "yellow" ? "YELLOW ALERT - SHIELDS READY" : "GREEN - STAND EASY", act: () => saveSettings({ alertOnUndock: (s.alertOnUndock ?? "green") === "yellow" ? "green" : "yellow" }) },
-      { label: "STANDING ORDER: NUMBER ONE ANSWERS HAILS", value: (s.numberOneHails ?? true) ? "ON - WHILE THE AUTOPILOT HAS THE CONN" : "OFF - THE CAPTAIN ANSWERS", act: () => saveSettings({ numberOneHails: !(s.numberOneHails ?? true) }) },
+      { label: "ORDERS: LEAVE THE CLAMP AT", value: (s.alertOnUndock ?? "green") === "yellow" ? "YELLOW ALERT" : "GREEN", act: () => saveSettings({ alertOnUndock: (s.alertOnUndock ?? "green") === "yellow" ? "green" : "yellow" }) },
+      { label: "ORDERS: NO. 1 ANSWERS HAILS", value: (s.numberOneHails ?? true) ? "ON (AUTOPILOT)" : "OFF", act: () => saveSettings({ numberOneHails: !(s.numberOneHails ?? true) }) },
     ];
     for (const a of ACTIONS) {
       const physical = Object.entries(s.keymap).find(([, v]) => v === a.key)?.[0] ?? a.key;
