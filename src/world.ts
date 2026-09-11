@@ -158,6 +158,7 @@ export interface Mission {
   passengerName?: string;
   passengerKind?: "vip" | "refugee" | "fugitive" | "tourist" | "courier" | "envoy" | "patient";
   treaty?: { a: string; b: string };  // an envoy between two factions: land them unshot and on time
+  riteDone?: boolean;                 // the envoy's rite has been offered a room
   sightPlanetIdx?: number;  // tourists want to orbit this planet in the target system first
   sightSeen?: boolean;
   sightKind?: SightKind;    // what the tourists booked to see

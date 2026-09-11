@@ -33,6 +33,10 @@ export function crewChatter(w: World, a: CrewMember, b: CrewMember, rng: RNG): s
   else if (p.cat) pool.push(`${p.cat.name.toUpperCase()} WAS IN THE VENTS AGAIN.`, `WHO'S FEEDING ${p.cat.name.toUpperCase()}? NOT ME. I FED HER TWICE.`);
   if (passengersAboard(p).length) pool.push("KEEP IT DOWN, WE'VE GOT PAYING PEOPLE ABOARD.", "THE ONE IN THE LOUNGE ASKED IF WE HAVE A POOL.");
   const t = a.trait ?? "";
+  if (t.includes("litres")) pool.push("YOU LEFT THE TAP RUNNING. I COUNTED. THAT'S TWO LITRES. TWO. LITRES.");
+  if (t.includes("spin")) pool.push("THIS STATION'S SPIN IS WRONG. DON'T TELL ME IT ISN'T. MY INNER EAR HAS OPINIONS.");
+  if (t.includes("rock")) pool.push("ON THE ROCK WE'D HAVE CALLED THIS A HOLIDAY. AIR, WATER, AND NOBODY SHOOTING. HOLIDAY.");
+  if (t.includes("inner-born")) pool.push("I'M NOT SAYING GRAVITY IS BETTER WHERE I'M FROM. I'M SAYING IT EXISTS.");
   if (t.includes("cooks")) pool.push("I'M DOING SOMETHING WITH THE RATION BARS TONIGHT. DON'T ASK.");
   if (t.includes("cards")) pool.push("CARDS AFTER WATCH? MATCHSTICKS ONLY, THIS TIME.");
   if (t.includes("plant")) pool.push("THE PLANT'S GOT A NEW LEAF. DON'T TOUCH IT.");

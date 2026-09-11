@@ -328,6 +328,15 @@ export const ENCOUNTERS: Encounter[] = [
     ],
   },
   {
+    id: "envoyrite", where: "space", weight: 4, title: "THE ENVOY'S RITE", when: (g) => passengersAboard(p(g)).some((m) => m.treaty && !m.riteDone),
+    text: "The envoy comes to the bridge with a small box and an apology: their people mark the turn of a watch with a rite, and the rite needs a room with a table and nobody laughing, for an hour. The galley is the only room with a table. The crew are already laughing.",
+    options: [
+      { label: "GIVE THEM THE GALLEY", hint: "An hour without coffee; the envoy remembers", result: (g) => { const m = passengersAboard(p(g)).find((x) => x.treaty && !x.riteDone); if (!m) return "THERE IS NO ENVOY ABOARD TO HOLD A RITE. THE GALLEY STAYS THE GALLEY."; m.riteDone = true; m.mood = Math.min(100, (m.mood ?? 60) + 10); for (const c of p(g).crew) c.morale = Math.max(0, c.morale - 2); return `THE GALLEY DOOR SHUTS FOR AN HOUR. THROUGH IT, SOMETHING LIKE SINGING AND SOMETHING LIKE A BELL. ${(m.passengerName ?? "THE ENVOY").toUpperCase()} COMES OUT LIGHTER. THE CREW COME OFF THE COFFEE. MOOD UP.`; } },
+      { label: "JOIN THEM", hint: "You'll be told what to do; do it", result: (g) => { const m = passengersAboard(p(g)).find((x) => x.treaty && !x.riteDone); if (!m) return "THERE IS NO ENVOY ABOARD TO HOLD A RITE. YOU MAKE TEA ANYWAY."; m.riteDone = true; m.mood = Math.min(100, (m.mood ?? 60) + 15); for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 3); (p(g).flags ??= {}).rite = true; logEntry(g.world, `Joined ${m.passengerName ?? "the envoy"}'s rite in the galley`); return `YOU SIT WHERE YOU'RE PUT AND HOLD WHAT YOU'RE HANDED. THE RITE IS MOSTLY WAITING, AND THEN ONE WORD, AND THEN TEA. ${(m.passengerName ?? "THE ENVOY").toUpperCase()} LOOKS AT YOU DIFFERENTLY AFTER. THE CREW, TOLD IT WAS TEA, WANT IN NEXT TIME.`; } },
+      { label: "THE GALLEY IS THE GALLEY", hint: "The crew need their coffee", result: (g) => { const m = passengersAboard(p(g)).find((x) => x.treaty && !x.riteDone); if (!m) return "THERE IS NO ENVOY ABOARD. THE GALLEY WAS ALWAYS THE GALLEY."; m.riteDone = true; m.mood = Math.max(0, (m.mood ?? 60) - 8); return `${(m.passengerName ?? "THE ENVOY").toUpperCase()} NODS THE WAY DIPLOMATS NOD AND DOES THE RITE IN THE BUNK ROOM, BADLY, WITH THE DOOR OPEN. THE CREW STOP LAUGHING ON THEIR OWN. MOOD DOWN.`; } },
+    ],
+  },
+  {
     id: "loop", where: "space", weight: 2, title: "THE SAME MINUTE, AGAIN", when: (g) => !p(g).flags?.loopDone,
     text: "The clock on the console reads a time it read a moment ago. The coffee is full again. Somebody on the band says the thing they just said, word for word, and then, seeing your face, says 'WHAT?' the same way. You have been here before. You will be here again unless something changes.",
     options: [

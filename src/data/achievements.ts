@@ -128,5 +128,6 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "review", title: "THE KETTLE ON", desc: "Hold a crew review", check: (w) => !!w.player.flags?.review },
   { id: "conditions", title: "CHANGED THE CONDITIONS", desc: "Pass the unwinnable scenario", check: (w) => !!w.player.flags?.conditions },
   { id: "immunity", title: "DIPLOMATIC PASSAGE", desc: "Wave an envoy's seal at customs", check: (w) => !!w.player.flags?.immunity },
+  { id: "rite", title: "ONE WORD, THEN TEA", desc: "Join an envoy's rite", check: (w) => !!w.player.flags?.rite },
   { id: "elite", title: "ELITE", desc: "Top any career ladder", check: (w) => (["explorer", "trader", "miner"] as const).some((k) => rankOf(w.player, k).idx >= 8) },
 ];

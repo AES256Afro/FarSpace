@@ -1000,4 +1000,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] At every clamp the captain's log gets a supplemental entry tallying
       the leg: jumps, fire taken, alerts, burns, cards, rescues, the crew's mood
 
+## Milestone 161 — The Envoy's Rite ✅ (Sep 2026)
+- [x] A card while an envoy is aboard: the galley for an hour, join them, or
+      refuse; belt and inner traits for the crew, with lines
+
 ## Later

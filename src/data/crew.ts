@@ -28,6 +28,7 @@ export type CrewRequest =
   | { kind: "letter"; stationId: string; docks: number };              // carry a letter home
 
 export const CREW_TRAITS = [
+  "counts the litres", "hates the spin", "grew up on a rock", "inner-born and knows it",
   "hums old hymns in the engine room", "reads in the galley after lights-out", "keeps a plant alive in the bunk room",
   "writes letters home every dock", "plays cards for matchsticks", "sleeps through anything but alarms",
   "names every drone", "collects station stamps", "cooks on the reactor housing", "sketches the crew when they think nobody sees",

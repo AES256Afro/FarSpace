@@ -717,6 +717,11 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   and the talks begin on time: rep up with both factions, a happy fare, and a
   deed. Late, or shot at on the way, and the talks fail: rep down on both
   sides. The treaty's state rides on the fare's line on the flight HUD.
+- The envoy's rite: with a treaty fare aboard, a card asks for the galley for
+  an hour at the turn of a watch, with nobody laughing. Give them the room
+  (the crew come off the coffee), join them (mostly waiting, then one word,
+  then tea; a deed, and a fare who looks at you differently), or refuse and
+  watch the crew stop laughing on their own.
 - Customs can't open a treaty ship: with an envoy aboard, the inspection card
   has a fourth option, the envoy's seal held up to the camera, and the
   corvette backs off with an apology in it. Whatever's in the hold stays in
