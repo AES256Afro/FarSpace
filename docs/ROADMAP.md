@@ -2132,3 +2132,10 @@ The decision between service orders and booked fares is covered by M402.
   complete matching section. Clear restores the full reference.
 - Provide pointer navigation and explicit back controls. Content clicks keep
   the reader open; flight pause entries return to the same contacts.
+
+### M409: One Conversation at a Time
+
+- Prevent port arrival audiences from replacing an open crew or envoy card.
+- Resume the pending port audience after the first conversation, with saved
+  visit state and world/visit identity checks.
+- Keep arrival settlement once per docking and ordinary menu returns inert.

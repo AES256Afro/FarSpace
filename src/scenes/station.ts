@@ -73,7 +73,10 @@ export class StationScene implements Scene {
     const found = findStation(g.world, g.world.player.dockedAt!);
     const visit = currentDockVisit(g.world);
     if (!found || !visit) { g.setScene("flight"); return; }
-    if (this.visitWorld === g.world && this.visit === visit && this.station === found.st) return;
+    if (this.visitWorld === g.world && this.visit === visit && this.station === found.st) {
+      if (this.presentPortAudience(g)) g.autosave();
+      return;
+    }
     this.visitWorld = g.world; this.visit = visit;
     this.station = found.st;
     if (serviceAudienceAt(g.world, this.station.id)) g.showHint(`service-office:${this.station.id}`, "SERVICE LIAISON: P WALKS THE DECK; E AT THE HARBOURMASTER COLLECTS THE ACCOUNT.");
@@ -100,8 +103,8 @@ export class StationScene implements Scene {
     refreshPrices(this.station);
     void wire.fetchSquadronData();
     this.loadPortData(g);
-    if (visit.settled) return;
-    visit.settled = true;
+    if (visit.settled) { if (this.presentPortAudience(g)) g.autosave(); return; }
+    visit.settled = true; visit.portAudiencePending = true;
     if (p.ious?.length) { for (const iou of p.ious) { p.credits += iou.credits; g.toast(iou.text); } p.ious = []; sfx.pickup(); }
     { const bl = resolveBorder(g.world); if (bl) { g.toast(bl); sfx.select(); const last = (g.world.borderLog ?? []).slice(-1)[0]; if (last && last.yours > 0) void wire.post("politics", `${last.flipped ? "helped flip" : "helped hold"} ${g.world.systems[last.systemId]?.name ?? "a system"} on the border (push ${last.yours})`, g.world.systems[p.systemId].name); } }
     if (p.cat && p.catAway && p.catAway !== this.station.id && Math.random() < 0.3) { const from = findStation(g.world, p.catAway)?.st.name ?? "somewhere"; p.catAway = null; g.toast(`A HAULER OUT OF ${from.toUpperCase()} HANDS OVER A CRATE WITH AIR HOLES. ${p.cat.name.toUpperCase()} IS NOT SPEAKING TO YOU.`); logEntry(g.world, `${p.cat.name} came home in a crate from ${from}`); sfx.purr(); }
@@ -156,6 +159,18 @@ export class StationScene implements Scene {
     if (p.flags?.directiveBroken && !p.flags?.ethicsLetter) { (p.flags ??= {}).ethicsLetter = true; (p.codex ??= {})["contact:THE BOARD OF ETHICS"] = ((p.codex ?? {})["contact:THE BOARD OF ETHICS"] ?? 0) + 1; (g.world.mailQueue ??= []).push({ dueT: g.world.time + 600, from: "the survey's board of ethics", text: "It has come to the board's attention that a rover from your hull made contact with a population that had not, until then, met a rover. The board does not say you were wrong. The board is not permitted to say anything. The board would like you to know that a child on that world has drawn your lander on a wall, and that the drawing is, by all accounts, quite good. Please find the enclosed guidance, which you will not read.", gift: { data: 20 } }); }
     if (p.flags?.directiveKept && !p.flags?.directiveKept2 && !p.flags?.ethicsLetterKept) { (p.flags ??= {}).ethicsLetterKept = true; (p.codex ??= {})["contact:THE BOARD OF ETHICS"] = ((p.codex ?? {})["contact:THE BOARD OF ETHICS"] ?? 0) + 1; (g.world.mailQueue ??= []).push({ dueT: g.world.time + 600, from: "the survey's board of ethics", text: "The board notes that your hull found a population the survey had filed under geology, and left it as it found it. The board is not permitted to thank you. The board has enclosed a survey grant, which is not thanks, and a note that the population has since invented the wheel, which is not your doing, and which the board finds it cannot stop thinking about.", gift: { credits: 250, data: 20 } }); }
     { const fr = friendsAt(g.world, this.station.id); if (fr.length && Math.random() < hoursRate(this.station).lounge) g.toast(`${fr[0].name.toUpperCase()} IS IN THE LOUNGE AND WAVING YOU OVER`); }
+    this.presentPortAudience(g);
+    g.autosave();
+  }
+
+  // Crew dialogue can already own the scene. Defer this visit's port audience
+  // until that dialogue returns, without charging or resetting the arrival.
+  presentPortAudience(g: Game): boolean {
+    const visit = currentDockVisit(g.world);
+    if (g.sceneName !== "station" || this.visitWorld !== g.world || this.visit !== visit ||
+      !visit?.portAudiencePending || visit.stationId !== this.station.id) return false;
+    delete visit.portAudiencePending;
+    const p = g.world.player;
     if (inspectionDue(g.world, this.station)) this.inspection(g);
     else if (inquiryDue(g.world, this.station)) this.inquiry(g);
     else if (this.station.military && (p.ruleBroken ?? 0) > (p.hearings ?? 0)) this.hearing(g);
@@ -169,7 +184,7 @@ export class StationScene implements Scene {
     else if (grievanceDue(g.world)) this.grievance(g);
     else if (spinOutageDue(g.world, this.station)) this.spinOutage(g);
     else { const sec = secessionAt(g.world, this.station.id); if (sec && !(p.flags ?? {})[`register:${this.station.id}:${Math.round(sec.until)}`]) this.register(g, sec); else { const cr = crisisAt(g.world, this.station.id); if (cr && cr.commodityId === "med" && !(p.flags ?? {})[`overrun:${this.station.id}:${weekKey()}`]) this.overrun(g); } }
-    g.autosave();
+    return true;
   }
 
   loadPortData(g: Game): void {

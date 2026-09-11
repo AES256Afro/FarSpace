@@ -45,11 +45,53 @@ describe("one settled visit to port", () => {
     const f = fixture(), { w, p, st, g, station } = f; const wages = crewWages(p);
     p.missions = [{ id: "fare", kind: "passenger", title: "A cabin", desc: "Home", fromStationId: st.id, targetSystemId: w.systems[p.systemId].links[0], targetStationId: "elsewhere", accepted: true, done: false, reward: 100, mood: 60, docksAboard: 0 }];
     beginDockVisit(w, st.id); g.setScene("station"); const after = totals(f), stops = p.missions[0].docksAboard;
+    expect(g.autosave).toHaveBeenCalledOnce();
     expect(p.credits).toBe(2000 - wages); expect(p.cargo.food).toBe(19); expect(p.crew[0].docks).toBe(5); expect(stops).toBe(1);
     station.tab = 4; const board = station.boardMissions, fares = station.fares, candidates = station.candidates;
     for (const seconds of [0, 1, 61, 3600]) { w.time += seconds; g.setScene("stationwalk"); g.setScene("station"); }
     expect(totals(f)).toEqual(after); expect(p.missions[0].docksAboard).toBe(stops); expect(station.tab).toBe(4);
-    expect(station.boardMissions).toBe(board); expect(station.fares).toBe(fares); expect(station.candidates).toBe(candidates); expect(g.autosave).toHaveBeenCalledOnce();
+    expect(station.boardMissions).toBe(board); expect(station.fares).toBe(fares); expect(station.candidates).toBe(candidates);
+    const saved = vi.mocked(g.autosave).mock.calls.length; g.setScene("station"); expect(g.autosave).toHaveBeenCalledTimes(saved);
+  });
+  it("finishes a crew conversation before opening a due port hearing", () => {
+    const f = fixture(), { w, p, st, g, station, keys } = f;
+    st.military = true; p.ruleBroken = 1; p.hearings = 0;
+    const card = g.scenes.encounter as EncounterScene;
+    vi.mocked(station.crewRequest).mockImplementation(() => card.open(g, {
+      id: "crew-arrival", where: "space", title: "A WORD FIRST", text: "The engineer has a request", weight: 0,
+      options: [{ label: "HEARD", result: () => "THE CREW FINISHES SPEAKING." }],
+    }, "station", true));
+    beginDockVisit(w, st.id); g.setScene("station"); const after = totals(f);
+    expect(card.enc.id).toBe("crew-arrival"); expect(p.hearings).toBe(0);
+    keys.add("Enter"); card.update(g, 0); keys.clear(); expect(card.outcome).toContain("FINISHES");
+    keys.add("Enter"); card.update(g, 0); keys.clear();
+    expect(card.enc.id).toBe("hearing"); expect(p.hearings).toBe(1); expect(totals(f)).toEqual(after);
+    card.back(g); expect(g.sceneName).toBe("station"); expect(totals(f)).toEqual(after);
+  });
+  it("persists a pending port audience across an in-memory save reload", () => {
+    const { w, p, st, g, station } = fixture(); st.military = true; p.ruleBroken = 1; p.hearings = 0;
+    const card = g.scenes.encounter as EncounterScene;
+    vi.mocked(station.crewRequest).mockImplementation(() => card.open(g, { id: "crew", where: "space", title: "CREW", text: "A word", weight: 0, options: [] }, "station", true));
+    beginDockVisit(w, st.id); g.setScene("station"); const credits = p.credits, docks = p.crew[0].docks;
+    expect(p.dockVisit?.portAudiencePending).toBe(true); w.version = SAVE_VERSION;
+    g.world = migrateSave(JSON.parse(JSON.stringify(w)))!; g.setScene("station");
+    expect(card.enc.id).toBe("hearing"); expect(g.world.player.dockVisit?.portAudiencePending).toBeUndefined();
+    expect(g.world.player.credits).toBe(credits); expect(g.world.player.crew[0].docks).toBe(docks);
+    card.back(g); g.setScene("station"); expect(g.sceneName).toBe("station"); expect(g.world.player.hearings).toBe(1);
+  });
+  it("does not carry a pending audience into another world or a different visit", () => {
+    const { w, p, st, g, station } = fixture(); st.military = true; p.ruleBroken = 1;
+    beginDockVisit(w, st.id); g.setScene("station"); p.dockVisit!.portAudiencePending = true;
+    const oldVisit = p.dockVisit; g.world = generateWorld(777); g.sceneName = "station";
+    expect(station.presentPortAudience(g)).toBe(false); expect(oldVisit.portAudiencePending).toBe(true);
+    g.world = w; beginDockVisit(w, st.id); expect(station.presentPortAudience(g)).toBe(false);
+    expect(oldVisit.portAudiencePending).toBe(true);
+  });
+  it("shows a due port audience immediately when no crew conversation opens", () => {
+    const { w, p, st, g } = fixture(); st.military = true; p.ruleBroken = 1; p.hearings = 0; p.crew = [];
+    beginDockVisit(w, st.id); g.setScene("station");
+    expect((g.scenes.encounter as EncounterScene).enc.id).toBe("hearing");
+    expect(p.dockVisit?.portAudiencePending).toBeUndefined(); expect(p.hearings).toBe(1); expect(g.autosave).toHaveBeenCalledOnce();
   });
   it("keeps sim use, counselling and a briefing made during the same visit", () => {
     const f = fixture(), { w, p, st, g } = f; beginDockVisit(w, st.id); g.setScene("station");

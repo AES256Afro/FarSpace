@@ -1990,3 +1990,12 @@ fitted capacity, price, location and actions stay in the right column.
 Pointer clicks use the visible row even after scrolling. The shipyard's
 scrolled equipment list uses the same exact row mapping. Clicking either
 screen's details column does not activate a purchase or hull transfer.
+
+## Conversations at the clamp
+
+A crew request, personal story or envoy can greet the ship on arrival. Finish
+that conversation before the port opens a hearing, inspection, reception or
+other audience. The port's turn is saved with the current visit and resumes
+when you return to station services. Reading both does not repeat wages,
+food, passenger stops or arrival rewards. Older settled visits do not gain a
+new audience merely from loading a save.

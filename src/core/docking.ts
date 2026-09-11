@@ -1,6 +1,6 @@
 import { findStation, type World } from "../world";
 
-export interface DockVisit { stationId: string; startedAt: number; settled: boolean }
+export interface DockVisit { stationId: string; startedAt: number; settled: boolean; portAudiencePending?: boolean }
 
 // A completed approach, rescue or liner arrival starts a visit explicitly.
 export function beginDockVisit(w: World, stationId: string): boolean {
