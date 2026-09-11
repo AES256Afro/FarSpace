@@ -33,7 +33,7 @@ export class AlmanacScene implements Scene {
     }
     ctx.restore();
     ctx.fillStyle = PAL.uiPanel; ctx.fillRect(0, 0, VW, 18); ctx.fillRect(0, VH - 16, VW, 16);
-    drawText(ctx, "HANDBOOK - UP/DOWN OR WHEEL TO SCROLL", 12, 8, PAL.white);
+    drawText(ctx, `HANDBOOK - UP/DOWN OR WHEEL TO SCROLL - ${ALMANAC.length} SECTIONS: ${ALMANAC.map(([t]) => t).join(", ")}`.slice(0, 93), 12, 8, PAL.white);
     drawText(ctx, "ESC BACK", VW - textWidth("ESC BACK") - 12, 8, PAL.greyDark);
     drawText(ctx, "THE FULL GUIDE IS DOCS/PLAYING.MD IN THE REPOSITORY", 12, VH - 12, PAL.greyDark);
   }

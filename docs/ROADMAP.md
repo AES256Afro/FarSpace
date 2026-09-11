@@ -844,4 +844,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] The title summary carries your name on the lanes; handbook lines for
       the pacer, the wager and convoys on the board
 
+## Milestone 122 — Handbook Index ✅ (Sep 2026)
+- [x] The handbook header lists its sections; the ship has a word on a new
+      week
+
 ## Later

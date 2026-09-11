@@ -34,6 +34,7 @@ export function pickShipLine(g: Game, rng: RNG): string | null {
   if ((p.guestbook ?? []).length >= 3) pool.push("THREE PEOPLE HAVE WRITTEN NICE THINGS ABOUT ME IN THE BOOK. I READ THEM WHEN NOBODY'S LOOKING.");
   if ((p.mail ?? []).some((m) => m.replied)) pool.push("YOU WRITE BACK TO PEOPLE. NOT EVERY SHIP'S CAPTAIN DOES. I NOTICE THESE THINGS.");
   if (p.crew.some((c) => c.home)) pool.push("HALF MY CREW HAVE PEOPLE AT SOME PORT OR OTHER. I TRY TO FLY LIKE IT.");
+  if (p.lastWeekSeen) pool.push("NEW WEEK. THE FACTIONS ARE ASKING THEIR QUESTIONS AGAIN. I DON'T GET A VOTE. I HAVE OPINIONS.");
   if (p.mayday) pool.push("MY TANKS ARE DRY AND MY MAYDAY IS OUT THERE. SOMEBODY WILL COME. SOMEBODY ALWAYS COMES. USUALLY.");
   const deck = hull(p.hullId).deck;
   if (deck === "scout") pool.push("I'M SMALL. I'M FAST. I'M NOT CARRYING THAT MANY CRATES AGAIN.", "SCOUT HULLS DON'T GET STATUES. WE GET THERE FIRST, THOUGH.");
