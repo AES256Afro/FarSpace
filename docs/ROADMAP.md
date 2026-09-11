@@ -886,4 +886,9 @@ Time passes for the people on the ship, and for the ship.
 - [x] Six achievements for the new evening: on the house, lost and found,
       finders keepers, good service, berth neighbours, night owl
 
+## Milestone 133 — The Galley Menu ✅ (Sep 2026)
+- [x] Meals depend on what's aboard: luxuries make a dinner, a rare tea, wine
+      or mead is poured after, the cook helps, the fares eat too; the chronicle
+      counts meals and keepsakes
+
 ## Later

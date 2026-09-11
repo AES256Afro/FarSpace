@@ -4,7 +4,7 @@
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond, onWatch, watchIndex, captainNickname, borderStanding, passengersFed } from "../world";
+import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond, onWatch, watchIndex, captainNickname, borderStanding, passengersFed, cookMeal } from "../world";
 import { commodity, faction } from "../data/data";
 import { crewChatter, soloChatter, MESS_LINES, passengerChatter } from "../data/chatter";
 import { RNG } from "../core/rng";
@@ -559,14 +559,9 @@ export class InteriorScene implements Scene {
           for (const c of p.crew) c.morale = Math.min(100, c.morale + 5);
           this.say("YOU SLEEP. 60S PASS. +10 HULL, SHIELDS AND O2 RESTORED");
         } else if (near.ch === "K") {
-          if ((p.cargo.food ?? 0) > 0) {
-            removeCargo(p, "food", 1);
-            p.hull = Math.min(p.hullMax, p.hull + 5);
-            const cook = p.crew.find((c) => c.trait?.includes("cooks"));
-            p.mealsCooked = (p.mealsCooked ?? 0) + 1;
-            for (const c of p.crew) c.morale = Math.min(100, c.morale + (cook ? 12 : 10));
-            this.say(cook ? `${cook.name.toUpperCase()} COOKS. NOBODY KNOWS WHAT IT IS. EVERYBODY HAS SECONDS. MORALE UP, +5 HULL` : p.crew.length ? "A HOT MEAL FOR EVERYONE. MORALE UP, +5 HULL" : "A HOT MEAL. +5 HULL");
-          } else this.say("GALLEY'S EMPTY. BUY PROVISIONS AT A STATION");
+          const meal = cookMeal(p);
+          if (meal) { this.say(meal[0]); for (const l of meal.slice(1)) g.toast(l); }
+          else this.say("GALLEY'S EMPTY. BUY PROVISIONS AT A STATION");
         } else if (near.ch === "M") {
           this.listenToTheBand(g);
           return;

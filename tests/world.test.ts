@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  weekKey, genCrewCandidate, LOST_KEEP_AFTER, LOST_REWARD, tickLostProperty, handInLostItem, leaveLostItem, passengersTookFire, passengersFed, askPassengerRequest, findStation, berthedCaptains, generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
+  weekKey, genCrewCandidate, cookMeal, LOST_KEEP_AFTER, LOST_REWARD, tickLostProperty, handInLostItem, leaveLostItem, passengersTookFire, passengersFed, askPassengerRequest, findStation, berthedCaptains, generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
   missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn, captainByName, helpCaptain, isFriend, friendsAt, tickMail, pickCaptainFor, canUpgradeInfra, upgradeInfra, rivalOf, isRival, rivalTakesFare, rivalBeatsYouTo, askRideAlong, tickRideAlong, setHomePort, isHome, donateRelic, hullHistoryFor, notableById, notableOutcome, canFundProject, fundProject, PROJECTS, settlementNeeds, ledger, ledgerAround, LEDGER_LABELS, catGift, stationBulletin, dockingsAt } from "../src/world";
 import { occasionFor, OCCASIONS } from "../src/data/occasions";
@@ -773,6 +773,19 @@ describe("station hours and the tannoy", () => {
     expect(stationHour(sts[0], at)).toEqual(stationHour(sts[0], at));
     for (const st of sts.slice(0, 5)) { const lines = tannoyLines(w, st, new RNG(1), at); expect(lines.length).toBeGreaterThan(5); for (const l of lines) expect(l.length).toBeLessThanOrEqual(130); }
     w.player.postRuns = 10; expect(tannoyLines(w, sts[0], new RNG(2), at).some((l) => l.includes("THE POSTMAN"))).toBe(true);
+  });
+  it("the galley cooks from what is aboard: dinner with luxuries, a pour after, and the fares eat too", () => {
+    const w = generateWorld(36, { realGalaxy: true }); const p = w.player;
+    p.crew = [genCrewCandidate(new RNG(1))]; p.crew[0].morale = 50; p.crew[0].trait = "cooks";
+    p.cargo = { food: 2, lux: 1, r_tea: 1 }; p.hull = p.hullMax - 20;
+    p.missions.push({ id: "f", kind: "passenger", title: "t", desc: "d", fromStationId: "a", targetSystemId: "b", reward: 100, accepted: true, done: false, passengerName: "Rook", mood: 50, request: "meal", requestMet: false, tip: 40 } as Mission);
+    const out = cookMeal(p)!;
+    expect(out[0]).toContain("PROPER DINNER"); expect(out[0]).toContain("TEA AFTER"); expect(out[0]).toContain("MORALE +18");
+    expect(out.some((l) => l.includes("HOT MEAL"))).toBe(true);
+    expect(p.cargo.food).toBe(1); expect(p.cargo.lux ?? 0).toBe(0); expect(p.cargo.r_tea).toBe(1);
+    expect(p.crew[0].morale).toBe(68); expect(p.hull).toBe(p.hullMax - 15); expect(p.mealsCooked).toBe(1);
+    const m = passengersAboard(p)[0]; expect(m.requestMet).toBe(true); expect(m.mood).toBe(70);
+    expect(cookMeal(p)![0]).toContain("SECONDS"); expect(cookMeal(p)).toBeNull();
   });
   it("lost property: fares leave things, the harbour office takes them, unclaimed things become keepsakes", () => {
     const w = generateWorld(35, { realGalaxy: true }); const p = w.player;

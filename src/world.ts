@@ -574,6 +574,8 @@ export function chronicleText(w: World, callsign: string | null): string {
     for (const b of (w.borderLog ?? []).slice(-3)) parts.push(`Week of ${b.week}: ${w.systems[b.systemId]?.name ?? "?"} ${b.flipped ? `fell to the ${facName(b.to)}` : `held for the ${facName(b.from)}`}${b.yours ? ` with your push of ${b.yours}` : ""}.`);
     const holdings = Object.entries(p.stakes ?? {}).map(([id, n]) => `${findStation(w, id)?.st.name ?? "?"} ${n}`);
     if (holdings.length) parts.push(`Holdings: ${holdings.join(", ")}.`);
+    if ((p.keepsakes ?? []).length) parts.push(`Kept aboard: ${(p.keepsakes ?? []).slice(-3).join("; ")}.`);
+    if ((p.mealsCooked ?? 0) > 0) parts.push(`${p.mealsCooked} meals cooked in the galley.`);
     const bests = Object.entries(p.raceBest ?? {}).slice(0, 4).map(([id, t]) => `${findStation(w, id)?.st.name ?? "?"} ${t.toFixed(1)}s`);
     if (bests.length) parts.push(`Ring times: ${bests.join(", ")}${p.regatta === 3 ? "; regatta champion" : p.regatta !== undefined ? `; regatta ${p.regatta}/3` : ""}.`);
     if ((p.postRuns ?? 0) || (p.convoys ?? 0) || (p.races ?? 0)) parts.push(`${p.postRuns ?? 0} mail bags, ${p.convoys ?? 0} convoys walked, ${p.races ?? 0} races run.`);
@@ -934,6 +936,26 @@ export function askPassengerRequest(p: PlayerState, rng: RNG): { m: Mission; tex
   const kinds: PaxRequest[] = ["quiet", "view"]; if (p.crew.filter((c) => !c.sick).length >= 2) kinds.push("meal");
   m.request = rng.pick(kinds); m.requestMet = false; m.tip = 40 + Math.round(m.reward * 0.15);
   return { m, text: PAX_REQUEST_LINES[m.request] };
+}
+// The galley: a meal from what's aboard. Provisions always; luxuries make it a dinner; a rare tea, wine or
+// mead aboard is poured after (not used up). The cook aboard makes it better. Fares eat too.
+export function cookMeal(p: PlayerState): string[] | null {
+  if ((p.cargo.food ?? 0) <= 0) return null;
+  removeCargo(p, "food", 1);
+  const dinner = (p.cargo.lux ?? 0) > 0; if (dinner) removeCargo(p, "lux", 1);
+  const after = (["r_tea", "r_wine", "r_mead"] as const).find((id) => (p.cargo[id] ?? 0) > 0);
+  const cook = p.crew.find((c) => c.trait?.includes("cooks"));
+  const gain = (dinner ? 14 : 10) + (cook ? 2 : 0) + (after ? 2 : 0);
+  p.hull = Math.min(p.hullMax, p.hull + 5);
+  p.mealsCooked = (p.mealsCooked ?? 0) + 1;
+  for (const c of p.crew) c.morale = Math.min(100, c.morale + gain);
+  for (const m of passengersAboard(p)) if (dinner) m.mood = Math.min(100, (m.mood ?? 60) + 10);
+  const who = cook ? `${cook.name.toUpperCase()} COOKS.` : "";
+  const what = dinner ? "A PROPER DINNER, LUXURIES AND ALL." : cook ? "NOBODY KNOWS WHAT IT IS. EVERYBODY HAS SECONDS." : p.crew.length ? "A HOT MEAL FOR EVERYONE." : "A HOT MEAL.";
+  const pour = after === "r_tea" ? " TEA AFTER, THE REAL STUFF." : after === "r_wine" ? " A GLASS OF THE WINE AFTER." : after === "r_mead" ? " MEAD AFTER. SINGING, PROBABLY." : "";
+  const out = [`${who ? who + " " : ""}${what}${pour} ${p.crew.length ? `MORALE +${gain}, ` : ""}+5 HULL${dinner && passengersAboard(p).length ? ", THE FARES ARE DELIGHTED" : ""}`.trim()];
+  out.push(...passengersFed(p));
+  return out;
 }
 export function passengersFed(p: PlayerState): string[] {
   const out: string[] = [];
