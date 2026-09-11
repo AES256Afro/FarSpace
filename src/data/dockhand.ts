@@ -17,6 +17,7 @@ export function dockhandLines(w: World, st: StationDef, rng: RNG, now = Date.now
   const pool: string[] = [];
   if (p.hull < p.hullMax * 0.5) pool.push(`'What did you hit? No, don't tell me. I'll see it in the yard's invoice.'`, `'She's holed forward. I've put a bucket under it. That's a joke. Mostly.'`);
   if (p.hull < p.hullMax * 0.75 && p.hull >= p.hullMax * 0.5) pool.push(`'The hull with the dent. That's what the lanes call you. I could take the dent out. You'd lose the name.'`);
+  if (p.flags?.singershome) pool.push(`'Heard you went to the singers' home. Heard they sang. My grandmother said they were a story. I'll tell her she was half right.'`);
   if (p.motto) pool.push(`'Read your plaque while I was under her. "${p.motto}". Don't see many that mean it. Yours might.'`);
   if (p.flags?.freeman && isBeltStation(st)) pool.push(`'Freeman's hull. Yard rate's fifteen under and I've already taken it off. Don't thank me. Thank the rock.'`);
   if (p.flags?.rockkid) pool.push(`'My kid's got your ship on the wall. With a dog. You don't have a dog, do you? ... Thought not.'`);

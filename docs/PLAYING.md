@@ -752,6 +752,8 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- The chronicle lists every contact in the codex with its count, and where
+  the singers' chart points. The lanes talk about the ship they sang to.
 - The singers' home: their third gift is a chart pointing at a system two
   gates or more away. Research stations then post FOLLOW THE LIGHT: ninety
   seconds of quiet orbit over that system's first world, no cruise, no red.

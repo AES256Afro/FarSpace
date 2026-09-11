@@ -1774,6 +1774,16 @@ Time passes for the people on the ship, and for the ship.
       sing every word you know (a berth-token, rep with everyone, data) or
       listen (data, contact 4)
 
+## Milestone 351 — The Lanes Heard ✅ (Sep 2026)
+- [x] Gossip, hails, the dock-hand and the ship's voice on the singers' home
+
+## Milestone 352 — Contacts in the Chronicle ✅ (Sep 2026)
+- [x] The chronicle lists every contact with its count, and where the
+      singers' chart points
+
+## Milestone 353 — Follow the Light, in the Handbook ✅ (Sep 2026)
+- [x] Handbook and help lines for the singers' chart and the survey's orders
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
