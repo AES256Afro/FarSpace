@@ -809,8 +809,9 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   on the band, belt standing goes up, and the tannoy reads your time.
 - Every fresh landing with fit crew asks who comes down. An engineer makes
   the rover's battery last a third longer, a science hand pays a quarter more
-  per flora scan, a medic softens a bad landing, a gunner is company. The
-  surface header shows who's aboard, and at lift-off their loyalty goes up.
+  per flora scan, a medic reduces the cost of emergency recovery, and a
+  gunner spots terrain hazards. You can take two crew; their different
+  benefits combine. See [Ground crews](#ground-crews).
 - Once the ship is on the roster, S there is the ship's review of every crew
   member, one line each. And at any other business the ship votes.
 - Break the rule on the ground and the next naval station holds a hearing
@@ -1253,6 +1254,33 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   review.
 
 ## Away teams
+
+### Ground crews
+
+On a fresh rover landing, **WHO COMES DOWN?** lists every fit crew member.
+Use the arrows and Enter, or click a row, to select up to two people. Choose
+**BACK TO THE ROVER** to confirm, or **GO ALONE** with no one selected.
+The page controls also work by touch. Sick crew stay aboard.
+
+The team rides in the rover while driving or sheltering from a storm. At
+stops, they step onto nearby ground that they can reach without crossing
+water, walls, or hot terrain. Numbered suit markers match the surface roster.
+At the lander, **T** opens the roster again; **L** still starts shore leave.
+
+| Crew | Effect on this landing |
+|---|---|
+| Engineer | Uses 25% less rover power; one spare part repairs up to 60 integrity. |
+| Science specialist | Flora scans award 25% more data, including the amount shown on screen. |
+| Pilot, including science specialists | Storm driving retains 85% of normal speed instead of 70%. |
+| Medic | Emergency recovery costs 5 ship hull instead of 10 and restores 75 rover integrity. |
+| Gunner | Reduces damage from terrain hazards and geysers by 25%. |
+
+Different effects combine; two people with the same role do not double a
+bonus. At lift-off, the selected crew gain morale and loyalty. Two returning
+crew also grow closer. Switching the roster at the lander gives no reward
+until the landing is finished. Crew and collected ground data remain in
+place when returning from a story card or a site.
+
 
 - Ten cards on the lanes and the ground with a certain flavour: a hull that
   sings in no known tongue (run the translator, answer with music, or log

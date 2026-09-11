@@ -1921,6 +1921,19 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 392 — The Ship Has Read the Files ✅ (Sep 2026)
 - [x] Ship's-voice lines on the files and the stowaway it never mentioned
 
+## Milestone 393: Two Seats on the Ground (Sep 2026)
+- [x] Choose up to two fit crew from the full roster at touchdown; change
+      the team with T at the lander. Keyboard, mouse, and touch selection.
+- [x] Crew step onto reachable safe ground when the rover stops, with suit
+      colors and numbered markers matching the roster. They ride during
+      driving and storms.
+- [x] Combine engineering, science, medical, pilot, and lookout benefits;
+      repeated roles do not multiply the same bonus.
+- [x] Science scan messages show the actual data awarded. A safe return
+      improves morale and loyalty, and two crew gain a shared bond.
+- [x] Tests cover roster changes, card returns, role effects, safe placement,
+      scan payouts, save round trips, and one reward per completed landing.
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
@@ -1938,12 +1951,10 @@ the roster, a command of their own. Next:
   a cutter of your own on loan, orders that conflict with a fare)
 - The belt's council as a place: a seat you sit in, votes every week, a
   rock that asks you to speak for it to the inners
-- The office as a running gag with an ending: the representative retires,
-  and leaves you the files
-- The crew's lives: a wedding aboard you officiate, a child named after the
-  ship, an old hand's last leg
-- The cadet's arc: from spanner to Number One, and their own command
-- Away partners with sprites on the ground, and two-crew away teams
+- An old hand's last leg: a chosen destination, a farewell on the deck,
+  and a letter from the place they settled
 - The ship's voice in the sim rig: a program it wrote about you
 
-## Later
+The office's retirement and files, the wedding keepsake, the child named
+after the ship, and the cadet's path through command are covered by
+M360-M392. Visible ground teams are covered by M393.

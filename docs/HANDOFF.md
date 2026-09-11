@@ -2,6 +2,8 @@
 
 Written 04:30 CDT, Sep 11 2026. Everything below was true at that moment.
 
+For the later six-hour work window, see [the September 11 work log](WORKLOG-2026-09-11.md).
+
 ## State
 
 - **Code:** `main` at v0.232.0 plus one untagged test commit (`334e7bc`, the
@@ -14,7 +16,7 @@ Written 04:30 CDT, Sep 11 2026. Everything below was true at that moment.
   `npx vite build` are clean.
 - **Performance:** worst frame ~10.4 ms in flight (20 NPCs, red alert),
   interior, promenade (13 NPCs) and station views.
-- **Live site:** farspace.fsociety.work serves 0.232.0 (Cloudflare Pages
+- **Live site:** farspace.fsociety.work serves 0.232.0 (Cloudflare Workers
   follows `main`).
 - **BoxPilot catalog:** merged through **0.221.0**. Tagged but not yet
   catalogued: **0.222.0 – 0.232.0**. Their container images are built

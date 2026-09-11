@@ -25,7 +25,7 @@ See [docs/PLAYING.md](docs/PLAYING.md) for a guide by career,
 | Flight | **W/S** thrust · **A/D** rotate · **mouse** aims the turret (left-click fire, right-click mine) or **Space** fire / **M** mine in keyboard mode · **R** torpedo · **C** seismic charge · **X** brake assist · **J** cruise · **N** autopilot to your course · **V** (hold) deep scan (logs the system) · **E** dock / jump / orbit / board wreck · **T** hail · **L** comms log the system channel · **Tab** system map · **G** galaxy map · **I** board ship · **F** fullscreen |
 | Ship / station / wreck / outpost | **WASD** walk · **E** interact · **E** (hold) repair, seal, extinguish |
 | Orbit | **↑/↓** or click to target a site · **V** (hold) survey scan · **E** land at the site · **L** drop the rover in its region · **Esc** leave orbit |
-| Groundside (rover) | **WASD** drive · **E** mine / salvage / enter a site / lift off at the lander · **V** (hold) scan flora · **R** patch the rover at the lander |
+| Groundside (rover) | **WASD** drive · **E** mine / salvage / enter a site / lift off at the lander · **V** (hold) scan flora · **R** patch the rover at the lander · **T** choose up to two away crew at the lander · **L** shore leave |
 | Station menus | **↑/↓ / ←/→** or click · **Enter** select (at the MARKET it sells what you hold, else buys) · **B/S** buy/sell explicitly · **Shift** for bulk · **P** walk the deck · **F7** postcard · **Esc** undock · SURVEY sells exploration data · ENGINEER (research/refinery) spends materials · RECORD shows achievements and ranks · **N** in SHIPS names your ship |
 | Galaxy map | click a system for intel · click again (or **N**) to plot a course · **B** bookmark |
 | Global | **F5** save (local + cloud) · **F9** load · **H** music (off by default) · every flight key can be rebound in SETTINGS · touch: left stick + on-screen buttons · gamepad: sticks, A use, X fire, Y mine, RB brake, LB scan, LT map, Start galaxy, Select ship, L3 autopilot, R3 cruise, D-pad torpedo / charge / hail / music |
@@ -74,11 +74,11 @@ out of, furnishings, crates in the hold and luggage by the seat; station
 promenades with their own clock and night shift, a tannoy, a lounge, a clinic,
 a harbourmaster, gossiping crowds that match the day, and your ship in the bay;
 outposts that grow into towns and cities on your trade, with projects you fund;
-worlds to orbit and drive, twelve kinds of wonder to find by rumour and see with
+worlds to orbit and drive with two crew who step out at survey stops, twelve kinds of wonder to find by rumour and see with
 your own eyes, and the Ark to board.
 
 **Stories.** Three campaigns (The Signal, The Missing Convoy, The Keeper),
-forty-four encounter cards including weddings, a birth and a passing aboard,
+encounter cards including weddings, a birth and a passing aboard,
 ten GalNet serials that develop over dockings and end in something you can act
 on, faction envoys, four AI syndicates with convoys, feuds and wars, a weekly
 calendar of occasions shared by everyone, and a line of history for every
@@ -137,7 +137,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestones 1–392 are live (v0.232.0). See the [roadmap](docs/ROADMAP.md) for what's next.
+Milestones 1–393 are live (v0.233.0). See the [roadmap](docs/ROADMAP.md) for what's next.
 
 ```bash
 npm test         # vitest: world-gen, routing, economy, law, missions, save migrations

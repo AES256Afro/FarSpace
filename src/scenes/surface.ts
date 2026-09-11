@@ -21,6 +21,9 @@ import { adjustRep, addCargo, groundProgress, GroundState, HOMESTEAD_PRICE, home
 import { commodity } from "../data/data";
 import { engGrade } from "../data/engineering";
 import { faction } from "../data/data";
+import { awayBonuses, awayCrew, awayRole, fieldPositions, finishAwayTrip } from "../core/awayteam";
+import type { AwayTeamScene } from "./awayteam";
+import { drawPerson } from "./walkbase";
 
 const COLORS: Record<number, { water: string; plain: string; plain2: string; hills: string; mountain: string; hazard: string; sand: string }> = {
   0: { water: "#1f4f8c", plain: "#3f7a4a", plain2: "#38703f", hills: "#6b7a4a", mountain: "#9aa5bd", hazard: "#000", sand: "#c9b77a" },
@@ -35,7 +38,8 @@ const COLORS: Record<number, { water: string; plain: string; plain2: string; hil
 
 export class SurfaceScene implements Scene {
   leaveTaken = false;
-  away: { name: string; role: string } | null = null; awayAsked = "";
+  awayTeam: string[] = [];
+  fieldIdle = 1;
   touchMode = "walk" as const;
   map!: GroundMap;
   state!: GroundState;
@@ -56,7 +60,8 @@ export class SurfaceScene implements Scene {
   miniAt = 0;
 
   enter(g: Game): void {
-    if (g.surfaceFresh) this.leaveTaken = false;
+    const fresh = g.surfaceFresh;
+    if (fresh) { this.leaveTaken = false; this.awayTeam = []; this.fieldIdle = 1; }
     const p = g.world.player;
     const sys = g.world.systems[p.systemId];
     const pl = sys.planets[g.orbitPlanetIdx];
@@ -78,15 +83,7 @@ export class SurfaceScene implements Scene {
     this.regionName = region.name; this.planetName = pl.name; this.biome = pl.palette;
     this.vx = 0; this.vy = 0;
     if (g.surfaceFresh) {
-      { const p1 = g.world.player; const fit = p1.crew.filter((c) => !c.sick); const k = `${g.world.player.systemId}:${g.orbitPlanetIdx}:${g.landedRegionIdx}:${Math.floor(g.world.time)}`;
-        this.away = null;
-        if (fit.length && this.awayAsked !== k) { this.awayAsked = k; const enc0: Encounter = { id: "awayteam2", where: "ground", title: "WHO COMES DOWN?", weight: 0,
-          text: "The lander's ramp is down and the rover's warm. One seat beside you. The rest hold the ship, and say so, loudly, into the band.",
-          options: [
-            ...fit.slice(0, 4).map((c) => ({ label: `${c.name.toUpperCase()} (${c.role.toUpperCase()}${c.specialty ? ", " + String(c.specialty).toUpperCase() : ""})`, hint: c.role === "engineer" ? "The rover's battery lasts a third longer" : c.specialty === "science" ? "Flora scans pay a quarter more" : c.role === "medic" ? "A bad landing hurts the rover less" : c.role === "gunner" ? "Nothing on the ground argues with them" : "Company, and a story", result: () => { this.away = { name: c.name, role: c.specialty === "science" ? "science" : c.role }; c.loyalty = (c.loyalty ?? 0) + 0.1; return `${c.name.split(" ")[0].toUpperCase()} TAKES THE SEAT AND THE HELMET THAT DOESN'T FIT ANYONE. THE BAND SAYS 'BRING THEM BACK' LIKE IT'S AN ORDER.`; } })),
-            { label: "ALONE", result: () => "YOU GO DOWN ALONE. THE RAMP COMES UP BEHIND YOU. SOMEBODY ON THE BAND SAYS 'COME BACK' LIKE IT'S AN ORDER." },
-          ] };
-          (g.scenes["encounter"] as EncounterScene).open(g, enc0, "surface", true); }
+      { const p1 = g.world.player;
         const fo = firstOfficer(p1); if (fo && (settings().objectsToLandings ?? true) && !(p1.flags ?? {})[`objected:${fo.name}`]) { (p1.flags ??= {})[`objected:${fo.name}`] = true; g.toast(`${fo.name.split(" ")[0].toUpperCase()}: "REGULATIONS SAY THE CAPTAIN STAYS ABOARD FOR LANDINGS. I'M SAYING IT ONCE, FOR THE LOG. ... NOTED. MIND THE STEP."`); logEntry(g.world, `${fo.name} objected to the captain landing, once, for the log`); flag(g, "objected"); } }
       g.surfaceFresh = false;
       this.say(`TOUCHDOWN: ${region.name.toUpperCase()}, ${pl.name.toUpperCase()} - ${BIOMES[this.biome % BIOMES.length].name}`);
@@ -117,6 +114,18 @@ export class SurfaceScene implements Scene {
       if (m) { this.integrity = Math.max(1, this.integrity - Number(m[1])); sfx.hit(); }
       enc.outcome = null;
     }
+    if (fresh && p.crew.some((c) => !c.sick)) this.openAwayTeam(g);
+  }
+
+  openAwayTeam(g: Game): void {
+    sfx.rover(false); this.vx = 0; this.vy = 0;
+    (g.scenes.awayteam as AwayTeamScene).open(g, this.awayTeam);
+  }
+
+  setAwayTeam(g: Game, names: string[]): void {
+    this.awayTeam = awayCrew(g.world.player.crew, names).map((c) => c.name);
+    this.fieldIdle = 1;
+    this.say(this.awayTeam.length ? `${this.awayTeam.map((n) => n.split(" ")[0].toUpperCase()).join(" + ")} READY. THE BAND SAYS BRING EVERYONE BACK.` : "SOLO SURVEY. THE SHIP KEEPS THE LINE OPEN.");
   }
 
   say(m: string): void { this.msg = m; this.msgTimer = 4; }
@@ -131,7 +140,12 @@ export class SurfaceScene implements Scene {
   }
 
   leave(g: Game): void {
-    if (this.away) { const p = g.world.player; p.awayTrips = (p.awayTrips ?? 0) + 1; const c = p.crew.find((x) => x.name === this.away!.name); if (c) { c.loyalty = (c.loyalty ?? 0) + 0.2; c.morale = Math.min(100, c.morale + 3); logEntry(g.world, `${c.name} came down with me and came back up`); flag(g, "awayteam2"); g.toast(`${c.name.split(" ")[0].toUpperCase()} STRAPS IN FOR THE LIFT WITH DUST ON THE SUIT AND A STORY FOR THE GALLEY. LOYALTY UP.`); } this.away = null; }
+    const names = this.awayTeam; this.awayTeam = [];
+    const crew = finishAwayTrip(g.world, names);
+    if (crew.length) {
+      flag(g, "awayteam2");
+      g.toast(`${crew.map((c) => c.name.split(" ")[0].toUpperCase()).join(" + ")} BACK ABOARD. DUST ON THE SUITS; MORALE AND LOYALTY UP.`);
+    }
     g.surfaceReturn = false;
     sfx.rover(false);
     g.setScene("orbit");
@@ -140,6 +154,8 @@ export class SurfaceScene implements Scene {
   update(g: Game, dt: number): void {
     const inp = g.input;
     const p = g.world.player;
+    const team = awayCrew(p.crew, this.awayTeam);
+    const support = awayBonuses(team);
     if (inp.wasPressed("Escape")) { this.say("LIFT-OFF IS FROM THE LANDER (E BESIDE IT)"); }
     const tx = Math.floor(this.px / GT), ty = Math.floor(this.py / GT);
     const here = this.tile(tx, ty);
@@ -150,7 +166,8 @@ export class SurfaceScene implements Scene {
     if (inp.isDown("a")) ax -= 1;
     if (inp.isDown("d")) ax += 1;
     const powered = this.power > 0;
-    const top = (here === HILLS ? 50 : here === SAND ? 70 : 95) * (powered ? 1 : 0.35) * (this.storm > 0 ? 0.7 : 1) * (1 + 0.12 * engGrade(p, "rover"));
+    const top = (here === HILLS ? 50 : here === SAND ? 70 : 95) * (powered ? 1 : 0.35) * (this.storm > 0 ? support.stormSpeed : 1) * (1 + 0.12 * engGrade(p, "rover"));
+    this.fieldIdle = ax || ay || Math.hypot(this.vx, this.vy) > 5 ? 0 : this.fieldIdle + dt;
     sfx.rover(!!(ax || ay) && powered);
     if (ax || ay) {
       this.encounterTimer -= dt;
@@ -165,7 +182,7 @@ export class SurfaceScene implements Scene {
       const l = Math.hypot(ax, ay); ax /= l; ay /= l;
       this.vx += ax * 320 * dt; this.vy += ay * 320 * dt;
       this.facing = Math.atan2(ay, ax);
-      this.power = Math.max(0, this.power - dt * (this.storm > 0 ? 0.7 : 0.35) * (1 - 0.2 * engGrade(p, "battery")) * (this.away?.role === "engineer" ? 0.75 : 1));
+      this.power = Math.max(0, this.power - dt * (this.storm > 0 ? 0.7 : 0.35) * (1 - 0.2 * engGrade(p, "battery")) * support.powerUse);
     } else { this.vx *= Math.pow(0.02, dt); this.vy *= Math.pow(0.02, dt); }
     const spd = Math.hypot(this.vx, this.vy);
     if (spd > top) { this.vx *= top / spd; this.vy *= top / spd; }
@@ -187,14 +204,14 @@ export class SurfaceScene implements Scene {
     const gi = this.map.nodes.findIndex((n) => n.kind === "geyser" && Math.abs(n.x - tx) <= 1 && Math.abs(n.y - ty) <= 1);
     if ((nearHazard || gi >= 0) && this.hurtCd <= 0) {
       this.hurtCd = 0.6;
-      this.integrity = Math.max(0, this.integrity - (gi >= 0 ? 6 : 4));
+      this.integrity = Math.max(0, this.integrity - (gi >= 0 ? 6 : 4) * support.hazardDamage);
       this.say(gi >= 0 ? "GEYSER BLAST - ROVER INTEGRITY FALLING" : `${BIOMES[this.biome % BIOMES.length].hazardName || "HAZARD"} - BACK OFF`);
       sfx.hit();
     }
     if (this.integrity <= 0) {
       g.toast("ROVER WRECKED - EMERGENCY RECOVERY TO ORBIT. HULL SCUFFED.");
-      p.hull = Math.max(1, p.hull - 10);
-      this.integrity = this.away?.role === "medic" ? 75 : 60; this.power = 60;
+      p.hull = Math.max(1, p.hull - support.recoveryHull);
+      this.integrity = support.recoveryIntegrity; this.power = 60;
       this.px = this.map.lander.x * GT + GT / 2 + 12; this.py = this.map.lander.y * GT + GT / 2;
       this.leave(g);
       return;
@@ -208,6 +225,7 @@ export class SurfaceScene implements Scene {
     // lander
     const nearLander = Math.hypot(this.px - (this.map.lander.x * GT + GT / 2), this.py - (this.map.lander.y * GT + GT / 2)) < 22;
     const home = (p.homesteads ?? []).find((h) => h.key === this.map.key);
+    if (nearLander && inp.wasPressed("t")) { this.openAwayTeam(g); return; }
     if (nearLander && inp.wasPressed("l") && p.crew.length >= 1 && !this.leaveTaken) {
       this.leaveTaken = true;
       const enc: Encounter = { id: "shoreleave", where: "ground", title: "SHORE LEAVE", weight: 0,
@@ -245,7 +263,7 @@ export class SurfaceScene implements Scene {
           void wire.post("discovery", `staked a claim on ${sys.planets[g.orbitPlanetIdx].name}, ${region.name}`, sys.name);
         }
       }
-      if (this.integrity < 100 && (p.cargo["parts"] ?? 0) > 0 && inp.wasPressed("r")) { p.cargo["parts"]--; this.integrity = Math.min(100, this.integrity + 40); this.say("ROVER PATCHED (-1 SPARE PARTS)"); sfx.repair(); }
+      if (this.integrity < 100 && (p.cargo["parts"] ?? 0) > 0 && inp.wasPressed("r")) { p.cargo["parts"]--; this.integrity = Math.min(100, this.integrity + support.repair); this.say(`ROVER PATCHED (-1 SPARE PARTS, UP TO +${support.repair} INTEGRITY)`); sfx.repair(); }
       if (inp.wasPressed("e")) { this.leave(g); return; }
     }
     // interactions
@@ -276,10 +294,11 @@ export class SurfaceScene implements Scene {
         const sk = `flora:${node.label}`;
         const first = !p.codex[sk];
         p.codex[sk] = (p.codex[sk] ?? 0) + 1;
-        p.expData = (p.expData ?? 0) + Math.round((first ? 120 : 45) * (this.away?.role === "science" ? 1.25 : 1));
+        const data = Math.round((first ? 120 : 45) * support.floraData);
+        p.expData = (p.expData ?? 0) + data;
         p.discoveries += 1;
         gainMaterials(g, { carbon: 1 + Math.floor(Math.random() * 2) });
-        g.toast(first ? `NEW SPECIES: ${node.label} +120 EXPLORATION DATA` : `${node.label} LOGGED +45 EXPLORATION DATA`);
+        g.toast(`${first ? "NEW SPECIES: " : ""}${node.label} +${data} EXPLORATION DATA`);
         this.contract(g, "flora");
         flag(g, "exobio");
         sfx.pickup();
@@ -340,6 +359,8 @@ export class SurfaceScene implements Scene {
   }
 
   draw(g: Game, ctx: CanvasRenderingContext2D): void {
+    const team = awayCrew(g.world.player.crew, this.awayTeam);
+    const onFoot = this.fieldIdle >= 0.5 && this.storm <= 0;
     const c = COLORS[this.biome % 8];
     const camX = clamp(this.px - VW / 2, 0, GW * GT - VW), camY = clamp(this.py - VH / 2 + 10, 0, GH * GT - VH + 22);
     ctx.fillStyle = c.mountain; ctx.fillRect(0, 0, VW, VH);
@@ -419,6 +440,23 @@ export class SurfaceScene implements Scene {
         ctx.fillStyle = PAL.greyDark; ctx.fillRect(sx - 10, sy - 12, 20, 3); ctx.fillStyle = PAL.info; ctx.fillRect(sx - 10, sy - 12, Math.round(20 * this.scan), 3);
       }
     }
+    if (onFoot) {
+      const positions = fieldPositions(this.map, this.px, this.py, team.length);
+      positions.forEach((at, i) => {
+        const member = team[i];
+        const x = Math.round(at.x - camX), y = Math.round(at.y - camY);
+        const suit = member.role === "engineer" ? PAL.gold : member.role === "medic" ? PAL.good : member.role === "gunner" ? PAL.danger : PAL.info;
+        ctx.fillStyle = "#101724"; ctx.fillRect(x - 3, y + 4, 7, 2);
+        drawPerson(ctx, x, y, "#d0d8e8", suit);
+        ctx.fillStyle = "#2a4f6b"; ctx.fillRect(x - 2, y - 3, 4, 1);
+        ctx.fillStyle = "#c6d8e5"; ctx.fillRect(x + 3, y, 2, 3);
+        drawText(ctx, String(i + 1), x + 5, y - 4, suit);
+        if (this.scan > 0 && this.scanTarget && member.specialty === "science") {
+          ctx.strokeStyle = PAL.info; ctx.beginPath(); ctx.moveTo(x + 4, y + 1);
+          ctx.lineTo(this.scanTarget.x * GT + GT / 2 - camX, this.scanTarget.y * GT + GT / 2 - camY); ctx.stroke();
+        }
+      });
+    }
     // night + storm
     const day = (Math.sin(g.world.time * 0.02 + this.biome) + 1) / 2;
     if (day < 0.45) {
@@ -461,9 +499,14 @@ export class SurfaceScene implements Scene {
     }
     // HUD
     ctx.fillStyle = "rgba(8,12,22,0.85)"; ctx.fillRect(0, 0, VW, 20);
-    drawText(ctx, `${this.planetName.toUpperCase()} - ${this.regionName.toUpperCase()} - ${BIOMES[this.biome % BIOMES.length].name}`, 6, 4, PAL.white);
+    drawText(ctx, `${this.planetName.toUpperCase()} - ${this.regionName.toUpperCase()} - ${BIOMES[this.biome % BIOMES.length].name}`.slice(0, 47), 6, 4, PAL.white);
     const left = this.map.nodes.filter((n, i) => n.kind !== "geyser" && !this.state.taken.includes(i)).length;
-    drawText(ctx, `SITES LEFT ${left}   ${day < 0.45 ? "NIGHT" : "DAY"}${this.storm > 0 ? "   STORM" : ""}${this.away ? `   AWAY: ${this.away.name.split(" ")[0].toUpperCase()} (${this.away.role.toUpperCase()})` : ""}`, 6, 12, PAL.grey);
+    drawText(ctx, `SITES LEFT ${left}   ${day < 0.45 ? "NIGHT" : "DAY"}${this.storm > 0 ? "   STORM" : ""}`, 6, 12, PAL.grey);
+    if (team.length) {
+      const label = team.map((c, i) => `${i + 1} ${c.name.split(" ")[0].toUpperCase()} (${awayRole(c)})`).join(" + ");
+      ctx.fillStyle = "rgba(8,12,22,0.85)"; ctx.fillRect(3, 23, Math.min(366, textWidth(label) + 70), 12);
+      drawText(ctx, `${onFoot ? "AWAY" : "RIDING"}: ${label}`.slice(0, 70), 6, 26, PAL.ui);
+    }
     const bar = (x: number, label: string, v: number, col: string) => { drawText(ctx, label, x, 4, PAL.grey); ctx.fillStyle = PAL.greyDark; ctx.fillRect(x, 12, 40, 4); ctx.fillStyle = col; ctx.fillRect(x, 12, Math.round(40 * v / 100), 4); };
     bar(250, "POWER", this.power, this.power < 25 ? PAL.danger : PAL.thrust);
     bar(300, "ROVER", this.integrity, this.integrity < 35 ? PAL.danger : PAL.good);
@@ -481,10 +524,11 @@ export class SurfaceScene implements Scene {
     else if (ent) prompt = ent.kind === "defense" ? `${ent.name.toUpperCase()}: MILITARY - NO ENTRY` : `[E] ENTER ${ent.name.toUpperCase()}`;
     else if (node) prompt = node.kind === "flora" ? `${node.label}: HOLD V TO SCAN` : node.kind === "geyser" ? `${node.label}: KEEP CLEAR` : `[E] ${node.kind === "outcrop" ? "MINE" : node.kind === "probe" ? "RECOVER" : "SALVAGE"} ${node.label}`;
     if (prompt) drawText(ctx, prompt, VW / 2 - textWidth(prompt) / 2, VH - 22, PAL.gold);
+    if (nearLander) drawText(ctx, "[T] AWAY TEAM   [L] SHORE LEAVE", 6, VH - 32, PAL.grey);
     if (this.power <= 0) drawText(ctx, "POWER EXHAUSTED - CRAWLING. GET BACK TO THE LANDER.", VW / 2 - textWidth("POWER EXHAUSTED - CRAWLING. GET BACK TO THE LANDER.") / 2, VH - 32, PAL.danger);
     if (this.msg) drawText(ctx, this.msg, VW / 2 - textWidth(this.msg) / 2, VH - 12, PAL.ui);
     if (g.toastTimer > 0) drawText(ctx, g.toastMsg, VW / 2 - textWidth(g.toastMsg) / 2, VH - 42, PAL.ui);
-    if (g.hint) drawText(ctx, g.hint, clamp(VW / 2 - textWidth(g.hint) / 2, 2, VW), 26, PAL.gold);
+    if (g.hint) drawText(ctx, g.hint, clamp(VW / 2 - textWidth(g.hint) / 2, 2, VW), team.length ? 39 : 26, PAL.gold);
     void faction;
   }
 }
