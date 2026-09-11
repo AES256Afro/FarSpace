@@ -1196,6 +1196,19 @@ Time passes for the people on the ship, and for the ship.
       a suit, an escort, or no); a ship like yours out of a fold with a line
       from a day you haven't had; an envoy's companion loose in the vents
 
+## Milestone 207 — Number One's Report ✅ (Sep 2026)
+- [x] The senior staff briefing has a sixth line when there's a Number One:
+      who's quiet, whether that was enough red alerts, whether the tin is light
+
+## Milestone 208 — A Signal Fire, a Garden ✅ (Sep 2026)
+- [x] Two ground cards: another faction's survey team on a dead beacon (take
+      them up, fix the beacon, drop food, or leave); a century-old garden that
+      kept going (sample it, pick for the galley, or leave it growing)
+
+## Milestone 209 — The Personal Log ✅ (Sep 2026)
+- [x] Dictate a log entry in your own words at the wall of record; it goes in
+      the record with the stardate (deed "personal log")
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

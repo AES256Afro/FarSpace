@@ -6,7 +6,7 @@ import { addCargo, removeCargo, adjustRep, hasIllegalCargo, cargoUsed, genCrewCa
 import { hull } from "./hulls";
 import { RNG } from "../core/rng";
 import { addMaterials } from "./engineering";
-import { commodity } from "./data";
+import { commodity, FACTIONS } from "./data";
 
 export interface EncounterOption {
   label: string;
@@ -577,6 +577,25 @@ export const ENCOUNTERS: Encounter[] = [
     options: [
       { label: "FOLLOW THE LIGHTS", result: (g) => { (p(g).flags ??= {}).quietOnesGift = true; (p(g).codex ??= {})["contact:THE QUIET ONES"] = 2; p(g).expData = (p(g).expData ?? 0) + 90; (p(g).keepsakes ??= []).push("a stone that glows green when breathed on, from the quiet ones"); if (p(g).keepsakes!.length > 8) p(g).keepsakes!.shift(); logEntry(g.world, "Followed the quiet ones' lights to a stone that glows when breathed on"); return "THE LIGHTS LEAD YOU TWO KILOMETRES TO A HOLLOW WITH ONE STONE IN IT, AND THE STONE GLOWS GREEN WHEN THE ROVER'S AIR TOUCHES IT. THEY LEAVE IT FOR YOU. THEY GO DARK THE WAY THEY DID THE FIRST TIME, ONE LAST LIGHT LIKE A NOD. +90 DATA, A KEEPSAKE, AND A CONTACT THAT WENT ALL THE WAY."; } },
       { label: "THANK THEM AND TURN BACK", hint: "The rover's power is what it is", result: (g) => { (p(g).flags ??= {}).quietOnesGift = true; p(g).expData = (p(g).expData ?? 0) + 30; return "YOU FLASH THREE-FIVE-THREE, WHICH IS ALL THE WORDS YOU HAVE, AND TURN THE ROVER FOR THE LANDER. THE LINE OF LIGHTS GOES OUT ONE BY ONE BEHIND YOU. +30 DATA. THEY WON'T ASK AGAIN. YOU'LL WONDER."; } },
+    ],
+  },
+  {
+    id: "signalfire", where: "ground", weight: 2, title: "A SIGNAL FIRE",
+    text: "Smoke on the ridge, laid in three heaps the way the survey manual says to and nobody ever does. A tent, a broken rover, and four people in another faction's jackets waving both arms. Their beacon's been dead a week. They've been eating the manual.",
+    options: [
+      { label: "TAKE THEM UP", hint: "Four lives; rep with their faction, whoever they are", result: (g, rng) => { const facs = FACTIONS.map((f) => f.id).filter((f) => f !== sys(g).factionId); const f = facs.length ? rng.pick(facs) : sys(g).factionId; adjustRep(g.world, f, 6); p(g).lives = (p(g).lives ?? 0) + 4; for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 3); logEntry(g.world, `Lifted a stranded survey team off ${sys(g).name}; their beacon had been dead a week`); return "FOUR OF THEM IN THE LANDER WITH THEIR KNEES UP, AND ONE OF THEM CRIES AT THE SMELL OF THE GALLEY. THEIR PEOPLE WILL HEAR WHO DID IT. FOUR LIVES. REP UP, SOMEWHERE ELSE."; } },
+      { label: "FIX THEIR BEACON (1 PART)", hint: "They wait for their own; rep +3, data +20", requires: (g) => (p(g).cargo.parts ?? 0) >= 1, result: (g) => { removeCargo(p(g), "parts", 1); adjustRep(g.world, sys(g).factionId, 3); p(g).expData = (p(g).expData ?? 0) + 20; logEntry(g.world, `Fixed a stranded survey team's beacon on ${sys(g).name}`); return "ONE PART AND TWENTY MINUTES AND THE BEACON'S CHIRPING. THEY GIVE YOU THEIR SURVEY, WHICH IS WORTH SOMETHING, AND THEIR LAST TIN OF PEACHES, WHICH IS WORTH MORE. +20 DATA."; } },
+      { label: "DROP FOOD AND LOG THEIR POSITION (2)", hint: "Somebody else's job, done properly", requires: (g) => (p(g).cargo.food ?? 0) >= 2, result: (g) => { removeCargo(p(g), "food", 2); p(g).expData = (p(g).expData ?? 0) + 10; return "TWO CRATES DOWN THE RAMP AND A POSITION ON THE LONG BAND. THEY'LL BE PICKED UP INSIDE A DAY. THEY WAVE UNTIL YOU'RE OUT OF SIGHT. +10 DATA."; } },
+      { label: "NOT YOUR FACTION, NOT YOUR PROBLEM", result: (g) => { for (const c of p(g).crew) c.morale = Math.max(0, c.morale - 4); return "THE CREW DON'T SAY ANYTHING ON THE WAY UP. THE SMOKE IS VISIBLE FROM ORBIT FOR A LONG TIME. MORALE DOWN."; } },
+    ],
+  },
+  {
+    id: "garden", where: "ground", weight: 2, title: "THE GARDEN",
+    text: "A valley that shouldn't be green, and is. Rows. Somebody terraformed a square kilometre a century ago and left, and the square kilometre kept going without them. There's fruit. The medic says 'don't'. The medic is already reaching for one.",
+    options: [
+      { label: "SAMPLE IT FOR THE SURVEY", hint: "Data +40; the science officer's day made", result: (g) => { p(g).expData = (p(g).expData ?? 0) + 40; const sci = p(g).crew.find((c) => c.specialty === "science"); if (sci) sci.morale = Math.min(100, sci.morale + 8); logEntry(g.world, `Sampled a hundred-year-old garden on ${sys(g).name}`); return `SOIL, SEED, A CUTTING IN A BAG. ${sci ? sci.name.split(" ")[0].toUpperCase() + " TALKS ABOUT IT ALL THE WAY UP AND MOST OF THE WAY TO THE GATE. " : ""}+40 DATA.`; } },
+      { label: "PICK ENOUGH FOR THE GALLEY", hint: "+2 food; a small chance the medic was right", result: (g, rng) => { addCargo(p(g), "food", 2); if (rng.chance(0.25)) { const c = rng.pick(p(g).crew.filter((x) => !x.sick)); if (c) { c.sick = { name: "garden fruit", until: g.world.time + 900, severity: 1 } as never; return `TWO CRATES OF SOMETHING LIKE PLUMS. ${c.name.toUpperCase()} EATS SIX ON THE RAMP AND IS ON A COT BY THE GATE. THE MEDIC DOESN'T SAY IT. THE MEDIC SAYS IT.`; } } for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 4); return "TWO CRATES OF SOMETHING LIKE PLUMS, AND THE GALLEY SMELLS OF THEM FOR A WEEK. MORALE UP. THE MEDIC ADMITS THEY'RE GOOD."; } },
+      { label: "LEAVE IT GROWING", hint: "Some things you don't take", result: (g) => { for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 2); return "YOU WALK THE ROWS AND TAKE NOTHING, AND THE CREW DO THE SAME WITHOUT BEING TOLD. IT'LL STILL BE HERE. THAT'S THE POINT OF IT."; } },
     ],
   },
   {

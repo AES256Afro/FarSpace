@@ -752,6 +752,16 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- With a Number One aboard the senior staff briefing has a sixth line, theirs:
+  who's gone quiet, whether that was enough red alerts for one leg, whether
+  the tin is light before wages.
+- Ground cards: a signal fire from another faction's survey team on a dead
+  beacon (take them up for rep with their people, fix the beacon for a part,
+  drop food, or leave them); a garden somebody terraformed a century ago that
+  kept going (sample it, pick for the galley and risk the medic being right,
+  or leave it growing).
+- DICTATE A LOG ENTRY at the wall of record writes a personal log line, in
+  your words, into the record with the stardate.
 - The wall of record shows the dedication plaque by the airlock (name,
   registry, commissioning stardate) and lets you choose its motto: four off the
   yard's list, or write your own. The chronicle quotes it.
