@@ -162,6 +162,23 @@ export async function postLight(system: string, kind: "beacon" | "depot" | "wrec
   } catch { return false; }
 }
 
+export interface Note { callsign: string; system: string; wonder: string; text: string; t: number }
+export async function fetchNotes(system: string): Promise<Note[]> {
+  try {
+    const r = await fetch(`${cloudBase()}/api/notes?system=${encodeURIComponent(system)}`);
+    if (!r.ok) return [];
+    const j = (await r.json()) as { notes: Note[] };
+    return (j.notes ?? []).sort((a, b) => b.t - a.t);
+  } catch { return []; }
+}
+export async function postNote(system: string, wonder: string, text: string): Promise<boolean> {
+  const callsign = getCallsign();
+  if (!callsign) return false;
+  try {
+    const r = await fetch(`${cloudBase()}/api/notes`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ system, wonder, callsign, text }) });
+    return r.ok;
+  } catch { return false; }
+}
 export interface RaceRec { callsign: string; t: number; system: string; at: number }
 export async function fetchRaceRecords(station: string): Promise<RaceRec[]> {
   try {

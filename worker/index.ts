@@ -9,6 +9,7 @@
 //   GET  /api/discover?system= / POST { system, callsign }  first-discovery tags
 //   GET  /api/lights / POST { system, callsign, kind, upgraded }  lights planted in the real galaxy (kind: beacon, depot, wreck, mayday; maydays last six hours)
 //   GET  /api/race?station= / POST { station, system, callsign, t }  ring race course records, top five
+//   GET  /api/notes?system= / POST { system, callsign, wonder, text }  notes left at the wonders, one per pilot per system
 //   GET  /api/goal?id= / POST { id, callsign, amount }      weekly community goal
 //   WS   /api/room/:system    presence + chat, one Durable Object per system
 // Codes are the only secret (like a share link). CORS is open so self-hosted
@@ -306,6 +307,33 @@ export default {
         const rec = { callsign, system, kind, upgraded, t: Date.now() };
         await env.SAVES.put(`light:${system.toLowerCase()}:${callsign}`, JSON.stringify(rec), { expirationTtl: kind === "mayday" ? 60 * 60 * 6 : 60 * 60 * 24 * 30 });
         return json({ ok: true, light: rec });
+      }
+      return json({ error: "method" }, 405);
+    }
+
+    // Notes at the wonders: one line per pilot per system, for whoever comes next. Sixty days.
+    if (url.pathname === "/api/notes") {
+      if (request.method === "GET") {
+        const system = clean(url.searchParams.get("system"), 40);
+        if (!system) return json({ error: "system?" }, 400);
+        const { keys } = await env.SAVES.list({ prefix: `note:${system.toLowerCase()}:`, limit: 50 });
+        const notes: unknown[] = [];
+        for (const k of keys) { const v = await env.SAVES.get(k.name, "text"); if (v) { try { notes.push(JSON.parse(v)); } catch { /* skip */ } } }
+        return json({ notes });
+      }
+      if (request.method === "POST") {
+        if (await rateLimited(env, request, "notes", 30)) return json({ error: "slow down" }, 429);
+        let body: Record<string, unknown>;
+        try { body = (await request.json()) as Record<string, unknown>; } catch { return json({ error: "not json" }, 400); }
+        const callsign = clean(body.callsign, 16).toUpperCase();
+        const system = clean(body.system, 40);
+        const wonder = clean(body.wonder, 40);
+        const text = clean(body.text, 72);
+        if (!CALLSIGN.test(callsign)) return json({ error: "bad callsign" }, 400);
+        if (!system || text.length < 3) return json({ error: "bad note" }, 400);
+        const rec = { callsign, system, wonder, text, t: Date.now() };
+        await env.SAVES.put(`note:${system.toLowerCase()}:${callsign}`, JSON.stringify(rec), { expirationTtl: 60 * 60 * 24 * 60 });
+        return json({ ok: true, note: rec });
       }
       return json({ error: "method" }, 405);
     }

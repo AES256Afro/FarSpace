@@ -131,6 +131,11 @@ export class FlightScene implements Scene {
       { label: "HANDBOOK", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("almanac"); } },
       { label: "THE CHRONICLE", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("chronicle"); } },
       { label: "THE ROSTER", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("roster"); } },
+      ...(() => {
+        const p = g.world.player; const sys = g.world.systems[p.systemId];
+        const near = g.world.realGalaxy && wire.getCallsign() ? wondersIn(g.world, sys.id).find((wd) => dist(p.x, p.y, wd.x, wd.y) <= WONDER_RANGE) : undefined;
+        return near ? [{ label: `LEAVE A NOTE AT ${near.name.toUpperCase()}`, act: () => { this.paused = false; const text = ask(`A line tied to ${near.name} for whoever comes next (72 characters, sixty days):`, ""); if (!text || text.trim().length < 3) return; void wire.postNote(sys.name, near.name, text.trim().slice(0, 72)).then((ok) => g.toast(ok ? `YOUR NOTE IS TIED TO ${near.name.toUpperCase()}. SIXTY DAYS, OR UNTIL YOU WRITE ANOTHER HERE.` : "THE WIRE DIDN'T TAKE IT. TRY AGAIN IN A MOMENT.")); if (text) { flag(g, "note"); logEntry(g.world, `Left a note at ${near.name}: "${text.trim().slice(0, 72)}"`); } } }] : [];
+      })(),
       { label: "SAVE AND QUIT TO TITLE", act: () => { g.save(); this.paused = false; g.setScene("title"); } },
     ];
   }
@@ -1007,6 +1012,8 @@ export class FlightScene implements Scene {
       if (rivalBeatsYouTo(g.world, wd, new RNG((g.world.seed ^ Math.floor(g.world.time * 67)) >>> 0))) g.toast(`${(wd.seenBy ?? "SOMEONE").toUpperCase()} LOGGED ${wd.name.toUpperCase()} FIRST AND LEFT A MARKER BUOY WITH THEIR NAME ON IT.`);
       const r = seeWonder(g.world, wd, wire.getCallsign() ?? p.captainName ?? "an independent pilot");
       g.toast(r.first ? `${wd.name.toUpperCase()}. ${wd.desc.toUpperCase()} +${r.data} DATA` : `${wd.name.toUpperCase()} AGAIN. IT DOESN'T GET SMALLER. +${r.data} DATA`);
+      // notes tied here by whoever came before
+      if (g.world.realGalaxy) void wire.fetchNotes(sys.name).then((notes) => { const me = wire.getCallsign(); for (const n of notes.filter((x) => x.callsign !== me && (!x.wonder || x.wonder === wd.name)).slice(0, 2)) this.comms.push({ from: n.callsign, text: `(A NOTE TIED HERE) '${n.text.toUpperCase()}'`, life: 12, color: PAL.gold }); });
       if (r.first) {
         flag(g, "wonder"); void wire.post("discover", `saw ${wd.name} in ${sys.name}`, sys.name); sfx.pickup();
         // the shared sky: in the real galaxy the same wonder can be first-seen by any pilot, once

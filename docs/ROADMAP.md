@@ -695,4 +695,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Dry tanks post a six-hour mayday light; other pilots find the stranded
       ship and pass fuel for a Fund bounty; the stranded ship receives it
 
+## Milestone 83 — Notes at the Wonders ✅ (Sep 2026)
+- [x] `/api/notes`: one line per pilot per system, tied to a wonder, read by
+      whoever sights it next
+
 ## Later

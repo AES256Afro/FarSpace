@@ -229,6 +229,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Notes at the wonders
+
+- In the real galaxy, within sight of a wonder, the pause menu offers LEAVE A
+  NOTE: one line, seventy-two characters, tied to that wonder for sixty days
+  (or until you write another in that system). Whoever sights it next reads
+  the two most recent notes on the band, with your call sign.
+
 ## Maydays on the wire
 
 - In the real galaxy, run your tanks dry and your ship puts a mayday on the
