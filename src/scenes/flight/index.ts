@@ -1,3 +1,4 @@
+import { tickServiceOrder } from "../../core/service";
 // Flight scene: player controls, interactions (dock/jump/orbit/board), law.
 import { FACTIONS } from "../../data/data";
 // Simulation lives in ./ai, rendering in ./render.
@@ -1163,6 +1164,7 @@ export class FlightScene implements Scene {
     const p = g.world.player;
     const sys = g.world.systems[p.systemId];
     this.updateMayday(g, dt);
+    { const line = tickServiceOrder(g.world, dt, { cruise: this.cruise, docking: !!this.docking, alert: this.alert }); if (line) { g.toast(line); sfx.select(); g.autosave(); } }
     // the ship's bell: the watch changes, and the lounge has something to say now and then
     { const wi = watchIndex(g.world.time); if (this.lastWatch < 0) this.lastWatch = wi; else if (wi !== this.lastWatch) { this.lastWatch = wi; if (p.crew.length >= 2) { const on = p.crew.filter((c, i) => onWatch(p, i, g.world.time) && !c.sick).map((c) => c.name.split(" ")[0].toUpperCase()); this.comms.push({ from: (p.shipName ?? "SHIP").toUpperCase(), text: `WATCH CHANGE. ${on.length ? on.join(" AND ") + " ON DECK." : "EVERYONE'S IN THEIR BUNK."}`, life: 7, color: PAL.uiDim }); sfx.blip(); } } }
     // patrol orders: the clock runs while you hold station in the target system, off cruise

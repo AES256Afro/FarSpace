@@ -1,3 +1,4 @@
+import { serviceAudience, serviceAudienceAt, serviceOffice } from "../core/service";
 // Station promenade: walk the station on foot. Kiosks open the service screens,
 // NPCs wander the deck, the airlock takes you back to your ship.
 
@@ -60,6 +61,7 @@ const KIOSKS: Kiosk[] = [
   { ch: "H", label: "STATION CLINIC", tab: -1 },
   { ch: "O", label: "HARBOURMASTER", tab: -2 },
   { ch: "C", label: "THE ROCK'S COUNCIL", tab: -3 },
+  { ch: "V", label: "THE SERVICE OFFICE", tab: -4 },
 ];
 
 interface WalkerNpc {
@@ -235,6 +237,19 @@ export class StationWalkScene implements Scene {
     }
   }
 
+  serviceAudience(g: Game): void {
+    const order = g.world.player.service?.order;
+    if (!order || !serviceAudienceAt(g.world, this.station.id)) return;
+    const enc: Encounter = { id: "service-liaison", where: "space", weight: 0, title: "THE WATCH WANTS TO KNOW",
+      text: "The harbourmaster reads your service orders. 'We have sent three reports. They have sent three acknowledgements. Come and look at the board with me. Then perhaps we can send each other something useful.'",
+      options: [
+        { label: "WALK THE BOARD WITH THE HARBOURMASTER", hint: "Check the approach lanes and rescue contact", result: (g2: Game) => { const line = serviceAudience(g2.world, order, false); g2.autosave(); return line; } },
+        { label: "ASK THE DOCK HANDS WHAT THEY NEED", hint: "Bring their request for routes and a named contact", result: (g2: Game) => { const line = serviceAudience(g2.world, order, true); g2.autosave(); return line; } },
+        { label: "COME BACK AFTER THE NEXT WATCH", result: () => "THE HARBOURMASTER LEAVES THE BOARD UP. IT HAS BEEN UP FOR THREE REPORTS. ANOTHER WATCH WILL DO IT NO HARM." },
+      ] };
+    (g.scenes.encounter as EncounterScene).open(g, enc, "stationwalk", true);
+  }
+
   councilAudience(g: Game): void {
     const m = g.world.player.council?.mandate;
     if (!m || !councilAudienceAt(g.world, this.station.id)) return;
@@ -295,6 +310,7 @@ export class StationWalkScene implements Scene {
   tileAt(tx: number, ty: number): string {
     if (ty < 0 || ty >= DECK.length || tx < 0 || tx >= DECK[0].length) return "#";
     const ch = DECK[ty][tx];
+    if (ch === "C" && this.station?.military && this.station.factionId !== "vex") return "V";
     return ch === "C" && (!this.station || !isBeltStation(this.station) || this.station.military) ? "." : ch;
   }
 
@@ -406,8 +422,9 @@ export class StationWalkScene implements Scene {
       if (who) { if (!who.line) who.line = `${who.name.toUpperCase()}: ${concourseGossip(g.world, this.station, new RNG((Math.random() * 1e9) >>> 0))[0]}`; this.msg = who.line; this.msgTimer = 6; who.pause = Math.max(who.pause, 4); }
     }
     if (near && inp.wasPressed("e")) {
+      if (near.def.tab === -4) { if (serviceOffice(g.world, this.station.id)) g.setScene("service"); return; }
       if (near.def.tab === -3) { if (councilAt(g.world, this.station.id)) g.setScene("council"); return; }
-      if (near.def.tab === -2) { if (councilAudienceAt(g.world, this.station.id)) this.councilAudience(g); else this.harbourmaster(g); return; }
+      if (near.def.tab === -2) { if (serviceAudienceAt(g.world, this.station.id)) this.serviceAudience(g); else if (councilAudienceAt(g.world, this.station.id)) this.councilAudience(g); else this.harbourmaster(g); return; }
       if (near.def.tab === -1) {
         // the clinic: sick crew back on their feet for a fee, and the juice for a hard burn
         const p = g.world.player;
@@ -614,6 +631,7 @@ export class StationWalkScene implements Scene {
       drawText(ctx, "ARMED GUARDS WATCH THE DECK", VW - textWidth("ARMED GUARDS WATCH THE DECK") - 6, 15, PAL.danger);
     }
 
+    if (serviceOffice(g.world, this.station.id)) drawText(ctx, "SERVICE OFFICE: UPPER DECK, BETWEEN MARKET AND HARBOURMASTER", 40, 54, PAL.ui);
     if (councilAt(g.world, this.station.id)) drawText(ctx, "COUNCIL: UPPER DECK, BETWEEN MARKET AND HARBOURMASTER", 40, 54, PAL.gold);
     if (this.msg) {
       if (textWidth(this.msg) <= VW - 16) drawText(ctx, this.msg, VW / 2 - textWidth(this.msg) / 2, VH - 12, PAL.ui);

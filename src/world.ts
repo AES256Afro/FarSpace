@@ -1,3 +1,4 @@
+import type { ServiceRecord } from "./core/service";
 import type { ShipSimState } from "./core/shipsim";
 import type { CouncilState } from "./core/council";
 // World model + procedural galaxy generation + world simulation rules.
@@ -356,6 +357,7 @@ export interface PlayerState {
   numberOne?: string;                // a first officer chosen at review, by name; otherwise the longest-serving
   focus?: FocusKind | null;          // the senior staff's focus for this leg, set at the briefing, cleared at the clamp
   briefed?: boolean;                 // the briefing has been held this leg
+  service?: ServiceRecord;
   shipSim?: ShipSimState;
   simUsed?: boolean;                 // the sim rig has run this leg
   lostProperty?: LostItem[];         // what fares left in the cabin; hand it in, or keep it

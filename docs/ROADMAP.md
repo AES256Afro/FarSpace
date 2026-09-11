@@ -2011,6 +2011,18 @@ Time passes for the people on the ship, and for the ship.
 - [x] Scroll the complete sim menu with keys, wheel and pointer, retain all
       classic programs, and return to the same spot by the study.
 
+## Milestone 400: The Duty Desk (Sep 2026)
+- [x] Add a physical naval service office and voluntary enrolment after ten
+      deeds and ten faction standing, with a separate service grade.
+- [x] Offer liaison visits, listening patrols and quiet surveys with reachable
+      destinations, saved progress, no expiry, and an in-person report.
+- [x] Pay once, preserve the actual account, promote at two, five and nine
+      reports, and send promotion mail. Keep the last twelve reports.
+- [x] Restore service courses from G/U and Missions U. Show the live objective
+      and progress in flight; target an exact station for liaison and return.
+- [x] Transfer postings within the same service without resetting the record.
+      Accept reports and returned orders after standing falls; suspend new work.
+
 ## Later: Trek / Expanse / Orville (the fourth sitting)
 
 The third sitting shipped everything on the last list (M330–M386): the
@@ -2018,8 +2030,8 @@ singers' home, the commission, the hearing, away partners, the rival's
 Number One, the long ship's launch, standing orders II and III, the ship on
 the roster, a command of their own. Next:
 
-- The service proper: a naval career ladder beside the rank (postings,
-  a cutter of your own on loan, orders that conflict with a fare)
+- The service cutter: a hull of your own on loan, with custody and return.
+- Service orders that conflict with a fare: an explicit decision with a record.
 
 The office's retirement and files, the wedding keepsake, the child named
 after the ship, and the cadet's path through command are covered by
@@ -2031,3 +2043,5 @@ An old hand's final journey, deck farewell, and letter are covered by M397.
 The council room, weekly agendas and representation journey are covered by M398.
 
 The ship's interactive sim program is covered by M399.
+
+The naval career and postings are covered by M400.

@@ -1,3 +1,4 @@
+import { serviceObjective } from "../../core/service";
 // Rendering for the flight scene: world, HUD, radar markers, system map.
 
 import type { Game } from "../../game";
@@ -663,6 +664,8 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
     const so = storyObjective(g.world);
     if (so && (p.tutorial ?? -1) < 0) { const line = `* ${so}`.slice(0, 80); drawText(ctx, line, VW - textWidth(line) - 4, my, PAL.info); my += 8; }
   }
+  const service = serviceObjective(g.world);
+  if (service) { const line = `${service} (G/U: PLOT)`.slice(0, 90); drawText(ctx, line, VW - textWidth(line) - 4, my, PAL.ui); my += 8; }
   const council = councilObjective(g.world);
   if (council) { const line = `${council} (G/C: PLOT)`.slice(0, 90); drawText(ctx, line, VW - textWidth(line) - 4, my, PAL.gold); my += 8; }
   for (const m of active.slice(0, 3)) {

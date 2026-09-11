@@ -1,3 +1,4 @@
+import { plotServiceOrder, serviceAudienceAt, serviceObjective } from "../core/service";
 // Station scene: docked services — market, shipyard, ships, missions, bar (crew), storage, news.
 
 import { ask, confirmBox } from "../core/dialog";
@@ -63,6 +64,8 @@ export class StationScene implements Scene {
     const found = findStation(g.world, g.world.player.dockedAt!);
     if (!found) { g.setScene("flight"); return; }
     this.station = found.st;
+    if (serviceAudienceAt(g.world, this.station.id)) g.showHint(`service-office:${this.station.id}`, "SERVICE LIAISON: P WALKS THE DECK; E AT THE HARBOURMASTER COLLECTS THE ACCOUNT.");
+    if (this.station.military && this.station.factionId !== "vex") g.showHint("service-office", "SERVICE CAREERS: P WALKS THE DECK. THE SERVICE OFFICE IS BETWEEN MARKET AND HARBOURMASTER.");
     if (councilAudienceAt(g.world, this.station.id)) g.showHint(`council-office:${this.station.id}`, "THE COUNCIL'S INNER OFFICE. P WALKS THE DECK; E AT THE HARBOURMASTER PRESENTS THE REQUEST.");
     this.tab = 0;
     this.cursor = 0;
@@ -555,6 +558,7 @@ export class StationScene implements Scene {
         break;
       }
       case "MISSIONS": {
+        if (inp.wasPressed("u") && p.service?.order) { g.toast(plotServiceOrder(g.world) ? "SERVICE COURSE SET. N IN FLIGHT FOLLOWS THE ROUTE." : "THE SERVICE ROUTE IS CLOSED. THE ORDERS CAN WAIT."); g.autosave(); return; }
         if (inp.wasPressed("c") && p.council?.mandate) { g.toast(plotCouncilMandate(g.world) ? "COUNCIL COURSE SET. N IN FLIGHT FOLLOWS THE ROUTE." : "THE COUNCIL ROUTE IS CLOSED. THE PAPERS CAN WAIT."); g.autosave(); return; }
         if (Date.now() - this.goalFetched > 60_000) { this.goalFetched = Date.now(); this.flushGoal(); void wire.fetchGoal(this.goal.id).then((st) => { if (st) this.goalState = st; }); }
         const avail = this.boardMissions.filter((m) => !m.accepted);
@@ -1458,6 +1462,8 @@ export class StationScene implements Scene {
       const so = storyObjective(g.world);
       if (so && (p.tutorial ?? -1) < 0) { drawText(ctx, `${so.startsWith("THE KEEPER") ? "" : (p.story ?? 0) < 7 ? "THE SIGNAL - " : "THE MISSING CONVOY - "}${so}`.slice(0, 100), 8, y, PAL.info); y += 10; }
       { const ro = regattaObjective(g.world); if (ro) { drawText(ctx, ro.slice(0, 100), 8, y, PAL.gold); y += 10; } }
+      const service = serviceObjective(g.world);
+      if (service) { drawText(ctx, `${service} - U: PLOT`.slice(0, 112), 8, y, PAL.ui); y += 10; }
       const co = councilObjective(g.world);
       if (co) { drawText(ctx, `${co} - C: PLOT`.slice(0, 112), 8, y, PAL.gold); y += 10; }
       const cr = g.world.crisis;

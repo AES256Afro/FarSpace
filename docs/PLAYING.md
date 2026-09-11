@@ -1786,3 +1786,41 @@ Starting reserves the rig's session for the leg. Completing an older paused
 program also uses the current leg's session. A new docking opens another
 session. **Study instead** closes the rig for that leg so E at the study can
 train a skill; **Back to the ship** leaves an unused rig available for later.
+
+
+## A naval service record
+
+At a naval station, P walks the promenade. The **Service Office** is on the
+upper deck between the market and harbourmaster. E opens the duty desk.
+Ten deeds, giving the lanes' lieutenant rank, and at least ten standing with
+that faction let you enrol. Your service grade is separate from your deed
+rank. One navy keeps your file, and assignments are voluntary.
+
+- **Liaison:** visit a named civil station, walk its deck, and speak to the
+  harbourmaster. Check the local approach and rescue board or ask the dock
+  hands what they need. Bring the actual signed account to the sending office.
+- **Lane watch:** accumulate 90 seconds in the assigned system, in flight,
+  off cruise, below speed 60 and clear of docking. You do not need to fight.
+- **Quiet survey:** available after two filed reports. Accumulate 60 seconds
+  close to the named planet, within its radius plus 320, off cruise, below
+  speed 60 and without red alert. The timer pauses outside those conditions.
+
+A completed watch still needs a report filed in person at the service office
+that issued it. Filing pays the quoted credits, adds two faction standing,
+and advances the service record once. The grades are auxiliary, watch officer
+at two reports, cutter captain at five, and senior captain at nine. Each new
+grade adds 100 credits to subsequent assignment quotes. Promotion letters
+arrive in your mail. The office retains the last twelve reports.
+
+G then U restores the current service destination; N in flight follows it.
+The Missions tab also accepts U. Liaison courses target the exact station.
+Patrol and survey courses reach the system; for a survey, approach the named
+planet using the scanner. Once the work is done, G/U plots the issuing office.
+
+There is no assignment expiry. Leaving the system, saving and loading, or
+attending to other work keeps the accumulated progress. Return unfinished
+orders at any office of the same navy for no pay or service credit and no
+penalty. Below zero faction standing, new orders are suspended; you can still
+file a completed report or return existing orders. With no orders outstanding,
+visit another office of the same navy and **Take a posting here** to move your
+file without losing service grade or completed work.

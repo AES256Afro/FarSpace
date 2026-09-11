@@ -1,3 +1,4 @@
+import { plotServiceOrder } from "../core/service";
 // Galaxy map: systems, territories, wars, links with distances, fuel-aware
 // course plotting with refuel stops highlighted.
 
@@ -38,6 +39,11 @@ export class GalaxyScene implements Scene {
     if (inp.wasPressed("F5")) g.save();
     if (inp.wasPressed("F9")) { g.load(); return; }
     const p = g.world.player;
+    if (p.service?.order && (inp.wasPressed("u") || (inp.mousePressed && inp.mouseX >= 8 && inp.mouseX < 160 && inp.mouseY >= 44 && inp.mouseY < 56))) {
+      if (plotServiceOrder(g.world)) { this.selected = p.navTarget!; g.toast("SERVICE COURSE SET. ESC TO FLIGHT, N FOR AUTOPILOT."); g.autosave(); }
+      else g.toast("THE ROUTE IS CLOSED. YOUR SERVICE ORDERS CAN WAIT.");
+      return;
+    }
     if (p.council?.mandate && (inp.wasPressed("c") || (inp.mousePressed && inp.mouseX >= 8 && inp.mouseX < 160 && inp.mouseY >= 30 && inp.mouseY < 42))) {
       if (plotCouncilMandate(g.world)) { this.selected = p.navTarget!; g.toast("COUNCIL COURSE SET. ESC TO FLIGHT, N FOR AUTOPILOT."); g.autosave(); }
       else g.toast("THE ROUTE IS CLOSED. THE COUNCIL PAPERS CAN WAIT.");
@@ -100,6 +106,10 @@ export class GalaxyScene implements Scene {
     if (w.player.council?.mandate) {
       ctx.fillStyle = "#352c1b"; ctx.fillRect(8, 30, 152, 12);
       drawText(ctx, "C: PLOT COUNCIL JOURNEY", 14, 34, PAL.gold);
+    }
+    if (w.player.service?.order) {
+      ctx.fillStyle = "#172b3d"; ctx.fillRect(8, 44, 152, 12);
+      drawText(ctx, "U: PLOT SERVICE ORDERS", 14, 48, PAL.ui);
     }
     if (this.pilots) drawText(ctx, `${this.pilots} PILOT${this.pilots === 1 ? "" : "S"} FLYING NOW`, VW / 2 - textWidth(`${this.pilots} PILOTS FLYING NOW`) / 2, 15, PAL.info);
 
