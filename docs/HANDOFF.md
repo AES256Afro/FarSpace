@@ -228,7 +228,7 @@ created. The work log has the full evidence. Touch/gamepad remain untested.
    Inspect it before using it. Run from the explicit FarSpace workspace.
 5. Query workflows with the full release SHA. Check the actual Deploy to
    Cloudflare step, not just the parent workflow's green status. Check the
-   container image separately. Preserve the exact local JS bundle before
+   container image separately. Preserve the exact local JS and CSS assets before
    another build replaces `dist`.
 6. Compare the live asset bytes with that preserved build and check API health.
    Python's local CA lookup failed during this session; `curl --fail` worked.
@@ -237,31 +237,33 @@ created. The work log has the full evidence. Touch/gamepad remain untested.
    the image workflow succeeds. Run a single catalog chain, wait for required
    checks, merge the exact checked commit, then verify remote main.
 
-The current catalog helper is
+The earlier six-hour catalog helper is
 `/private/tmp/farspace-six-hour-20260911/catalog-queue.mjs`, with `catalog.log`
 and `catalog-current.json` beside it. It contains this session's deadline;
 read it before reusing it for another authorized window. The old 0.222.0 image
 was cancelled and superseded. Initial successful catalog backlog versions
 were handled sequentially; do not revive the old handoff's pending list.
 
-Local browser fixtures used temporary worlds, disabled autosaves and no
-callsign/cloud link. Close test tabs when done. Physical touch, gamepad and
+Earlier browser fixtures used temporary worlds with autosaves disabled.
+M416/M417 fixtures captured save and identity writes in memory, preserving
+the browser's stored saves and links. Close test tabs when done. Physical touch, gamepad and
 VoiceOver use were not performed. Hosted deployment, native browser behavior,
 and a Bigbox installation are separate claims.
 
 ## Local runtime and next work
 
-The next development plan is [M416-M427](NEXT-MILESTONES.md), proposed after
-the user's title-screen and milestone request. The user wants random variety
-between orbital ship, station traffic and bridge-window title views. Select
-without immediate repetition and preserve the scene through title submenus.
-Start with M416's menu hierarchy and scene lifecycle, followed by save
-clarity and shared menu behavior. The plan includes scope, dependencies and
-acceptance criteria; these milestones have not been implemented or released.
+Dev5199 runs v0.257.1. Production preview servers 5197/5198 are stopped.
+All synthetic browser fixtures are closed; test save and cloud-code writes
+were captured only in memory. The live release was separately checked in a
+fresh browser tab.
 
-The dev server was restarted at <http://127.0.0.1:5199> so its version define
-reads 0.255.0. The separate production-build preview on port 5198 was stopped.
-All temporary browser tabs are closed. No test saves or linked cloud codes
-were created. The next substantive task should start with a native playtest
-and a specific user priority or confirmed defect, rather than replaying the
-completed fourth-sitting backlog.
+Continue with M418 in the [approved plan](NEXT-MILESTONES.md). Its first pass
+should inventory the remaining menu owners, establish stable item selection
+and viewport rules, then migrate one bounded group while preserving the
+station, Settings, reader and title regressions. M419 addresses the remaining
+HUD overlap and information priority seen in the native flight check.
+
+The active catalog checkout for PR259 is
+`/private/tmp/farspace-settings-20260911/boxpilot`. The branch name still
+contains 0.255.0, but its manifest and PR now target 0.257.1. Do not restart
+Bigbox or bypass the registry check to complete this catalog update.
