@@ -90,6 +90,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "raced", title: "RING RUNNER", desc: "Finish a ring race", check: (w) => !!w.player.flags?.raced },
   { id: "postman", title: "THE POSTMAN", desc: "Carry ten mail bags", check: (w) => !!w.player.flags?.postman },
   { id: "liner", title: "PASSENGER", desc: "Take a liner to your other ship", check: (w) => !!w.player.flags?.liner },
+  { id: "regular", title: "ASKED FOR BY NAME", desc: "Land a returning passenger", check: (w) => !!w.player.flags?.regular },
   { id: "first", title: "FIRST FOOTFALL", desc: "Be first to log a system", check: (w) => !!w.player.flags?.first },
   { id: "scout", title: "SCOUT", desc: "Reach Explorer rank Scout", check: (w) => rankOf(w.player, "explorer").idx >= 2 },
   { id: "dealer", title: "DEALER", desc: "Reach Trader rank Dealer", check: (w) => rankOf(w.player, "trader").idx >= 3 },

@@ -15,7 +15,7 @@ import { STARS, starDistance } from "../src/data/stars";
 import { ACHIEVEMENTS } from "../src/data/achievements";
 import { ARCS, dailyContract, dailyKey, rankOf, logSystem, applyHull } from "../src/world";
 import { MODULES } from "../src/data/modules";
-import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname } from "../src/world";
+import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook } from "../src/world";
 import { RARES } from "../src/data/data";
 import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
@@ -761,6 +761,24 @@ describe("station hours and the tannoy", () => {
     expect(stationHour(sts[0], at)).toEqual(stationHour(sts[0], at));
     for (const st of sts.slice(0, 5)) { const lines = tannoyLines(w, st, new RNG(1), at); expect(lines.length).toBeGreaterThan(5); for (const l of lines) expect(l.length).toBeLessThanOrEqual(130); }
     w.player.postRuns = 10; expect(tannoyLines(w, sts[0], new RNG(2), at).some((l) => l.includes("THE POSTMAN"))).toBe(true);
+  });
+});
+
+describe("the guestbook", () => {
+  it("passengers sign on the way out, the book keeps a dozen, and happy ones come back by name", () => {
+    const w = generateWorld(30, { realGalaxy: true });
+    const st = Object.values(w.systems).flatMap((s) => s.stations).find((x) => !x.military)!;
+    const fares = genFares(w, st, new RNG(1));
+    expect(fares.some((f) => f.returning)).toBe(false);
+    for (let i = 0; i < 15; i++) { const f = fares[i % fares.length]; f.mood = 90; signGuestbook(w, f, st.name, new RNG(i)); }
+    expect(w.player.guestbook!.length).toBe(12);
+    expect(w.player.guestbook![0].line.length).toBeGreaterThan(5);
+    let returning = 0;
+    for (let seed = 0; seed < 30; seed++) if (genFares(w, st, new RNG(seed)).some((f) => f.returning)) returning++;
+    expect(returning).toBeGreaterThan(3);
+    const r = [...Array(30).keys()].flatMap((seed) => genFares(w, st, new RNG(seed))).find((f) => f.returning)!;
+    expect(r.title.startsWith("Returning fare")).toBe(true);
+    expect(r.desc).toContain("asked for you by name");
   });
 });
 

@@ -229,6 +229,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## The guestbook
+
+- Every passenger you land signs the guestbook on the way out, with a line
+  that depends on how the trip went. P on the RECORD tab reads it. A happy
+  passenger may turn up in a lounge later asking for you by name, at a
+  better fare and already in a good mood.
+
 ## Ghosts on the lanes
 
 - In the real galaxy, when another pilot has posted to the fleet wire from the

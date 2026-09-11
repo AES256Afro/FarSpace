@@ -650,4 +650,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Other real pilots' recent wire posts from this system spawn their ship
       here, labelled and hailing once
 
+## Milestone 72 — The Guestbook ✅ (Sep 2026)
+- [x] Passengers sign a guestbook on landing; happy ones return as fares by
+      name; P on RECORD reads the book
+
 ## Later

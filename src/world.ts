@@ -169,6 +169,7 @@ export interface Mission {
   patience?: number;        // dockings before they start to sour
   docksAboard?: number;
   party?: number;           // how many of them there are
+  returning?: boolean;      // rode with you before and asked for you by name
   anomalyId?: string;
   syndicate?: string;                  // contract issued by an AI syndicate (tag)
   tenderDone?: boolean;                // repair tenders: the work is done, collect at the station
@@ -302,6 +303,7 @@ export interface PlayerState {
   races?: number;                    // ring races finished
   raceBeaten?: Record<string, true>; // stations where you've beaten the local record
   postRuns?: number;                 // mail bags delivered
+  guestbook?: GuestEntry[];          // the last dozen passengers and what they wrote on the way out
   donations?: number;                // relics given to museums
   hullHistory?: { previous: string; quirk: string } | null; // who flew this hull before you, and what they left
   jumpStreak?: number;               // gates in a row without a dock (a pilot's arc counts them)
@@ -696,6 +698,20 @@ export function passengersAboard(p: PlayerState): Mission[] {
 const FARE_DEMANDS: Record<string, string[]> = { vip: ["lux", "lux", "med"], tourist: ["lux", "food"], refugee: ["food", "med"], fugitive: ["med"], courier: ["data", "lux"] };
 // The lounge: two to four people who want to be somewhere else. Tourists book a sight;
 // couriers want speed; VIPs want comfort; refugees want out.
+export interface GuestEntry { name: string; kind: string; from: string; to: string; mood: number; line: string; t: number }
+const GUEST_LINES = {
+  high: ["Best crew on the lanes. Sat with the cat the whole way.", "Slept. First time in a month. Thank you.", "Will ask for this ship by name.", "The engineer showed my kids the reactor. They haven't stopped talking.", "Smooth as glass. Even the gate."],
+  mid: ["Got there. That's what I paid for.", "Fine. The coffee could be better.", "No complaints that I'll put in writing.", "Bit of a rattle over the belt. Otherwise fine."],
+  low: ["Never again.", "I have been on prison barges with better manners.", "Late, cold, and somebody was singing.", "I'll be writing to the harbourmaster."],
+};
+export function signGuestbook(w: World, m: Mission, stationName: string, rng: RNG): GuestEntry {
+  const p = w.player;
+  const mood = m.mood ?? 60;
+  const line = rng.pick(mood >= 75 ? GUEST_LINES.high : mood >= 35 ? GUEST_LINES.mid : GUEST_LINES.low);
+  const e: GuestEntry = { name: m.passengerName ?? "A passenger", kind: m.passengerKind ?? "vip", from: findStation(w, m.fromStationId)?.st.name ?? "?", to: stationName, mood: Math.round(mood), line, t: w.time };
+  (p.guestbook ??= []).push(e); if (p.guestbook.length > 12) p.guestbook.shift();
+  return e;
+}
 export function genFares(w: World, station: StationDef, rng: RNG): Mission[] {
   const sys = Object.values(w.systems).find((s) => s.stations.some((st) => st.id === station.id));
   if (!sys) return [];
@@ -740,6 +756,15 @@ export function genFares(w: World, station: StationDef, rng: RNG): Mission[] {
       reward: Math.round(base * (hops === 2 ? 1.5 : 1)),
       repReward: pk === "refugee" ? 6 : pk === "tourist" ? 4 : 3,
     });
+  }
+  // a happy passenger comes back and asks for you by name
+  const happy = (w.player.guestbook ?? []).filter((e) => e.mood >= 75 && !passengersAboard(w.player).some((m) => m.passengerName === e.name));
+  if (happy.length && fares.length && rng.chance(0.35)) {
+    const e = rng.pick(happy); const f = fares[fares.length - 1];
+    f.passengerName = e.name; f.passengerKind = e.kind as Mission["passengerKind"]; f.returning = true; f.mood = 72;
+    f.title = `Returning fare: ${e.name}${(f.party ?? 1) > 1 ? ` +${(f.party ?? 1) - 1}` : ""}`;
+    f.desc = `${e.name} rode with you before ("${e.line}") and asked for you by name. ${f.desc.split(". ").slice(0, 1).join(". ").replace(/^[^ ]+( and \d+ others)?('s party)?/, e.name + (f.desc.includes("'s party") ? "'s party" : ""))}.`;
+    f.reward = Math.round(f.reward * 1.3);
   }
   return fares;
 }

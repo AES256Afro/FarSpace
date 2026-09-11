@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS, roleLabel } from "../
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, tickAlumniMail, catGift, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, notableOutcome, ledger, ledgerAround, LEDGER_LABELS, dockingsAt, OLD_HAND_AT, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter, RACE_GATES, raceHolder, postDelivered, captainNickname, charterRoute, tickWorld } from "../world";
+  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, tickAlumniMail, catGift, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, notableOutcome, ledger, ledgerAround, LEDGER_LABELS, dockingsAt, OLD_HAND_AT, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter, RACE_GATES, raceHolder, postDelivered, captainNickname, charterRoute, tickWorld, signGuestbook } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
 import { BLUEPRINTS, MATERIALS, engGrade, nextCost, canAfford, upgrade } from "../data/engineering";
@@ -621,6 +621,7 @@ export class StationScene implements Scene {
       case "RECORD":
         if (inp.wasPressed("l")) { this.recordView = this.recordView === "log" ? "achievements" : "log"; this.cursor = 0; sfx.blip(); }
         if (inp.wasPressed("b")) { this.recordView = this.recordView === "ledger" ? "achievements" : "ledger"; this.cursor = 0; sfx.blip(); }
+        if (inp.wasPressed("p")) { this.recordView = this.recordView === "guestbook" ? "achievements" : "guestbook"; this.cursor = 0; sfx.blip(); }
         if (inp.wasPressed("c")) { g.settingsReturn = "station"; g.setScene("chronicle"); return; }
         if (inp.wasPressed("x")) {
           try {
@@ -639,7 +640,7 @@ export class StationScene implements Scene {
 
   squadrons: wire.Squadron[] = [];
   patrons: Record<string, string> = {};
-  recordView: "achievements" | "log" | "ledger" = "achievements";
+  recordView: "achievements" | "log" | "ledger" | "guestbook" = "achievements";
   surveyView: "data" | "codex" = "data";
   raceRecords: wire.RaceRec[] | null = null; // the wire's course records for this station
   base: wire.BaseRec | null = null;   // my squadron's base record
@@ -731,6 +732,7 @@ export class StationScene implements Scene {
     p.credits += Math.round((fest ? base * 2 : base) * charter);
     if (fest) g.toast("FESTIVAL WEEK - YOUR PASSENGERS PAID DOUBLE");
     if (m.kind === "passenger" && m.mood !== undefined) (p.lastFareMood ??= {})[st.id] = m.mood;
+    if (m.kind === "passenger" && m.mood !== undefined) { const e = signGuestbook(g.world, m, st.name, new RNG((g.world.seed ^ Math.floor(g.world.time * 19)) >>> 0)); if (m.returning) flag(g, "regular"); if (m.mood >= 75) g.toast(`${e.name.toUpperCase()} SIGNS THE GUESTBOOK: "${e.line.toUpperCase()}"`); }
     if (m.kind === "passenger" && m.notable) { const line = notableOutcome(g.world, m); if (line) { g.toast(line); logEntry(g.world, line.toLowerCase().slice(0, 100)); flag(g, "notable"); } }
     if (m.kind === "passenger" && m.mood !== undefined) {
       const mood = m.mood;
@@ -1725,13 +1727,29 @@ export class StationScene implements Scene {
     }
     drawText(ctx, "WAGES, FUEL, YARD WORK, TRADE, FARES, TOLLS, CHARTERS, LETTERS: THE WHOLE STORY OF THE MONEY.", 8, VH - 32, PAL.greyDark);
   }
+  drawGuestbook(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
+    const p = g.world.player;
+    const book = (p.guestbook ?? []).slice().reverse();
+    drawText(ctx, `THE GUESTBOOK (${p.fares ?? 0} FARES LANDED) - P FOR THE SERVICE RECORD`, 8, top, PAL.info);
+    if (!book.length) { drawText(ctx, "NOBODY HAS SIGNED IT YET. THE LOUNGE AT ANY STATION HAS PEOPLE WHO NEED A RIDE.", 8, top + 12, PAL.greyDark); return; }
+    let y = top + 12;
+    for (const e of book) {
+      const col = e.mood >= 75 ? PAL.gold : e.mood >= 35 ? PAL.ui : PAL.danger;
+      drawText(ctx, `${e.name.toUpperCase()} (${e.kind.toUpperCase()}) - ${e.from.toUpperCase()} TO ${e.to.toUpperCase()} - MOOD ${e.mood}`.slice(0, 100), 8, y, col);
+      drawText(ctx, `"${e.line.toUpperCase()}"`, 16, y + 8, PAL.grey);
+      y += 19;
+      if (y > VH - 20) break;
+    }
+  }
+
   drawRecord(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
     if (this.recordView === "log") { this.drawLog(g, ctx, top); return; }
     if (this.recordView === "ledger") { this.drawLedger(g, ctx, top); return; }
+    if (this.recordView === "guestbook") { this.drawGuestbook(g, ctx, top); return; }
     const p = g.world.player;
     const w = g.world;
     const have = new Set(p.achievements ?? []);
-    drawText(ctx, `SERVICE RECORD${w.hardcore ? " - HARDCORE" : ""} - L LOG - B LEDGER - C READ THE CHRONICLE - X EXPORT`, 8, top, PAL.info);
+    drawText(ctx, `SERVICE RECORD${w.hardcore ? " - HARDCORE" : ""} - L LOG - B LEDGER - P GUESTBOOK - C CHRONICLE - X EXPORT`, 8, top, PAL.info);
     const stats = [
       `KILLS ${p.kills}`, `DISCOVERIES ${p.discoveries}`, `ARCS ${Object.values(p.arcs).reduce((a, b) => a + b, 0)}/15`,
       `CREDITS ${p.credits}`, `CREW ${p.crew.length}`, `HULL ${hull(p.hullId).name.toUpperCase()}`,
