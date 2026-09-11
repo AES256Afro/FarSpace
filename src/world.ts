@@ -156,7 +156,7 @@ export interface Mission {
   done: boolean;
   escortDone?: boolean;
   passengerName?: string;
-  passengerKind?: "vip" | "refugee" | "fugitive" | "tourist" | "courier" | "envoy";
+  passengerKind?: "vip" | "refugee" | "fugitive" | "tourist" | "courier" | "envoy" | "patient";
   treaty?: { a: string; b: string };  // an envoy between two factions: land them unshot and on time
   sightPlanetIdx?: number;  // tourists want to orbit this planet in the target system first
   sightSeen?: boolean;
@@ -899,6 +899,21 @@ export function genFares(w: World, station: StationDef, rng: RNG): Mission[] {
       });
     }
   }
+  // a patient: the clinic here can't do it; the one at the target can, if they get there in time
+  if (rng.chance(0.25)) {
+    const target = rng.pick(pool); const tStation = rng.pick(target.stations); const name = genPersonName(rng); const hops = one.includes(target) ? 1 : 2;
+    const what = rng.pick(["a crushed hand from a loader", "a fever the clinic can't name", "a reactor burn", "a pressure injury from a bad seal", "a heart that needs a machine this station doesn't have"]);
+    fares.push({
+      id: `fare-${station.id}-${w.missionCounter++}`, kind: "passenger", accepted: false, done: false, tier: 0,
+      title: `Patient: ${name}`,
+      desc: `${name} has ${what}. The clinic at ${tStation.name}, ${target.name}, can treat it; this one can't. ${hops} docking${hops > 1 ? "s" : ""}, no more, or it goes bad. A medic aboard buys one more. Med supplies aboard help.`,
+      fromStationId: station.id, targetSystemId: target.id, targetStationId: tStation.id,
+      passengerName: name, passengerKind: "patient", sightSeen: false, sights: [],
+      mood: 50, demand: "med", patience: hops, docksAboard: 0, party: 1,
+      reward: Math.round((600 + rng.int(0, 300)) * (hops === 2 ? 1.4 : 1)),
+      repReward: 5,
+    });
+  }
   // a happy passenger comes back and asks for you by name
   const happy = (w.player.guestbook ?? []).filter((e) => e.mood >= 75 && !passengersAboard(w.player).some((m) => m.passengerName === e.name));
   if (happy.length && fares.length && rng.chance(0.35)) {
@@ -919,6 +934,7 @@ export function settlePassengers(p: PlayerState): string[] {
     if (m.demand && (p.cargo[m.demand] ?? 0) > 0) { removeCargo(p, m.demand, 1); m.mood = Math.min(100, m.mood + 30); out.push(`${name} NOTICES THE ${(COMMODITIES.find((c) => c.id === m.demand)?.name ?? m.demand).toUpperCase()}. MOOD UP.`); m.demand = null; }
     if (m.docksAboard > (m.patience ?? 4)) { m.mood = Math.max(0, m.mood - 12); out.push(m.treaty ? `${name} SAYS THE OTHER DELEGATION WON'T WAIT. THE TREATY IS ALREADY LATE.` : `${name} ASKS, AGAIN, HOW MUCH LONGER.`); }
     else if (m.treaty && m.docksAboard === (m.patience ?? 2)) out.push(`${name} CHECKS THE CASE AND THE CLOCK. ONE MORE DOCKING AND THE TALKS ARE OFF.`);
+    if (m.passengerKind === "patient" && m.docksAboard === patientDeadline(p, m) && m.targetStationId !== p.dockedAt) out.push(`${name}'S READINGS ARE SLIPPING. THE NEXT DOCKING HAS TO BE THE CLINIC.`);
     if (p.hull < p.hullMax * 0.4) { m.mood = Math.max(0, m.mood - 10); out.push(`${name} HAS SEEN THE HULL READOUT. NOT HAPPY.`); }
   }
   settleRequests(p, out);
@@ -968,6 +984,18 @@ export function handInLostItem(w: World, it: LostItem, stationId: string): strin
   return home ? `THE HARBOUR OFFICE HAS ${it.owner.toUpperCase()} ON FILE. THEY'LL GET ${it.name.toUpperCase().split(",")[0]} BACK. +${LOST_REWARD}CR FOR YOUR TROUBLE.` : `THEY'LL FORWARD IT. IT'LL TAKE A WHILE. +${LOST_FORWARD}CR, AND A NOD.`;
 }
 const facNameW = (id: string): string => FACTIONS.find((f) => f.id === id)?.name ?? id;
+// The patient lands: in time (a medic aboard buys a docking) and the clinic takes over; late, and it went bad on the way.
+export function patientDeadline(p: PlayerState, m: Mission): number { return (m.patience ?? 1) + (p.crew.some((c) => c.role === "medic" && !c.sick) ? 1 : 0); }
+export function patientOutcome(w: World, m: Mission): { ok: boolean; lines: string[] } {
+  if (m.passengerKind !== "patient") return { ok: true, lines: [] };
+  const p = w.player; const name = (m.passengerName ?? "THE PATIENT").toUpperCase();
+  const ok = (m.docksAboard ?? 0) <= patientDeadline(p, m);
+  const medic = p.crew.find((c) => c.role === "medic" && !c.sick);
+  if (ok) { m.mood = Math.min(100, (m.mood ?? 50) + 25); p.lives = (p.lives ?? 0) + 1; logEntry(w, `Landed the patient ${m.passengerName ?? ""} at the clinic in time`); return { ok, lines: [`${name} GOES DOWN THE GANGWAY ON A STRETCHER, AWAKE, AND THE CLINIC TAKES OVER.${medic ? ` ${medic.name.toUpperCase()} HANDS OVER THE NOTES.` : ""} ONE LIFE.`] }; }
+  m.mood = Math.max(0, (m.mood ?? 50) - 25); adjustRep(w, findStation(w, m.targetStationId ?? "")?.st.factionId ?? "", -1);
+  logEntry(w, `The patient ${m.passengerName ?? ""} arrived late; the clinic is doing what it can`);
+  return { ok, lines: [`${name} ARRIVES TOO LATE FOR THE EASY VERSION. THE CLINIC IS DOING WHAT IT CAN. HALF THE FARE, AND A LONG WALK BACK TO THE SHIP.`] };
+}
 // The envoy lands: on time and unshot, the treaty holds and both factions remember; otherwise the talks fail.
 export function envoyOutcome(w: World, m: Mission): { ok: boolean; lines: string[] } {
   const t = m.treaty; if (!t) return { ok: true, lines: [] };

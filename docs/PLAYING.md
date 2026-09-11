@@ -10,7 +10,7 @@ The guide grew a section per milestone; this is where to look.
 - **Getting started:** [First hour](#first-hour) · [The handbook, the voice, the greenhouse](#the-handbook-the-voice-the-greenhouse) · [The lanes setting](#the-lanes-setting) · [Music and slots](#music-and-slots) · [Comfort](#comfort)
 - **Flying:** [Docking and launching](#docking-and-launching) · [Holding short](#holding-short) · [Traffic control](#traffic-control) · [Combat, when it finds you](#combat-when-it-finds-you) · [The ring race](#the-ring-race) · [The regatta](#the-regatta) · [The convoy](#the-convoy) · [Hum](#hum) · [Calls and courses](#calls-and-courses)
 - **Trading and industry:** [Trader](#trader) · [Miner](#miner) · [Syndicates and trade routes](#syndicates-and-trade-routes) · [Charters](#charters) · [The liner trade](#the-liner-trade) · [Fleet at work](#fleet-at-work) · [Scrapping a hull](#scrapping-a-hull) · [Passage on a liner](#passage-on-a-liner) · [Stakes](#stakes) · [The post](#the-post) · [Pictures wanted](#pictures-wanted) · [The lighthouse](#the-lighthouse) · [The waystation](#the-waystation) · [The ledger](#the-ledger) · [Settlements](#settlements) · [Settlements grow](#settlements-grow) · [Town projects](#town-projects)
-- **People aboard:** [Shipmates](#shipmates) · [The galley](#the-galley) · [Life on the deck](#life-on-the-deck) · [A life aboard](#a-life-aboard) · [Crew arcs](#crew-arcs) · [Second stories](#second-stories) · [A trade of their own](#a-trade-of-their-own) · [The roster](#the-roster) · [Watches and passengers](#watches-and-passengers) · [Hard burn](#hard-burn) · [Envoys](#envoys) · [Requests from the lounge](#requests-from-the-lounge) · [Corridor talk](#corridor-talk) · [Cards after watch](#cards-after-watch) · [The band](#the-band) · [The viewport and the bays](#the-viewport-and-the-bays) · [Rites of passage](#rites-of-passage) · [The guestbook](#the-guestbook) · [Lost property](#lost-property) · [Family](#family) · [Lost and found](#lost-and-found) · [Company](#company) · [Belonging](#belonging) · [Small kindnesses](#small-kindnesses) · [Keepsakes](#keepsakes)
+- **People aboard:** [Shipmates](#shipmates) · [The galley](#the-galley) · [Life on the deck](#life-on-the-deck) · [A life aboard](#a-life-aboard) · [Crew arcs](#crew-arcs) · [Second stories](#second-stories) · [A trade of their own](#a-trade-of-their-own) · [The roster](#the-roster) · [Watches and passengers](#watches-and-passengers) · [Hard burn](#hard-burn) · [Medical runs](#medical-runs) · [Envoys](#envoys) · [Requests from the lounge](#requests-from-the-lounge) · [Corridor talk](#corridor-talk) · [Cards after watch](#cards-after-watch) · [The band](#the-band) · [The viewport and the bays](#the-viewport-and-the-bays) · [Rites of passage](#rites-of-passage) · [The guestbook](#the-guestbook) · [Lost property](#lost-property) · [Family](#family) · [Lost and found](#lost-and-found) · [Company](#company) · [Belonging](#belonging) · [Small kindnesses](#small-kindnesses) · [Keepsakes](#keepsakes)
 - **Places:** [Explorer](#explorer) · [A living galaxy](#a-living-galaxy) · [Wonders](#wonders) · [More wonders](#more-wonders) · [Station hours and the tannoy](#station-hours-and-the-tannoy) · [Concourse gossip](#concourse-gossip) · [Ports remember you](#ports-remember-you) · [Places with detail](#places-with-detail) · [Away teams](#away-teams) · [Lore](#lore) · [The dock-hand](#the-dock-hand) · [Berth neighbours](#berth-neighbours) · [Regulars](#regulars) · [Contacts](#contacts) · [Rivals and the harbourmaster](#rivals-and-the-harbourmaster) · [Favours](#favours) · [Faces](#faces)
 - **Stories and encounters:** [The Signal and encounters](#the-signal-and-encounters) · [The Keeper](#the-keeper) · [GalNet serials](#galnet-serials) · [Helping ships](#helping-ships) · [More encounters](#more-encounters) · [Four more cards](#four-more-cards) · [Quiet moments](#quiet-moments) · [Rhythms](#rhythms) · [Loose ends](#loose-ends)
 - **Politics:** [Politics and the second campaign](#politics-and-the-second-campaign) · [The week's vote](#the-weeks-vote) · [The border](#the-border) · [The week](#the-week) · [A name on the lanes](#a-name-on-the-lanes)
@@ -637,6 +637,16 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   menu takes a dose: cruise runs 40% faster and thrust is keener until you
   dock or jump. The crew lose morale, the frame takes wear, and the HUD says
   HARD BURN the whole way. Couriers and envoys on a deadline will forgive you.
+
+## Medical runs
+
+- Some lounges have a patient waiting: a crushed hand, a fever the clinic
+  can't name, a reactor burn. The clinic at the destination can treat it;
+  this one can't. Get them there within their dockings (the hops, no more)
+  and the clinic takes over: full fare, rep, a life saved and a deed. A medic
+  aboard buys one more docking; med supplies aboard keep their mood up.
+  Late, and it went bad on the way: half the fare and a mark against you.
+  The HUD says STABLE or CRITICAL on their line.
 
 ## Envoys
 

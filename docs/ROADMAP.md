@@ -928,4 +928,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Clinics sell burn juice; a hard burn from the pause menu lasts until
       you dock or jump: faster cruise, keener thrust, the crew and the frame pay
 
+## Milestone 143 — Medical Runs ✅ (Sep 2026)
+- [x] Patient fares: get them to the clinic that can treat them within their
+      dockings; a medic aboard buys one more; late halves the fare
+
 ## Later
