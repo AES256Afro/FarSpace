@@ -424,7 +424,7 @@ export function damagePlayer(fs: FlightScene, g: Game, dmg: number): void {
   fs.hitFlash = 1;
   fs.floaters.push({ x: p.x, y: p.y - 12, text: `-${Math.round(dmg + Math.max(0, absorbedTotal))}`, life: 0.9, color: dmg > 0 ? PAL.danger : PAL.shield });
   if (dmg > 0) {
-    p.hull -= dmg; passengersTookFire(p); noteLeg(p, "fights", g.world.time);
+    p.hull -= dmg; passengersTookFire(p); noteLeg(p, "fights", g.world.time); fs.damageReport(g);
     if (Math.random() < 0.4) {
       const sys = p.systems[Math.floor(Math.random() * p.systems.length)];
       sys.health = Math.max(0, sys.health - dmg * (1.5 + Math.random()));

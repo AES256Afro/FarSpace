@@ -681,6 +681,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 
 - When a hostile closes and the ship is still at green, tactical goes to
   yellow on its own and says so; red is still your call.
+- ADDRESS THE CREW on the pause menu, once a leg with anyone aboard: rally
+  them (morale +5 and the next red alert costs less for a minute), warn them
+  (yellow alert and nobody surprised), or thank them by name (loyalty up).
+  Keep it short; it's your ship either way.
+- The first time the hull drops under half on a leg, the engineer (or the
+  ship, if nobody's aboard) gives a damage report on the band: hull, the
+  worst system, breaches, fire, and an opinion about who's getting her hit.
 - Y in flight cycles the alert. Yellow: shields recharge half again as fast
   and the crew look up from their cards. Red: shields twice as fast, guns
   10% harder, a klaxon, a banner, whoever's at tactical calling stations,

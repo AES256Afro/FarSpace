@@ -137,6 +137,7 @@ export class FlightScene implements Scene {
       { label: "HANDBOOK", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("almanac"); } },
       { label: "THE CHRONICLE", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("chronicle"); } },
       { label: "THE ROSTER", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("roster"); } },
+      ...(g.world.player.crew.length >= 1 && !this.addressed && !this.docking ? [{ label: "ADDRESS THE CREW", act: () => { this.paused = false; this.addressCrew(g); } }] : []),
       ...((g.world.player.juice ?? 0) > 0 && !this.hardBurn && !this.docking ? [{ label: `HARD BURN (JUICE X${g.world.player.juice})`, act: () => { this.paused = false; const l = takeJuice(g.world.player); if (l) { this.hardBurn = true; noteLeg(g.world.player, "burns", g.world.time); g.toast(l); sfx.alarm(); flag(g, "juiced"); logEntry(g.world, "Hard burn on the juice"); } } }] : []),
       ...(() => {
         const p = g.world.player; const sys = g.world.systems[p.systemId];
@@ -636,6 +637,28 @@ export class FlightScene implements Scene {
 
   // ---------- Interactions ----------
 
+  // the captain on the ship's band: rally them, warn them, or thank them. Once a leg.
+  addressCrew(g: Game): void {
+    const p = g.world.player;
+    const enc: Encounter = { id: "address", where: "space", title: "ALL HANDS", weight: 0,
+      text: "You key the ship's band. Every speaker on the deck clicks live at once, and somewhere aft somebody drops a mug. They're listening. Keep it short. Or don't; it's your ship.",
+      options: [
+        { label: "RALLY THEM", hint: "Morale +5; a red alert costs less for a while", result: (g2) => { this.addressed = true; for (const c of p.crew) c.morale = Math.min(100, c.morale + 5); this.alertT = -60; flag(g2, "allhands"); logEntry(g2.world, "Addressed the crew: rallied them"); return "YOU TELL THEM WHERE YOU'RE GOING AND WHY IT'S WORTH THE TRIP, AND YOU MEAN IT, WHICH IS THE PART THAT WORKS. MORALE UP. THE NEXT ALERT WILL SIT EASIER."; } },
+        { label: "WARN THEM", hint: "Yellow alert, and the crew are ready for it", result: (g2) => { this.addressed = true; if (this.alert === 0) { this.alert = 1; this.alertT = 0; } for (const c of p.crew) c.morale = Math.max(0, c.morale - 1); flag(g2, "allhands"); return "YOU TELL THEM WHAT'S OUT THERE AND WHAT YOU WANT DONE ABOUT IT. THE DECK GOES QUIET IN THE GOOD WAY. YELLOW ALERT, AND NOBODY SURPRISED."; } },
+        { label: "THANK THEM", hint: "Loyalty up; nobody expects it", result: (g2) => { this.addressed = true; for (const c of p.crew) { c.loyalty = (c.loyalty ?? 0) + 0.3; c.morale = Math.min(100, c.morale + 2); } flag(g2, "allhands"); logEntry(g2.world, "Addressed the crew: thanked them"); return "YOU THANK THEM, BY NAME, FOR THINGS THEY DIDN'T THINK YOU'D NOTICED. A LONG SILENCE ON THE BAND. THEN, FROM AFT: 'WELL. ALL RIGHT THEN.' LOYALTY UP."; } },
+        { label: "NEVER MIND", result: () => "YOU CLICK OFF. THE SPEAKERS CLICK OFF. SOMEBODY AFT PICKS UP THE MUG." },
+      ] };
+    (g.scenes["encounter"] as EncounterScene).open(g, enc, "flight", true);
+  }
+  // the engineer's damage report, the first time the hull drops under half on a leg
+  damageReport(g: Game): void {
+    const p = g.world.player; if (this.reported || p.hull >= p.hullMax * 0.5) return;
+    this.reported = true;
+    const eng = p.crew.find((c) => c.role === "engineer" && !c.sick);
+    const worst = [...p.systems].sort((a, b) => a.health - b.health)[0];
+    const line = `DAMAGE REPORT: HULL ${Math.round(p.hull / p.hullMax * 100)}%${worst && worst.health < 70 ? `, ${worst.name.toUpperCase()} AT ${Math.round(worst.health)}%` : ""}${p.breaches?.length ? `, ${p.breaches.length} BREACH${p.breaches.length > 1 ? "ES" : ""}` : ""}${p.fires?.length ? ", FIRE ABOARD" : ""}. ${eng ? "I CAN HOLD HER TOGETHER IF YOU STOP GETTING HER HIT." : "NOBODY ABOARD TO PATCH IT. GET TO A YARD."}`;
+    this.comms.push({ from: eng ? eng.name.split(" ")[0].toUpperCase() : shipVoiceName(p), text: line, life: 8, color: PAL.danger });
+  }
   // parley: pay the toll, bluff, offer a way out, or open fire
   parley(g: Game, n: Npc): void {
     const p = g.world.player;
@@ -664,9 +687,10 @@ export class FlightScene implements Scene {
   hardBurn = false;
   bridgeT = 40;
   alert: AlertLevel = 0; alertT = 0; autoAlertT = 0; klaxonT = 0; flipT = 0;
+  addressed = false; reported = false;
   hailT = 25;
   dockAt(g: Game, st: StationDef): boolean {
-    this.hardBurn = false; this.alert = 0;
+    this.hardBurn = false; this.alert = 0; this.addressed = false; this.reported = false;
     const p = g.world.player;
     const rep = p.rep?.[st.factionId] ?? 0;
     if (st.military && rep < -20) { g.toast("DOCKING DENIED - YOUR RECORD PRECEDES YOU"); return false; }

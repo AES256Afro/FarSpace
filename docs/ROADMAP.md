@@ -1054,6 +1054,11 @@ Time passes for the people on the ship, and for the ship.
 - [x] On the night shift a band plays the promenade; E to stand for a set,
       once a week per station, for the crew and the fares
 
+## Milestone 174 — All Hands ✅ (Sep 2026)
+- [x] Address the crew from the pause menu once a leg: rally, warn or thank
+      them; the engineer gives a damage report the first time the hull drops
+      under half
+
 ## Later: Trek / Expanse / Orville
 
 - A second story arc per faction (first contact proper: the singers' home)
