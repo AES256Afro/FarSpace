@@ -352,6 +352,7 @@ export class InteriorScene implements Scene {
     if (!lines.length) lines.push("A CARRIER WAVE AND NOTHING ON IT. THE STATIONS ARE QUIET TONIGHT.");
     const key = `band:${p.systemId}`;
     const enc: Encounter = { id: "band", where: "space", title: "THE BAND", text: lines.join("\n"), weight: 0, options: [
+      { label: "SING ALONG. BADLY", hint: "Morale up; the crew join in; the ship pretends not to record it", result: (g2) => { for (const c of p.crew) c.morale = Math.min(100, c.morale + 3); for (const m of passengersAboard(p)) m.mood = Math.min(100, (m.mood ?? 60) + 2); flag(g2, "singalong"); logEntry(g2.world, "Sang along with the band on the comms, badly"); return "YOU SING THE CHORUS, WRONG, AND THE CREW COME IN ON THE SECOND ONE, WRONGER, AND THE SHIP SAYS 'I'M NOT RECORDING THIS' IN A TONE THAT MEANS IT IS. MORALE UP."; } },
       { label: "SIT WITH IT A WHILE", result: () => { const first = !(p.flags ?? {})[key]; (p.flags ??= {})[key] = true; flag(g, "band"); if (first) { for (const c of p.crew) c.morale = Math.min(100, c.morale + 2); for (const m of passengersAboard(p)) m.mood = Math.min(100, (m.mood ?? 60) + 2); } return first ? "THE CREW DRIFT IN ONE BY ONE AND STAND IN THE HATCHWAY LISTENING. NOBODY SAYS 'TURN IT UP'. NOBODY HAS TO. MORALE UP." : "YOU'VE HEARD THIS EPISODE. IT'S STILL GOOD."; } },
       { label: "SWITCH IT OFF", result: () => "THE HUM OF THE SHIP COMES BACK. IT WAS THERE ALL ALONG." },
     ] };
@@ -527,7 +528,9 @@ export class InteriorScene implements Scene {
     const fo = firstOfficer(p); const order = fo ? [fo, ...p.crew.filter((c) => c !== fo)] : [...p.crew];
     for (const c of order.slice(0, 3)) {
       opts.push({ label: `HAND THE SHIP TO ${c.name.toUpperCase()} (${c === fo ? "NUMBER ONE, " : ""}${ROLE_INFO[c.role].label}, SKILL ${c.skill})`, hint: c.role === "pilot" ? "Their piloting becomes yours" : c.role === "engineer" ? "Their engineering becomes yours" : "A steady hand", result: (g2) => {
+        const wasNumberOne = firstOfficer(p) === c;
         const cap = retireCaptain(g2.world, me, c);
+        if (wasNumberOne) { logEntry(g2.world, `${c.name}, Number One, took the ship: "I had the conn. I'll keep it."`); g2.toast(`${c.name.split(" ")[0].toUpperCase()}: "I HAD THE CONN FOR HALF OF IT ANYWAY. I'LL KEEP IT. GO WELL, CAPTAIN."`); flag(g2, "numberonechair"); }
         void wire.post("achievement", `retired and handed ${g2.world.player.shipName ?? "the ship"} to ${c.name}`, st?.name ?? "");
         return `${me} SIGNS THE SHIP OVER AT ${(st?.name ?? "THE DOCK").toUpperCase()} AND WALKS DOWN THE RAMP WITH ${cap.credits - g2.world.player.credits}CR OF PENSION. ${c.name.toUpperCase()} SITS IN THE CHAIR. IT CREAKS THE SAME WAY.`;
       } });

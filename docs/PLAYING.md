@@ -752,6 +752,11 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- With a medic aboard the chronicle carries sickbay's note: the cots, the
+  lives on the count, patients landed in time, and whether the captain sleeps.
+- At the comms panel aboard, when the band is on: sing along, badly. The
+  crew come in on the second chorus. Morale up.
+- Hand the ship to Number One when you retire and they say so on the band.
 - Fleet review: a galaxy event at a naval station. Captains with a rank are
   signalled to take station at the end of the line (rep up, a ribbon, an
   hour of ship time, the crew stand to), or dip the lights past (rep up a

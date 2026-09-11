@@ -1493,6 +1493,18 @@ Time passes for the people on the ship, and for the ship.
 - [x] A photographer's skiff at the gate: forty credits, everybody on the
       bridge, a keepsake with every name in it
 
+## Milestone 276 — Sickbay's Note ✅ (Sep 2026)
+- [x] With a medic aboard the chronicle carries their paragraph: the cots,
+      the lives on the count, patients landed, and whether the captain sleeps
+
+## Milestone 277 — Sing Along ✅ (Sep 2026)
+- [x] At the comms band aboard: sing along, badly; the crew come in wronger;
+      the ship isn't recording this (morale, a deed)
+
+## Milestone 278 — I'll Keep It ✅ (Sep 2026)
+- [x] Hand the ship to Number One at retirement and they say so on the band;
+      a log line and a deed
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
