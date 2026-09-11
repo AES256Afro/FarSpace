@@ -988,4 +988,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] A sim program nobody passes unless the engineer changes the conditions;
       an unverified distress call that is real or an ambush
 
+## Milestone 158 — The Translator Core, and Yellow by Default ✅ (Sep 2026)
+- [x] A translator module: first contacts always land and the singers say
+      more; tactical calls yellow alert on its own when a hostile closes
+
 ## Later

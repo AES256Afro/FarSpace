@@ -675,6 +675,8 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 
 ## Alert status
 
+- When a hostile closes and the ship is still at green, tactical goes to
+  yellow on its own and says so; red is still your call.
 - Y in flight cycles the alert. Yellow: shields recharge half again as fast
   and the crew look up from their cards. Red: shields twice as fast, guns
   10% harder, a klaxon, a banner, whoever's at tactical calling stations,
@@ -835,6 +837,9 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   have it out while the crew take bets) and the inner and the belter (two of
   your own crew, one from a rock where you count the litres; arbitrate, put
   them on the same watch, or stay out of it and lose the cat to the hold).
+- A translator core from the shipyard (900 credits) means the first contact
+  always lands, and the singers add a third thing the old core would have
+  missed: they remember the ones who answer.
 - The singers are an arc. Run the translator on the hull that sings and it
   comes back, asking to be shown the brightest thing in the system: lead it
   to a lit beacon or a wonder, or let the crew sing it the way. Afterwards it

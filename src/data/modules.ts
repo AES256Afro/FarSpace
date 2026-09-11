@@ -15,6 +15,7 @@ export interface ModuleDef {
 
 export const MODULES: ModuleDef[] = [
   { id: "scoop", name: "Fuel Scoop", price: 1200, desc: "Skim a star's corona to refuel for free. Watch the heat." },
+  { id: "translator", name: "Translator Core", price: 900, desc: "Finds the pattern in any signal. First contacts always land; the singers say more." },
   { id: "radiators", name: "Heat Radiators", price: 900, desc: "Sheds heat twice as fast: scoop longer, dive closer." },
   { id: "tank", name: "Auxiliary Tank", price: 700, desc: "+40 fuel. Longer legs for the deep routes.", fuel: 40 },
   { id: "rack", name: "Cargo Rack", price: 900, desc: "+25 cargo capacity bolted into the hold.", cargo: 25 },

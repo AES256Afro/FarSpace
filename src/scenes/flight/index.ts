@@ -643,7 +643,7 @@ export class FlightScene implements Scene {
   }
   hardBurn = false;
   bridgeT = 40;
-  alert: AlertLevel = 0; alertT = 0;
+  alert: AlertLevel = 0; alertT = 0; autoAlertT = 0;
   hailT = 25;
   dockAt(g: Game, st: StationDef): boolean {
     this.hardBurn = false; this.alert = 0;
@@ -1031,6 +1031,9 @@ export class FlightScene implements Scene {
     this.updateMayday(g, dt);
     // the ship's bell: the watch changes, and the lounge has something to say now and then
     { const wi = watchIndex(g.world.time); if (this.lastWatch < 0) this.lastWatch = wi; else if (wi !== this.lastWatch) { this.lastWatch = wi; if (p.crew.length >= 2) { const on = p.crew.filter((c, i) => onWatch(p, i, g.world.time) && !c.sick).map((c) => c.name.split(" ")[0].toUpperCase()); this.comms.push({ from: (p.shipName ?? "SHIP").toUpperCase(), text: `WATCH CHANGE. ${on.length ? on.join(" AND ") + " ON DECK." : "EVERYONE'S IN THEIR BUNK."}`, life: 7, color: PAL.uiDim }); sfx.blip(); } } }
+    // tactical calls yellow alert when a hostile closes and nobody has yet
+    this.autoAlertT -= dt;
+    if (this.alert === 0 && this.autoAlertT <= 0 && !this.docking && this.npcs.some((n) => n.kind === "pirate" && n.hull > 0 && dist(p.x, p.y, n.x, n.y) < 950)) { this.autoAlertT = 90; this.alert = 1; const gun = p.crew.find((c) => c.role === "gunner" && !c.sick); this.comms.push({ from: gun ? gun.name.split(" ")[0].toUpperCase() : shipVoiceName(p), text: gun ? "HOSTILE CLOSING. GOING TO YELLOW. SAY THE WORD FOR RED." : "A HOSTILE IS CLOSING. I'VE GONE TO YELLOW. Y FOR RED, IF YOU LIKE THE SOUND OF THE KLAXON.", life: 6, color: PAL.warn }); sfx.blip(); }
     // red alert wears the crew down: a point of morale every half minute at stations
     if (this.alert === 2) { this.alertT += dt; if (this.alertT >= 30) { this.alertT = 0; for (const c of p.crew) c.morale = Math.max(0, c.morale + alertMods(2).morale); } }
     // bridge banter: two of the crew trade a line on the band now and then, when the channel is quiet
