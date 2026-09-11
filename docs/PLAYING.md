@@ -757,6 +757,9 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   Send them (they become a friendly captain in the lanes, write from the
   chair, and the chronicle says who they command), ask them to stay plainly
   (loyalty up a lot), or leave it to them and a coin.
+- Dock at a cadet's home rock and their mam is on the promenade.
+- After the singers' home, the board of ethics writes with a grant.
+- The service cutter calls a corsair on the scope and takes it.
 - In review week at a naval station there's a bar for seconds in command
   only. Send Number One (loyalty and morale up, one thing to report, and a
   rivalry a degree warmer) or keep the schedule.

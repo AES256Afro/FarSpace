@@ -752,6 +752,7 @@ export class FlightScene implements Scene {
   addressed = false; reported = false; readyRoom = false;
   lastHail: { from: string; kind: string; t: number; answered: boolean } | null = null;
   lastFound: import("../../world").AnomalyDef | null = null;
+  cutterSpoke = false;
   hailT = 25;
   dockAt(g: Game, st: StationDef): boolean {
     this.hardBurn = false; this.alert = 0; this.addressed = false; this.reported = false; this.readyRoom = false;
@@ -1141,6 +1142,7 @@ export class FlightScene implements Scene {
     // the ship's bell: the watch changes, and the lounge has something to say now and then
     { const wi = watchIndex(g.world.time); if (this.lastWatch < 0) this.lastWatch = wi; else if (wi !== this.lastWatch) { this.lastWatch = wi; if (p.crew.length >= 2) { const on = p.crew.filter((c, i) => onWatch(p, i, g.world.time) && !c.sick).map((c) => c.name.split(" ")[0].toUpperCase()); this.comms.push({ from: (p.shipName ?? "SHIP").toUpperCase(), text: `WATCH CHANGE. ${on.length ? on.join(" AND ") + " ON DECK." : "EVERYONE'S IN THEIR BUNK."}`, life: 7, color: PAL.uiDim }); sfx.blip(); } } }
     // patrol orders: the clock runs while you hold station in the target system, off cruise
+    { const cutter = this.npcs.find((n) => n.naval && n.hull > 0); if (cutter && !this.cutterSpoke && this.npcs.some((n) => n.kind === "pirate" && n.hull > 0 && !n.fleeing && dist(p.x, p.y, n.x, n.y) < 700)) { this.cutterSpoke = true; this.comms.push({ from: "SERVICE CUTTER", text: "CORSAIR ON THE SCOPE. I HAVE THEM. STAY ON COURSE AND LET THE SERVICE EARN ITS KEEP.", life: 8, color: PAL.info }); } if (!cutter) this.cutterSpoke = false; }
     { const fo0 = firstOfficer(p); if (fo0 && !fo0.sick && p.leg && g.world.time - p.leg.t0 > 8 * 3600 && !(p.flags ?? {}).longLegNudged && this.comms.length < 4) { (p.flags ??= {}).longLegNudged = true; if ((settings().numberOneTakesLeg ?? false) && !p.numberOneLeg) { p.numberOneLeg = true; this.autopilot = true; fo0.loyalty = (fo0.loyalty ?? 0) + 0.2; logEntry(g.world, `${fo0.name} took the ship at eight hours, per standing orders`); this.comms.push({ from: fo0.name.split(" ")[0].toUpperCase(), text: "EIGHT HOURS. I HAVE THE SHIP, PER STANDING ORDERS. GO BELOW, CAPTAIN. I'LL WAKE YOU AT THE CLAMP.", life: 9, color: PAL.warn }); } else this.comms.push({ from: fo0.name.split(" ")[0].toUpperCase(), text: "EIGHT HOURS SINCE THE CLAMP, CAPTAIN. THE CREW ARE COUNTING RIVETS. I'D LIKE A PORT ON THE CHART, ANY PORT, BEFORE THEY START NAMING THEM.", life: 9, color: PAL.warn }); } }
     if (!this.cruise && !this.docking) for (const m of p.missions) if (m.kind === "observe" && m.accepted && !m.done && !m.patrolDone && m.targetSystemId === p.systemId) {
       const pl = g.world.systems[p.systemId].planets[m.sightPlanetIdx ?? -1]; if (!pl) continue;

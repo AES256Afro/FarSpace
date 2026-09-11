@@ -1852,6 +1852,16 @@ Time passes for the people on the ship, and for the ship.
 - [x] What's New and the README's second-sitting paragraph carry the night's
       later work
 
+## Milestone 372 — The Cadet's Mam ✅ (Sep 2026)
+- [x] At a cadet's home port their mam is on the promenade, with opinions
+      about eating and the dent
+
+## Milestone 373 — The Board on the Roll-Call ✅ (Sep 2026)
+- [x] After the singers' home the board of ethics writes: no rule, a grant
+
+## Milestone 374 — The Cutter Speaks ✅ (Sep 2026)
+- [x] The service cutter calls a corsair on the scope and takes it
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
