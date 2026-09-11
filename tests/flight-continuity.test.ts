@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { HelpScene } from "../src/scenes/help";
+import { AlmanacScene } from "../src/scenes/almanac";
 import { Game } from "../src/game";
 import { generateWorld } from "../src/world";
 import { FlightScene } from "../src/scenes/flight/index";
@@ -62,6 +64,12 @@ function expectRebuilt(f: ReturnType<typeof fixture>) {
 }
 
 describe("flight continuity", () => {
+  it.each(["CONTROLS", "HANDBOOK"])("keeps current contacts when returning from %s", label => {
+    const f = fixture(); f.g.scenes.help = new HelpScene(); f.g.scenes.almanac = new AlmanacScene();
+    f.flight.pauseOptions(f.g).find(o => o.label === label)!.act();
+    expect(f.g.sceneName).toBe(label === "CONTROLS" ? "help" : "almanac");
+    f.keys.add("Escape"); f.g.scene.update(f.g, 0); expectPreserved(f);
+  });
   it.each(["Escape", "i", "e"])("keeps contacts and rescue work when leaving the ship with %s", key => {
     const f = fixture();
     f.g.setScene("interior");

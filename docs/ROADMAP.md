@@ -2124,3 +2124,11 @@ The decision between service orders and booked fares is covered by M402.
   working charter, settles its till once, and states the owned hull's depot.
 - Keep pointer hit areas aligned with their actual indices after shipyard
   scrolling; prevent details-column clicks from activating list actions.
+
+### M408: Find the Page
+
+- Reach every Controls and Handbook line with scroll, page and end navigation.
+- Jump between sections and search headings or body text while retaining each
+  complete matching section. Clear restores the full reference.
+- Provide pointer navigation and explicit back controls. Content clicks keep
+  the reader open; flight pause entries return to the same contacts.

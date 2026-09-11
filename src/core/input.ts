@@ -20,7 +20,7 @@ export class Input {
 
   constructor(canvas: HTMLCanvasElement, getScale: () => { scale: number; ox: number; oy: number }) {
     window.addEventListener("keydown", (e) => {
-      if (["Tab", "F5", "F9", " ", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+      if (["Tab", "F5", "F9", " ", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End"].includes(e.key)) {
         e.preventDefault();
       }
       const raw = e.key.length === 1 ? e.key.toLowerCase() : e.key;

@@ -133,8 +133,8 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 
 ## Quiet moments
 
-- ESC in flight pauses the galaxy: resume, save, settings, the handbook, or
-  save and quit to the title. Settings and the handbook come back to flight.
+- ESC in flight pauses the galaxy: resume, save, settings, controls, the handbook, or
+  save and quit to the title. Settings, controls and the handbook come back to flight.
 - The wonders have voices: a pulsar ticks on the band as you close, the
   cathedral and the twins hum.
 
@@ -210,7 +210,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 
 ## The handbook, the voice, the greenhouse
 
-- HANDBOOK on the title screen: every system in the game, a few lines each.
+- CONTROLS and HANDBOOK on the title screen or flight pause menu open the
+  references. Up/Down and the wheel scroll; Left/Right jump between sections.
+  Page Up/Down move a page; Home/End reach the top and bottom.
+- Press / or S to search headings and text. Matching sections remain complete.
+  Clear or Delete restores the full reference. Footer buttons also navigate
+  and search. Clicking text keeps the page open; Escape, Enter or Back returns
+  to the title or the same flight contacts, depending on where you opened it.
 - The ship has a voice on the band now. Not often, and only about itself.
 - A Greenhouse module grows a crate of provisions every five minutes under
   way; crew eat better and know it.

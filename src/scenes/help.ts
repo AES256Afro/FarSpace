@@ -1,8 +1,6 @@
-// Help: one screen of every control, grouped by where you are.
+// Controls grouped by where you are, using the shared reference reader.
 
-import { Game, Scene, VW, VH } from "../game";
-import { drawText, textWidth } from "../gfx/font";
-import { PAL } from "../gfx/palette";
+import { ReaderScene } from "./reader";
 
 const SECTIONS: [string, string[]][] = [
   ["FLIGHT", [
@@ -43,22 +41,6 @@ const SECTIONS: [string, string[]][] = [
     "SETTINGS: STANDING ORDERS FOR NUMBER ONE (HAILS, THE LEG AT 8H, LANDINGS) AND THE SHIP'S QUIET LEG", "SAVE SLOTS ON THE TITLE SCREEN: THREE LOCAL GAMES, EACH WITH ITS OWN CLOUD CODE"]],
 ];
 
-export class HelpScene implements Scene {
-  touchMode = "menu" as const;
-  update(g: Game, dt: number): void {
-    void dt;
-    if (g.input.wasPressed("Escape") || g.input.wasPressed("Enter") || g.input.mousePressed) g.setScene("title");
-  }
-  draw(g: Game, ctx: CanvasRenderingContext2D): void {
-    void g;
-    ctx.fillStyle = PAL.uiPanel; ctx.fillRect(0, 0, VW, VH);
-    drawText(ctx, "CONTROLS", 12, 8, PAL.white);
-    drawText(ctx, "ESC BACK", VW - textWidth("ESC BACK") - 12, 8, PAL.greyDark);
-    let y = 22;
-    for (const [title, lines] of SECTIONS) {
-      drawText(ctx, title, 12, y, PAL.ui); y += 8;
-      for (const l of lines) { drawText(ctx, l, 12, y, PAL.grey); y += 7; }
-      y += 3;
-    }
-  }
+export class HelpScene extends ReaderScene {
+  constructor() { super("CONTROLS", SECTIONS); }
 }
