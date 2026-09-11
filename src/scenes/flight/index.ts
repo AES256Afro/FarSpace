@@ -27,7 +27,7 @@ import { pickEncounter, ENCOUNTERS } from "../../data/encounters";
 import { pickChatter } from "../../core/chatter";
 import { spawnGhost, spawnMayday } from "./ai";
 import { voteMods } from "../../data/votes";
-import { passengerChatter } from "../../data/chatter";
+import { passengerChatter, crewChatter } from "../../data/chatter";
 import { pickShipLine } from "../../core/shipvoice";
 import { keeperScan, KEEPER_OWNER } from "../../core/keeper";
 import { isOccasion } from "../../data/occasions";
@@ -633,6 +633,7 @@ export class FlightScene implements Scene {
   // ---------- Interactions ----------
 
   hardBurn = false;
+  bridgeT = 40;
   dockAt(g: Game, st: StationDef): boolean {
     this.hardBurn = false;
     const p = g.world.player;
@@ -1019,6 +1020,9 @@ export class FlightScene implements Scene {
     this.updateMayday(g, dt);
     // the ship's bell: the watch changes, and the lounge has something to say now and then
     { const wi = watchIndex(g.world.time); if (this.lastWatch < 0) this.lastWatch = wi; else if (wi !== this.lastWatch) { this.lastWatch = wi; if (p.crew.length >= 2) { const on = p.crew.filter((c, i) => onWatch(p, i, g.world.time) && !c.sick).map((c) => c.name.split(" ")[0].toUpperCase()); this.comms.push({ from: (p.shipName ?? "SHIP").toUpperCase(), text: `WATCH CHANGE. ${on.length ? on.join(" AND ") + " ON DECK." : "EVERYONE'S IN THEIR BUNK."}`, life: 7, color: PAL.uiDim }); sfx.blip(); } } }
+    // bridge banter: two of the crew trade a line on the band now and then, when the channel is quiet
+    this.bridgeT -= dt;
+    if (this.bridgeT <= 0) { this.bridgeT = 80 + Math.random() * 70; const up = p.crew.filter((c) => !c.sick); if (up.length >= 2 && this.comms.length < 2 && !this.docking) { const a = up[Math.floor(Math.random() * up.length)]; let b = up[Math.floor(Math.random() * up.length)]; if (b === a) b = up[(up.indexOf(a) + 1) % up.length]; const rng = new RNG((Math.random() * 1e9) >>> 0); this.comms.push({ from: a.name.split(" ")[0].toUpperCase(), text: crewChatter(g.world, a, b, rng), life: 7, color: PAL.grey }); this.comms.push({ from: b.name.split(" ")[0].toUpperCase(), text: crewChatter(g.world, b, a, rng), life: 7, color: PAL.grey }); } }
     this.loungeT -= dt;
     if (this.loungeT <= 0) { this.loungeT = 60 + Math.random() * 60; const pax = passengersAboard(p); const c = p.crew.find((x) => !x.sick); if (pax.length && c && this.comms.length < 3) { const rq = Math.random() < 0.4 ? askPassengerRequest(p, new RNG((Math.random() * 1e9) >>> 0)) : null; if (rq) { this.comms.push({ from: `${(rq.m.passengerName ?? "PASSENGER").toUpperCase()} (LOUNGE)`, text: rq.text, life: 9, color: "#b28fe0" }); g.toast(`${(rq.m.passengerName ?? "YOUR PASSENGER").toUpperCase()} HAS A REQUEST. SEE THE LOUNGE ON COMMS`); return; } const m = pax[Math.floor(Math.random() * pax.length)]; const q = passengerChatter(m, c, new RNG((Math.random() * 1e9) >>> 0)); this.comms.push({ from: `${(m.passengerName ?? "PASSENGER").toUpperCase()} (LOUNGE)`, text: q.ask, life: 7, color: "#b28fe0" }); this.comms.push({ from: c.name.split(" ")[0].toUpperCase(), text: q.reply, life: 7, color: PAL.grey }); } }
     // comms chatter when the channel is quiet

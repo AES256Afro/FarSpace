@@ -1732,9 +1732,9 @@ export class StationScene implements Scene {
     let y = top + 12;
     for (const [prefix, title, blurb] of groups) {
       const items = cx.filter(([k]) => k.startsWith(prefix));
-      drawText(ctx, `${title} (${items.length})`, 8, y, PAL.ui);
+      drawText(ctx, `${title} (${items.length})${items.length ? "" : " - NONE YET"}`, 8, y, PAL.ui);
       drawText(ctx, blurb, 110, y, PAL.greyDark); y += 9;
-      if (!items.length) { drawText(ctx, "- NONE YET", 14, y, PAL.greyDark); y += 9; }
+      if (!items.length) { y += 3; continue; }
       items.slice(0, 6).forEach(([k, n], i) => { drawText(ctx, `${k.slice(prefix.length).toUpperCase()} x${n}`, 14 + (i % 3) * 156, y + Math.floor(i / 3) * 9, PAL.grey); });
       y += 9 * Math.max(1, Math.ceil(Math.min(6, items.length) / 3)) + 4;
       if (items.length > 6) { drawText(ctx, `+${items.length - 6} MORE`, 14, y - 4, PAL.greyDark); }

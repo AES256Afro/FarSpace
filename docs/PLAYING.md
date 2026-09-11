@@ -700,6 +700,9 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   berth neighbour, a fare's request still open, the night rate at the yard.
   The concourse gossips about who's berthed, the yard's shift rate, the lost
   property drawer and the dock-hand who knows every hull by ear.
+- In flight, two of the watch trade a line on the band now and then when the
+  channel is quiet: the same talk you'd hear in the corridors, with the
+  bridge's own rules about singing before the second coffee.
 - Crew now walk the deck properly, door to door, instead of stopping at the
   first wall.
 - Mess call: every so often the crew gather at the galley for a while. Stand

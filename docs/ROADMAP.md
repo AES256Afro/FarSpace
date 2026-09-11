@@ -944,4 +944,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] A first-contact arc in three cards: answer the singing hull, guide it
       to a light, take what it leaves; a CONTACTS page in the codex
 
+## Milestone 147 — Bridge Banter ✅ (Sep 2026)
+- [x] Two of the crew trade a line on the band in flight now and then; the
+      codex page fits its six groups
+
 ## Later
