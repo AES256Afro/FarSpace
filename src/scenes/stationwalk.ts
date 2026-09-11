@@ -7,7 +7,7 @@ import { PAL } from "../gfx/palette";
 import { RNG, hashStr } from "../core/rng";
 import { dist } from "../core/mathx";
 import { sfx } from "../core/sfx";
-import { StationDef, findStation, isFriend, isRival, rivalOf, galaxyEventAt, dockingsAt, raceHolder, stakeDividend } from "../world";
+import { StationDef, findStation, isFriend, isRival, rivalOf, galaxyEventAt, dockingsAt, raceHolder, stakeDividend, weekKey, addCargo, logEntry } from "../world";
 import { occasionFor } from "../data/occasions";
 import type { Encounter } from "../data/encounters";
 import type { EncounterScene } from "./encounter";
@@ -105,6 +105,15 @@ export class StationWalkScene implements Scene {
       const spot = this.randomFloor(rng);
       this.npcs.push({ x: spot.x, y: spot.y, tx: spot.x, ty: spot.y, name: sl.member.name, skin: "#c78a5a", suit: sl.member.role === "engineer" ? "#c7a54a" : sl.member.role === "gunner" ? "#a53a3a" : sl.member.role === "pilot" ? "#3a6ea5" : "#3aa55e", pause: 2, tag: "ON LEAVE",
         line: rng.pick([`${sl.member.name.toUpperCase()}: 'Not yet, Captain. Two more days. I ${sl.member.trait ?? "sleep"} and it's glorious.'`, `${sl.member.name.toUpperCase()}: 'Berth's still mine, right? Good. Go on, I'll find you when you dock next.'`, `${sl.member.name.toUpperCase()}: 'They've got real coffee here. REAL coffee. Don't wait for me.'`]) });
+    }
+    // a crew member's people, when you dock at their home port: a line, a small gift, a lift for them
+    for (const c of p.crew.filter((x) => x.home === this.station.id && !x.sick).slice(0, 2)) {
+      const spot = this.randomFloor(rng);
+      const rel = rng.pick(["mother", "father", "sister", "brother", "daughter", "old friend"]);
+      const first = c.name.split(" ")[0];
+      const key = `family:${this.station.id}:${c.name}:${weekKey()}`;
+      this.npcs.push({ x: spot.x, y: spot.y, tx: spot.x, ty: spot.y, name: `${first}'s ${rel}`, skin: "#e8b48c", suit: "#7a5aa5", pause: 4, tag: "FAMILY",
+        line: (p.flags ?? {})[key] ? `${first.toUpperCase()}'S ${rel.toUpperCase()}: 'YOU AGAIN. GOOD. BRING THEM HOME SAFE.'` : `${first.toUpperCase()}'S ${rel.toUpperCase()}: 'SO YOU'RE THE CAPTAIN. ${rng.pick(["THEY WRITE ABOUT YOU. MOSTLY GOOD.", "THEY DON'T WRITE ENOUGH. TELL THEM.", "THEY SOUND HAPPY. THAT'S NEW."])} HERE, TAKE THIS FOR THE GALLEY.'` });
     }
     for (const a of (p.alumni ?? []).filter((x) => x.stationId === this.station.id).slice(-2)) {
       const spot = this.randomFloor(rng);
@@ -270,6 +279,14 @@ export class StationWalkScene implements Scene {
     // kiosk interaction
     const near = this.nearestKiosk();
     if (inp.wasPressed("e") && !near) {
+      const fam = this.npcs.find((n) => n.tag === "FAMILY" && dist(this.px, this.py, n.x, n.y) < 16);
+      if (fam) {
+        const first = fam.name.split("'")[0]; const c = g.world.player.crew.find((x) => x.name.split(" ")[0] === first);
+        const key = `family:${this.station.id}:${c?.name ?? first}:${weekKey()}`;
+        this.msg = fam.line!; this.msgTimer = 6;
+        if (c && !(g.world.player.flags ?? {})[key]) { (g.world.player.flags ??= {})[key] = true; c.morale = Math.min(100, c.morale + 12); c.loyalty = (c.loyalty ?? 0) + 0.5; addCargo(g.world.player, "food", 1); g.toast(`${c.name.toUpperCase()} IS GLAD YOU STOPPED. +1 PROVISIONS FOR THE GALLEY, MORALE UP`); sfx.pickup(); logEntry(g.world, `Met ${c.name}'s ${fam.name.split("'s ")[1] ?? "family"} at ${this.station.name}`); }
+        return;
+      }
       const who = this.npcs.find((n) => dist(this.px, this.py, n.x, n.y) < 16);
       if (who) { if (!who.line) who.line = `${who.name.toUpperCase()}: ${concourseGossip(g.world, this.station, new RNG((Math.random() * 1e9) >>> 0))[0]}`; this.msg = who.line; this.msgTimer = 6; who.pause = Math.max(who.pause, 4); }
     }

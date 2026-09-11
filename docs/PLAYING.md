@@ -229,6 +229,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Family
+
+- Dock at a crew member's home port and someone of theirs is on the
+  promenade: a mother, a brother, an old friend. Talk to them (E) and the
+  crew member is glad you stopped: morale, loyalty, and a crate of
+  provisions for the galley, once a week. The crowd knows whose ship it is.
+
 ## The lanes setting
 
 - Settings has THE LANES: gentle (half the corsairs), normal, or rough (half

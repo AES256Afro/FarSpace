@@ -761,4 +761,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] A lanes setting (gentle / normal / rough) for corsair density; a
       strategy-layer soak test over twelve simulated weeks
 
+## Milestone 100 — Family ✅ (Sep 2026)
+- [x] Crew members' families on the promenade at their home ports; a gift
+      and a lift once a week
+
 ## Later

@@ -59,6 +59,8 @@ export function concourseGossip(w: World, st: StationDef, rng: RNG): string[] {
   const lo = Object.keys(st.prices).map((id) => ({ id, r: (st.prices[id] ?? 0) / (commodity(id).base || 1) })).sort((a, b) => a.r - b.r)[0];
   if (lo && lo.r < 0.8) pool.push(`'THEY CAN'T GIVE ${commodity(lo.id).name.toUpperCase()} AWAY. THE WAREHOUSE IS FULL OF IT.'`);
   if (st.factionId) pool.push(`'${faction(st.factionId).name.toUpperCase()} PATROL WAS THROUGH. CHECKED EVERY MANIFEST. TOOK ALL DAY.'`);
+  const local = p.crew.find((c) => c.home === st.id);
+  if (local) pool.push(`'THAT'S ${local.name.split(" ")[0].toUpperCase()}'S SHIP. LOCAL KID. WENT OFF TO THE LANES AND CAME BACK WITH A CAPTAIN.'`);
   const shore = (p.shoreCrew ?? []).find((s) => s.stationId === st.id);
   if (shore) pool.push(`'${shore.member.name.toUpperCase()} FROM THAT SHIP IS ON LEAVE HERE. GOOD COMPANY. TERRIBLE AT CARDS.'`);
   const home = p.homePort && p.homePort !== st.id ? findStation(w, p.homePort)?.st.name : null;
