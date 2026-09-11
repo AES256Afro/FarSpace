@@ -757,6 +757,8 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   Send them (they become a friendly captain in the lanes, write from the
   chair, and the chronicle says who they command), ask them to stay plainly
   (loyalty up a lot), or leave it to them and a coin.
+- Your first hire brings a hint about what a crew makes possible: alerts,
+  the briefing, the roster, the ready room.
 - Dock at a cadet's home rock and their mam is on the promenade.
 - After the singers' home, the board of ethics writes with a grant.
 - The service cutter calls a corsair on the scope and takes it.

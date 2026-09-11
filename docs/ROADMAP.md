@@ -1862,6 +1862,17 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 374 — The Cutter Speaks ✅ (Sep 2026)
 - [x] The service cutter calls a corsair on the scope and takes it
 
+## Milestone 375 — Number One's Note III ✅ (Sep 2026)
+- [x] The note mentions the chair they turned down and the seconds' bar
+
+## Milestone 376 — A Crew Makes a Bridge ✅ (Sep 2026)
+- [x] The first hire shows a hint for alerts, the briefing, the roster and
+      the ready room
+
+## Milestone 377 — Standing II ✅ (Sep 2026)
+- [x] Standing counts landings with someone in the seat beside, and the
+      freeman's name earned twice
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

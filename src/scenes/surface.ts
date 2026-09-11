@@ -131,7 +131,7 @@ export class SurfaceScene implements Scene {
   }
 
   leave(g: Game): void {
-    if (this.away) { const p = g.world.player; const c = p.crew.find((x) => x.name === this.away!.name); if (c) { c.loyalty = (c.loyalty ?? 0) + 0.2; c.morale = Math.min(100, c.morale + 3); logEntry(g.world, `${c.name} came down with me and came back up`); flag(g, "awayteam2"); g.toast(`${c.name.split(" ")[0].toUpperCase()} STRAPS IN FOR THE LIFT WITH DUST ON THE SUIT AND A STORY FOR THE GALLEY. LOYALTY UP.`); } this.away = null; }
+    if (this.away) { const p = g.world.player; p.awayTrips = (p.awayTrips ?? 0) + 1; const c = p.crew.find((x) => x.name === this.away!.name); if (c) { c.loyalty = (c.loyalty ?? 0) + 0.2; c.morale = Math.min(100, c.morale + 3); logEntry(g.world, `${c.name} came down with me and came back up`); flag(g, "awayteam2"); g.toast(`${c.name.split(" ")[0].toUpperCase()} STRAPS IN FOR THE LIFT WITH DUST ON THE SUIT AND A STORY FOR THE GALLEY. LOYALTY UP.`); } this.away = null; }
     g.surfaceReturn = false;
     sfx.rover(false);
     g.setScene("orbit");

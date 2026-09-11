@@ -862,6 +862,7 @@ export class StationScene implements Scene {
 
   hire(g: Game, c: CrewMember): void {
     const p = g.world.player;
+    if (p.crew.length === 0) g.showHint("bridge", "A CREW MAKES A BRIDGE: Y CYCLES ALERT IN FLIGHT, E AT THE STUDY FOR THE BRIEFING, R FOR THE ROSTER, THE PAUSE MENU FOR THE READY ROOM");
     const slots = hull(p.hullId).crewSlots;
     const cost = c.wage * 3;
     if (berthsUsed(p) >= slots) { g.toast(`NO BERTHS LEFT (${slots} ON THIS HULL${(p.shoreCrew ?? []).length ? ", ONE KEPT FOR CREW ON LEAVE" : ""})`); return; }
