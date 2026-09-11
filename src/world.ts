@@ -1044,7 +1044,7 @@ export function photoTaken(w: World, where: { systemId: string; x: number; y: nu
     if (m.passengerKind !== "tourist" || !m.sightSeen || m.postcarded || m.sightSystemId !== undefined && m.sightSystemId !== where.systemId) continue;
     if (m.targetSystemId !== where.systemId && m.sightSystemId !== where.systemId) continue;
     m.postcarded = true; m.mood = Math.min(100, (m.mood ?? 60) + 8);
-    out.push(`${(m.passengerName ?? "YOUR TOURISTS").toUpperCase()} WANT A COPY OF THAT ONE. MOOD UP.`);
+    out.push(`${(m.passengerName ?? "YOUR TOURISTS").toUpperCase()}'S PARTY WANTS A COPY OF THAT ONE. MOOD UP.`);
   }
   for (const m of w.player.missions) {
     if (m.kind !== "photo" || !m.accepted || m.done || m.photoDone || !m.photo || m.photo.systemId !== where.systemId) continue;
