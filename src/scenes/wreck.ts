@@ -54,7 +54,20 @@ export class WreckScene implements Scene {
       this.askedFor = w.id; this.partner = null;
       const p = g.world.player;
       const has = (r: string) => p.crew.some((c) => c.role === r && !c.sick);
-      if (has("engineer") || has("medic") || has("gunner")) {
+      if (!w.id.startsWith("wreck-mine") && !w.looted && rng.chance(0.3)) {
+        // salvage rights: another cutter is already latched on, and the belt has rules about that
+        const cut = rng.pick(["a Corsair cutter", "a belt tug with three names painted over", "a Guild salvage barge", "a family skiff, kids at the port"]);
+        const half = () => { for (const c of this.crates) c.qty = Math.max(1, Math.ceil(c.qty / 2)); };
+        const enc: Encounter = { id: "claimjumpers", where: "space", title: "SALVAGE RIGHTS", weight: 0,
+          text: `${cut.charAt(0).toUpperCase() + cut.slice(1)} is latched to the far lock with its lights on and a cutting torch already going. The band: 'WE WERE HERE FIRST. BELT RULES. HALF, OR NOTHING, OR YOU CAN COME AND ARGUE ABOUT IT.'`,
+          options: [
+            { label: "HALF EACH. BELT RULES", hint: "Half the crates; nobody bleeds", result: (g2) => { half(); (p.flags ??= {}).claimjumpers = true; logEntry(g2.world, `Split ${w.name} with ${cut}, belt rules`); return "YOU TAKE THE NEAR ROOMS AND THEY TAKE THE FAR ONES, AND THE TWO CREWS PASS IN THE CORRIDOR WITHOUT A WORD, WHICH IS BELT MANNERS. HALF THE CRATES ARE YOURS."; } },
+            { label: "BUY THEIR CLAIM (150CR)", hint: "Full salvage; they cast off happy", requires: () => p.credits >= 150, result: (g2) => { p.credits -= 150; (p.flags ??= {}).claimjumpers = true; logEntry(g2.world, `Bought ${cut}'s claim on ${w.name}`); return "THEY TAKE THE MONEY AND CAST OFF, AND ONE OF THEM WAVES. IT'S CHEAPER THAN A FIGHT AND YOU BOTH KNOW IT. THE WRECK IS YOURS."; } },
+            { label: "STAND YOUR GROUND", hint: has("gunner") ? "The gunner at the lock; they back off" : "Half the time they back off. Half the time they don't.", result: (g2, rng2) => { (p.flags ??= {}).claimjumpers = true; if (has("gunner") || rng2.chance(0.5)) { logEntry(g2.world, `Stared ${cut} off ${w.name}`); return has("gunner") ? "THE GUNNER STANDS IN THE LOCK WITH THE EXTINGUISHER HELD LIKE IT ISN'T ONE. THE TORCH GOES OUT. THEY CAST OFF. THE WRECK IS YOURS, AND THEY'LL REMEMBER YOUR HULL." : "YOU TELL THEM THE RULES WERE WRITTEN FOR TUGS, NOT FOR THE SHIP THAT TOWED THE TUGS. A LONG PAUSE ON THE BAND. THEY CAST OFF. THE WRECK IS YOURS."; } half(); for (const c of p.crew) c.morale = Math.max(0, c.morale - 3); logEntry(g2.world, `Argued salvage with ${cut} at ${w.name} and lost the far rooms`); return "THEY DON'T BACK OFF. THEY CUT THROUGH TO THE FAR ROOMS WHILE YOU'RE STILL TALKING, AND NOBODY WANTS TO BE THE ONE WHO STARTS IT IN A SUIT. HALF THE CRATES. MORALE DOWN."; } },
+            { label: "LET THEM HAVE IT", hint: "Nothing here; the belt hears you were fair", result: (g2) => { for (const c of this.crates) c.taken = true; (p.flags ??= {}).claimjumpers = true; p.beltStanding = (p.beltStanding ?? 0) + 2; logEntry(g2.world, `Left ${w.name} to ${cut}`); return "YOU CAST OFF AND LEAVE THEM TO IT. SOMEBODY ON THEIR BAND SAYS YOUR CALLSIGN LIKE THEY'RE WRITING IT DOWN, THE GOOD WAY. THE BELT HEARS. NOTHING FOR THE HOLD."; } },
+          ] };
+        (g.scenes["encounter"] as EncounterScene).open(g, enc, "wreck", true);
+      } else if (has("engineer") || has("medic") || has("gunner")) {
         const enc: Encounter = { id: "boarding", where: "space", title: "BOARDING PARTY", weight: 0,
           text: "The lock cycles and the derelict breathes out at you: cold, dark, something burning somewhere aft. Who comes through with you? One. The rest hold the ship.",
           options: [

@@ -647,7 +647,7 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
     if (so && (p.tutorial ?? -1) < 0) { const line = `* ${so}`.slice(0, 80); drawText(ctx, line, VW - textWidth(line) - 4, my, PAL.info); my += 8; }
   }
   for (const m of active.slice(0, 3)) {
-    const prog = m.kind === "patrol" ? ` ${Math.min(m.patrolNeed ?? 90, Math.floor(m.patrolT ?? 0))}/${m.patrolNeed ?? 90}S` : m.kind === "bounty" ? ` ${m.kills}/${m.killsNeeded}` : m.kind === "ground" ? ` ${m.groundDone ?? 0}/${m.groundNeed ?? 1}` : m.shipTotal ? ` ${(m.shipDone ?? 0) + 1}/${m.shipTotal}` : "";
+    const prog = m.kind === "patrol" ? ` ${Math.min(m.patrolNeed ?? 90, Math.floor(m.patrolT ?? 0))}/${m.patrolNeed ?? 90}S` : m.kind === "emergency" && m.byT !== undefined ? (g.world.time > m.byT ? " - LATE, HALF PAY" : ` - ${Math.ceil((m.byT - g.world.time) / 60)}M LEFT`) : m.kind === "bounty" ? ` ${m.kills}/${m.killsNeeded}` : m.kind === "ground" ? ` ${m.groundDone ?? 0}/${m.groundNeed ?? 1}` : m.shipTotal ? ` ${(m.shipDone ?? 0) + 1}/${m.shipTotal}` : "";
     // a fare's open request rides on the line: what they want, and whether it's still on
     const patient = m.kind === "passenger" && m.passengerKind === "patient" ? ((m.docksAboard ?? 0) >= patientDeadline(p, m) ? " - CRITICAL, NEXT DOCK" : " - STABLE") : "";
     const envoy = patient ? patient : m.kind === "passenger" && m.treaty ? (m.tookFire ? " - TREATY: SHOT AT" : (m.docksAboard ?? 0) >= (m.patience ?? 2) ? " - TREATY: LAST DOCKING" : " - TREATY: CLEAN SO FAR") : "";

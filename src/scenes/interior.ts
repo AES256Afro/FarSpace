@@ -4,7 +4,7 @@
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond, onWatch, watchIndex, captainNickname, borderStanding, passengersFed, cookMeal, briefingReports, setFocus, runSim, SIM_PROGRAMS, nameTheShip, weekKey, dedication, MOTTOS, stardate } from "../world";
+import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond, onWatch, watchIndex, captainNickname, borderStanding, passengersFed, cookMeal, briefingReports, setFocus, runSim, SIM_PROGRAMS, nameTheShip, weekKey, dedication, MOTTOS, stardate, birthdaysDue } from "../world";
 import { commodity, faction } from "../data/data";
 import { crewChatter, soloChatter, MESS_LINES, passengerChatter } from "../data/chatter";
 import { RNG } from "../core/rng";
@@ -386,6 +386,7 @@ export class InteriorScene implements Scene {
     const p = g.world.player;
     this.bubbles = []; this.lastMessSlot = Math.floor(g.world.time / 300); this.watch = watchIndex(g.world.time);
     if (g.world.realGalaxy) void wire.fetchWire().then((e) => { this.wireItems = e; });
+    for (const l of birthdaysDue(g.world)) g.toast(l);
     this.deck = DECKS[hull(p.hullId).deck];
     this.rooms = computeRooms(this.deck, (ch) => ch !== "#");
     const nRooms = Math.max(...this.rooms.flat()) + 1;

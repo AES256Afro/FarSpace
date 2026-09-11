@@ -752,6 +752,17 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- Every crew member has a birthday every thirty ship-days. Be aboard, or dock
+  that day, and the galley does something with ration sugar and a candle:
+  morale and loyalty up, a line in the log.
+- Now and then another cutter is already latched to a derelict when you board.
+  Half each by belt rules, buy their claim for 150, stand your ground (a gunner
+  at the lock settles it; otherwise a coin), or leave it to them and gain belt
+  standing for being fair.
+- Emergencies on the boards: a station in the next system has a reactor
+  running hot or a scrubber down and its engineer on a cot. Bring a fit ship's
+  engineer inside three hours for full pay and twelve lives; after that, half
+  pay and four. The HUD counts the minutes.
 - With a Number One aboard the senior staff briefing has a sixth line, theirs:
   who's gone quiet, whether that was enough red alerts for one leg, whether
   the tin is light before wages.

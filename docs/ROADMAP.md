@@ -1209,6 +1209,20 @@ Time passes for the people on the ship, and for the ship.
 - [x] Dictate a log entry in your own words at the wall of record; it goes in
       the record with the stardate (deed "personal log")
 
+## Milestone 210 — Birthdays Aboard ✅ (Sep 2026)
+- [x] Every crew member has a birthday every thirty ship-days; the galley does
+      something with ration sugar and a candle (morale, loyalty, a log line)
+
+## Milestone 211 — Salvage Rights ✅ (Sep 2026)
+- [x] Now and then another cutter is already latched to a derelict: half each
+      by belt rules, buy their claim, stand your ground (a gunner settles it),
+      or leave it to them and let the belt hear you were fair
+
+## Milestone 212 — Emergencies ✅ (Sep 2026)
+- [x] A new board mission: a station in the next system needs a ship's
+      engineer at the clamp inside three hours; full pay on time, half after;
+      the HUD counts the minutes; lives, engineer XP, a deed
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

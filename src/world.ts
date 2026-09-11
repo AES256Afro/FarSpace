@@ -137,7 +137,7 @@ export interface SystemDef {
   permit?: boolean; // entry needs ALLIED standing with the owning faction
 }
 
-export type MissionKind = "delivery" | "bounty" | "mining" | "escort" | "passenger" | "research" | "arc" | "ground" | "repair" | "post" | "photo" | "convoy" | "patrol";
+export type MissionKind = "delivery" | "bounty" | "mining" | "escort" | "passenger" | "research" | "arc" | "ground" | "repair" | "post" | "photo" | "convoy" | "patrol" | "emergency";
 
 export interface Mission {
   id: string;
@@ -161,6 +161,7 @@ export interface Mission {
   patrolT?: number;                   // seconds held on station in the target system
   patrolNeed?: number;
   patrolDone?: boolean;
+  byT?: number;                       // emergencies: world time the clamp needs the engineer by; half pay after
   riteDone?: boolean;                 // the envoy's rite has been offered a room
   sightPlanetIdx?: number;  // tourists want to orbit this planet in the target system first
   sightSeen?: boolean;
@@ -1090,6 +1091,20 @@ export function grievanceDue(w: World, now = Date.now()): boolean {
   const p = w.player; if (p.crew.length < 2) return false;
   const avg = p.crew.reduce((a, c) => a + c.morale, 0) / p.crew.length;
   return avg < 32 && !(p.flags ?? {})[`grievance:${weekKey(now)}`];
+}
+// Birthdays: every crew member has one every thirty ship-days, and the galley notices. Once each.
+export function birthdaysDue(w: World): string[] {
+  const p = w.player; const day = Math.floor(w.time / 86400); const period = Math.floor(day / 30); const out: string[] = [];
+  for (const c of p.crew) {
+    if (hashStr(`bday:${c.name}`) % 30 !== day % 30) continue;
+    const key = `bday:${c.name}:${period}`; if ((p.flags ?? {})[key]) continue;
+    (p.flags ??= {})[key] = true; p.flags.birthday = true;
+    c.morale = Math.min(100, c.morale + 10); c.loyalty = (c.loyalty ?? 0) + 0.2;
+    for (const o of p.crew) if (o !== c) o.morale = Math.min(100, o.morale + 3);
+    logEntry(w, `${c.name}'s birthday aboard; the galley did something about it`);
+    out.push(`IT'S ${c.name.split(" ")[0].toUpperCase()}'S BIRTHDAY. THE GALLEY HAS DONE SOMETHING WITH RATION SUGAR AND A CANDLE. MORALE UP.`);
+  }
+  return out;
 }
 // A board of inquiry: the navy convenes one at its own stations for every crew member who didn't make it to the pod.
 export function inquiryDue(w: World, st: StationDef): boolean { const p = w.player; return !!st.military && (p.lost ?? []).length > (p.inquiries ?? 0); }
@@ -2792,6 +2807,7 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
   if (station.type === "research") kinds.push("ground");
   if (station.military) kinds.push("bounty", "bounty");
   if (station.military && commandRank(world.player) !== "SKIPPER") kinds.push("patrol", "patrol");
+  if (tier >= 1 && linked.length && rng.chance(0.4)) kinds.push("emergency");
   // a picture wanted: a magazine, a museum, a family; a postcard (F7) taken in the right place
   if (!station.military && (station.type === "research" || station.type === "trade") && rng.chance(0.5)) {
     const pool: { systemId: string; wonderId?: string; planetIdx?: number; label: string }[] = [];
@@ -2894,6 +2910,19 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
         desc: `Orders from the ${station.name} watch: hold station in ${target.name} for ${need} seconds, no cruise, and show the flag. Report back here. The lanes are quieter for a hull that's seen.`,
         fromStationId: station.id, targetSystemId: target.id,
         patrolT: 0, patrolNeed: need, reward: Math.round((300 + tier * 150 + rng.int(0, 120)) * payMult), repReward: 4,
+      });
+    } else if (kind === "emergency") {
+      // a call on the long band: somebody's reactor, somebody's air plant, and their engineer on a cot
+      const ts = rng.pick(linked); const tst = ts.stations.length ? rng.pick(ts.stations) : null;
+      if (!tst) continue;
+      const what = rng.pick(["reactor is running hot", "air plant has dropped a scrubber", "spin bearing is screaming", "main bus is arcing"]);
+      const hours = 3;
+      missions.push({
+        id: idn, kind, accepted: false, done: false, tier,
+        title: `Emergency: ${tst.name}`,
+        desc: `${tst.name}'s ${what} and their engineer is on a cot. They need a ship's engineer at the clamp inside ${hours} hours. Bring one, fit. Full pay on time, half after.`,
+        fromStationId: station.id, targetStationId: tst.id, targetSystemId: ts.id,
+        byT: world.time + hours * 3600, reward: Math.round((700 + tier * 200 + rng.int(0, 200)) * payMult), repReward: 6,
       });
     } else if (kind === "mining") {
       const qty = rng.int(6, 14);
@@ -3664,6 +3693,7 @@ export function missionDeliverable(world: World, m: Mission, station: StationDef
   if (m.kind === "repair") return m.targetStationId === station.id && !!m.tenderDone;
   if (m.kind === "post") return m.targetStationId === station.id;
   if (m.kind === "patrol") return m.fromStationId === station.id && (m.patrolT ?? 0) >= (m.patrolNeed ?? 90);
+  if (m.kind === "emergency") return m.targetStationId === station.id && p.crew.some((c) => c.role === "engineer" && !c.sick);
   if (m.kind === "photo") return !!m.photoDone && m.fromStationId === station.id;
   if (m.kind === "convoy") return false; // settled at the gate, never turned in
   if (m.targetStationId !== station.id) return false;
