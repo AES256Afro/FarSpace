@@ -1394,6 +1394,20 @@ Time passes for the people on the ship, and for the ship.
 - [x] The office of anomalous incidents and the survey's board of ethics
       appear under CONTACTS with their letter counts
 
+## Milestone 252 — The Other Council ✅ (Sep 2026)
+- [x] A freeman in a system with a syndicate rock gets the other council's
+      ask: look the other way (syndicate up, faction down), tell the patrol
+      (the reverse, and a berth number painted wrong), or neither
+
+## Milestone 253 — The Anniversary ✅ (Sep 2026)
+- [x] Every hundred hours under way since commissioning the ship notes it at
+      the clamp and turns the galley lights up (morale, a deed)
+
+## Milestone 254 — A Capsule in a Decaying Orbit ✅ (Sep 2026)
+- [x] A first astronaut from a world that has never met a ship: grapple and
+      set them down (the rule broken, kindly), nudge the orbit unseen (the
+      engineer's trick, the rule kept), or watch and record
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

@@ -1175,6 +1175,15 @@ export function shipNewsletter(w: World): string[] {
   out.push("CORRECTIONS: NONE. THE EDITOR IS NEVER WRONG. THE EDITOR IS THE SHIP.");
   return out;
 }
+// The ship's anniversary: every hundred hours under way since commissioning, the ship notes it, once each.
+export function anniversaryDue(w: World): string | null {
+  const p = w.player; const since = w.time - (p.commissionedAt ?? 0); const n = Math.floor(since / 360000);
+  if (n < 1) return null; const key = `anniv:${n}`; if ((p.flags ?? {})[key]) return null;
+  (p.flags ??= {})[key] = true; p.flags.anniversary = true;
+  for (const c of p.crew) c.morale = Math.min(100, c.morale + 4);
+  logEntry(w, `${(p.shipName ?? hull(p.hullId).name)}: ${n * 100} hours under way since commissioning`);
+  return `${shipVoiceName(p)}: ${n * 100} HOURS UNDER WAY SINCE THE BELL. I DIDN'T EXPECT ANYONE TO REMEMBER. I'VE TURNED THE GALLEY LIGHTS UP A LITTLE. MORALE UP.`;
+}
 // Birthdays: every crew member has one every thirty ship-days, and the galley notices. Once each.
 export function birthdaysDue(w: World): string[] {
   const p = w.player; const day = Math.floor(w.time / 86400); const period = Math.floor(day / 30); const out: string[] = [];

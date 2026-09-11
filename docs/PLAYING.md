@@ -752,6 +752,16 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- Freemen in a system with a syndicate rock get the other council's ask: a
+  hauler with no transponder tonight, and would you be looking the other way.
+  Look away (syndicate standing up, faction rep down), tell the patrol (the
+  reverse, and the belt goes quiet at you), or neither.
+- Every hundred hours under way since commissioning the ship notes the
+  anniversary at the next clamp: morale up, the galley lights up a little.
+- A capsule in a decaying orbit: a world's first astronaut, who doesn't know
+  they have ninety minutes. Grapple it and set them down (a life, the rule
+  broken), nudge the orbit from their blind spot with the engineer (a life,
+  the rule kept, data), or watch and record (data, and a silent bridge).
 - Every hull you take at a yard, bought or brought out of the park, is
   commissioned: a new stardate on the plaque, a bell the yard keeps for this.
 - Let the voice-settings prank run and, a leg or so later, the ship gets
