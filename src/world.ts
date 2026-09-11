@@ -707,6 +707,7 @@ export function chronicleText(w: World, callsign: string | null): string {
     if (holdings.length) parts.push(`Holdings: ${holdings.join(", ")}.`);
     if ((p.keepsakes ?? []).length) parts.push(`Kept aboard: ${(p.keepsakes ?? []).slice(-3).join("; ")}.`);
     if (p.motto) parts.push(`The plaque by the airlock reads "${p.motto}".`);
+    if (p.commissionedAt !== undefined) parts.push(`Commissioned stardate ${(41000 + p.commissionedAt / 360).toFixed(1)}, ${Math.floor((w.time - p.commissionedAt) / 3600)} hours under way since.`);
     if ((p.mealsCooked ?? 0) > 0) parts.push(`${p.mealsCooked} meals cooked in the galley.`);
     const bests = Object.entries(p.raceBest ?? {}).slice(0, 4).map(([id, t]) => `${findStation(w, id)?.st.name ?? "?"} ${t.toFixed(1)}s`);
     if (bests.length) parts.push(`Ring times: ${bests.join(", ")}${p.regatta === 3 ? "; regatta champion" : p.regatta !== undefined ? `; regatta ${p.regatta}/3` : ""}.`);

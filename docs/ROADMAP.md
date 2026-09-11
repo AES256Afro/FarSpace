@@ -1642,6 +1642,18 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 314 — The Ship's Voice Page ✅ (Sep 2026)
 - [x] A handbook section for the ship's voice; What's New reads to 0.205
 
+## Milestone 315 — The README's Second Sitting ✅ (Sep 2026)
+- [x] A paragraph in the README for everything since the bridge
+
+## Milestone 316 — Tests for the Second Sitting ✅ (Sep 2026)
+- [x] Eight tests over the new pure functions: inquiries, transfers, the
+      same leave, anniversaries, birthdays, droughts, reviews, the office,
+      the newsletter, prisoners, the plaque, nicknames, briefings, the cats
+      program, observation, emergency and freeman missions
+
+## Milestone 317 — The Commissioning Line ✅ (Sep 2026)
+- [x] The chronicle notes the commissioning stardate and hours under way
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
