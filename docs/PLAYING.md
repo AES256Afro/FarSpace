@@ -229,6 +229,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## The week
+
+- W on the RECORD tab: the strategy layer on one page. Every faction's vote
+  and where you stand, the border contest and the last three results, the
+  regatta, your best times and your name on the lanes, holdings, charters
+  and fleet.
+
 ## The border
 
 - Every week one system on a seam between two factions is contested; the

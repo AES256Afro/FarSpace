@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS, roleLabel } from "../
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, tickAlumniMail, catGift, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, notableOutcome, ledger, ledgerAround, LEDGER_LABELS, dockingsAt, OLD_HAND_AT, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter, RACE_GATES, raceHolder, postDelivered, captainNickname, charterRoute, tickWorld, signGuestbook, regattaObjective, buyStake, collectStake, stakeDividend, stakePrice, totalShares, hasSpecialty, crewOwnHull, OWN_HULL_CREW_FEE, favourFor, favourDone, resolveBorder, pushInfluence } from "../world";
+  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, tickAlumniMail, catGift, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, notableOutcome, ledger, ledgerAround, LEDGER_LABELS, dockingsAt, OLD_HAND_AT, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter, RACE_GATES, raceHolder, postDelivered, captainNickname, charterRoute, tickWorld, signGuestbook, regattaObjective, buyStake, collectStake, stakeDividend, stakePrice, totalShares, hasSpecialty, crewOwnHull, OWN_HULL_CREW_FEE, favourFor, favourDone, resolveBorder, pushInfluence, weekKey, borderStanding } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
 import { BLUEPRINTS, MATERIALS, engGrade, nextCost, canAfford, upgrade } from "../data/engineering";
@@ -629,6 +629,7 @@ export class StationScene implements Scene {
         if (inp.wasPressed("l")) { this.recordView = this.recordView === "log" ? "achievements" : "log"; this.cursor = 0; sfx.blip(); }
         if (inp.wasPressed("b")) { this.recordView = this.recordView === "ledger" ? "achievements" : "ledger"; this.cursor = 0; sfx.blip(); }
         if (inp.wasPressed("p")) { this.recordView = this.recordView === "guestbook" ? "achievements" : "guestbook"; this.cursor = 0; sfx.blip(); }
+        if (inp.wasPressed("w")) { this.recordView = this.recordView === "week" ? "achievements" : "week"; this.cursor = 0; sfx.blip(); }
         if (inp.wasPressed("c")) { g.settingsReturn = "station"; g.setScene("chronicle"); return; }
         if (inp.wasPressed("x")) {
           try {
@@ -647,7 +648,7 @@ export class StationScene implements Scene {
 
   squadrons: wire.Squadron[] = [];
   patrons: Record<string, string> = {};
-  recordView: "achievements" | "log" | "ledger" | "guestbook" = "achievements";
+  recordView: "achievements" | "log" | "ledger" | "guestbook" | "week" = "achievements";
   surveyView: "data" | "codex" = "data";
   raceRecords: wire.RaceRec[] | null = null; // the wire's course records for this station
   base: wire.BaseRec | null = null;   // my squadron's base record
@@ -1754,6 +1755,34 @@ export class StationScene implements Scene {
     }
     drawText(ctx, "WAGES, FUEL, YARD WORK, TRADE, FARES, TOLLS, CHARTERS, LETTERS: THE WHOLE STORY OF THE MONEY.", 8, VH - 32, PAL.greyDark);
   }
+  // The week: the strategy layer on one page. Votes, the border, the regatta, holdings, your name.
+  drawWeek(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
+    const w = g.world; const p = w.player;
+    drawText(ctx, `THE WEEK OF ${weekKey()} - W FOR THE SERVICE RECORD`, 8, top, PAL.info);
+    let y = top + 12;
+    const facs = [...new Set(Object.values(w.systems).map((s) => s.factionId).filter((f): f is string => !!f && f !== "vex"))];
+    drawText(ctx, "THE VOTES", 8, y, PAL.gold); y += 9;
+    for (const f of facs.slice(0, 5)) {
+      const issue = weeklyIssue(w, f); const mine = myVote(w, f); const r = voteResult(w, f);
+      drawText(ctx, `${faction(f).name.toUpperCase()}: ${issue.title} - ${mine ? `YOU: ${mine.toUpperCase()}, ${r.passed ? "PASSES" : "FAILS"}` : `NOT VOTED (HOUSE ${r.lean >= 0.5 ? "FOR" : "AGAINST"})`}`.slice(0, 104), 8, y, mine ? PAL.ui : PAL.grey); y += 8;
+    }
+    y += 3;
+    const bs = borderStanding(w);
+    drawText(ctx, "THE BORDER", 8, y, PAL.gold); y += 9;
+    if (bs) { drawText(ctx, `${w.systems[bs.c.systemId].name.toUpperCase()}: ${faction(bs.c.incumbent).name.toUpperCase()} ${bs.inc} V ${faction(bs.c.challenger).name.toUpperCase()} ${bs.chal}${bs.yoursInc || bs.yoursChal ? ` - YOUR PUSH: ${bs.yoursInc ? `+${bs.yoursInc} HOLD ` : ""}${bs.yoursChal ? `+${bs.yoursChal} FLIP` : ""}` : " - NO PUSH FROM YOU YET"}`.slice(0, 104), 8, y, PAL.ui); y += 8; }
+    for (const b of (w.borderLog ?? []).slice(-3).reverse()) { drawText(ctx, `${b.week}: ${w.systems[b.systemId]?.name.toUpperCase() ?? "?"} ${b.flipped ? `FELL TO THE ${faction(b.to).name.toUpperCase()}` : `HELD FOR THE ${faction(b.from).name.toUpperCase()}`}${b.yours ? ` (YOUR PUSH ${b.yours})` : ""}`.slice(0, 104), 8, y, PAL.grey); y += 8; }
+    y += 3;
+    drawText(ctx, "THE LANES", 8, y, PAL.gold); y += 9;
+    { const ro = regattaObjective(w); drawText(ctx, ro ? ro : p.regatta === 3 ? "THE REGATTA: CHAMPION" : "THE REGATTA: NOT ENTERED - FINISH ANY RING RACE", 8, y, PAL.ui); y += 8; }
+    { const best = Object.entries(p.raceBest ?? {}).slice(0, 3).map(([id, t]) => `${(findStation(w, id)?.st.name ?? "?").toUpperCase()} ${t.toFixed(1)}S`).join(", "); drawText(ctx, best ? `BEST TIMES: ${best}` : "BEST TIMES: NONE YET", 8, y, PAL.grey); y += 8; }
+    { const nick = captainNickname(w); drawText(ctx, `${nick ? `THE LANES CALL YOU ${nick}. ` : ""}${p.postRuns ?? 0} MAIL BAGS, ${p.fares ?? 0} FARES, ${p.rescues ?? 0} RESCUES, ${p.races ?? 0} RACES`, 8, y, PAL.grey); y += 8; }
+    y += 3;
+    drawText(ctx, "THE LEDGER", 8, y, PAL.gold); y += 9;
+    drawText(ctx, totalShares(p) ? `HOLDINGS: ${Object.entries(p.stakes ?? {}).map(([id, n]) => `${(findStation(w, id)?.st.name ?? "?").toUpperCase()} ${n}`).join(", ")}`.slice(0, 104) : "HOLDINGS: NONE - I ON A MARKET TAB BUYS A SHARE", 8, y, PAL.grey); y += 8;
+    drawText(ctx, `CHARTERS: ${(p.haulers ?? []).length ? (p.haulers ?? []).map((c) => `${c.name.toUpperCase()} (${c.trips} TRIPS, TILL ${Math.round(c.till)}CR)`).join("; ") : "NONE"}`.slice(0, 104), 8, y, PAL.grey); y += 8;
+    drawText(ctx, `FLEET: ${(p.fleet ?? []).length ? (p.fleet ?? []).map((f) => `${(f.name ?? hull(f.hullId).name).toUpperCase()} AT ${(findStation(w, f.stationId)?.st.name ?? "?").toUpperCase()}`).join("; ") : "JUST THIS ONE"}`.slice(0, 104), 8, y, PAL.grey); y += 8;
+  }
+
   drawGuestbook(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
     const p = g.world.player;
     const book = (p.guestbook ?? []).slice().reverse();
@@ -1773,10 +1802,11 @@ export class StationScene implements Scene {
     if (this.recordView === "log") { this.drawLog(g, ctx, top); return; }
     if (this.recordView === "ledger") { this.drawLedger(g, ctx, top); return; }
     if (this.recordView === "guestbook") { this.drawGuestbook(g, ctx, top); return; }
+    if (this.recordView === "week") { this.drawWeek(g, ctx, top); return; }
     const p = g.world.player;
     const w = g.world;
     const have = new Set(p.achievements ?? []);
-    drawText(ctx, `SERVICE RECORD${w.hardcore ? " - HARDCORE" : ""} - L LOG - B LEDGER - P GUESTBOOK - C CHRONICLE - X EXPORT`, 8, top, PAL.info);
+    drawText(ctx, `SERVICE RECORD${w.hardcore ? " - HARDCORE" : ""} - L LOG - B LEDGER - P GUESTBOOK - W THE WEEK - C CHRONICLE - X EXPORT`, 8, top, PAL.info);
     const stats = [
       `KILLS ${p.kills}`, `DISCOVERIES ${p.discoveries}`, `ARCS ${Object.values(p.arcs).reduce((a, b) => a + b, 0)}/15`,
       `CREDITS ${p.credits}`, `CREW ${p.crew.length}`, `HULL ${hull(p.hullId).name.toUpperCase()}`,

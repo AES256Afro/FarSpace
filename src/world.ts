@@ -2294,7 +2294,7 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
   // the rally: a contested station wants supplies, and the faction remembers who brings them
   { const bc = borderContest(world); if (bc && bc.systemId === sys.id && !station.military) {
     const exports = new Set(stationExports(station));
-    const want = COMMODITIES.filter((c) => !c.rare && !c.illegal && !exports.has(c.id) && c.id !== "ore");
+    const want = COMMODITIES.filter((c) => !c.rare && !c.illegal && !exports.has(c.id) && !["ore", "relics", "data", "bio"].includes(c.id));
     if (want.length) {
       const com = rng.pick(want); const qty = rng.int(6, 10);
       missions.push({

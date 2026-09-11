@@ -715,4 +715,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Rally supply missions at contested stations with a big push; tannoy
       and gossip about the contest
 
+## Milestone 88 — The Week ✅ (Sep 2026)
+- [x] W on RECORD: votes, the border, the regatta, holdings, charters and
+      fleet on one page
+
 ## Later
