@@ -757,6 +757,10 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   Send them (they become a friendly captain in the lanes, write from the
   chair, and the chronicle says who they command), ask them to stay plainly
   (loyalty up a lot), or leave it to them and a coin.
+- The galley wedding leaves the borrowed ring aboard, and a named ship dims
+  the lights for it. An old shipmate may name a child after the ship. And
+  after six letters the office's representative retires and sends you the
+  files, all of them, in a box that hums.
 - Alumni who command their own ship write about the chair. And settings has
   a third standing order: THE SHIP'S QUIET LEG, always yes or asks.
 - Your first hire brings a hint about what a crew makes possible: alerts,

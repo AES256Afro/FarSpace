@@ -1901,6 +1901,16 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 386 — Read to 0.229 ✅ (Sep 2026)
 - [x] What's New reads 0.56 to 0.229
 
+## Milestone 387 — The Venue Has Standards ✅ (Sep 2026)
+- [x] The galley wedding leaves a ring aboard, and the ship dims the lights
+
+## Milestone 388 — After the Ship, Not After You ✅ (Sep 2026)
+- [x] An old shipmate names a child after the ship and writes
+
+## Milestone 389 — The Files ✅ (Sep 2026)
+- [x] After six letters the office's representative retires and leaves you
+      the files, all of them, in a box that hums (a deed)
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
