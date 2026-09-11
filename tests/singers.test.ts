@@ -112,6 +112,7 @@ describe("singers' berth", () => {
     const g = { world: w, scenes: { flight, singers: scene }, input, toast: () => {}, autosave: () => { saves++; },
       setScene: (name: string) => { current = name; if (name === "singers") scene.enter(g); if (name === "flight") flight.enter(g); },
     } as unknown as Game;
+    flight.enter(g);
     p.vx = 100; flight.tryInteract(g); expect(current).toBe("flight");
     p.vx = 0; flight.tryInteract(g); expect(current).toBe("singers");
     p.expData = 100; const npcs = flight.npcs; flight.scanMsg = "KEEP THIS CONTACT";

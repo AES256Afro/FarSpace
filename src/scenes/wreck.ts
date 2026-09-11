@@ -1,5 +1,6 @@
 // Wreck interior: board a derelict, loot crates, survive the fires and breaches.
 
+import type { FlightScene } from "./flight/index";
 import { Game, Scene, VW } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
@@ -43,7 +44,7 @@ export class WreckScene implements Scene {
 
   enter(g: Game): void {
     const w = g.wreckTarget;
-    if (!w) { g.setScene("flight"); return; }
+    if (!w) { (g.scenes.flight as FlightScene).resumeNext = true; g.setScene("flight"); return; }
     this.wreck = w;
     { const p0 = g.world.player; const here = (p0.wrecksOfMine ?? []).includes(w.id) ? (p0.lost ?? []).find((l) => !(p0.flags ?? {})[`theplace:${w.id}:${l.name}`]) : null;
       if (here) { (p0.flags ??= {})[`theplace:${w.id}:${here.name}`] = true; const enc0: Encounter = { id: "theplace", where: "space", title: "THE PLACE", weight: 0,
@@ -119,7 +120,7 @@ export class WreckScene implements Scene {
   leave(g: Game): void {
     if (this.wreck.id.startsWith("ark-") && this.crates.every((c) => c.taken)) { (g.world.player.codex ??= {})["signal:THE SLEEPERS"] = 1; g.toast("SOMEWHERE DEEP IN THE ARK, A LIGHT COMES ON THAT WASN'T ON BEFORE."); logEntry(g.world, `Walked the corridors of ${this.wreck.name}`); flag(g, "arkWalker"); }
     if (this.crates.every((c) => c.taken)) { this.wreck.looted = true; flag(g, "wreckLooted"); gainMaterials(g, { germanium: 1 + Math.floor(Math.random() * 2), iron: 2, nickel: Math.random() < 0.5 ? 2 : 0 }); }
-    g.setScene("flight");
+    (g.scenes.flight as FlightScene).resumeNext = true; g.setScene("flight");
   }
 
   update(g: Game, dt: number): void {

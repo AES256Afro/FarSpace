@@ -1,6 +1,7 @@
 // Ship interior: walk your deck, repair physical panels, seal breaches, fight
 // fires, talk to crew and passengers, study, eat, sleep.
 
+import type { FlightScene } from "./flight/index";
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
@@ -559,7 +560,7 @@ export class InteriorScene implements Scene {
     music.setMood("ship", g.world.player.fires.length ? 0.4 : 0);
     const inp = g.input;
     const p = g.world.player;
-    if (inp.wasPressed("Escape") || inp.wasPressed("i")) { g.setScene("flight"); return; }
+    if (inp.wasPressed("Escape") || inp.wasPressed("i")) { (g.scenes.flight as FlightScene).resumeNext = true; g.setScene("flight"); return; }
     if (inp.wasPressed("v")) { g.setScene("vista"); return; }
     if (inp.wasPressed("r")) { g.settingsReturn = "interior"; g.setScene("roster"); return; }
     if (inp.wasPressed("F5")) g.save();
@@ -680,7 +681,7 @@ export class InteriorScene implements Scene {
         px.mood = Math.min(100, mood + 2);
         this.talkTimer = 5;
       } else if (near && !fire && !breach) {
-        if (near.ch === "C") { g.setScene("flight"); return; }
+        if (near.ch === "C") { (g.scenes.flight as FlightScene).resumeNext = true; g.setScene("flight"); return; }
         if (near.ch === "B") {
           // sleep: skip a minute of world time, fully restore
           for (let i = 0; i < 60; i++) tickWorld(g.world, 1);

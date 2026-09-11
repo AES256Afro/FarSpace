@@ -58,6 +58,10 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - Drop a rover (L from orbit) on any region: scan alien flora (hold V), recover
   crashed probes, chart regions and biomes for the codex.
 - J engages cruise for long transits; N flies your plotted course.
+- Visits aboard your ship, in orbit, on the ground, and inside wrecks keep
+  the surrounding flight contacts. Return to the same ships, rescue work,
+  escorts, and tow line. Jumps and station departures create new traffic;
+  loading a save reconstructs flight contacts.
 
 ## Miner
 

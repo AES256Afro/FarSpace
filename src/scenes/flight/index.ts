@@ -39,7 +39,7 @@ import { RNG } from "../../core/rng";
 import type { Bullet, Npc, Particle, Platform, Loot, Sos, RepairJob } from "./types";
 import type { Encounter } from "../../data/encounters";
 import { addCargo as addCargoW } from "../../world";
-import type { StationDef } from "../../world";
+import type { StationDef, World } from "../../world";
 import { BULLET_SPEED } from "./types";
 import {
   populate, spawnPirateNearBelt, spawnDrones, exhaust, mine, updateBullets, updateNpcs,
@@ -78,25 +78,26 @@ export class FlightScene implements Scene {
   hitFlash = 0;
   pursuitTimer = 0;    // time the law has been chasing us this system
 
-  resumeNext = false; // set by overlays (encounter cards, repairs) so coming back doesn't repopulate the system
+  private population: { world: World; systemId: string } | null = null;
+  resumeNext = false; // Temporary visits return to the same flight population.
   enter(g: Game): void {
-    if (this.resumeNext) { this.resumeNext = false; this.mapOpen = false; return; }
-    this.bullets = [];
-    this.npcs = [];
-    this.particles = [];
-    this.loot = [];
+    const resume = this.resumeNext && this.population?.world === g.world
+      && this.population.systemId === g.world.player.systemId
+      && !g.justUndocked && !g.world.player.dockedAt;
+    this.resumeNext = false;
+    if (resume) { this.mapOpen = false; return; }
+    if (this.population?.world !== g.world) {
+      this.loreSeen.clear(); this.ghostsSeen.clear(); this.commsLog = [];
+      this.logged = new WeakSet(); this.lastWatch = -1;
+      this.addressed = false; this.reported = false; this.readyRoom = false; this.cutterSpoke = false;
+    }
+    const population = this.resetPopulation(g);
     this.mapOpen = false;
     this.cruise = false; this.autopilot = false;
-    this.escort = null;
-    this.race = null;
-    this.convoy = null;
-    this.scanCharge = 0;
-    this.torps = [];
-    this.floaters = [];
-    this.comms = [];
-    this.wonderSeen.clear();
-    this.docking = null;
-    if (g.world.realGalaxy) { void wire.fetchWire(); void wire.fetchLights().then(() => { if (g.sceneName === "flight") { const here = wire.lightsAt(g.world.systems[g.world.player.systemId].name); const n = addWireWrecks(g.world, here); if (n) this.comms.push({ from: "CHART", text: `${n} WRECK${n > 1 ? "S" : ""} ON THE CHART HERE THAT ANOTHER PILOT LEFT. SALVAGE RIGHTS ARE WHOEVER GETS THERE.`, life: 9, color: PAL.greyDark }); for (const l of here.filter((x) => x.kind === "mayday")) { if (!this.npcs.some((x) => x.mayday && x.name === l.callsign)) { spawnMayday(this, g, l.callsign); this.comms.push({ from: l.callsign, text: `MAYDAY, MAYDAY. THIS IS ${l.callsign}. TANKS ARE DRY. ANYONE WITH TEN UNITS TO SPARE, I'LL OWE YOU ONE.`, life: 12, color: PAL.danger }); } } } }); }
+    this.paused = false; this.logOpen = false; this.hardBurn = false;
+    this.scanMsg = ""; this.scanTimer = 0; this.arrivalLog = ""; this.arrivalTimer = 0;
+    this.alert = 0; this.alertT = 0; this.autoAlertT = 0; this.klaxonT = 0;
+    if (g.world.realGalaxy) { void wire.fetchWire(); void wire.fetchLights().then(() => { if (g.sceneName === "flight" && this.population === population && population.world === g.world && population.systemId === g.world.player.systemId) { const here = wire.lightsAt(g.world.systems[g.world.player.systemId].name); const n = addWireWrecks(g.world, here); if (n) this.comms.push({ from: "CHART", text: `${n} WRECK${n > 1 ? "S" : ""} ON THE CHART HERE THAT ANOTHER PILOT LEFT. SALVAGE RIGHTS ARE WHOEVER GETS THERE.`, life: 9, color: PAL.greyDark }); for (const l of here.filter((x) => x.kind === "mayday")) { if (!this.npcs.some((x) => x.mayday && x.name === l.callsign)) { spawnMayday(this, g, l.callsign); this.comms.push({ from: l.callsign, text: `MAYDAY, MAYDAY. THIS IS ${l.callsign}. TANKS ARE DRY. ANYONE WITH TEN UNITS TO SPARE, I'LL OWE YOU ONE.`, life: 12, color: PAL.danger }); } } } }); }
     { const sysNow = g.world.systems[g.world.player.systemId]; if (!this.loreSeen.has(sysNow.id)) { this.loreSeen.add(sysNow.id); this.comms.push({ from: "CHART", text: systemLore(g.world, sysNow).toUpperCase(), life: 9, color: PAL.greyDark }); } }
     if (g.justUndocked && (settings().alertOnUndock ?? "green") === "yellow") { this.alert = 1; this.alertT = 0; }
     if (g.justUndocked) {
@@ -108,7 +109,7 @@ export class FlightScene implements Scene {
       if (p.catchphrase) { const pil = p.crew.find((c) => c.role === "pilot" && !c.sick); const fo = firstOfficer(p); const who = pil ?? fo; this.comms.push({ from: "YOU", text: `${p.catchphrase.toUpperCase()}.`, life: 6, color: PAL.gold }); if (who) this.comms.push({ from: who.name.split(" ")[0].toUpperCase(), text: pil ? "AYE. CLAMP'S AWAY. COURSE IS YOURS." : "AYE, CAPTAIN. THE BRIDGE HEARD.", life: 6, color: PAL.grey }); else if (p.voiceName) this.comms.push({ from: p.voiceName.toUpperCase(), text: "AYE. I HEARD. I ALWAYS HEAR.", life: 6, color: PAL.grey }); }
       this.startRace(g);
       if (p.convoyPending) { const m = p.missions.find((x) => x.id === p.convoyPending); p.convoyPending = null; if (m) { const cv = this.startConvoy(g); if (cv) { cv.reward = m.reward; cv.missionId = m.id; } } }
-      if (!p.racePending && !this.race && !this.convoy && Math.random() < 0.12 && g.world.systems[p.systemId].jumpPoints.length) { const enc = ENCOUNTERS.find((e) => e.id === "walkus"); if (enc) setTimeout(() => { if (g.sceneName === "flight") (g.scenes["encounter"] as EncounterScene).open(g, enc, "flight", false); }, 2500); }
+      if (!p.racePending && !this.race && !this.convoy && Math.random() < 0.12 && g.world.systems[p.systemId].jumpPoints.length) { const enc = ENCOUNTERS.find((e) => e.id === "walkus"); if (enc) setTimeout(() => { if (g.sceneName === "flight" && this.population === population && population.world === g.world && population.systemId === g.world.player.systemId) (g.scenes["encounter"] as EncounterScene).open(g, enc, "flight", false); }, 2500); }
       const st = g.world.systems[p.systemId].stations.find((s) => dist(p.x, p.y, Math.cos(s.angle) * s.orbit, Math.sin(s.angle) * s.orbit) < 120);
       if (st) {
         const sx = Math.cos(st.angle) * st.orbit, sy = Math.sin(st.angle) * st.orbit;
@@ -133,6 +134,27 @@ export class FlightScene implements Scene {
       if (ev?.kind === "storm") { this.scanMsg = stormBlind(g.world, p.systemId) ? "ION STORM - RADAR AND CHARTS BLIND. FLY BY EYE." : "ION STORM - THE BEACON HOLDS THE PICTURE"; this.scanTimer = 5; sfx.alarm(); }
       if (ev?.kind === "comet" && logSight(p, "comet", `the comet over ${g.world.systems[p.systemId].name}`, p.systemId)) g.toast("THE COMET FILLS THE VIEWPORT. YOUR PASSENGERS WON'T FORGET THIS ONE.");
     }
+  }
+
+  // All references to ships and positions belong to one world and one system.
+  // Jumps retain the plotted flight controls, but never these local encounters.
+  private resetPopulation(g: Game) {
+    const population = { world: g.world, systemId: g.world.player.systemId };
+    this.population = population;
+    this.resumeNext = false;
+    this.npcs = []; this.platforms = []; this.bullets = []; this.torps = [];
+    this.particles = []; this.floaters = []; this.loot = []; this.comms = [];
+    this.sos = null; this.sosTimer = 45; this.repairJob = null; this.towing = null;
+    this.escort = null; this.convoy = null; this.race = null; this.raidBase = null;
+    this.docking = null; this.launching = 0; this.dockTimer = 0;
+    this.drifters = []; this.charges = []; this.maydays = []; this.lastMayday = 0;
+    this.lastFound = null; this.lastHail = null; this.wonderSeen.clear();
+    this.scanCharge = 0; this.pursuitTimer = 0; this.fireCd = 0; this.turretCd = 0;
+    this.camShake = 0; this.hitFlash = 0; this.mining = false; this.scooping = false;
+    this.spawnTimer = 4; this.encounterTimer = 90; this.trafficTimer = 40;
+    this.maydayCheck = 20; this.chatterTimer = 25; this.hailT = 25; this.songTimer = 0;
+    g.repairTarget = null;
+    return population;
   }
 
   pauseOptions(g: Game): { label: string; act: () => void }[] {
@@ -239,7 +261,7 @@ export class FlightScene implements Scene {
     if (g.input.wasPressed("i")) { g.setScene("interior"); return; }
     if (g.input.wasPressed("y") && !this.docking) { this.alert = ((this.alert + 1) % 3) as AlertLevel; this.alertT = 0; if (this.alert === 2) { sfx.alarm(); noteLeg(p, "alerts", g.world.time); { const fo = firstOfficer(p); if (fo && !fo.sick && !this.npcs.some((n) => n.kind === "pirate" && n.hull > 0 && dist(p.x, p.y, n.x, n.y) < 1400)) this.comms.push({ from: fo.name.split(" ")[0].toUpperCase(), text: "RED ALERT, AYE. ... IS THERE SOMETHING I SHOULD KNOW, CAPTAIN? THE SCANNER'S CLEAR.", life: 6, color: PAL.warn }); } const gun = p.crew.find((c) => c.role === "gunner" && !c.sick) ?? p.crew.find((c) => !c.sick); this.comms.push({ from: gun ? gun.name.split(" ")[0].toUpperCase() : shipVoiceName(p), text: gun ? "RED ALERT. SHIELDS UP, STATIONS. SOMEBODY GET THE CAT OFF THE CONSOLE." : "RED ALERT. I'VE PUT EVERYTHING INTO THE SHIELDS. I HOPE YOU KNOW SOMETHING I DON'T.", life: 6, color: PAL.danger }); flag(g, "redalert"); } else if (this.alert === 1) { sfx.blip(); this.comms.push({ from: shipVoiceName(p), text: "YELLOW ALERT. SHIELDS READY. THE CREW LOOK UP FROM THEIR CARDS.", life: 5, color: PAL.warn }); } else { sfx.select(); this.comms.push({ from: shipVoiceName(p), text: "STAND DOWN. CONDITION GREEN. THE CARDS COME BACK OUT.", life: 5, color: PAL.good }); } }
     if (g.input.wasPressed("F5")) g.save();
-    if (g.input.wasPressed("F9")) g.load();
+    if (g.input.wasPressed("F9")) { g.load(); return; }
     if (g.input.wasPressed("f")) toggleFullscreen(g.canvas);
     this.zoom = clamp(this.zoom * (1 - g.input.wheel * 0.15), 0.25, 2);
     if (this.mapOpen) return;
@@ -1640,13 +1662,7 @@ export class FlightScene implements Scene {
     const use = tsys.jumpPoints.find((j) => j.targetSystemId === fromId) ?? tsys.jumpPoints[0];
     if (use) { p.x = use.x + 60; p.y = use.y + 60; } else { p.x = 0; p.y = -800; }
     p.vx = 0; p.vy = 0;
-    this.bullets = [];
-    this.npcs = [];
-    this.loot = [];
-    this.torps = [];
-    this.comms = [];
-    this.escort = null;
-    this.pursuitTimer = 0;
+    this.resetPopulation(g);
     populate(this, g);
     this.spawnDrifters(g);
     this.launchDrones(g);

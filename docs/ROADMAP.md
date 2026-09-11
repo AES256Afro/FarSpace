@@ -1957,6 +1957,18 @@ Time passes for the people on the ship, and for the ship.
 - [x] Tests cover capacity, offers, journey length, delivery, guestbooks,
       persistence, and bar visibility. Browser check covers boarding to arrival.
 
+## Milestone 396: The Ships You Left Outside (Sep 2026)
+- [x] Ship interior, orbit, and wreck returns preserve the same NPCs,
+      rescue work, escorts, tow lines, and loose cargo.
+- [x] Check world identity and system before honoring a return request.
+      Rebuild contacts after loading, normal station departures, and jumps.
+- [x] Clear local rescue and combat references at system boundaries while
+      retaining the plotted course through jumps. Ignore delayed arrivals
+      from a previous flight population.
+- [x] Stop the old update frame after F9 loads another save.
+- [x] Regression tests cover temporary visits, load and jump boundaries,
+      docking, and delayed wire responses. Browser checks cover real controls.
+
 ## Later: Trek / Expanse / Orville (the fourth sitting)
 
 The third sitting shipped everything on the last list (M330–M386): the

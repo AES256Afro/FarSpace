@@ -2,6 +2,7 @@
 // satellites, scanning, and landing at surface outposts.
 
 import { logSight, settlementTierLabel, planetLore } from "../world";
+import type { FlightScene } from "./flight/index";
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
@@ -63,7 +64,7 @@ export class OrbitScene implements Scene {
     const pl = sys.planets[g.orbitPlanetIdx];
     const surf = pl.surface!;
     this.rot += dt * 0.25;
-    if (inp.wasPressed("Escape")) { g.setScene("flight"); return; }
+    if (inp.wasPressed("Escape")) { (g.scenes.flight as FlightScene).resumeNext = true; g.setScene("flight"); return; }
     if (inp.wasPressed("F5")) g.save();
     const pois = surf.pois;
     if (inp.wasPressed("ArrowDown")) { this.sel = (this.sel + 1) % pois.length; sfx.blip(); }
