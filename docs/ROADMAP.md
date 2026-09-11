@@ -810,4 +810,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] A record-pace ghost marker during ring races; the new week announced on
       the first dock
 
+## Milestone 113 — Cheques in the Post ✅ (Sep 2026)
+- [x] Remote stake dividends at a quarter rate on any docking; the guestbook
+      readable aboard at the passenger seat
+
 ## Later

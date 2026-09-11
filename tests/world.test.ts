@@ -15,7 +15,7 @@ import { STARS, starDistance } from "../src/data/stars";
 import { ACHIEVEMENTS } from "../src/data/achievements";
 import { ARCS, dailyContract, dailyKey, rankOf, logSystem, applyHull } from "../src/world";
 import { MODULES } from "../src/data/modules";
-import { WONDER_DEFS, rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook, leaveWreck, addWireWrecks, enterRegatta, regattaObjective, regattaProgress, buyStake, collectStake, stakePrice, STAKE_CAP, hasSpecialty, chooseSpecialty, wearRate, crewOwnHull, OWN_HULL_CREW_FEE, maydayAnswered, favourFor, favourDone, borderContest, pushInfluence, borderStanding, resolveBorder, photoTaken, WONDER_RANGE, replyToLetter } from "../src/world";
+import { WONDER_DEFS, rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook, leaveWreck, addWireWrecks, enterRegatta, regattaObjective, regattaProgress, buyStake, collectStake, stakePrice, STAKE_CAP, collectRemoteStakes, hasSpecialty, chooseSpecialty, wearRate, crewOwnHull, OWN_HULL_CREW_FEE, maydayAnswered, favourFor, favourDone, borderContest, pushInfluence, borderStanding, resolveBorder, photoTaken, WONDER_RANGE, replyToLetter } from "../src/world";
 import { RARES } from "../src/data/data";
 import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
@@ -842,6 +842,9 @@ describe("stakes", () => {
     expect(collectStake(w, st)).toBeGreaterThan(0);
     expect(buyStake(w, st, STAKE_CAP)).toContain("ALL ONE CAPTAIN");
     p.credits = 10; expect(buyStake(w, st, 1)).toContain("SHORT");
+    p.credits = 100000; const other = Object.values(w.systems).flatMap((s) => s.stations).find((x) => !x.military && x !== st)!; buyStake(w, other, 4);
+    const r = collectRemoteStakes(w, st.id); expect(r.n).toBe(1); expect(r.total).toBeGreaterThan(0);
+    expect(collectRemoteStakes(w, other.id).n).toBe(1);
     const mil = Object.values(w.systems).flatMap((s) => s.stations).find((x) => x.military);
     if (mil) expect(buyStake(w, mil, 1)).toContain("NAVY");
   });

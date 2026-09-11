@@ -474,7 +474,7 @@ export class InteriorScene implements Scene {
     const eng = crewBonus(p, "engineer");
     if (eng > 0) for (const s of p.systems) if (s.health < 100) s.health = Math.min(100, s.health + dt * 0.4 * eng);
 
-    const near = nearestTile(this.deck, this.px, this.py, "CELRWGMBKSH");
+    const near = nearestTile(this.deck, this.px, this.py, "CELRWGMBKSHp");
     const fire = p.fires.find((f) => dist(f.tx * T + T / 2, f.ty * T + T / 2, this.px, this.py) < 16);
     const breach = p.breaches.find((b) => dist(b.tx * T + T / 2, b.ty * T + T / 2, this.px, this.py) < 16);
     this.watchTime = g.world.time;
@@ -567,6 +567,10 @@ export class InteriorScene implements Scene {
         } else if (near.ch === "M") {
           this.listenToTheBand(g);
           return;
+        } else if (near.ch === "p" && !this.passengerNear(p)) {
+          const book = (p.guestbook ?? []).slice(-4).reverse();
+          this.talk = book.length ? `THE GUESTBOOK: ${book.map((e) => `${e.name.toUpperCase()}: "${e.line.toUpperCase()}"`).join("  ")}`.slice(0, 200) : "THE GUESTBOOK IS OPEN ON THE SEAT, BLANK BUT FOR THE SHIP'S NAME. THE LOUNGE AT ANY STATION HAS PEOPLE WHO'D SIGN IT.";
+          this.talkTimer = 7;
         } else if (near.ch === "H") {
           const n = hull(p.hullId).drones ?? 0;
           this.say(n ? `HANGAR: ${n} ESCORT DRONES RACKED. THEY LAUNCH WITH YOU AND RE-ARM AT DOCK.` : "HANGAR: EMPTY RACKS");

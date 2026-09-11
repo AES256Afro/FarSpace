@@ -1245,6 +1245,18 @@ export function collectStake(w: World, st: StationDef): number {
   if (d) { w.player.credits += d; ledger(w.player, "stakes", d); }
   return d;
 }
+// Your other holdings pay a quarter on any docking: the post carries the cheques
+export function collectRemoteStakes(w: World, hereId: string): { total: number; n: number } {
+  let total = 0, n = 0;
+  for (const id of Object.keys(w.player.stakes ?? {})) {
+    if (id === hereId) continue;
+    const st = findStation(w, id)?.st; if (!st) continue;
+    const d = Math.round(stakeDividend(w, st) / 4);
+    if (d) { total += d; n++; }
+  }
+  if (total) { w.player.credits += total; ledger(w.player, "stakes", total); }
+  return { total, n };
+}
 export function totalShares(p: PlayerState): number { return Object.values(p.stakes ?? {}).reduce((a, b) => a + b, 0); }
 
 // The regatta: three courses, three stations, a title at the end. Entered by finishing any race.

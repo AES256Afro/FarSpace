@@ -243,6 +243,12 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Cheques in the post
+
+- Holdings at other stations pay a quarter of their dividend on any docking,
+  delivered with the post; the full rate still needs you there. Aboard, E at
+  the empty passenger seat reads the last few guestbook signatures.
+
 ## The pacer and the new week
 
 - In a ring race a hollow diamond runs the course at the record pace, the
