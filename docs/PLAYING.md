@@ -817,6 +817,9 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The request rides on the fare's line on the flight HUD: what they want in
   gold, done in green, and a quiet run gone red the moment the hull takes
   fire.
+- Envoys and patients have their own questions for each of the crew on the
+  band from the lounge: the envoy wants an honest ETA and no return fire,
+  the patient felt that turn in the stitches.
 - Some fares greet every new star up close: take them within the star's
   glare (the scoop zone, near enough to feel it) and they sing to it from the
   viewport. The whole lounge hears it.

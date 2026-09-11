@@ -1157,6 +1157,10 @@ Time passes for the people on the ship, and for the ship.
 - [x] Two standing orders in settings: leave the clamp at green or yellow;
       Number One answers hails on autopilot, or the captain does
 
+## Milestone 198 — The Lounge Knows Who It Carries ✅ (Sep 2026)
+- [x] Envoys and patients have their own lines for each crew role in the
+      lounge; the ship has read the standing orders
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
