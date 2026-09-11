@@ -15,7 +15,7 @@ import { STARS, starDistance } from "../src/data/stars";
 import { ACHIEVEMENTS } from "../src/data/achievements";
 import { ARCS, dailyContract, dailyKey, rankOf, logSystem, applyHull } from "../src/world";
 import { MODULES } from "../src/data/modules";
-import { WONDER_DEFS, rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook, leaveWreck, addWireWrecks, enterRegatta, regattaObjective, regattaProgress, buyStake, collectStake, stakePrice, STAKE_CAP, collectRemoteStakes, hasSpecialty, chooseSpecialty, wearRate, crewOwnHull, OWN_HULL_CREW_FEE, maydayAnswered, favourFor, favourDone, borderContest, pushInfluence, borderStanding, resolveBorder, photoTaken, WONDER_RANGE, replyToLetter } from "../src/world";
+import { WONDER_DEFS, rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook, lanesReport, leaveWreck, addWireWrecks, enterRegatta, regattaObjective, regattaProgress, buyStake, collectStake, stakePrice, STAKE_CAP, collectRemoteStakes, hasSpecialty, chooseSpecialty, wearRate, crewOwnHull, OWN_HULL_CREW_FEE, maydayAnswered, favourFor, favourDone, borderContest, pushInfluence, borderStanding, resolveBorder, photoTaken, WONDER_RANGE, replyToLetter } from "../src/world";
 import { RARES } from "../src/data/data";
 import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
@@ -1046,6 +1046,18 @@ describe("writing back", () => {
     expect(cap.disposition).toBe(Math.min(5, d0 + 1));
     expect(replyToLetter(w, m)).toContain("ALREADY");
     expect(replyToLetter(w, { dueT: 0, from: "A stranger", text: "x" })).toContain("A STRANGER");
+  });
+});
+
+describe("the lanes report", () => {
+  it("comes from your home port, once you have one, and mentions the border", () => {
+    const w = generateWorld(44, { realGalaxy: true });
+    expect(lanesReport(w)).toBeNull();
+    const st = Object.values(w.systems).flatMap((s) => s.stations).find((x) => !x.military)!;
+    w.player.homePort = st.id;
+    const l = lanesReport(w)!;
+    expect(l.from).toContain(st.name);
+    expect(l.text).toContain("contested");
   });
 });
 

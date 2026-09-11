@@ -1189,6 +1189,19 @@ export function borderStanding(w: World, now = Date.now()): { c: { systemId: str
   const yoursChal = w.player.influence?.[`${wk}:${c.systemId}:${c.challenger}`] ?? 0;
   return { c, inc: lean + yoursInc, chal: push + yoursChal, yoursInc, yoursChal };
 }
+// A letter from your home port's harbour office each week: the vote, the border, your holdings, a word
+export function lanesReport(w: World, now = Date.now()): Letter | null {
+  const p = w.player;
+  const home = p.homePort ? findStation(w, p.homePort) : null;
+  if (!home) return null;
+  const bs = borderStanding(w, now);
+  const holdings = Object.entries(p.stakes ?? {}).map(([id, n]) => `${findStation(w, id)?.st.name ?? "?"} ${n}`).join(", ");
+  const bits: string[] = [];
+  if (bs) bits.push(`${w.systems[bs.c.systemId]?.name ?? "?"} is contested this week: ${facName(bs.c.incumbent)} ${bs.inc}, ${facName(bs.c.challenger)} ${bs.chal}.`);
+  if (holdings) bits.push(`Your holdings: ${holdings}.`);
+  bits.push((p.dockings ?? {})[home.st.id] ? `Your berth is kept.` : `Your berth is kept, though we haven't seen you in a while.`);
+  return { dueT: w.time + 30, from: `${home.st.name} harbour office`, text: `The lanes report. ${bits.join(" ")}`, gift: (p.stakes?.[home.st.id] ?? 0) >= 10 ? { credits: 50 } : undefined };
+}
 // Called at a dock: settles any week that has ended since the last time
 export function resolveBorder(w: World, now = Date.now()): string | null {
   const wk = weekKey(now);

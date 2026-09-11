@@ -826,4 +826,7 @@ Time passes for the people on the ship, and for the ship.
 - [x] A wager card that doubles the next under-par race prize; a bay of your
       own at a station you hold a big stake in
 
+## Milestone 117 — The Lanes Report ✅ (Sep 2026)
+- [x] A weekly letter from your home port's harbour office
+
 ## Later

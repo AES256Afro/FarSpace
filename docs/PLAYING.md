@@ -243,6 +243,12 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## The lanes report
+
+- Once you have a home port, its harbour office writes each new week: the
+  contested system and the standing, your holdings, and whether your berth is
+  kept. Ten shares at home and there's a little something enclosed.
+
 ## The marshal's challenge
 
 - Once you've raced, a marshal's tender may pull alongside on the lanes and
