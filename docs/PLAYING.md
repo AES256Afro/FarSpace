@@ -752,6 +752,10 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- Some derelicts keep their recorder: a blinking box in a side room. E for
+  the ship's last entry (a log line, data, a keepsake).
+- The harbour view tallies the rule: first contacts kept against broken, and
+  whether the board of ethics has a file on you.
 - The long ship: a generation ship in a scaffold off a rock takes donations
   of parts, water, or an hour of your engineer. Belt standing up, a keepsake,
   and your name on a plate inside that nobody will read for two hundred years.

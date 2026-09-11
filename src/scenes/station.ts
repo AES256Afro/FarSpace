@@ -2019,6 +2019,7 @@ export class StationScene implements Scene {
     const lost = p.lostProperty ?? [];
     drawText(ctx, lost.length ? `LOST PROPERTY: ${lost.map((it) => `${it.name.toUpperCase().split(",")[0]} (${it.owner.toUpperCase()}${it.stationId === st.id ? ", GOT OFF HERE" : ""})`).join("; ")}`.slice(0, 104) : "LOST PROPERTY: NOTHING LEFT IN THE CABIN.", 8, y, PAL.grey); y += 9;
     if (isBeltStation(st) || (p.beltStanding ?? 0) > 0) { drawText(ctx, `BELT STANDING ${Math.min(BELT_FREEMAN_AT, p.beltStanding ?? 0)}/${BELT_FREEMAN_AT}${(p.beltStanding ?? 0) >= BELT_FREEMAN_AT ? " - FREEMAN OF THE BELT" : ""}: HOPPERS, SPINS, REGISTERS AND RUNS COUNT.`, 8, y, PAL.grey); y += 9; }
+    if ((p.ruleKept ?? 0) + (p.ruleBroken ?? 0) > 0) { drawText(ctx, `THE RULE: KEPT ${p.ruleKept ?? 0}, BROKEN ${p.ruleBroken ?? 0}${(p.ruleBroken ?? 0) > (p.ruleKept ?? 0) ? " - THE BOARD OF ETHICS HAS A FILE" : " - THE BOARD OF ETHICS APPROVES, SILENTLY"}.`, 8, y, PAL.grey); y += 9; }
     { const low = p.systems.filter((s) => s.health < 60); if (low.length) { drawText(ctx, `THE YARD WOULD LIKE A WORD ABOUT: ${low.map((s) => `${s.name.toUpperCase()} ${Math.round(s.health)}%`).join(", ")}`.slice(0, 104), 8, y, PAL.warn); y += 9; } }
     drawText(ctx, (p.keepsakes ?? []).length ? `KEPT ABOARD: ${(p.keepsakes ?? []).slice(-3).map((k) => k.toUpperCase().split(",")[0]).join(", ")}`.slice(0, 104) : "KEPT ABOARD: NOTHING YET.", 8, y, PAL.grey); y += 9;
     const open = passengersAboard(p).filter((m) => m.request && !m.requestSettled);

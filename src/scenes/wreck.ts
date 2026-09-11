@@ -34,6 +34,7 @@ export class WreckScene implements Scene {
   crates: { tx: number; ty: number; id: string; qty: number; taken: boolean }[] = [];
   fires: { tx: number; ty: number }[] = [];
   partner: "engineer" | "medic" | "gunner" | null = null; askedFor = "";
+  recorder: { tx: number; ty: number; taken: boolean } | null = null; recorderFor = "";
   breaches: { tx: number; ty: number }[] = [];
   o2 = 100;
   msg = ""; msgTimer = 0;
@@ -82,6 +83,7 @@ export class WreckScene implements Scene {
     // scatter crates for each loot entry in the side rooms / corridor
     const spots: [number, number][] = [];
     for (let ty = 1; ty < BASE.length - 1; ty++) for (let tx = 2; tx < BASE[0].length - 1; tx++) if (BASE[ty][tx] === "." && !(tx < 4 && ty < 3)) spots.push([tx, ty]);
+    { const rr = new RNG(hashStr(`rec:${w.id}`)); this.recorder = !w.id.startsWith("wreck-mine") && spots.length > 1 && !(this.recorder && this.recorderFor === w.id && this.recorder.taken) && rr.chance(0.4) ? (() => { const [tx, ty] = spots.splice(rr.int(0, spots.length - 1), 1)[0]; return { tx, ty, taken: false }; })() : null; this.recorderFor = w.id; }
     this.crates = w.loot.map((l) => {
       const [tx, ty] = spots.splice(rng.int(0, spots.length - 1), 1)[0];
       return { tx, ty, id: l.id, qty: l.qty, taken: false };
@@ -138,6 +140,16 @@ export class WreckScene implements Scene {
         if (!this.solid(nx, ny) && !this.fires.some((x) => x.tx === nx && x.ty === ny)) this.fires.push({ tx: nx, ty: ny });
       }
     }
+    // the recorder: the last thing the ship said, still in the box
+    const rec = this.recorder;
+    if (rec && !rec.taken && inp.wasPressed("e") && Math.hypot(rec.tx * T + T / 2 - this.px, rec.ty * T + T / 2 - this.py) < 16) {
+      rec.taken = true; const rr = new RNG(hashStr(`rec:${this.wreck.id}`));
+      const last = rr.pick(["'...tell the yard the port mount was fine. It was fine. It was everything else.'", "'If anyone finds this, the crew got to the pods. All of them. Log that first.'", "'We answered the hail. That's what I'd like remembered. We answered it.'", "'Water's at four percent. Somebody sing something.'", "'Course for home is laid in. It's a good course. Somebody should fly it.'"]);
+      p.expData = (p.expData ?? 0) + 25; (p.keepsakes ??= []).push(`the recorder from ${this.wreck.name}`); if (p.keepsakes.length > 8) p.keepsakes.shift();
+      logEntry(g.world, `${this.wreck.name}'s recorder, last entry: ${last}`); flag(g, "recorder");
+      this.msg = `THE RECORDER, STILL WARM. LAST ENTRY: ${last.toUpperCase()} +25 DATA.`; this.msgTimer = 8; sfx.pickup();
+      return;
+    }
     // loot
     const crate = this.crates.find((c) => !c.taken && Math.hypot(c.tx * T + T / 2 - this.px, c.ty * T + T / 2 - this.py) < 16);
     if (crate && inp.wasPressed("e")) {
@@ -185,6 +197,7 @@ export class WreckScene implements Scene {
       ctx.fillStyle = "#5d6680"; ctx.fillRect(x + 1, y + 2, T - 2, T - 3);
       ctx.fillStyle = commodity(c.id).illegal ? PAL.danger : PAL.gold; ctx.fillRect(x + 3, y + 4, T - 6, 2);
     }
+    if (this.recorder && !this.recorder.taken) { const x = ox + this.recorder.tx * T, y = oy + this.recorder.ty * T; ctx.fillStyle = "#2b3350"; ctx.fillRect(x + 2, y + 3, T - 4, T - 5); ctx.fillStyle = Math.floor(g.world.time * 2) % 2 === 0 ? PAL.danger : "#5d6680"; ctx.fillRect(x + 4, y + 5, 2, 2); }
     drawPerson(ctx, Math.round(ox + this.px), Math.round(oy + this.py), "#e8b48c", "#3a6ea5");
     const crate = this.crates.find((c) => !c.taken && Math.hypot(c.tx * T + T / 2 - this.px, c.ty * T + T / 2 - this.py) < 16);
     if (crate) tooltip(ctx, ox, oy, crate.tx, crate.ty, `${commodity(crate.id).name.toUpperCase()} x${crate.qty}`, "[E] TAKE", commodity(crate.id).illegal ? PAL.danger : PAL.gold);

@@ -1457,6 +1457,18 @@ Time passes for the people on the ship, and for the ship.
       dock there next and morale and loyalty go up (the bar does the thing
       with the eggs)
 
+## Milestone 267 — Still Warm ✅ (Sep 2026)
+- [x] Some derelicts keep their recorder: E on the blinking box for the last
+      entry (a log line, data, a keepsake, a deed); stable across re-entry
+
+## Milestone 268 — The Rule, Tallied ✅ (Sep 2026)
+- [x] First contacts kept and broken are counted and shown in the harbour
+      view, with the board of ethics' opinion
+
+## Milestone 269 — Help Lines ✅ (Sep 2026)
+- [x] Help lines for card night, talent night, the wall of record and the
+      pause menu's flight actions
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
