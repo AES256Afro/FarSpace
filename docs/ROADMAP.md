@@ -1891,32 +1891,39 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 383 — Orders in the Help ✅ (Sep 2026)
 - [x] A help line pointing at the standing orders in settings
 
+## Milestone 384 — Tests III ✅ (Sep 2026)
+- [x] The long leg's drain, the freeman's name twice, and prisoners walking
+      without a gunner, under test (150 tests)
+
+## Milestone 385 — The Fourth Sitting's Backlog ✅ (Sep 2026)
+- [x] The roadmap's Trek/Expanse/Orville backlog rewritten again
+
+## Milestone 386 — Read to 0.229 ✅ (Sep 2026)
+- [x] What's New reads 0.56 to 0.229
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
 
-## Later: Trek / Expanse / Orville (the third sitting)
+## Later: Trek / Expanse / Orville (the fourth sitting)
 
-Everything in the first list shipped (M139–M329). Next, in rough order of
-value:
+The third sitting shipped everything on the last list (M330–M386): the
+singers' home, the commission, the hearing, away partners, the rival's
+Number One, the long ship's launch, standing orders II and III, the ship on
+the roster, a command of their own. Next:
 
-- The singers' home: a proper first-contact arc with a destination, a
-  language you learn card by card, and an embassy berth at the end
-- A naval commission: at commodore rank, a squadron of your own parked hulls
-  with orders, and a fleet review where you're in the middle of the line
-- The belt's own board of deeds: rock hopper races with the kids cheering,
-  a tithe of water at every rock, a seat on the council you can lose
-- A courtroom: a hearing at a naval station over a first contact broken,
-  with Number One as your advocate and the board of ethics as witness
-- Away missions with a chosen team: pick who goes down, and what they bring
-  back (the surface scene with two crew sprites following the rover)
-- A rival captain with a Number One of their own, met at receptions and
-  reviews, who writes to yours
-- The generation ship leaves: an event, a last hail from the scaffold, and
-  your plate going with it
-- Standing orders II: a settings page of orders for Number One (answer
-  hails, take the leg at eight hours, keep the quiet leg)
-- The ship's voice as a real crew line on the roster (mood, a review of
-  every crew member, a vote at the briefing)
+- The singers as a faction: a berth at their home you can dock at, a market
+  that trades in light, and a fare who wants to go there
+- The service proper: a naval career ladder beside the rank (postings,
+  a cutter of your own on loan, orders that conflict with a fare)
+- The belt's council as a place: a seat you sit in, votes every week, a
+  rock that asks you to speak for it to the inners
+- The office as a running gag with an ending: the representative retires,
+  and leaves you the files
+- The crew's lives: a wedding aboard you officiate, a child named after the
+  ship, an old hand's last leg
+- The cadet's arc: from spanner to Number One, and their own command
+- Away partners with sprites on the ground, and two-crew away teams
+- The ship's voice in the sim rig: a program it wrote about you
 
 ## Later

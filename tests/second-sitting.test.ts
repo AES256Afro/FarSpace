@@ -1,7 +1,7 @@
 // The second sitting (M201–M314): the pure functions behind the bridge, the belt, the service and life aboard.
 import { describe, it, expect } from "vitest";
 import { RNG } from "../src/core/rng";
-import { commandOffer, learnWord, chartSingersHome, generateWorld, genCrewCandidate, inquiryDue, transferRequest, leavePair, anniversaryDue, birthdaysDue, droughtAt, fleetReviewAt, shipNewsletter, prisonerOutcome, systemLabel, dedication, officeWrites, birthdaysDue as bdays, shiftBond, briefingReports, firstOfficer, isBeltStation, genFares, genMissionsFor, MOTTOS, SYSTEM_NICKS, runSim, hashStr as _h } from "../src/world";
+import { tickWorld, beltGain, BELT_FREEMAN_AT, commandOffer, learnWord, chartSingersHome, generateWorld, genCrewCandidate, inquiryDue, transferRequest, leavePair, anniversaryDue, birthdaysDue, droughtAt, fleetReviewAt, shipNewsletter, prisonerOutcome, systemLabel, dedication, officeWrites, birthdaysDue as bdays, shiftBond, briefingReports, firstOfficer, isBeltStation, genFares, genMissionsFor, MOTTOS, SYSTEM_NICKS, runSim, hashStr as _h } from "../src/world";
 
 const mk = () => { const w = generateWorld(0xfa25face); const p = w.player; const rng = new RNG(7); for (let i = 0; i < 3; i++) { const c = genCrewCandidate(rng); c.docks = 5; p.crew.push(c); } return { w, p, rng }; };
 
@@ -76,6 +76,19 @@ describe("the second sitting", () => {
     expect(learnWord(p, "hello")).toMatch(/WORD LEARNED/); expect(learnWord(p, "hello")).toBeNull(); expect(p.words).toEqual(["hello"]);
     const home = chartSingersHome(w, new RNG(3)); expect(home).toBeTruthy(); expect(home).not.toBe(p.systemId); expect(w.systems[home!].links).not.toContain(p.systemId);
     expect(chartSingersHome(w, new RNG(4))).toBe(home);
+  });
+  it("the long leg drains morale past six hours; the freeman's name comes back twice; prisoners can walk", () => {
+    const { w, p } = mk();
+    for (const c of p.crew) c.morale = 70;
+    p.leg = { jumps: 1, fights: 0, cards: 0, alerts: 0, burns: 0, rescues0: 0, t0: w.time - 7 * 3600 }; w.longLegTick = 599;
+    tickWorld(w, 2); expect(p.crew[0].morale).toBe(69); expect(p.flags?.longLegNoted).toBe(true);
+    p.beltStanding = 0; (p.flags ??= {}).freeman = true; p.flags.freemanLost = true; delete p.flags.freeman;
+    p.beltStanding = BELT_FREEMAN_AT - 0.5; expect(beltGain(w, 1)).toMatch(/TWICE IS RARER/); expect(p.flags.freeman).toBe(true); expect(p.flags.freemanTwice).toBe(true);
+    const stations = Object.values(w.systems).flatMap((s) => s.stations); const mil = stations.find((s) => s.military)!; p.rep[mil.factionId] = 40;
+    let fare = null as ReturnType<typeof genFares>[number] | null; for (let i = 0; i < 40 && !fare; i++) fare = genFares(w, mil, new RNG(500 + i)).find((m) => m.passengerKind === "prisoner") ?? null;
+    for (const c of p.crew) c.role = "pilot";
+    let walked = false; for (let i = 0; i < 60 && !walked; i++) walked = !prisonerOutcome(w, { ...fare!, docksAboard: 2 }, new RNG(i)).ok;
+    expect(walked).toBe(true);
   });
   it("observation, emergency and freeman runs generate with their fields", () => {
     const { w, p } = mk(); const stations = Object.values(w.systems).flatMap((s) => s.stations);
