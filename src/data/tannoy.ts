@@ -18,6 +18,14 @@ export function stationHour(st: StationDef, now = Date.now()): { h: number; m: n
   const label = h < 5 ? "NIGHT SHIFT" : h < 11 ? "MORNING" : h < 17 ? "DAY SHIFT" : h < 22 ? "EVENING" : "NIGHT SHIFT";
   return { h, m, label, night: h < 5 || h >= 22 };
 }
+// Station hours matter: the yard charges a night rate, the early shift is keen, and the lounge fills after dark.
+export function hoursRate(st: StationDef, now = Date.now()): { mul: number; label: string; lounge: number } {
+  const t = stationHour(st, now);
+  if (t.night) return { mul: 1.15, label: "NIGHT RATE", lounge: 0.75 };
+  if (t.h < 11) return { mul: 0.9, label: "EARLY SHIFT", lounge: 0.35 };
+  if (t.h >= 17) return { mul: 1, label: "", lounge: 0.75 };
+  return { mul: 1, label: "", lounge: 0.5 };
+}
 export function clockText(t: { h: number; m: number }): string { return `${String(t.h).padStart(2, "0")}:${String(t.m).padStart(2, "0")}`; }
 
 export function tannoyLines(w: World, st: StationDef, rng: RNG, now = Date.now()): string[] {

@@ -23,7 +23,7 @@ import { ENCOUNTERS, pickEncounter } from "../src/data/encounters";
 import { crewChatter, soloChatter, passengerChatter } from "../src/data/chatter";
 import { arcFor, CREW_ARCS, arcObjective } from "../src/core/crewarcs";
 import { concourseGossip } from "../src/data/gossip";
-import { stationHour, tannoyLines } from "../src/data/tannoy";
+import { stationHour, tannoyLines, hoursRate } from "../src/data/tannoy";
 import { weeklyIssue, castVote, voteResult, voteMods, myVote } from "../src/data/votes";
 import { STORY, storyObjective, CONVOY, convoyObjective } from "../src/core/story";
 import { homesteadYield, settleHomestead, HOMESTEAD_CAP, tickCrisis, crisisAt, tickGalaxyEvents, galaxyEventAt, rescuePoints, logEntry, embargoed, hasCharter } from "../src/world";
@@ -772,6 +772,15 @@ describe("station hours and the tannoy", () => {
     expect(stationHour(sts[0], at)).toEqual(stationHour(sts[0], at));
     for (const st of sts.slice(0, 5)) { const lines = tannoyLines(w, st, new RNG(1), at); expect(lines.length).toBeGreaterThan(5); for (const l of lines) expect(l.length).toBeLessThanOrEqual(130); }
     w.player.postRuns = 10; expect(tannoyLines(w, sts[0], new RNG(2), at).some((l) => l.includes("THE POSTMAN"))).toBe(true);
+  });
+  it("station hours set the yard rate: a night rate, a keen early shift, and a fuller lounge after dark", () => {
+    const w = generateWorld(29, { realGalaxy: true });
+    const st = Object.values(w.systems).flatMap((s) => s.stations)[0];
+    const seen = new Set<string>();
+    for (let h = 0; h < 24; h++) { const r = hoursRate(st, Date.UTC(2026, 8, 10, h, 0)); seen.add(r.label); expect(r.mul).toBeGreaterThan(0.8); expect(r.mul).toBeLessThan(1.3); expect(r.lounge).toBeGreaterThan(0); }
+    expect(seen.has("NIGHT RATE")).toBe(true); expect(seen.has("EARLY SHIFT")).toBe(true); expect(seen.has("")).toBe(true);
+    const night = [...Array(24).keys()].map((h) => Date.UTC(2026, 8, 10, h, 0)).find((at) => stationHour(st, at).night)!;
+    expect(hoursRate(st, night)).toEqual({ mul: 1.15, label: "NIGHT RATE", lounge: 0.75 });
   });
   it("berth neighbours: home-port captains you have met, the rival at home, and the tannoy knows", () => {
     const w = generateWorld(32, { realGalaxy: true });

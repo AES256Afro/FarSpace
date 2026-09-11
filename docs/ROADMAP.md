@@ -866,4 +866,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Captains you know walk the promenade when their ship is in the bays:
       a word, a spare or a settled round once a week; the rival has words too
 
+## Milestone 128 — Station Hours Matter ✅ (Sep 2026)
+- [x] Night rate and early shift at the yard, a fuller lounge after dark,
+      night control on the way in
+
 ## Later

@@ -27,7 +27,7 @@ import { serialMissionFor, serialRecruitFor, serialPremium, serialLines } from "
 import { isOccasion, occasionFor } from "../data/occasions";
 import { sfx } from "../core/sfx";
 import * as wire from "../core/wire";
-import { stationHour, clockText, tannoyLines } from "../data/tannoy";
+import { stationHour, clockText, tannoyLines, hoursRate } from "../data/tannoy";
 import { weeklyIssue, myVote, voteResult, castVote, voteMods } from "../data/votes";
 import { drawTutorial } from "../core/tutorial";
 import { music } from "../core/music";
@@ -115,13 +115,13 @@ export class StationScene implements Scene {
     const allElite = (["explorer", "trader", "miner", "rescuer"] as const).every((k) => rankOf(p, k).title === "ELITE");
     if (allElite && !p.flags?.master) { flag(g, "master"); logEntry(g.world, "Elite in every trade: master of the lanes"); void wire.post("achievement", "is Elite in every trade: master of the lanes", g.world.systems[p.systemId].name); }
     const title = allElite ? "MASTER OF THE LANES" : isHome(p, this.station.id) ? "WELCOME HOME" : dockingsAt(p, this.station.id) >= OLD_HAND_AT ? "GOOD TO HAVE YOU BACK" : rankOf(p, "rescuer").idx >= 3 ? rankOf(p, "rescuer").title : hasCharter(g.world, this.station.factionId) ? "CHARTERED" : (p.lineage ?? []).length ? "OF THE LINE" : (captainNickname(g.world) ?? "");
-    g.toast(`${this.station.name.toUpperCase()} CONTROL: ${p.shipName ? p.shipName + ", " : ""}${title ? title + ", " : ""}CLEARANCE GRANTED, BAY ${bay}`);
+    g.toast(stationHour(this.station).night ? `${this.station.name.toUpperCase()} NIGHT WATCH: ${p.shipName ? p.shipName + ", " : ""}${title ? title + ", " : ""}BAY ${bay}. KEEP IT QUIET, THE DAY SHIFT IS ASLEEP` : `${this.station.name.toUpperCase()} CONTROL: ${p.shipName ? p.shipName + ", " : ""}${title ? title + ", " : ""}CLEARANCE GRANTED, BAY ${bay}`);
     { const wk = weekKey(); if (p.lastWeekSeen !== wk) { p.lastWeekSeen = wk; { const lr = lanesReport(g.world); if (lr) (g.world.mailQueue ??= []).push(lr); } const bc = borderContest(g.world); const issue = !this.station.military && this.station.factionId !== "vex" ? weeklyIssue(g.world, this.station.factionId) : null; g.toast(`NEW WEEK ON THE LANES${issue ? `: ${faction(this.station.factionId).name.split(" ")[0].toUpperCase()} ASKS ABOUT ${issue.title}` : ""}${bc ? ` - ${g.world.systems[bc.systemId]?.name.toUpperCase() ?? "?"} IS CONTESTED` : ""}`.slice(0, 96)); } }
     { const c = collectCharters(p); for (const l of c.lines) g.toast(l); if (c.total !== 0) sfx.pickup(); }
     tickAlumniMail(g.world, new RNG((g.world.seed ^ Math.floor(g.world.time * 73)) >>> 0));
     { const l = catGift(p, new RNG((g.world.seed ^ Math.floor(g.world.time * 79)) >>> 0)); if (l) g.toast(l); }
     { const m = tickMail(g.world); for (const l of m) g.toast(l); if (m.length) sfx.letter(); }
-    { const fr = friendsAt(g.world, this.station.id); if (fr.length && Math.random() < 0.5) g.toast(`${fr[0].name.toUpperCase()} IS IN THE LOUNGE AND WAVING YOU OVER`); }
+    { const fr = friendsAt(g.world, this.station.id); if (fr.length && Math.random() < hoursRate(this.station).lounge) g.toast(`${fr[0].name.toUpperCase()} IS IN THE LOUNGE AND WAVING YOU OVER`); }
   }
 
   settleCrew(g: Game): void {
@@ -944,8 +944,10 @@ export class StationScene implements Scene {
     // patron squadrons keep their faction's yards half price for members
     const patronHere = (!!wire.getSquadron() && wire.patronOf(st.factionId) === wire.getSquadron()) || this.myBaseHere() || hasCharter(g.world, st.factionId);
     const depot = this.baseHas("depot");
-    const homeMul = (isHome(p, st.id) ? 0.85 : 1) * (isOccasion("yard") ? 0.8 : 1) * (dockingsAt(p, st.id) >= OLD_HAND_AT ? 0.95 : 1);
-    const fuelPrice = depot ? 0 : Math.max(1, Math.round((patronHere ? Math.max(1, Math.round(st.fuelPrice / 2)) : st.fuelPrice) * homeMul));
+    const hr = hoursRate(st);
+    const homeMul = (isHome(p, st.id) ? 0.85 : 1) * (isOccasion("yard") ? 0.8 : 1) * (dockingsAt(p, st.id) >= OLD_HAND_AT ? 0.95 : 1) * hr.mul;
+    const hrTag = hr.label ? ` - ${hr.label}` : "";
+    const fuelPrice = depot ? 0 : Math.max(1, Math.round((patronHere ? Math.max(1, Math.round(st.fuelPrice / 2)) : st.fuelPrice) * homeMul / hr.mul));
     const repairPrice = depot ? 0 : Math.max(1, Math.round((patronHere ? Math.max(1, Math.round(st.repairPrice / 2)) : st.repairPrice) * homeMul));
     const fuelNeed = Math.ceil(p.fuelMax - p.fuel);
     opts.push({ label: `REFUEL (${fuelNeed} UNITS)${patronHere ? " - PATRON RATE" : ""}`, sub: `${fuelNeed * fuelPrice}CR`, action: () => {
@@ -955,7 +957,7 @@ export class StationScene implements Scene {
       g.toast(afford < fuelNeed ? "PARTIAL REFUEL" : "REFUELED");
     } });
     const hullNeed = Math.ceil(p.hullMax - p.hull);
-    opts.push({ label: `HULL REPAIR (${hullNeed} PTS)${patronHere ? " - PATRON RATE" : ""}`, sub: `${hullNeed * repairPrice}CR`, action: () => {
+    opts.push({ label: `HULL REPAIR (${hullNeed} PTS)${patronHere ? " - PATRON RATE" : hrTag}`, sub: `${hullNeed * repairPrice}CR`, action: () => {
       if (hullNeed <= 0) return g.toast("HULL INTACT");
       const afford = repairPrice ? Math.min(hullNeed, Math.floor(p.credits / repairPrice)) : hullNeed;
       p.hull += afford; p.credits -= afford * repairPrice;
@@ -964,8 +966,8 @@ export class StationScene implements Scene {
     } });
     const sysDamaged = p.systems.filter((s) => s.health < 100);
     if ((p.wear ?? 0) >= WEAR_SERVICE_FROM) {
-      const price = servicePrice(p, (patronHere ? 0.7 : 1) * voteMods(g.world, st.factionId).yard);
-      opts.push({ label: `YARD SERVICE (WEAR ${Math.round(p.wear ?? 0)}%)${patronHere ? " - PATRON RATE" : ""}`, sub: `${price}CR`, action: () => {
+      const price = servicePrice(p, (patronHere ? 0.7 : 1) * voteMods(g.world, st.factionId).yard * hr.mul);
+      opts.push({ label: `YARD SERVICE (WEAR ${Math.round(p.wear ?? 0)}%)${patronHere ? " - PATRON RATE" : hrTag}`, sub: `${price}CR`, action: () => {
         if (p.credits < price) { g.toast("NOT ENOUGH CREDITS"); return; }
         p.credits -= price; serviceHull(p, st.id, g.world.time, price);
         logEntry(g.world, `Yard service at ${st.name}, ${price}cr, signed`);

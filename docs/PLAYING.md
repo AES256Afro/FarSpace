@@ -533,6 +533,12 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   the promenade, a consignment the harbourmaster is expecting, a hull trailing
   something, or a tank that came in on fumes. Those calls come round twice as
   often as the rest.
+- The hour sets the rate. On the night shift the yard charges 15% over for
+  hull work and servicing (fuel is fuel); on the early shift, before eleven,
+  it's 10% under. The lounge fills after dark, so a friend is more likely to
+  wave you over in the evening or at night, and night control asks you to keep
+  it quiet on the way in. Every station's clock is different, so the next port
+  over may be on a cheaper shift.
 
 ## Cards after watch
 
