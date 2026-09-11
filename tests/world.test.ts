@@ -774,6 +774,19 @@ describe("station hours and the tannoy", () => {
     for (const st of sts.slice(0, 5)) { const lines = tannoyLines(w, st, new RNG(1), at); expect(lines.length).toBeGreaterThan(5); for (const l of lines) expect(l.length).toBeLessThanOrEqual(130); }
     w.player.postRuns = 10; expect(tannoyLines(w, sts[0], new RNG(2), at).some((l) => l.includes("THE POSTMAN"))).toBe(true);
   });
+  it("the singers: three cards gated by flags, and the codex counts how far it went", () => {
+    const w = generateWorld(44, { realGalaxy: true }); const p = w.player; p.expData = 100; p.crew = [genCrewCandidate(new RNG(1))];
+    const g = { world: w, scenes: {} } as unknown as import("../src/game").Game;
+    const by = (id: string) => ENCOUNTERS.find((e) => e.id === id)!;
+    expect(by("singersreturn").when!(g)).toBe(false); expect(by("singersgift").when!(g)).toBe(false);
+    let line = ""; for (let i = 0; i < 20 && !p.flags?.firstContact; i++) { p.expData = 100; line = by("firstcontact").options[0].result(g, new RNG(i)); }
+    expect(p.flags?.firstContact).toBe(true); expect(p.codex?.["contact:THE SINGERS"]).toBe(1);
+    expect(by("singersreturn").when!(g)).toBe(true);
+    expect(by("singersreturn").options[1].result(g, new RNG(1))).toContain("SING THE ROUTE"); expect(p.codex?.["contact:THE SINGERS"]).toBe(2);
+    expect(by("singersreturn").when!(g)).toBe(false); expect(by("singersgift").when!(g)).toBe(true);
+    expect(by("singersgift").options[0].result(g, new RNG(1))).toContain("HUMS"); expect(p.codex?.["contact:THE SINGERS"]).toBe(3);
+    expect(p.keepsakes?.some((k) => k.includes("shard"))).toBe(true); expect(by("singersgift").when!(g)).toBe(false);
+  });
   it("the sim rig: four programs, each once a leg, and the fares come to the opera", () => {
     const w = generateWorld(43, { realGalaxy: true }); const p = w.player;
     expect(FURNISHINGS.some((f) => f.id === "simrig" && f.tile === "S")).toBe(true);

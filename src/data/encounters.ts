@@ -2,7 +2,7 @@
 // applies real effects and returns the line the player reads afterwards.
 
 import type { Game } from "../game";
-import { addCargo, removeCargo, adjustRep, hasIllegalCargo, cargoUsed, genCrewCandidate, adjustSynRep, passengersAboard, berthsUsed, adoptCat, CAT_NAMES, shiftBond, logSight, crewXp, bond, logEntry, passengerCap } from "../world";
+import { addCargo, removeCargo, adjustRep, hasIllegalCargo, cargoUsed, genCrewCandidate, adjustSynRep, passengersAboard, berthsUsed, adoptCat, CAT_NAMES, shiftBond, logSight, crewXp, bond, logEntry, passengerCap, infraAt, infraLit, wondersIn } from "../world";
 import { hull } from "./hulls";
 import { RNG } from "../core/rng";
 import { addMaterials } from "./engineering";
@@ -295,9 +295,26 @@ export const ENCOUNTERS: Encounter[] = [
     id: "firstcontact", where: "space", weight: 3, title: "A SIGNAL IN NO KNOWN TONGUE",
     text: "A hull like nothing in the registry drifts alongside, all curves, and sings at you in tones that the comms panel can't file. It waits. It seems to be waiting.",
     options: [
-      { label: "RUN THE TRANSLATOR (20 DATA)", hint: "The comms core chews on it", requires: (g) => (p(g).expData ?? 0) >= 20, result: (g, rng) => { p(g).expData = (p(g).expData ?? 0) - 20; if (rng.chance(0.7)) { p(g).expData = (p(g).expData ?? 0) + 80; (p(g).flags ??= {}).firstContact = true; logEntry(g.world, "First contact: a curved hull that sang, and star charts in return"); return "THE CORE FINDS THE PATTERN. IT'S A GREETING, THEN A GIFT: STAR CHARTS FOR SOMEWHERE THE MAP DOESN'T GO. +80 DATA. THEY SING ONCE MORE AND ARE GONE."; } return "THE CORE FINDS THE PATTERN. IT'S A RECIPE. A VERY LONG RECIPE. THEY SEEM PLEASED YOU LISTENED, AND LEAVE."; } },
+      { label: "RUN THE TRANSLATOR (20 DATA)", hint: "The comms core chews on it", requires: (g) => (p(g).expData ?? 0) >= 20, result: (g, rng) => { p(g).expData = (p(g).expData ?? 0) - 20; if (rng.chance(0.7)) { p(g).expData = (p(g).expData ?? 0) + 80; (p(g).flags ??= {}).firstContact = true; (p(g).codex ??= {})["contact:THE SINGERS"] = 1; logEntry(g.world, "First contact: a curved hull that sang, and star charts in return"); return "THE CORE FINDS THE PATTERN. IT'S A GREETING, THEN A GIFT: STAR CHARTS FOR SOMEWHERE THE MAP DOESN'T GO. +80 DATA. THEY SING ONCE MORE AND ARE GONE."; } return "THE CORE FINDS THE PATTERN. IT'S A RECIPE. A VERY LONG RECIPE. THEY SEEM PLEASED YOU LISTENED, AND LEAVE."; } },
       { label: "ANSWER WITH MUSIC", hint: "The crew pick a song", result: (g) => { for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 5); p(g).expData = (p(g).expData ?? 0) + 20; return "THE CREW ARGUE ABOUT THE SONG, THEN PLAY IT. THE HULL SINGS IT BACK, WRONG AND BEAUTIFUL. +20 DATA, AND A STORY FOR THE BAR."; } },
       { label: "HOLD POSITION AND LOG IT", result: (g) => { p(g).expData = (p(g).expData ?? 0) + 10; return "YOU LOG EVERYTHING AND TOUCH NOTHING. IT SINGS A LAST TIME AND FOLDS AWAY. +10 DATA. THE SCIENCE POSTS WILL WANT THE TAPE."; } },
+    ],
+  },
+  {
+    id: "singersreturn", where: "space", weight: 4, title: "THE SINGERS, AGAIN", when: (g) => !!p(g).flags?.firstContact && !p(g).flags?.singersGuided,
+    text: "The curved hull is back, and it knows you: the greeting is the one from before, note for note. Then a new phrase, rising, over and over, and the hull turns in a slow circle. It is asking for something. The comms core offers: 'A LIGHT. THE BRIGHTEST THING HERE. THEY WANT TO BE SHOWN.'",
+    options: [
+      { label: "LEAD THEM TO THE LIGHT", hint: "A lit beacon or a wonder in this system", requires: (g) => infraAt(g.world, sys(g).id).some((i) => i.kind === "beacon" && infraLit(i)) || wondersIn(g.world, sys(g).id).length > 0, result: (g) => { (p(g).flags ??= {}).singersGuided = true; (p(g).codex ??= {})["contact:THE SINGERS"] = 2; p(g).expData = (p(g).expData ?? 0) + 60; logEntry(g.world, "Led the singing hull to the brightest thing in the system"); return "YOU FLY SLOW AND THEY FOLLOW, SINGING THE RISING PHRASE. AT THE LIGHT THEY GO QUIET FOR A LONG MINUTE, THEN SING SOMETHING NEW. +60 DATA. THE CORE FILES IT UNDER 'THANKS'."; } },
+      { label: "SING THEM THE WAY", hint: "The crew describe the light in the only language you share", requires: (g) => p(g).crew.length >= 1, result: (g) => { (p(g).flags ??= {}).singersGuided = true; (p(g).codex ??= {})["contact:THE SINGERS"] = 2; p(g).expData = (p(g).expData ?? 0) + 30; for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 5); logEntry(g.world, "Sang the singers a map to the nearest light"); return "THE CREW SING THE ROUTE: HIGH FOR BRIGHT, LOW FOR FAR. IT SHOULD NOT WORK. THE HULL TURNS THE RIGHT WAY AND GOES. +30 DATA, AND A CREW WHO CANNOT STOP GRINNING."; } },
+      { label: "LET THEM CIRCLE", result: () => "YOU HOLD STATION. THEY CIRCLE TWICE MORE, SING THE GREETING BACKWARDS, AND FOLD AWAY. THEY'LL ASK AGAIN." },
+    ],
+  },
+  {
+    id: "singersgift", where: "space", weight: 4, title: "WHAT THE SINGERS LEFT", when: (g) => !!p(g).flags?.singersGuided && !p(g).flags?.singersGift,
+    text: "No hull this time. Only a small thing tumbling in the lane where you'd expect them: a shard of something like glass, and the scanner says it is singing, very quietly, in the greeting's key.",
+    options: [
+      { label: "TAKE IT ABOARD", result: (g) => { (p(g).flags ??= {}).singersGift = true; (p(g).codex ??= {})["contact:THE SINGERS"] = 3; p(g).expData = (p(g).expData ?? 0) + 120; (p(g).keepsakes ??= []).push("a shard that hums, from the singers"); if (p(g).keepsakes!.length > 8) p(g).keepsakes!.shift(); logEntry(g.world, "Took the singers' shard aboard; it hums on the passenger seat"); return "IT COMES ABOARD WARM. ON THE PASSENGER SEAT IT HUMS THE GREETING, ONCE AN HOUR, TO NOBODY. +120 DATA. THE CODEX HAS A CONTACT NOW. THE SHIP HAS A KEY."; } },
+      { label: "LOG IT AND LEAVE IT", result: (g) => { (p(g).flags ??= {}).singersGift = true; p(g).expData = (p(g).expData ?? 0) + 40; return "YOU RECORD IT FROM A DISTANCE AND LET IT TUMBLE ON. +40 DATA. SOMEBODY ELSE WILL FIND IT, OR NOBODY WILL. IT'S STILL SINGING WHEN YOU GO."; } },
     ],
   },
   {

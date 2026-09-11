@@ -760,6 +760,12 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   somebody built, and the outpost's one bar with its one board game.
 - They pay in data, rep, lives saved, morale and stories; a few of them cost
   something, and a couple leave a mark the crew remember.
+- The singers are an arc. Run the translator on the hull that sings and it
+  comes back, asking to be shown the brightest thing in the system: lead it
+  to a lit beacon or a wonder, or let the crew sing it the way. Afterwards it
+  leaves a shard in the lane that hums in the greeting's key; take it aboard
+  and it sits on the passenger seat, a keepsake, and the codex's CONTACTS
+  page reads 3 of 3. The ship says it has a key now.
 
 ## Lore
 

@@ -1728,7 +1728,7 @@ export class StationScene implements Scene {
     const p = g.world.player;
     const cx = Object.entries(p.codex ?? {});
     drawText(ctx, `CODEX (${cx.length} ENTRIES) - C FOR CARTOGRAPHICS`, 8, top, PAL.info);
-    const groups: [string, string, string][] = [["flora:", "FLORA", "SCANNED WITH THE ROVER (HOLD V). EACH NEW SPECIES PAYS 120 DATA."], ["fauna:", "FAUNA", "MET ON THE GROUND. WATCH, DON'T POKE."], ["biome:", "BIOMES", "WORLDS DRIVEN ON. A NEW BIOME PAYS 120 DATA."], ["signal:", "SIGNALS", "HEARD ON NO KNOWN BAND."], ["wonder:", "WONDERS", "SEEN WITH YOUR OWN EYES. A FIRST SIGHT PAYS 400 DATA."]];
+    const groups: [string, string, string][] = [["flora:", "FLORA", "SCANNED WITH THE ROVER (HOLD V). EACH NEW SPECIES PAYS 120 DATA."], ["fauna:", "FAUNA", "MET ON THE GROUND. WATCH, DON'T POKE."], ["biome:", "BIOMES", "WORLDS DRIVEN ON. A NEW BIOME PAYS 120 DATA."], ["signal:", "SIGNALS", "HEARD ON NO KNOWN BAND."], ["wonder:", "WONDERS", "SEEN WITH YOUR OWN EYES. A FIRST SIGHT PAYS 400 DATA."], ["contact:", "CONTACTS", "MET ON THE LANES. ANSWERED, GUIDED, GIVEN: THE NUMBER IS HOW FAR IT WENT."]];
     let y = top + 12;
     for (const [prefix, title, blurb] of groups) {
       const items = cx.filter(([k]) => k.startsWith(prefix));

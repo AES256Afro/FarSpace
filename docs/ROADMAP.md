@@ -940,4 +940,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] A furnishing by the study: four programs, an hour somewhere else once
       a leg; the fares come to the opera; it jams sometimes
 
+## Milestone 146 — The Singers ✅ (Sep 2026)
+- [x] A first-contact arc in three cards: answer the singing hull, guide it
+      to a light, take what it leaves; a CONTACTS page in the codex
+
 ## Later

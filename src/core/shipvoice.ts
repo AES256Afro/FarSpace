@@ -42,6 +42,8 @@ export function pickShipLine(g: Game, rng: RNG): string | null {
   if ((p.mealsCooked ?? 0) >= 5) pool.push("THE GALLEY SMELLS OF SOMETHING GOOD AGAIN. I DON'T EAT. I STILL NOTICE.");
   pool.push("I HAVE CALCULATED THE ODDS OF THE COFFEE SURVIVING THE NEXT BURN. I WILL NOT BE SHARING THEM.", "THE CREW CALL ME 'THE SHIP'. I HAVE A NAME. I HAVE NOT TOLD ANYONE WHAT IT IS. IT IS A GOOD NAME.");
   if (p.crew.length >= 2 && !p.crew.some((c) => (c.docks ?? 0) >= 3)) pool.push("NOBODY ABOARD HAS THREE DOCKINGS YET. UNTIL THEN, I AM NUMBER ONE. I HAVE DECIDED THIS.");
+  if (p.flags?.singersGift) pool.push("THE SHARD ON THE SEAT HUMS IN MY KEY. I DIDN'T KNOW I HAD A KEY. I DO NOW.");
+  else if (p.flags?.firstContact) pool.push("THE SINGING HULL. I HAVE THE RECORDING. I PLAY IT WHEN THE CREW ARE ASLEEP. DON'T TELL THEM.");
   if (p.mayday) pool.push("MY TANKS ARE DRY AND MY MAYDAY IS OUT THERE. SOMEBODY WILL COME. SOMEBODY ALWAYS COMES. USUALLY.");
   const deck = hull(p.hullId).deck;
   if (deck === "scout") pool.push("I'M SMALL. I'M FAST. I'M NOT CARRYING THAT MANY CRATES AGAIN.", "SCOUT HULLS DON'T GET STATUES. WE GET THERE FIRST, THOUGH.");
