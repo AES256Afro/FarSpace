@@ -4,7 +4,7 @@
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond, onWatch, watchIndex, captainNickname, borderStanding, passengersFed, cookMeal, briefingReports, setFocus, runSim, SIM_PROGRAMS, nameTheShip, weekKey, dedication, MOTTOS, stardate, birthdaysDue, shipNewsletter, shiftBond } from "../world";
+import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond, onWatch, watchIndex, captainNickname, borderStanding, passengersFed, cookMeal, briefingReports, setFocus, runSim, SIM_PROGRAMS, nameTheShip, weekKey, dedication, MOTTOS, stardate, birthdaysDue, shipNewsletter, shiftBond, shipVoiceName } from "../world";
 import { commodity, faction } from "../data/data";
 import { crewChatter, soloChatter, MESS_LINES, passengerChatter } from "../data/chatter";
 import { RNG } from "../core/rng";
@@ -225,7 +225,8 @@ export class InteriorScene implements Scene {
     if (pil) motions.push({ who: pil, text: `${pil.name.split(" ")[0].toUpperCase()} (HELM): "LET ME TAKE THE LONG WAY ROUND THE STAR ON THE NEXT LEG. THE PASSENGERS PAY FOR THE VIEW AND I NEVER GET TO SEE IT."`, yes: () => { for (const m of passengersAboard(p)) m.mood = Math.min(100, (m.mood ?? 60) + 6); pil.morale = Math.min(100, pil.morale + 8); p.fuel = Math.max(0, p.fuel - 3); return "GRANTED. THREE UNITS OF FUEL FOR A VIEW OF THE STAR NOBODY ON THE BRIDGE WILL FORGET. THE PILOT DOESN'T SAY THANK YOU. THE PILOT HUMS."; }, no: () => { pil.morale = Math.max(0, pil.morale - 2); return "DENIED. THE PILOT FLIES THE SHORT WAY, PRECISELY, WHICH IS ITS OWN COMMENT."; } });
     if (!motions.length) { g.toast("NO OTHER BUSINESS. THE TABLE EMPTIES."); return; }
     const mo = rng.pick(motions); p.briefed = true;
-    const enc: Encounter = { id: "motion", where: "space", title: "ANY OTHER BUSINESS", weight: 0, text: mo.text,
+    const shipSays = p.flags?.shipCrew ? `\n\n${shipVoiceName(p)} (THE SHIP): "${mo.who.role === "engineer" ? "I'D RATHER NOT RUN HOT. I'LL DO IT. I'D RATHER NOT." : mo.who.role === "medic" ? "A REST DAY. I'D LIKE THAT NOTED AS THE SHIP'S VOTE. YES." : mo.who.role === "gunner" ? "DRILLS MEAN THE KLAXON. I'M THE KLAXON. ABSTAIN." : "THE LONG WAY ROUND THE STAR IS THREE UNITS OF FUEL AND A VIEW. I HAVE OPINIONS ABOUT VIEWS. YES."}"` : "";
+    const enc: Encounter = { id: "motion", where: "space", title: "ANY OTHER BUSINESS", weight: 0, text: mo.text + shipSays,
       options: [
         { label: "GRANTED", result: (g2) => { flag(g2, "motion"); logEntry(g2.world, `Granted ${mo.who.name}'s motion at the briefing`); return mo.yes(g2); } },
         { label: "DENIED", result: (g2) => mo.no(g2) },

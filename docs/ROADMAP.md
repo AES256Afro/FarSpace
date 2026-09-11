@@ -1720,6 +1720,16 @@ Time passes for the people on the ship, and for the ship.
 - [x] After "I'd do it again" the board of ethics writes to say nothing, with
       thirty data's worth of it
 
+## Milestone 336 — The Ship on the Crew ✅ (Sep 2026)
+- [x] S on the roster, once the ship is on it: the ship's line on every crew
+      member (the cadet and the coaming, the medic who never asks)
+
+## Milestone 337 — The Ship's Vote ✅ (Sep 2026)
+- [x] At any other business the ship votes on the motion, by role
+
+## Milestone 338 — Roster Help ✅ (Sep 2026)
+- [x] A help line for V and S on the roster
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

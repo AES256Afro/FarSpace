@@ -24,6 +24,12 @@ export class RosterScene implements Scene {
     if (!n) return;
     if (g.input.wasPressed("ArrowDown")) { this.cursor = (this.cursor + 1) % n; sfx.blip(); }
     if (g.input.wasPressed("ArrowUp")) { this.cursor = (this.cursor + n - 1) % n; sfx.blip(); }
+    if (g.input.wasPressed("s") && p.flags?.shipCrew && p.crew.length) {
+      const lines = p.crew.map((c) => { const n = c.name.split(" ")[0].toUpperCase(); const bd = c.trait ?? ""; const line = c.sick ? `${n}: COUGHING IN THE BUNK ROOM. I'VE WARMED THE AIR. I'D LIKE THEM BETTER.` : (c.docks ?? 0) === 0 ? `${n}: NEW. WALKS INTO THE SAME HATCH COAMING EVERY WATCH. I'VE STOPPED MOVING IT.` : c.morale < 40 ? `${n}: QUIET LATELY. SITS AT THE VIEWPORT ON THE OFF-WATCH. I LEAVE THE LIGHTS LOW FOR THEM.` : (c.loyalty ?? 0) >= 2 ? `${n}: WOULD FLY ME INTO A STAR IF YOU ASKED, AND FIX THE PAINT AFTER. I'D LET THEM.` : bd.includes("cooks") ? `${n}: THE GALLEY SMELLS OF SOMETHING WHEN THEY'RE ON. I DON'T EAT. I NOTICE.` : bd.includes("rock") ? `${n}: TALKS TO ME IN BELT WORDS WHEN NOBODY'S LISTENING. I ANSWER IN THE HUM.` : c.role === "engineer" ? `${n}: KNOWS WHERE I ACHE BEFORE I DO. THAT'S EITHER SKILL OR LISTENING. I'LL TAKE EITHER.` : c.role === "pilot" ? `${n}: FLIES ME LIKE I'M BORROWED. I MEAN THAT KINDLY. MOSTLY.` : c.role === "medic" ? `${n}: HAS NEVER ONCE ASKED HOW I AM. I'M NOT HURT BY THAT. I'M A LITTLE HURT BY THAT.` : `${n}: STANDS AT TACTICAL LIKE THE GUNS ARE THEIRS. THEY ARE, I SUPPOSE. I'M THE ONE THAT FLINCHES.`; return line; });
+      const enc: Encounter = { id: "shipreviewcrew", where: "space", title: `${shipVoiceName(p)} ON THE CREW`, weight: 0, text: lines.join("\n"), options: [{ label: "THANK YOU", result: (g2) => { flag(g2, "shipreviewcrew"); return "'I HAVE MORE. I'LL SAVE IT FOR THE NEWSLETTER.'"; } }] };
+      (g.scenes["encounter"] as EncounterScene).open(g, enc, "roster", true); sfx.select();
+      return;
+    }
     if (g.input.wasPressed("v")) {
       const c = p.crew[this.cursor];
       if (!reviewDue(p, c)) { g.toast(`${c.name.toUpperCase()} HAD THEIR REVIEW THIS WEEK. NEXT WEEK.`); return; }

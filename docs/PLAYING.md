@@ -752,6 +752,8 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- Once the ship is on the roster, S there is the ship's review of every crew
+  member, one line each. And at any other business the ship votes.
 - Break the rule on the ground and the next naval station holds a hearing
   with the board of ethics as a silent witness: let Number One speak (rep
   and loyalty up), say you'd do it again (rep down here, the board writes
