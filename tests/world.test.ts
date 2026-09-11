@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  weekKey, genCrewCandidate, grievanceHeard, grievanceDue, registry, commandRank, hasSpecialty, legSummary, noteLeg, newLeg, SIM_PROGRAMS, reviewCrew, reviewDue, nameTheShip, shipVoiceName, receptionHeld, receptionDue, ALERT_NAME, alertMods, beltRate, isBeltStation, FURNISHINGS, runSim, setFocus, briefingReports, patientDeadline, patientOutcome, takeJuice, buyJuice, envoyOutcome, firstOfficer, stardate, cookMeal, LOST_KEEP_AFTER, LOST_REWARD, tickLostProperty, handInLostItem, leaveLostItem, passengersTookFire, passengersFed, askPassengerRequest, findStation, berthedCaptains, generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
+  weekKey, genCrewCandidate, logEntry, strangeReading, grievanceHeard, grievanceDue, registry, commandRank, hasSpecialty, legSummary, noteLeg, newLeg, SIM_PROGRAMS, reviewCrew, reviewDue, nameTheShip, shipVoiceName, receptionHeld, receptionDue, ALERT_NAME, alertMods, beltRate, isBeltStation, FURNISHINGS, runSim, setFocus, briefingReports, patientDeadline, patientOutcome, takeJuice, buyJuice, envoyOutcome, firstOfficer, stardate, cookMeal, LOST_KEEP_AFTER, LOST_REWARD, tickLostProperty, handInLostItem, leaveLostItem, passengersTookFire, passengersFed, askPassengerRequest, findStation, berthedCaptains, generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
   missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn, captainByName, helpCaptain, isFriend, friendsAt, tickMail, pickCaptainFor, canUpgradeInfra, upgradeInfra, rivalOf, isRival, rivalTakesFare, rivalBeatsYouTo, askRideAlong, tickRideAlong, setHomePort, isHome, donateRelic, hullHistoryFor, notableById, notableOutcome, canFundProject, fundProject, PROJECTS, settlementNeeds, ledger, ledgerAround, LEDGER_LABELS, catGift, stationBulletin, dockingsAt } from "../src/world";
 import { occasionFor, OCCASIONS } from "../src/data/occasions";
@@ -774,6 +774,18 @@ describe("station hours and the tannoy", () => {
     expect(stationHour(sts[0], at)).toEqual(stationHour(sts[0], at));
     for (const st of sts.slice(0, 5)) { const lines = tannoyLines(w, st, new RNG(1), at); expect(lines.length).toBeGreaterThan(5); for (const l of lines) expect(l.length).toBeLessThanOrEqual(130); }
     w.player.postRuns = 10; expect(tannoyLines(w, sts[0], new RNG(2), at).some((l) => l.includes("THE POSTMAN"))).toBe(true);
+  });
+  it("strange readings: folds skip the clock, lenses light the system, echoes play the log back", () => {
+    const w = generateWorld(56, { realGalaxy: true }); const p = w.player;
+    const all = Object.values(w.systems).flatMap((s) => s.anomalies);
+    expect(all.some((a) => a.kind === "fold")).toBe(true); expect(all.some((a) => a.kind === "lens")).toBe(true); expect(all.some((a) => a.kind === "echo")).toBe(true);
+    expect(all.filter((a) => a.kind === "fold").every((a) => a.name.startsWith("Fold "))).toBe(true);
+    const t0 = w.time; const fold = { id: "f", name: "Fold Alpha", kind: "fold", x: 0, y: 0, discovered: true, claimed: false, reward: 0 } as any;
+    expect(strangeReading(w, fold, new RNG(1))).toContain("CLOCK JUMPS"); expect(w.time - t0).toBe(900);
+    const sys = w.systems[p.systemId]; for (const a of sys.anomalies) a.discovered = false; sys.anomalies.push({ ...fold, id: "x1" });
+    const lens = { ...fold, kind: "lens", name: "Lens Kilo" }; expect(strangeReading(w, lens, new RNG(1))).toContain("MORE SIGNAL"); expect(sys.anomalies.every((a) => a.discovered)).toBe(true);
+    logEntry(w, "Tested the echo"); const echo = strangeReading(w, { ...fold, kind: "echo", name: "Echo Nine" }, new RNG(1))!; expect(echo).toContain("PLAYS BACK SOMETHING THIS SHIP SAID ONCE: \""); expect(echo).toContain("MORALE UP");
+    expect(strangeReading(w, { ...fold, kind: "data" }, new RNG(1))).toBeNull();
   });
   it("the crew want a word when morale sinks, once a week", () => {
     const w = generateWorld(55, { realGalaxy: true }); const p = w.player;

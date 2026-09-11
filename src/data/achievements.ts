@@ -131,5 +131,6 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "rite", title: "ONE WORD, THEN TEA", desc: "Join an envoy's rite", check: (w) => !!w.player.flags?.rite },
   { id: "word", title: "A NIGHT ASHORE", desc: "Answer the crew's grievance with a night on you", check: (w) => !!w.player.flags?.word },
   { id: "directive", title: "THE RULE", desc: "Find a village the survey called geology and leave it be", check: (w) => !!w.player.flags?.directiveKept },
+  { id: "strange", title: "STRANGE READINGS", desc: "Reach a fold, a lens or an echo", check: (w) => !!w.player.flags?.strange },
   { id: "elite", title: "ELITE", desc: "Top any career ladder", check: (w) => (["explorer", "trader", "miner"] as const).some((k) => rankOf(w.player, k).idx >= 8) },
 ];

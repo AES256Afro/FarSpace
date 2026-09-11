@@ -1024,4 +1024,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] A trickster card that keeps coming back until you refuse or throw them
       off; the ship reads the old log back on the night watch
 
+## Milestone 167 — Strange Readings ✅ (Sep 2026)
+- [x] Three new anomaly kinds among the signals: a fold that skips the clock,
+      a lens that lights the whole system, an echo that plays the log back
+
 ## Later

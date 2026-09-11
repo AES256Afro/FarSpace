@@ -105,7 +105,7 @@ export interface WreckDef {
   name: string;
 }
 
-export type AnomalyKind = "data" | "derelict" | "survey";
+export type AnomalyKind = "data" | "derelict" | "survey" | "fold" | "lens" | "echo";
 
 export interface AnomalyDef {
   id: string;
@@ -580,6 +580,14 @@ export function legSummary(w: World): string | null {
   const close = !p.crew.length ? "Alone, and fine with it." : mood >= 70 ? "Crew in good heart." : mood >= 45 ? "Crew tired, and say so." : "Crew worn thin; a meal and a port would help.";
   const head = `Supplemental, stardate ${stardate(w)}, ${hours >= 1 ? `${hours.toFixed(1)}h` : `${Math.round(hours * 60)}m`} since the clamp: ${parts.join(", ")}.`;
   return (head + " " + close).length <= 118 ? head + " " + close : head.slice(0, 118);
+}
+// Strange readings: the phenomena among the anomalies. Each does something when you reach it.
+export function strangeReading(w: World, an: AnomalyDef, rng: RNG): string | null {
+  const p = w.player;
+  if (an.kind === "fold") { w.time += 900; p.expData = (p.expData ?? 0) + 60; (p.codex ??= {})["signal:A FOLD IN THE LANE"] = ((p.codex ?? {})["signal:A FOLD IN THE LANE"] ?? 0) + 1; logEntry(w, `${an.name}: a fold in the lane; the clock jumped fifteen minutes nobody remembers`); return `${an.name.toUpperCase()}: THE STARS BEND, THE CLOCK JUMPS FIFTEEN MINUTES, AND NOBODY ABOARD REMEMBERS THEM. +60 DATA. THE CODEX HAS A SIGNAL.`; }
+  if (an.kind === "lens") { let n = 0; for (const o of w.systems[p.systemId].anomalies) if (!o.discovered) { o.discovered = true; n++; } p.expData = (p.expData ?? 0) + 40; logEntry(w, `${an.name}: a gravity lens; the whole system lit up on the scanner`); return `${an.name.toUpperCase()}: A LENS OF BENT LIGHT. FOR A MOMENT THE SCANNER SEES THE WHOLE SYSTEM${n ? `: ${n} MORE SIGNAL${n > 1 ? "S" : ""} ON THE CHART` : ""}. +40 DATA.`; }
+  if (an.kind === "echo") { const e = (p.log ?? []).length ? rng.pick(p.log!) : null; p.expData = (p.expData ?? 0) + 50; for (const c of p.crew) c.morale = Math.min(100, c.morale + 3); logEntry(w, `${an.name}: an echo that played the ship's own band back`); return `${an.name.toUpperCase()}: THE BAND PLAYS BACK SOMETHING THIS SHIP SAID ONCE${e ? `: "${e.text.toUpperCase().slice(0, 60)}"` : ""}. THE CREW GO QUIET, THEN LAUGH. +50 DATA, MORALE UP.`; }
+  return null;
 }
 // Command rank, by deeds on the wall: the lanes' own ladder, nothing to do with any navy. And a registry
 // for the hull, so control has something to read out.
@@ -2440,10 +2448,10 @@ function genSystem(rng: RNG, id: string, gx: number, gy: number, factionId: stri
   for (let i = 0; i < nAnom; i++) {
     const a = rng.range(0, Math.PI * 2);
     const r = rng.range(1000, SYSTEM_SIZE * 0.9);
-    const kind: AnomalyKind = rng.pick(["data", "derelict", "survey"]);
+    const kind: AnomalyKind = rng.pick(["data", "derelict", "survey", "data", "derelict", "survey", "fold", "lens", "echo"]);
     sys.anomalies.push({
       id: `${id}-an${i}`,
-      name: `${rng.pick(["Signal", "Echo", "Contact", "Return"])} ${rng.pick(["Alpha", "Kilo", "Sigma", "Zeta", "Nine", "Tango"])}`,
+      name: `${kind === "fold" ? "Fold" : kind === "lens" ? "Lens" : kind === "echo" ? "Echo" : rng.pick(["Signal", "Contact", "Return"])} ${rng.pick(["Alpha", "Kilo", "Sigma", "Zeta", "Nine", "Tango"])}`,
       kind, x: Math.cos(a) * r, y: Math.sin(a) * r,
       discovered: false, claimed: false,
       reward: rng.int(150, 450),

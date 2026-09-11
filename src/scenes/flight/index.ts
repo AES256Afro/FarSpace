@@ -5,7 +5,7 @@ import { ask, confirmBox } from "../../core/dialog";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra, raceCourse, racePar, racePrize, recordRace, beatHolder, captainNickname, leaveWreck, addWireWrecks, enterRegatta, regattaProgress, hasSpecialty, maydayAnswered, watchIndex, onWatch, raceHolder, askPassengerRequest, takeJuice, alertMods, AlertLevel, shipVoiceName, noteLeg, firstOfficer } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra, raceCourse, racePar, racePrize, recordRace, beatHolder, captainNickname, leaveWreck, addWireWrecks, enterRegatta, regattaProgress, hasSpecialty, maydayAnswered, watchIndex, onWatch, raceHolder, askPassengerRequest, takeJuice, alertMods, AlertLevel, shipVoiceName, noteLeg, firstOfficer, strangeReading } from "../../world";
 import { COMMODITIES, commodity } from "../../data/data";
 import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
@@ -1399,6 +1399,10 @@ export class FlightScene implements Scene {
           g.toast(`${an.name}: SALVAGE CACHE`);
           this.loot.push({ x: an.x, y: an.y, commodityId: "parts", qty: 3, life: 60 });
           this.loot.push({ x: an.x + 10, y: an.y, commodityId: "metals", qty: 3, life: 60 });
+        } else if (an.kind === "fold" || an.kind === "lens" || an.kind === "echo") {
+          const line = strangeReading(g.world, an, new RNG((g.world.seed ^ Math.floor(g.world.time * 13)) >>> 0));
+          if (line) { g.toast(line); this.comms.push({ from: shipVoiceName(p), text: line, life: 9, color: PAL.info }); }
+          flag(g, "strange");
         } else {
           p.credits += reward;
           g.toast(`${an.name}: SURVEY BOUNTY +${reward}CR`);

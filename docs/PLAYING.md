@@ -870,6 +870,12 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - A translator core from the shipyard (900 credits) means the first contact
   always lands, and the singers add a third thing the old core would have
   missed: they remember the ones who answer.
+- Among the anomalies the deep scan finds (hold V) there are now strange
+  readings in new galaxies: a fold, which skips the clock fifteen minutes
+  nobody aboard remembers; a lens, which lights every signal in the system on
+  the chart; and an echo, which plays back something this ship once said on
+  the band. Fly to the marker and press E, as with any signal. Data for each,
+  a codex signal for the fold, and a deed.
 - The singers are an arc. Run the translator on the hull that sings and it
   comes back, asking to be shown the brightest thing in the system: lead it
   to a lit beacon or a wonder, or let the crew sing it the way. Afterwards it
