@@ -1719,7 +1719,7 @@ place when returning from a story card or a site.
 ## Parley
 
 - E near a corsair opens a channel before anyone fires. Pay the toll (120
-  credits a hull; they take it and go, this time), bluff a patrol callsign in
+  credits a hull; three flight minutes of local safe passage), bluff a patrol callsign in
   a patrol voice (35% base; a gunner aboard, a rank of commander or better,
   and twenty-five kills each help, to 90%), offer them a way out if you're an
   ace they've heard of (75%, and rep for nobody dying), or close the channel
@@ -1946,3 +1946,23 @@ while you make the choice.
 - New offences can reopen pursuit. Pirate aggression has separate causes:
   approach within 260 metres and press **E** for parley. Law settlements do not
   pay pirates. Pirate space has no lawful settlement desk; free cooling works.
+
+## Corsair safe passage
+
+A successful **E parley within 260 metres** now gives three flight minutes
+of safe passage in the current system. The HUD shows how long remains. Pay
+120 credits per corsair within 900 metres, or succeed with the existing bluff,
+warning shot or reputation appeal. Failed attempts give no passage.
+
+Replacement corsairs and Veil platforms honour the agreement. Your automatic
+gunner and escorts hold fire, and both sides withdraw projectiles already
+heading into the fight. Peaceful contacts use subdued markers and do not
+trigger hostile warnings or interrupt an E docking request with another toll.
+Law patrols and their projectiles remain governed by your separate warrant.
+
+Your guns or torpedoes hitting a corsair end the temporary agreement. A manual
+torpedo does not automatically lock a peaceful contact. Agreements persist in
+saves. Flight in other systems consumes remaining time, while menus, docking
+and time spent inside the ship do not. Protection applies in the system where
+the agreement was made. Veil standing of 40 or more also keeps corsairs and
+Veil platforms peaceful and prevents automatic gunners from attacking them.

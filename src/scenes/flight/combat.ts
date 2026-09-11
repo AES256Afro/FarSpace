@@ -1,3 +1,4 @@
+import { breakPiratePassage } from "../../core/piracy";
 import { recordOffence } from "../../core/law";
 // Combat feel: pirate variants, homing torpedoes, hit feedback, damage smoke,
 // and comms chatter. Called from the flight scene each frame.
@@ -55,7 +56,7 @@ export function updateComms(fs: FlightScene, g: Game, dt: number): void {
   for (const n of fs.npcs) {
     if (n.hailed || n.hull <= 0) continue;
     const d = dist(n.x, n.y, p.x, p.y);
-    if (n.kind === "pirate" && d < 420 && !n.fleeing) {
+    if (n.kind === "pirate" && d < 420 && !n.fleeing && !fs.piratesFriendly(g)) {
       n.hailed = true;
       const line = n.variant === "captain" ? CAPTAIN_LINES : n.variant === "cutter" ? CUTTER_LINES : RAIDER_LINES;
       hail(fs, n.name ?? (n.variant === "cutter" ? "CORSAIR CUTTER" : "CORSAIR"), line[Math.floor(Math.random() * line.length)], PAL.danger);
@@ -83,7 +84,7 @@ export function fireTorpedo(fs: FlightScene, g: Game): void {
   let target: Npc | null = null;
   let best = Infinity;
   for (const n of fs.npcs) {
-    if (n.kind !== "pirate" || n.hull <= 0) continue;
+    if (n.kind !== "pirate" || n.hull <= 0 || n.fleeing || fs.piratesFriendly(g)) continue;
     const d = dist(n.x, n.y, p.x, p.y);
     if (d > 900) continue;
     const off = Math.abs(angDiff(fs.aim, Math.atan2(n.y - p.y, n.x - p.x)));
@@ -118,6 +119,7 @@ export function updateTorpedoes(fs: FlightScene, g: Game, dt: number): void {
       if (n.hull <= 0 || n.kind === "drone") continue;
       if (dist(t.x, t.y, n.x, n.y) < 14) {
         t.life = 0;
+        if (n.kind === "pirate" && breakPiratePassage(g.world)) g.toast("CORSAIR SAFE PASSAGE ENDED - OUR TORPEDO HIT THEM");
         n.hull -= 45;
         boom(fs, t.x, t.y, 18, PAL.thrust);
         fs.floaters.push({ x: n.x, y: n.y - 10, text: "45", life: 1, color: PAL.gold });

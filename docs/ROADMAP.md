@@ -2103,3 +2103,15 @@ The decision between service orders and booked fares is covered by M402.
   active shots at settlement. Remove the reputation-loss pursuit timer.
 - Keep all pause actions within the viewport and preserve keyboard selection
   when the pointer has not moved.
+
+### M406: They Keep Their Word
+
+- Successful pirate parley grants three flight minutes of safe passage in the
+  local system. Replacement contacts and Veil platforms honour it.
+- Show remaining passage on the HUD and persist it across saves. Time advances
+  during flight, including travel elsewhere; menus and docking do not use it.
+- Automatic gunners and escorts respect both passage and trusted Veil standing.
+  Friendly markers and chatter agree with the combat state; E can reach a port.
+- Withdraw outstanding player, escort and hostile corsair projectiles when the
+  agreement starts. Subsequent player gun or torpedo hits end temporary passage.
+- Guard parley participants, world, system, eligibility and one-time resolution.

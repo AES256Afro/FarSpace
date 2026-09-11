@@ -1,3 +1,4 @@
+import { piratePassageRemaining } from "../../core/piracy";
 import { serviceObjective } from "../../core/service";
 // Rendering for the flight scene: world, HUD, radar markers, system map.
 
@@ -351,7 +352,7 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
     const [sx, sy] = toScreen(n.x, n.y);
     if (sx < -40 || sx > VW + 40 || sy < -40 || sy > VH + 40) continue;
     drawRotated(ctx, spr, sx, sy, n.angle, z);
-    const col = n.kind === "pirate" ? PAL.danger : n.kind === "patrol" || n.kind === "fighter" ? PAL.info : n.kind === "drone" ? PAL.ui : PAL.gold;
+    const col = n.kind === "pirate" ? (n.fleeing || fs.piratesFriendly(g) ? PAL.grey : PAL.danger) : n.kind === "patrol" || n.kind === "fighter" ? PAL.info : n.kind === "drone" ? PAL.ui : PAL.gold;
     ctx.fillStyle = col;
     ctx.fillRect(sx - 6, sy - 12, Math.round(12 * (n.hull / n.hullMax)), 1);
     if (n.companion && n.name) { const label = `${n.name.toUpperCase()} - WITH YOU`; drawText(ctx, label, sx - textWidth(label) / 2, sy - 20, PAL.gold); }
@@ -499,7 +500,7 @@ export function drawEdgeMarkers(fs: FlightScene, g: Game, ctx: CanvasRenderingCo
     mark(jp.x, jp.y, isNav ? PAL.gold : PAL.info, isNav ? "NAV>" : "GATE");
   }
   for (const n of fs.npcs) {
-    if (n.kind === "pirate" && dist(n.x, n.y, p.x, p.y) < 900) mark(n.x, n.y, PAL.danger);
+    if (n.kind === "pirate" && dist(n.x, n.y, p.x, p.y) < 900) mark(n.x, n.y, n.fleeing || fs.piratesFriendly(g) ? PAL.grey : PAL.danger);
   }
   if (fs.sos && fs.sos.trader.hull > 0) mark(fs.sos.trader.x, fs.sos.trader.y, PAL.gold, fs.sos.kind === "disabled" ? "MAYDAY" : fs.sos.kind === "casualties" ? "MEDICAL" : "SOS");
   if (fs.repairJob) mark(fs.repairJob.npc.x, fs.repairJob.npc.y, PAL.good, "REPAIR");
@@ -589,6 +590,8 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
   if (g.cloudStatus) drawText(ctx, g.cloudStatus, VW - 36 - textWidth(g.cloudStatus) - 6, VH - 11, g.cloudStatus === "SYNCED" ? PAL.uiDim : PAL.warn);
 
   let wy = 4;
+  const passage = piratePassageRemaining(g.world);
+  if (passage > 0) { drawText(ctx, `CORSAIR SAFE PASSAGE: ${Math.ceil(passage)}S / HITS END TRUCE`, 4, wy, PAL.good); wy += 9; }
   const lawStatus = fs.lawStatus(g);
   if (lawStatus) { drawText(ctx, lawStatus, 4, wy, PAL.warn); wy += 9; }
   for (const s of p.systems) {

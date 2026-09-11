@@ -1,3 +1,4 @@
+import { grantPiratePassage, piratePassageRemaining, piratesPeaceful, tickPiratePassage } from "../../core/piracy";
 import { LAW_COOLDOWN, lawActive, lawCases, lawSettlement, recordOffence, settleLaw, tickLawCooldown } from "../../core/law";
 import { tickServiceOrder } from "../../core/service";
 import { beginDockVisit } from "../../core/docking";
@@ -225,9 +226,9 @@ export class FlightScene implements Scene {
     return lawLevelFor(g.world, g.world.player.systemId);
   }
 
-  // In corsair space with good Veil rep, pirates leave you alone
+  // Passage agreements and trusted Veil standing apply to the whole local group.
   piratesFriendly(g: Game): boolean {
-    return (g.world.player.rep?.["vex"] ?? 0) >= 40;
+    return piratesPeaceful(g.world);
   }
 
   jumpCost(g: Game, targetId: string): number {
@@ -285,6 +286,9 @@ export class FlightScene implements Scene {
     this.zoom = clamp(this.zoom * (1 - g.input.wheel * 0.15), 0.25, 2);
     if (this.mapOpen) return;
 
+    if (tickPiratePassage(w, dt) && !this.piratesFriendly(g)) {
+      this.comms.push({ from: "CORSAIR CHANNEL", text: "SAFE PASSAGE HAS ENDED. KEEP YOUR DISTANCE, OR E WITHIN 260M TO PARLEY AGAIN.", life: 8, color: PAL.warn });
+    }
     for (const pl of sys.planets) pl.angle += pl.speed * dt;
     for (const st of sys.stations) st.angle += st.speed * dt;
 
@@ -383,10 +387,10 @@ export class FlightScene implements Scene {
       });
     }
     // gunner crew: auto-turret at nearest pirate
-    if (crewBonus(p, "gunner") > 0 && weaponsSys.health > 5) {
+    if (crewBonus(p, "gunner") > 0 && weaponsSys.health > 5 && !this.piratesFriendly(g)) {
       this.turretCd = (this.turretCd ?? 0) - dt;
       if (this.turretCd <= 0) {
-        const t = this.npcs.find((n) => n.kind === "pirate" && dist(n.x, n.y, p.x, p.y) < 300);
+        const t = this.npcs.find((n) => n.kind === "pirate" && n.hull > 0 && !n.fleeing && dist(n.x, n.y, p.x, p.y) < 300);
         if (t) {
           this.turretCd = 0.9;
           const aim = Math.atan2(t.y - p.y, t.x - p.x);
@@ -469,7 +473,7 @@ export class FlightScene implements Scene {
     // soundtrack: faction pad, pulse rising with hostiles in weapons range
     {
       let threat = 0;
-      for (const n of this.npcs) if (n.kind === "pirate") { const d = dist(n.x, n.y, p.x, p.y); if (d < 600) threat = Math.max(threat, 1 - d / 600); }
+      for (const n of this.npcs) if (n.kind === "pirate" && !n.fleeing && !this.piratesFriendly(g)) { const d = dist(n.x, n.y, p.x, p.y); if (d < 600) threat = Math.max(threat, 1 - d / 600); }
       if (this.lawLevel(g) >= 1) threat = Math.max(threat, 0.6);
       const awe = wondersIn(g.world, sys.id).some((wd) => dist(p.x, p.y, wd.x, wd.y) < 1400);
       music.setMood(awe ? "wonder" : sys.factionId, threat);
@@ -789,22 +793,37 @@ export class FlightScene implements Scene {
   }
   // parley: pay the toll, bluff, offer a way out, or open fire
   parley(g: Game, n: Npc): void {
-    const p = g.world.player;
+    const w = g.world, p = w.player, systemId = p.systemId;
+    if (this.piratesFriendly(g)) { g.toast("THE CORSAIRS ARE HONOURING YOUR PASSAGE. KEEP FLYING."); return; }
     const gang = this.npcs.filter((x) => x.kind === "pirate" && x.hull > 0 && !x.fleeing && dist(p.x, p.y, x.x, x.y) < 900);
+    if (!gang.includes(n)) { g.toast("NO CORSAIR ON THIS CHANNEL."); return; }
     const toll = 120 * gang.length;
-    const scatter = (line: string) => { for (const x of gang) x.fleeing = true; return line; };
+    let resolved = false;
+    const scatter = (line: string) => {
+      for (const x of gang) x.fleeing = true;
+      grantPiratePassage(w); this.alert = 0;
+      this.bullets = this.bullets.filter(b => !(b.pirateShot && b.hostile) && !b.fromPlayer && !b.escortShot);
+      this.torps = [];
+      return `${line} THREE FLIGHT MINUTES OF SAFE PASSAGE IN THIS SYSTEM. YOUR GUNNER AND ESCORTS WILL HOLD FIRE.`;
+    };
     const odds = parleyChance(p);
     const fo = firstOfficer(p); const gunAboard = p.crew.some((c) => c.role === "gunner" && !c.sick);
     const advice = fo ? ` ${fo.name.split(" ")[0]}, quietly, at your shoulder: '${odds >= 0.6 ? "THEY'LL BUY THE BLUFF. SAY IT LIKE YOU'VE SAID IT BEFORE." : gunAboard ? "ONE ACROSS THE BOW. THE GUNNER'S GOOD FOR IT, AND THEY KNOW IT." : p.credits >= 120 * gang.length * 2 ? "PAY THEM. IT'S CHEAPER THAN THE YARD, AND WE BOTH KNOW IT." : "I'D FIGHT. I DON'T LIKE IT. I'D FIGHT."}'` : "";
     const enc: Encounter = { id: "parley", where: "space", title: "PARLEY", weight: 0,
       text: `${gang.length > 1 ? `${gang.length} corsair hulls` : "A corsair hull"} on an intercept, guns warm, and an open channel: '${n.variant === "captain" ? "WELL. LOOK WHO." : "CUT THRUST AND OPEN YOUR HOLD, OR DON'T. WE'RE EASY."}' Behind you the crew have gone quiet.${advice} Every corsair on the lane will listen to money; some will listen to a voice.`,
       options: [
-        { label: `PAY THE TOLL (${toll}CR)`, hint: "They take it and go. This time.", requires: () => p.credits >= toll, result: (g2) => { p.credits -= toll; logEntry(g2.world, `Paid a corsair toll of ${toll}cr`); return scatter(`THE CREDITS GO ACROSS. 'PLEASURE DOING BUSINESS.' THEY PEEL OFF FOR THE BELT. THE CREW DON'T LOOK AT YOU. -${toll}CR.`); } },
+        { label: `PAY THE TOLL (${toll}CR)`, hint: "Three flight minutes here; replacement corsairs also stand down", requires: () => p.credits >= toll, result: (g2) => { p.credits -= toll; logEntry(g2.world, `Paid a corsair toll of ${toll}cr`); return scatter(`THE CREDITS GO ACROSS. 'PLEASURE DOING BUSINESS.' THEY PEEL OFF FOR THE BELT. THE CREW DON'T LOOK AT YOU. -${toll}CR.`); } },
         { label: "BLUFF: THIS IS A PATROL CUTTER", hint: `A gunner, a rank and a reputation help (${Math.round(odds * 100)}%)`, result: (g2, rng) => { if (rng.chance(odds)) { flag(g2, "parley"); logEntry(g2.world, "Bluffed a corsair off with a patrol callsign"); return scatter("YOU READ THEM A PATROL CALLSIGN IN A PATROL VOICE AND LET THE SILENCE DO THE REST. A LONG PAUSE. THEN THE INTERCEPT BREAKS AND THEY RUN FOR THE BELT. THE CREW BREATHE OUT."); } this.alert = 2; this.alertT = 0; sfx.alarm(); return "YOU READ THEM A PATROL CALLSIGN. 'NICE TRY.' THE INTERCEPT TIGHTENS AND THE FIRST SHOT COMES ACROSS THE BOW. RED ALERT."; } },
         { label: "OFFER THEM A WAY OUT", hint: "Ace of the lanes: they know the name", requires: () => p.kills >= 25, result: (g2, rng) => { if (rng.chance(0.75)) { flag(g2, "parley"); adjustRep(g2.world, g2.world.systems[p.systemId].factionId, 1); logEntry(g2.world, "Talked a corsair down without a shot"); return scatter("YOU TELL THEM WHO YOU ARE AND WHAT HAPPENS NEXT IF THEY STAY. THEY KNOW THE NAME. THE CHANNEL GOES QUIET, THEN: 'NOT TODAY, THEN.' THEY GO. NOBODY DIES. REP UP."); } this.alert = 2; this.alertT = 0; sfx.alarm(); return "YOU TELL THEM WHO YOU ARE. ONE OF THEM LAUGHS. RED ALERT."; } },
         { label: "ONE ACROSS THEIR BOW", hint: (() => { const gun = p.crew.some((c) => c.role === "gunner" && !c.sick); const o = Math.min(0.85, 0.35 + (gun ? 0.2 : 0) + Math.min(0.2, p.kills / 100)); return `A warning shot: a gunner and a record help (${Math.round(o * 100)}%); fail and they open up early`; })(), result: (g2, rng) => { const gun = p.crew.some((c) => c.role === "gunner" && !c.sick); const o = Math.min(0.85, 0.35 + (gun ? 0.2 : 0) + Math.min(0.2, p.kills / 100)); sfx.alarm(); if (rng.chance(o)) { flag(g2, "warningshot"); logEntry(g2.world, `Put one across a corsair's bow and they thought better of it`); return scatter(gun ? "THE GUNNER PUTS ONE THROUGH THE GAP BETWEEN THEIR MAST AND THEIR MANNERS, CLOSE ENOUGH TO SCORCH PAINT. A LONG SECOND. THEY BREAK OFF. NOBODY SAYS ANYTHING ON THE BAND, WHICH IS THE POINT." : "YOU PUT ONE ACROSS THEIR BOW YOURSELF, CLOSER THAN YOU MEANT. THEY READ IT THE WAY YOU HOPED. THEY BREAK OFF."); } this.alert = 2; this.alertT = 0; for (const x of gang) x.fireCd = 0; return "THE SHOT GOES WIDE OF WIDE, AND THEY READ THAT TOO. THEY OPEN UP BEFORE THE CHANNEL'S CLOSED. RED ALERT."; } },
         { label: "OPEN FIRE", hint: "Red alert, and the usual", result: () => { this.alert = 2; this.alertT = 0; sfx.alarm(); return "YOU CLOSE THE CHANNEL AND OPEN THE GUNS. RED ALERT."; } },
       ] };
+    enc.options = enc.options.map(option => ({ ...option, result: (g2, rng) => {
+      if (resolved || g2.world !== w || p.systemId !== systemId || gang.some(x => !this.npcs.includes(x) || x.hull <= 0 || x.fleeing || dist(p.x, p.y, x.x, x.y) >= 900)) return "THIS PARLEY HAS CLOSED. HAIL AGAIN IF THEY ARE STILL NEARBY.";
+      if (option.requires && !option.requires(g2)) return "THAT OFFER IS NO LONGER AVAILABLE. YOUR CREDITS STAY ABOARD.";
+      resolved = true;
+      return option.result(g2, rng);
+    } }));
     (g.scenes["encounter"] as EncounterScene).open(g, enc, "flight", true);
   }
 
@@ -1213,7 +1232,7 @@ export class FlightScene implements Scene {
     // the ship's bell: the watch changes, and the lounge has something to say now and then
     { const wi = watchIndex(g.world.time); if (this.lastWatch < 0) this.lastWatch = wi; else if (wi !== this.lastWatch) { this.lastWatch = wi; if (p.crew.length >= 2) { const on = p.crew.filter((c, i) => onWatch(p, i, g.world.time) && !c.sick).map((c) => c.name.split(" ")[0].toUpperCase()); this.comms.push({ from: (p.shipName ?? "SHIP").toUpperCase(), text: `WATCH CHANGE. ${on.length ? on.join(" AND ") + " ON DECK." : "EVERYONE'S IN THEIR BUNK."}`, life: 7, color: PAL.uiDim }); sfx.blip(); } } }
     // patrol orders: the clock runs while you hold station in the target system, off cruise
-    { const cutter = this.npcs.find((n) => n.naval && n.hull > 0); if (cutter && !this.cutterSpoke && this.npcs.some((n) => n.kind === "pirate" && n.hull > 0 && !n.fleeing && dist(p.x, p.y, n.x, n.y) < 700)) { this.cutterSpoke = true; this.comms.push({ from: "SERVICE CUTTER", text: "CORSAIR ON THE SCOPE. I HAVE THEM. STAY ON COURSE AND LET THE SERVICE EARN ITS KEEP.", life: 8, color: PAL.info }); } if (!cutter) this.cutterSpoke = false; }
+    { const cutter = this.npcs.find((n) => n.naval && n.hull > 0); if (cutter && !this.cutterSpoke && !this.piratesFriendly(g) && this.npcs.some((n) => n.kind === "pirate" && n.hull > 0 && !n.fleeing && dist(p.x, p.y, n.x, n.y) < 700)) { this.cutterSpoke = true; this.comms.push({ from: "SERVICE CUTTER", text: "CORSAIR ON THE SCOPE. I HAVE THEM. STAY ON COURSE AND LET THE SERVICE EARN ITS KEEP.", life: 8, color: PAL.info }); } if (!cutter) this.cutterSpoke = false; }
     { const fo0 = firstOfficer(p); if (fo0 && !fo0.sick && p.leg && g.world.time - p.leg.t0 > 8 * 3600 && !(p.flags ?? {}).longLegNudged && this.comms.length < 4) { (p.flags ??= {}).longLegNudged = true; if ((settings().numberOneTakesLeg ?? false) && !p.numberOneLeg) { p.numberOneLeg = true; this.autopilot = true; fo0.loyalty = (fo0.loyalty ?? 0) + 0.2; logEntry(g.world, `${fo0.name} took the ship at eight hours, per standing orders`); this.comms.push({ from: fo0.name.split(" ")[0].toUpperCase(), text: "EIGHT HOURS. I HAVE THE SHIP, PER STANDING ORDERS. GO BELOW, CAPTAIN. I'LL WAKE YOU AT THE CLAMP.", life: 9, color: PAL.warn }); } else this.comms.push({ from: fo0.name.split(" ")[0].toUpperCase(), text: "EIGHT HOURS SINCE THE CLAMP, CAPTAIN. THE CREW ARE COUNTING RIVETS. I'D LIKE A PORT ON THE CHART, ANY PORT, BEFORE THEY START NAMING THEM.", life: 9, color: PAL.warn }); } }
     if (!this.cruise && !this.docking) for (const m of p.missions) if (m.kind === "observe" && m.accepted && !m.done && !m.patrolDone && m.targetSystemId === p.systemId) {
       const pl = g.world.systems[p.systemId].planets[m.sightPlanetIdx ?? -1]; if (!pl) continue;
@@ -1226,7 +1245,7 @@ export class FlightScene implements Scene {
     if (!this.cruise && !this.docking) for (const m of p.missions) if (m.kind === "patrol" && m.accepted && !m.done && m.targetSystemId === p.systemId) { m.patrolT = (m.patrolT ?? 0) + dt; if (!m.patrolDone && m.patrolT >= (m.patrolNeed ?? 90)) { m.patrolDone = true; g.toast(`${m.title.toUpperCase()}: STATION HELD. REPORT BACK TO ${(findStation(g.world, m.fromStationId)?.st.name ?? "THE WATCH").toUpperCase()}`); sfx.select(); } }
     // tactical calls yellow alert when a hostile closes and nobody has yet
     this.autoAlertT -= dt;
-    if (this.alert === 0 && this.autoAlertT <= 0 && !this.docking && this.npcs.some((n) => n.kind === "pirate" && n.hull > 0 && dist(p.x, p.y, n.x, n.y) < 950)) { this.autoAlertT = 90; this.alert = 1; const gun = p.crew.find((c) => c.role === "gunner" && !c.sick); this.comms.push({ from: gun ? gun.name.split(" ")[0].toUpperCase() : shipVoiceName(p), text: gun ? "HOSTILE CLOSING. GOING TO YELLOW. SAY THE WORD FOR RED." : "A HOSTILE IS CLOSING. I'VE GONE TO YELLOW. Y FOR RED, IF YOU LIKE THE SOUND OF THE KLAXON.", life: 6, color: PAL.warn }); sfx.blip(); }
+    if (this.alert === 0 && this.autoAlertT <= 0 && !this.docking && !this.piratesFriendly(g) && this.npcs.some((n) => n.kind === "pirate" && n.hull > 0 && dist(p.x, p.y, n.x, n.y) < 950)) { this.autoAlertT = 90; this.alert = 1; const gun = p.crew.find((c) => c.role === "gunner" && !c.sick); this.comms.push({ from: gun ? gun.name.split(" ")[0].toUpperCase() : shipVoiceName(p), text: gun ? "HOSTILE CLOSING. GOING TO YELLOW. SAY THE WORD FOR RED." : "A HOSTILE IS CLOSING. I'VE GONE TO YELLOW. Y FOR RED, IF YOU LIKE THE SOUND OF THE KLAXON.", life: 6, color: PAL.warn }); sfx.blip(); }
     // damage control: at red alert an engineer works the worst system back up while the guns are busy
     if (this.alert === 2) { const eng = p.crew.find((c) => c.role === "engineer" && !c.sick); if (eng) { const worst = [...p.systems].sort((a, b) => a.health - b.health)[0]; if (worst && worst.health < 100) { const before = Math.floor(worst.health / 25); worst.health = Math.min(100, worst.health + dt * 0.8 * (1 + crewBonus(p, "engineer") * 0.3)); if (Math.floor(worst.health / 25) > before && this.comms.length < 3) this.comms.push({ from: eng.name.split(" ")[0].toUpperCase(), text: `DAMAGE CONTROL: ${worst.name.toUpperCase()} BACK TO ${Math.round(worst.health)}%. KEEP HER STEADY.`, life: 5, color: PAL.good }); } } }
     // the klaxon repeats while the ship is at red
@@ -1574,7 +1593,7 @@ export class FlightScene implements Scene {
     const needy = this.npcs.find((n) => n.kind === "trader" && n.hull > 0 && dist(p.x, p.y, n.x, n.y) < 80 && (n.disabled || n.casualties || n.hull < n.hullMax * 0.5));
     if (needy && !this.repairJob) { this.offerHelp(g, needy); return; }
     // a corsair close enough to talk to
-    const corsair = this.npcs.find((n) => n.kind === "pirate" && n.hull > 0 && !n.fleeing && dist(p.x, p.y, n.x, n.y) < 260);
+    const corsair = this.npcs.find((n) => !this.piratesFriendly(g) && n.kind === "pirate" && n.hull > 0 && !n.fleeing && dist(p.x, p.y, n.x, n.y) < 260);
     if (corsair) { this.parley(g, corsair); return; }
     for (const st of sys.stations) {
       const sx = Math.cos(st.angle) * st.orbit;

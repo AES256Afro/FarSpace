@@ -1,3 +1,4 @@
+import { breakPiratePassage } from "../../core/piracy";
 import { recordOffence } from "../../core/law";
 // NPC / platform / projectile simulation for the flight scene.
 // Every function takes the scene as explicit state so this file has no `this`.
@@ -395,6 +396,7 @@ export function updateBullets(fs: FlightScene, g: Game, dt: number): void {
         if (n.hull <= 0) continue;
         if (dist(b.x, b.y, n.x, n.y) < 12) {
           b.life = 0;
+          if (b.fromPlayer && n.kind === "pirate" && breakPiratePassage(g.world)) g.toast("CORSAIR SAFE PASSAGE ENDED - OUR SHOT HIT THEM");
           n.hull -= b.dmg;
           boom(fs, b.x, b.y, 3, PAL.danger);
           if (b.fromPlayer) fs.floaters.push({ x: n.x, y: n.y - 10, text: `${Math.round(b.dmg)}`, life: 0.8, color: PAL.white });
@@ -549,7 +551,7 @@ export function updateNpcs(fs: FlightScene, g: Game, dt: number): void {
       speed = 130;
       let target: Npc | null = null;
       for (const o of fs.npcs) {
-        if (o.kind === "pirate" && o.hull > 0 && dist(p.x, p.y, o.x, o.y) < 450) { target = o; break; }
+        if (!fs.piratesFriendly(g) && o.kind === "pirate" && o.hull > 0 && !o.fleeing && dist(p.x, p.y, o.x, o.y) < 450) { target = o; break; }
       }
       if (target) {
         tx = target.x; ty = target.y;
@@ -671,6 +673,7 @@ export function updateNpcs(fs: FlightScene, g: Game, dt: number): void {
           x: n.x + Math.cos(aim + spread) * 10, y: n.y + Math.sin(aim + spread) * 10,
           vx: n.vx + Math.cos(aim + spread) * bs, vy: n.vy + Math.sin(aim + spread) * bs,
           life: 1.8, hostile: fireHostile, dmg,
+          pirateShot: n.kind === "pirate", escortShot: n.kind === "drone",
           lawFaction: fireHostile && (n.kind === "patrol" || n.kind === "fighter") ? sys.factionId : undefined,
         });
       }
@@ -726,7 +729,7 @@ export function updatePlatforms(fs: FlightScene, g: Game, dt: number): void {
         break;
       }
     }
-    if (tx === null && (pf.hostileToPlayer || shootOnSight) && dist(x, y, p.x, p.y) < 320) {
+    if (tx === null && ((pf.hostileToPlayer && !fs.piratesFriendly(g)) || shootOnSight) && dist(x, y, p.x, p.y) < 320) {
       tx = p.x; ty = p.y; tvx = p.vx; tvy = p.vy; hostileShot = true;
     }
     if (tx === null) continue;
@@ -738,6 +741,7 @@ export function updatePlatforms(fs: FlightScene, g: Game, dt: number): void {
       x: x + Math.cos(aim) * 8, y: y + Math.sin(aim) * 8,
       vx: Math.cos(aim) * 360, vy: Math.sin(aim) * 360,
       life: 1.2, hostile: hostileShot, dmg: 9,
+      pirateShot: pf.hostileToPlayer,
       lawFaction: hostileShot && !pf.hostileToPlayer ? g.world.systems[p.systemId].factionId : undefined,
     });
   }

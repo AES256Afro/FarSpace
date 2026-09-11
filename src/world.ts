@@ -264,6 +264,7 @@ export interface PlayerState {
   lawQuiet?: number;
   lawCases?: string[];
   lawStandDown?: Record<string, boolean>;
+  piratePassage?: Record<string, number>;
   navTarget?: string | null;
   navStationId?: string; // an exact station at the end of the plotted route
   hullId: string;
