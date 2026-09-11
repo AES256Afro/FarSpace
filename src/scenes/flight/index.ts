@@ -103,6 +103,7 @@ export class FlightScene implements Scene {
       g.justUndocked = false;
       const p = g.world.player;
       if ((p.flags?.shipCrew || p.voiceName) && Math.random() < 0.35) { const news = shipNewsletter(g.world).slice(1, -1); const line = news.length ? news[Math.floor(Math.random() * news.length)] : null; if (line && !line.startsWith("FROM THE LOG")) this.comms.push({ from: shipVoiceName(p), text: `FROM THE GALLEY DOOR: ${line}`.slice(0, 160), life: 9, color: PAL.grey }); }
+      { const from = findStation(g.world, p.dockedAt ?? p.lastDockedAt ?? "")?.st; const rk = commandRank(p); if (from && from.military && (rk === "COMMODORE" || rk === "ADMIRAL") && !this.npcs.some((n) => n.naval)) { const a = Math.PI / 2; this.npcs.push({ kind: "drone", naval: true, x: p.x + Math.cos(a) * 70, y: p.y + Math.sin(a) * 70, vx: p.vx, vy: p.vy, angle: p.angle, hull: 90, hullMax: 90, fireCd: 0, targetIdx: 0 }); this.comms.push({ from: `${from.name.toUpperCase()} CUTTER`, text: `${rk} ${(p.shipName ?? "VESSEL").toUpperCase()}, THE SERVICE HAS YOU AS FAR AS THE GATE. FORMING ON YOUR QUARTER.`, life: 8, color: PAL.info }); flag(g, "navalescort"); } }
       if (p.catchphrase) { const pil = p.crew.find((c) => c.role === "pilot" && !c.sick); const fo = firstOfficer(p); const who = pil ?? fo; this.comms.push({ from: "YOU", text: `${p.catchphrase.toUpperCase()}.`, life: 6, color: PAL.gold }); if (who) this.comms.push({ from: who.name.split(" ")[0].toUpperCase(), text: pil ? "AYE. CLAMP'S AWAY. COURSE IS YOURS." : "AYE, CAPTAIN. THE BRIDGE HEARD.", life: 6, color: PAL.grey }); else if (p.voiceName) this.comms.push({ from: p.voiceName.toUpperCase(), text: "AYE. I HEARD. I ALWAYS HEAR.", life: 6, color: PAL.grey }); }
       this.startRace(g);
       if (p.convoyPending) { const m = p.missions.find((x) => x.id === p.convoyPending); p.convoyPending = null; if (m) { const cv = this.startConvoy(g); if (cv) { cv.reward = m.reward; cv.missionId = m.id; } } }
@@ -1607,6 +1608,7 @@ export class FlightScene implements Scene {
     jumpWear(p);
     { const up = crewXp(p, "pilot"); if (up) g.toast(up); }
     sfx.jump();
+    if (this.npcs.some((n) => n.naval)) { this.npcs = this.npcs.filter((n) => !n.naval); g.toast("SERVICE CUTTER: THAT'S THE GATE. THE SERVICE HAS YOU NO FURTHER. FLY WELL, SIR."); }
     if (this.towing) { this.towing = null; g.toast("THE TOW LINE DOESN'T SURVIVE THE JUMP"); }
     const fromId = p.systemId;
     p.systemId = targetId;

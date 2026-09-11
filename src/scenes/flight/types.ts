@@ -29,6 +29,7 @@ export interface Npc {
   ghost?: string;      // another real pilot's ship, spawned from what they posted on the wire from this system
   mayday?: boolean;    // a real pilot stranded here with dry tanks, from their mayday on the wire
   convoy?: boolean;    // a slow hauler following you to the gate for company
+  naval?: boolean;     // a service cutter shadowing a commodore's hull for the leg
   announced?: boolean; // control has called this ship into a bay on the band
 }
 

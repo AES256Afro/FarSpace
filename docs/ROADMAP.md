@@ -1784,6 +1784,16 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 353 — Follow the Light, in the Handbook ✅ (Sep 2026)
 - [x] Handbook and help lines for the singers' chart and the survey's orders
 
+## Milestone 354 — The Commission ✅ (Sep 2026)
+- [x] Commodores and admirals leaving a naval station get a service cutter on
+      their quarter: it shadows the ship and engages corsairs until the gate
+
+## Milestone 355 — As Far as the Gate ✅ (Sep 2026)
+- [x] The cutter peels off at the jump with a word
+
+## Milestone 356 — The Commission in the Handbook ✅ (Sep 2026)
+- [x] A handbook line under the bridge for the cutter
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
