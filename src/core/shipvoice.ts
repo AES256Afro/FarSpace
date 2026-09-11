@@ -47,6 +47,7 @@ export function pickShipLine(g: Game, rng: RNG): string | null {
   if (p.flags?.singersGift) pool.push("THE SHARD ON THE SEAT HUMS IN MY KEY. I DIDN'T KNOW I HAD A KEY. I DO NOW.");
   else if (p.flags?.firstContact) pool.push("THE SINGING HULL. I HAVE THE RECORDING. I PLAY IT WHEN THE CREW ARE ASLEEP. DON'T TELL THEM.");
   if (p.mayday) pool.push("MY TANKS ARE DRY AND MY MAYDAY IS OUT THERE. SOMEBODY WILL COME. SOMEBODY ALWAYS COMES. USUALLY.");
+  if ((p.log?.length ?? 0) >= 5) { const e = rng.pick(p.log!.slice(0, -1)); const t = e.text.replace(/^Supplemental, /, "").replace(/\.$/, ""); if (t.length <= 80) pool.push(`FROM THE LOG, A WHILE BACK: "${t.toUpperCase()}." I KEEP THESE. SOMEBODY SHOULD.`); }
   const deck = hull(p.hullId).deck;
   if (deck === "scout") pool.push("I'M SMALL. I'M FAST. I'M NOT CARRYING THAT MANY CRATES AGAIN.", "SCOUT HULLS DON'T GET STATUES. WE GET THERE FIRST, THOUGH.");
   else if (deck === "prospector") pool.push("THERE'S ORE IN THAT BELT. I CAN SMELL IT. I DON'T HAVE A NOSE. I CAN STILL SMELL IT.", "MY LASERS ARE WARM. POINT ME AT A ROCK.");

@@ -845,6 +845,12 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   lives; otherwise two hulls come out from behind the hulk already talking),
   scan it first with a gunner or a discovery scanner, or fly on and take the
   mark.
+- A visitor on the bridge: somebody in the other chair who was not in the
+  other chair, dressed for a better party, with a small game. Play it (a
+  riddle about a door; credits from nowhere, fuel to nowhere, or the cat
+  knows the answer), refuse politely (nobody says that; they're impressed
+  and gone for good), or tell them it's your ship. They keep coming back
+  until you do one of the last two.
 - The village, on the ground: smoke from cookfires where the survey said
   geology, and a child already running to tell everyone. Back the rover out
   quietly (the rule; data, and a deed), go down with your hands open (bread,

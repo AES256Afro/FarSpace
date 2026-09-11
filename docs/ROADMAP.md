@@ -1020,4 +1020,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] A prime-directive card on the ground: back out quietly, go down and
       say hello, or help with the fire; What's New reflows as paragraphs
 
+## Milestone 166 — A Visitor on the Bridge ✅ (Sep 2026)
+- [x] A trickster card that keeps coming back until you refuse or throw them
+      off; the ship reads the old log back on the night watch
+
 ## Later

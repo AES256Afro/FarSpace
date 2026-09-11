@@ -337,6 +337,15 @@ export const ENCOUNTERS: Encounter[] = [
     ],
   },
   {
+    id: "visitor", where: "space", weight: 2, title: "A VISITOR ON THE BRIDGE", when: (g) => !p(g).flags?.visitorDone,
+    text: "There is somebody in the other chair who was not in the other chair. They are dressed for a much better party than this ship, and they are delighted with you, the way a cat is delighted with a moth. 'I HAVE A GAME,' they say. 'IT'S A SMALL GAME. YOU'LL LIKE IT. EVERYBODY SAYS THEY DON'T AND THEN THEY DO.'",
+    options: [
+      { label: "PLAY THE GAME", hint: "It's a small game. Probably.", result: (g, rng) => { const r = rng.int(0, 2); if (r === 0) { p(g).credits += 500; return "THE GAME IS A RIDDLE ABOUT A DOOR. YOU GET IT ON THE THIRD TRY AND THE VISITOR APPLAUDS AS IF YOU'D GOT IT ON THE FIRST. +500CR APPEARS IN THE ACCOUNT FROM NOWHERE, WHICH IS GOING TO BE HARD TO EXPLAIN TO THE LEDGER."; } if (r === 1) { p(g).fuel = Math.max(0, p(g).fuel - 10); return "THE GAME IS A RIDDLE ABOUT A DOOR. YOU GET IT WRONG THREE TIMES AND THE VISITOR SIGHS, AND TEN UNITS OF FUEL ARE SIMPLY NOT IN THE TANK ANY MORE. 'FOR THE LESSON,' THEY SAY. THERE WAS NO LESSON."; } for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 6); return "THE GAME IS A RIDDLE ABOUT A DOOR AND THE ANSWER IS THE CAT, WHICH THE CAT KNEW. THE VISITOR LAUGHS UNTIL THEY CRY AND THE CREW LAUGH WITHOUT KNOWING WHY. MORALE UP. THE OTHER CHAIR IS EMPTY AGAIN."; } },
+      { label: "REFUSE, POLITELY", hint: "They've heard it before", result: (g) => { (p(g).flags ??= {}).visitorDone = true; p(g).expData = (p(g).expData ?? 0) + 30; return "'NO, THANK YOU.' THE VISITOR LOOKS AT YOU FOR A LONG MOMENT AND THEN SEEMS, OF ALL THINGS, IMPRESSED. 'NOBODY SAYS THAT.' THEY LEAVE A CARD ON THE CONSOLE WITH NOTHING WRITTEN ON IT. +30 DATA FOR THE READINGS. THEY WON'T BE BACK."; } },
+      { label: "ASK THEM TO LEAVE THE BRIDGE", hint: "It's your ship", result: (g) => { (p(g).flags ??= {}).visitorDone = true; for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 3); logEntry(g.world, "Asked a visitor to leave the bridge. They left. Eventually"); return "'IT'S MY SHIP.' THE VISITOR CONSIDERS THIS, CONSIDERS YOU, AND STANDS. 'SO IT IS.' THEY'RE GONE BETWEEN ONE BLINK AND THE NEXT, AND THE CHAIR IS WARM FOR AN HOUR. THE CREW SAW YOU DO IT. MORALE UP."; } },
+    ],
+  },
+  {
     id: "loop", where: "space", weight: 2, title: "THE SAME MINUTE, AGAIN", when: (g) => !p(g).flags?.loopDone,
     text: "The clock on the console reads a time it read a moment ago. The coffee is full again. Somebody on the band says the thing they just said, word for word, and then, seeing your face, says 'WHAT?' the same way. You have been here before. You will be here again unless something changes.",
     options: [
