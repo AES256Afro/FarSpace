@@ -1676,6 +1676,16 @@ Time passes for the people on the ship, and for the ship.
 - [x] The dock-hand offers to take the dent out (you'd lose the name); the
       promenade has heard
 
+## Milestone 324 — Any Port ✅ (Sep 2026)
+- [x] At eight hours since the clamp Number One asks for a port on the chart,
+      once per leg
+
+## Milestone 325 — The Counsellor on a Long Leg ✅ (Sep 2026)
+- [x] The counsellor's hour also comes after eight hours under way
+
+## Milestone 326 — When It Counts ✅ (Sep 2026)
+- [x] A hot meal on a long leg is worth three more morale, and says so
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

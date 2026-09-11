@@ -1401,19 +1401,20 @@ export function askPassengerRequest(p: PlayerState, rng: RNG): { m: Mission; tex
 }
 // The galley: a meal from what's aboard. Provisions always; luxuries make it a dinner; a rare tea, wine or
 // mead aboard is poured after (not used up). The cook aboard makes it better. Fares eat too.
-export function cookMeal(p: PlayerState): string[] | null {
+export function cookMeal(p: PlayerState, now?: number): string[] | null {
   if ((p.cargo.food ?? 0) <= 0) return null;
+  const longLeg = now !== undefined && !!p.leg && now - p.leg.t0 > 6 * 3600;
   removeCargo(p, "food", 1);
   const dinner = (p.cargo.lux ?? 0) > 0; if (dinner) removeCargo(p, "lux", 1);
   const after = (["r_tea", "r_wine", "r_mead"] as const).find((id) => (p.cargo[id] ?? 0) > 0);
   const cook = p.crew.find((c) => c.trait?.includes("cooks"));
-  const gain = (dinner ? 14 : 10) + (cook ? 2 : 0) + (after ? 2 : 0);
+  const gain = (dinner ? 14 : 10) + (cook ? 2 : 0) + (after ? 2 : 0) + (longLeg ? 3 : 0);
   p.hull = Math.min(p.hullMax, p.hull + 5);
   p.mealsCooked = (p.mealsCooked ?? 0) + 1;
   for (const c of p.crew) c.morale = Math.min(100, c.morale + gain);
   for (const m of passengersAboard(p)) if (dinner) m.mood = Math.min(100, (m.mood ?? 60) + 10);
   const who = cook ? `${cook.name.toUpperCase()} COOKS.` : "";
-  const what = dinner ? "A PROPER DINNER, LUXURIES AND ALL." : cook ? "NOBODY KNOWS WHAT IT IS. EVERYBODY HAS SECONDS." : p.crew.length ? "A HOT MEAL FOR EVERYONE." : "A HOT MEAL.";
+  const what = (dinner ? "A PROPER DINNER, LUXURIES AND ALL." : cook ? "NOBODY KNOWS WHAT IT IS. EVERYBODY HAS SECONDS." : p.crew.length ? "A HOT MEAL FOR EVERYONE." : "A HOT MEAL.") + (longLeg ? " ON A LONG LEG, WHICH IS WHEN IT COUNTS." : "");
   const pour = after === "r_tea" ? " TEA AFTER, THE REAL STUFF." : after === "r_wine" ? " A GLASS OF THE WINE AFTER." : after === "r_mead" ? " MEAD AFTER. SINGING, PROBABLY." : "";
   const out = [`${who ? who + " " : ""}${what}${pour} ${p.crew.length ? `MORALE +${gain}, ` : ""}+5 HULL${dinner && passengersAboard(p).length ? ", THE FARES ARE DELIGHTED" : ""}`.trim()];
   out.push(...passengersFed(p));

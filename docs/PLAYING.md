@@ -752,6 +752,9 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- At eight hours since the clamp Number One asks for any port on the chart,
+  the counsellor's hour comes round, and a hot meal from the galley is worth
+  three more morale than usual.
 - The long leg: past six hours of ship time since the last clamp, crew
   morale drains a point every ten minutes and the HUD's stations line reads
   LONG LEG. A meal, a port, or both.

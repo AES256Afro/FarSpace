@@ -507,7 +507,7 @@ export const ENCOUNTERS: Encounter[] = [
     ],
   },
   {
-    id: "counsel", where: "space", weight: 4, title: "THE COUNSELLOR'S HOUR", when: (g) => hasSpecialtyW(p(g), "counsellor") && !!p(g).leg && (p(g).leg!.alerts >= 2 || p(g).leg!.fights >= 3) && !p(g).flags?.counselledLeg,
+    id: "counsel", where: "space", weight: 4, title: "THE COUNSELLOR'S HOUR", when: (g) => hasSpecialtyW(p(g), "counsellor") && !!p(g).leg && (p(g).leg!.alerts >= 2 || p(g).leg!.fights >= 3 || g.world.time - p(g).leg!.t0 > 8 * 3600) && !p(g).flags?.counselledLeg,
     text: "The counsellor knocks on the cabin hatch with two cups and a face that has already decided. 'IT'S NOT AN ORDER. I CAN'T GIVE YOU ORDERS. BUT THE CREW ARE WATCHING YOU NOT SLEEP, AND THEY'RE COUNTING THE ALERTS, AND I'D LIKE AN HOUR. YOU CAN TALK OR NOT TALK. THE HOUR HAPPENS EITHER WAY.'",
     options: [
       { label: "TAKE THE HOUR", hint: "The ship drifts an hour; the crew see it; loyalty up, and the leg counts as calmer", result: (g) => { g.world.time += 3600; (p(g).flags ??= {}).counselledLeg = true; (p(g).flags ??= {}).counselled = true; for (const c of p(g).crew) { c.loyalty = (c.loyalty ?? 0) + 0.15; c.morale = Math.min(100, c.morale + 3); } if (p(g).leg) p(g).leg!.alerts = Math.max(0, p(g).leg!.alerts - 2); logEntry(g.world, "Took the counsellor's hour"); return "YOU TAKE THE HOUR. YOU TALK, EVENTUALLY, ABOUT THE THING YOU WEREN'T GOING TO TALK ABOUT. THE COUNSELLOR SAYS ALMOST NOTHING, PROFESSIONALLY. THE CREW SEE THE HATCH SHUT AND FLY QUIETER FOR IT. LOYALTY UP."; } },

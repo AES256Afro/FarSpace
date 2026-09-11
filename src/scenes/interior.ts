@@ -299,7 +299,7 @@ export class InteriorScene implements Scene {
         { label: "DEAL ME IN (50CR STAKE)", hint: "Morale up all round; the pot goes where the skill is", requires: () => p.credits >= 50, result: (g2, rng) => { (p.flags ??= {})[key] = true; p.credits -= 50; for (const c of players) c.morale = Math.min(100, c.morale + 5); const win = rng.chance(0.4); if (win) { p.credits += 50 * players.length; flag(g2, "cards"); logEntry(g2.world, "Card night in the galley; took the pot"); sfx.pickup(); return `YOU TAKE THE POT OFF THE WHOLE TABLE, ${50 * players.length}CR, AND ${shark.name.split(" ")[0].toUpperCase()} WANTS IT NOTED THAT THE SIXES WERE MARKED BEFORE YOU SAT DOWN. MORALE UP. NOBODY MINDS LOSING TO THE CAPTAIN AS MUCH AS THEY SAY.`; } shark.morale = Math.min(100, shark.morale + 5); flag(g2, "cards"); logEntry(g2.world, `Card night in the galley; ${shark.name} took the pot`); return `${shark.name.toUpperCase()} TAKES YOUR FIFTY WITH A FACE LIKE A BULKHEAD AND THEN CAN'T KEEP IT. MORALE UP ALL ROUND, ESPECIALLY THEIRS. THE CREW WILL TELL THIS ONE AT EVERY BAR ON THE LINE.`; } },
         { label: "PLAY FOR MATCHES", hint: "Morale +3; no money on the table", result: (g2) => { (p.flags ??= {})[key] = true; for (const c of players) c.morale = Math.min(100, c.morale + 3); flag(g2, "cards"); logEntry(g2.world, "Card night in the galley, for matches"); return "YOU PLAY FOR MATCHES AND LOSE THEM ALL, AND THE MATCHES ARE THE SHIP'S ANYWAY. MORALE UP. THE HUM GOES ON UNDER THE TABLE TALK LIKE IT'S DEALT IN TOO."; } },
         { label: "WATCH FROM THE HATCH", hint: "They play; you learn who bluffs", result: (g2) => { (p.flags ??= {})[key] = true; for (const c of players) c.morale = Math.min(100, c.morale + 2); const bluffer = [...players].sort((a, b) => (b.loyalty ?? 0) - (a.loyalty ?? 0))[0]; logEntry(g2.world, "Card night in the galley; watched"); return `YOU LEAN IN THE HATCH AND LEARN THAT ${bluffer.name.split(" ")[0].toUpperCase()} BLUFFS WITH THEIR LEFT HAND FLAT ON THE TABLE, AND THAT ${shark.name.split(" ")[0].toUpperCase()} KNOWS IT. MORALE UP. USEFUL, ON A BRIDGE.`; } },
-        { label: "NOT TONIGHT. GALLEY'S FOR COOKING", hint: "Cook instead; they'll deal another week", result: (g2) => { const meal = cookMeal(p); if (meal) { for (const l of meal.slice(1)) g2.toast(l); return meal[0]; } return "THE DECK GOES BACK IN THE DRAWER AND THE GALLEY'S EMPTY ANYWAY. BUY PROVISIONS AT A STATION."; } },
+        { label: "NOT TONIGHT. GALLEY'S FOR COOKING", hint: "Cook instead; they'll deal another week", result: (g2) => { const meal = cookMeal(p, g.world.time); if (meal) { for (const l of meal.slice(1)) g2.toast(l); return meal[0]; } return "THE DECK GOES BACK IN THE DRAWER AND THE GALLEY'S EMPTY ANYWAY. BUY PROVISIONS AT A STATION."; } },
       ] };
     (g.scenes["encounter"] as EncounterScene).open(g, enc, "interior", true);
   }
@@ -690,7 +690,7 @@ export class InteriorScene implements Scene {
           this.talentNight(g);
           return;
         } else if (near.ch === "K") {
-          const meal = cookMeal(p);
+          const meal = cookMeal(p, g.world.time);
           if (meal) { this.say(meal[0]); for (const l of meal.slice(1)) g.toast(l); }
           else this.say("GALLEY'S EMPTY. BUY PROVISIONS AT A STATION");
         } else if (near.ch === "M") {
