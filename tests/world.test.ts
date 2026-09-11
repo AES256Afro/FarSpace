@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
+  weekKey, genCrewCandidate, generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
   missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn, captainByName, helpCaptain, isFriend, friendsAt, tickMail, pickCaptainFor, canUpgradeInfra, upgradeInfra, rivalOf, isRival, rivalTakesFare, rivalBeatsYouTo, askRideAlong, tickRideAlong, setHomePort, isHome, donateRelic, hullHistoryFor, notableById, notableOutcome, canFundProject, fundProject, PROJECTS, settlementNeeds, ledger, ledgerAround, LEDGER_LABELS, catGift, stationBulletin, dockingsAt } from "../src/world";
 import { occasionFor, OCCASIONS } from "../src/data/occasions";
@@ -772,6 +772,22 @@ describe("station hours and the tannoy", () => {
     expect(stationHour(sts[0], at)).toEqual(stationHour(sts[0], at));
     for (const st of sts.slice(0, 5)) { const lines = tannoyLines(w, st, new RNG(1), at); expect(lines.length).toBeGreaterThan(5); for (const l of lines) expect(l.length).toBeLessThanOrEqual(130); }
     w.player.postRuns = 10; expect(tannoyLines(w, sts[0], new RNG(2), at).some((l) => l.includes("THE POSTMAN"))).toBe(true);
+  });
+  it("the tannoy pages the captain about mail, the cat, family and consignments, but only while docked", () => {
+    const w = generateWorld(31, { realGalaxy: true });
+    const st = Object.values(w.systems).flatMap((s) => s.stations)[0];
+    const p = w.player; const at = Date.UTC(2026, 8, 10, 12, 0);
+    p.mail = [{ dueT: w.time - 100, from: "A", text: "hi" }]; p.cat = { name: "Biscuit", since: 0 }; p.catAway = st.id;
+    p.crew = [{ ...genCrewCandidate(new RNG(3)), home: st.id, sick: false }];
+    p.missions.push({ id: "m1", kind: "delivery", title: "t", desc: "d", fromStationId: st.id, targetSystemId: st.id, targetStationId: st.id, reward: 1, accepted: true, done: false } as any);
+    p.hull = 1; p.fuel = 0;
+    expect(tannoyLines(w, st, new RNG(1), at).some((l) => l.includes("MAIL"))).toBe(false);
+    p.dockedAt = st.id;
+    const lines = tannoyLines(w, st, new RNG(1), at);
+    for (const key of ["COLLECT THEIR MAIL", "BISCUIT", "PEOPLE ARE ON THE PROMENADE", "EXPECTING A CONSIGNMENT", "TRAILING SOMETHING", "ON FUMES"]) expect(lines.some((l) => l.includes(key))).toBe(true);
+    for (const l of lines) expect(l.length).toBeLessThanOrEqual(130);
+    (p.flags ??= {})[`family:${st.id}:${p.crew[0].name}:${weekKey(at)}`] = true;
+    expect(tannoyLines(w, st, new RNG(1), at).some((l) => l.includes("PEOPLE ARE ON THE PROMENADE"))).toBe(false);
   });
 });
 

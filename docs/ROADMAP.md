@@ -858,4 +858,8 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 125 — Convoy Manners ✅ (Sep 2026)
 - [x] Docking with a convoy or a race running ends it with a word on the band
 
+## Milestone 126 — Paging ✅ (Sep 2026)
+- [x] The tannoy pages the docked captain: mail, the cat, waiting family,
+      a consignment due here, a leaking hull, an empty tank
+
 ## Later

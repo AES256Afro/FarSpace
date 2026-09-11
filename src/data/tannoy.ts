@@ -3,7 +3,7 @@
 // a station says: bay calls, lost property, last calls, and the odd kindness.
 
 import type { World, StationDef } from "../world";
-import { crisisAt, galaxyEventAt, findStation, captainNickname, borderContest } from "../world";
+import { crisisAt, galaxyEventAt, findStation, captainNickname, borderContest, weekKey } from "../world";
 import { hull } from "./hulls";
 import { commodity, faction } from "./data";
 const facName = (id: string) => faction(id).name;
@@ -58,5 +58,19 @@ export function tannoyLines(w: World, st: StationDef, rng: RNG, now = Date.now()
   if (nick) pool.push(`${st.name.toUpperCase()} WISHES ${nick} A SAFE LANE. THAT'S NOT A STANDARD ANNOUNCEMENT. SOMEBODY IN CONTROL LIKES YOU.`);
   if (p.dockedAt === st.id) pool.push(`THE ${(p.shipName ?? hull(p.hullId).name).toUpperCase()} IS BERTHED IN BAY 4. CREW SHORE LEAVE ENDS WHEN THE CAPTAIN SAYS SO.`);
   if ((p.shoreCrew ?? []).some((s) => s.stationId === st.id)) pool.push("WOULD CREW ON SHORE LEAVE PLEASE STOP SLEEPING IN THE OBSERVATION LOUNGE. THERE ARE BUNKS FOR THAT.");
+  // PAGING: the station knows who is aboard and what they have left undone. These go in twice so they come round sooner.
+  if (p.dockedAt === st.id) {
+    const ship = (p.shipName ?? hull(p.hullId).name).toUpperCase();
+    const page: string[] = [];
+    if ((p.mail ?? []).some((m) => !m.replied && w.time - m.dueT < 1800)) page.push(`WOULD THE CAPTAIN OF THE ${ship} COLLECT THEIR MAIL FROM THE HARBOUR OFFICE. IT HAS BEEN THERE A WHILE. IT IS HANDWRITTEN.`);
+    if (p.cat && p.catAway === st.id) page.push(`WOULD THE OWNER OF ${p.cat.name.toUpperCase()} COLLECT THEM FROM THE PROMENADE. THE HARBOUR OFFICE IS OUT OF FISH AND PATIENCE.`);
+    const waiting = p.crew.find((c) => c.home === st.id && !c.sick && !(p.flags ?? {})[`family:${st.id}:${c.name}:${weekKey(now)}`]);
+    if (waiting) page.push(`A MESSAGE FOR THE CAPTAIN OF THE ${ship}: ${waiting.name.split(" ")[0].toUpperCase()}'S PEOPLE ARE ON THE PROMENADE. THEY HAVE BEEN WAITING ALL WEEK.`);
+    const due = p.missions.find((m) => m.accepted && !m.done && m.targetStationId === st.id && (m.kind === "delivery" || m.kind === "post" || m.kind === "passenger"));
+    if (due) page.push(due.kind === "passenger" ? `WOULD THE ${ship} PLEASE LET ITS PASSENGERS OFF. THEY CAN SEE THE PROMENADE FROM THE PORTHOLE. IT IS CRUEL.` : `THE HARBOURMASTER IS EXPECTING A CONSIGNMENT FROM THE ${ship}. ANY TIME NOW WOULD BE FINE. ANY TIME AT ALL.`);
+    if (p.hull < p.hullMax * 0.4) page.push(`THE ${ship} IN BAY 4 IS TRAILING SOMETHING. THE YARD HAS BEEN INFORMED. THE YARD IS NOT HAPPY, BUT THE YARD IS OPEN.`);
+    if (p.fuel < p.fuelMax * 0.15) page.push(`THE ${ship} IN BAY 4 CAME IN ON FUMES. CONTROL WOULD LIKE A WORD. CONTROL WOULD ALSO LIKE YOU TO BUY FUEL.`);
+    for (const l of page) pool.push(l, l);
+  }
   return pool;
 }

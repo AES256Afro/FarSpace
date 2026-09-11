@@ -528,6 +528,11 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The tannoy speaks on the promenade now and then: bay calls, last calls for
   the liner, lost cats, the crisis, the festival, and once you've a name on the
   lanes, the odd kindness from control.
+- It pages you too. While you're berthed the station calls your ship by name
+  about a letter waiting, your cat left behind here, a crew member's family on
+  the promenade, a consignment the harbourmaster is expecting, a hull trailing
+  something, or a tank that came in on fumes. Those calls come round twice as
+  often as the rest.
 
 ## Cards after watch
 
