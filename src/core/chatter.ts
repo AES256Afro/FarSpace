@@ -4,7 +4,8 @@
 import type { Game } from "../game";
 import { faction } from "../data/data";
 import { commodity } from "../data/data";
-import { findStation, galaxyEventAt, captainNickname } from "../world";
+import { findStation, galaxyEventAt, captainNickname, borderContest } from "../world";
+import * as wire from "./wire";
 import { RNG } from "./rng";
 
 export interface ChatterLine { from: string; text: string }
@@ -28,6 +29,9 @@ export function pickChatter(g: Game, rng: RNG): ChatterLine | null {
   if (c && c.delivered < c.need && w.time < c.until) { const f = findStation(w, c.stationId); if (f) pool.push({ from: `${f.st.name.toUpperCase()} MEDICAL`, text: `ANY VESSEL WITH ${commodity(c.commodityId).name.toUpperCase()}: WE ARE PAYING ${c.kind === "outbreak" ? "AND WE ARE RUNNING OUT OF BEDS" : "AND WE ARE RUNNING OUT OF TIME"}` }); }
   const ev = galaxyEventAt(w, sys.id);
   if (ev) pool.push({ from: ev.kind === "comet" ? "PROSPECTOR VASK" : ev.kind === "flare" ? `${fac.name.split(" ")[0].toUpperCase()} WEATHER` : st ? `${st.name.toUpperCase()} CONTROL` : "GALNET", text: ev.kind === "comet" ? "EVERY ROCK OUT HERE IS GLITTERING. I'VE NEVER SEEN A BELT LIKE IT." : ev.kind === "flare" ? "FLARE WARNING REMAINS IN EFFECT. SCOOPS AND LONG SCANS NOT ADVISED." : ev.kind === "festival" ? "FESTIVAL TRAFFIC IS HEAVY. TOURISTS, PLEASE STOP HAILING CONTROL FOR DIRECTIONS." : "DOCKERS ARE STILL OUT. NO YARD SERVICES AT STANDARD RATES. DON'T ARGUE WITH THE PICKET." });
+  { const bc = borderContest(w); if (bc && bc.systemId === sys.id) pool.push({ from: `${fac.name.split(" ")[0].toUpperCase()} CONTROL`, text: rng.pick([`ALL TRAFFIC: ${sys.name.toUpperCase()} REMAINS ${fac.name.toUpperCase()} SPACE. SUPPLY RUNS WELCOME. RALLY ON THE BOARD.`, "WE'RE COUNTING MANIFESTS THIS WEEK. EVERY CRATE LANDED HERE IS A VOTE, OF A KIND."]) }); }
+  if (Math.random() < 0.5) pool.push({ from: rng.pick(["HAULER MARGIT", "TENDER BLUE-4", "FREIGHTER OKONKWO"]), text: rng.pick(["CONVOY FORMING FOR THE GATE IN TEN. ANYBODY WITH A HULL TO SPARE, WE'LL PAY FOR THE COMPANY.", "THREE OF US, NO GUNS, AND A LONG WAY TO THE GATE. LEAD AND WE FOLLOW."]) });
+  if (w.realGalaxy && wire.lightsAt(sys.name).some((l) => l.kind === "mayday")) pool.push({ from: `${fac.name.split(" ")[0].toUpperCase()} CONTROL`, text: "A MAYDAY IS ON THE WIRE FOR THIS SYSTEM. ANY VESSEL WITH FUEL TO SPARE, YOU KNOW WHAT TO DO." });
   const war = w.synWar;
   if (war && war.systemId === sys.id) pool.push({ from: `[${war.defender}] CONVOY`, text: rng.pick([`[${war.attacker}] RAIDERS AT THE ${rng.pick(["GATE", "BELT", "OUTER LANE"])}. ANYONE FRIENDLY, WE'D TAKE THE HELP.`, "HOLD FORMATION. THEY WANT THE CARGO, NOT US. PROBABLY."]) });
   for (const sy of w.syndicates ?? []) if (sy.systemId === sys.id) pool.push({ from: `[${sy.tag}] DISPATCH`, text: rng.pick([`CONVOY ${rng.int(2, 19)} DEPARTING FOR ${(findStation(w, sy.partners[0] ?? "")?.st.name ?? "THE PARTNERS").toUpperCase()}, ESCORT ON STATION`, "ALL [${sy.tag}] HULLS: TREASURY SAYS NO OVERTIME THIS CYCLE. GRIN AND BEAR IT.".replace("${sy.tag}", sy.tag), `INDEPENDENTS WELCOME AT THE BASE. WORK ON THE BOARD. DON'T TOUCH THE CONVOYS.`]) });

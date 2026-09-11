@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.92 - LOST AND FOUND", [
+    "THE CAT SLIPS OUT ON THE PROMENADE. FIND HER BEFORE YOU BOARD, OR SHE WAITS FOR YOU, SMUG. THE BAND TALKS ABOUT THE WEEK.",
+  ]],
   ["0.91 - PICTURES WANTED", [
     "STATIONS POST PICTURE JOBS: A WONDER, A WORLD FROM ORBIT. F7 IN THE RIGHT PLACE, THEN BRING IT BACK.",
   ]],

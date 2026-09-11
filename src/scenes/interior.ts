@@ -513,7 +513,7 @@ export class InteriorScene implements Scene {
 
     // ---- tap E: verbs
     if (inp.wasPressed("e") && dist(1 * T + T / 2, 1 * T + T / 2, this.px, this.py) < 14) { this.readWall(g); return; }
-    const catNear = !!p.cat && dist(this.cat.x, this.cat.y, this.px, this.py) < 14;
+    const catNear = !!p.cat && !p.catAway && dist(this.cat.x, this.cat.y, this.px, this.py) < 14;
     if (inp.wasPressed("e") && catNear && !crewNear && !fire && !breach) {
       const lines = [`${p.cat!.name.toUpperCase()} PURRS LIKE A SMALL REACTOR.`, `${p.cat!.name.toUpperCase()} ALLOWS ONE PAT. EXACTLY ONE.`, `${p.cat!.name.toUpperCase()} LOOKS AT YOU, THEN AT THE GALLEY, THEN AT YOU.`, `${p.cat!.name.toUpperCase()} IS ASLEEP ON THE WARM BIT. THE WARM BIT IS THE REACTOR HOUSING.`];
       this.talk = lines[Math.floor(Math.random() * lines.length)]; this.talkTimer = 4;
@@ -711,7 +711,7 @@ export class InteriorScene implements Scene {
       else if (id === "mural") { const cols = ["#5ab3ff", "#ffd75a", "#3aa55e", "#e060ff", "#ff9a3a"]; const n = Math.min(5, 1 + Math.floor(Object.keys(p.expLog ?? {}).length / 3)); for (let i = 0; i < n; i++) { ctx.fillStyle = cols[i]; ctx.fillRect(x + 1 + i * 2, y + 2 + (i % 2), 2, 5 - (i % 2)); } }
       else if (id === "shelf") { ctx.fillStyle = "#6a4a2a"; ctx.fillRect(x + 1, y + 4, 8, 1); ctx.fillRect(x + 1, y + 7, 8, 1); const n = Math.min(4, Math.floor(((p.codex ? Object.keys(p.codex).length : 0) + (p.cargo.relics ?? 0) + (p.achievements ?? []).length) / 3)); for (let i = 0; i < n; i++) { ctx.fillStyle = ["#e060ff", "#ffd75a", "#63f2c8", "#ff9a3a"][i]; ctx.fillRect(x + 2 + i * 2, y + 2, 1, 2); } }
     }
-    if (p.cat && (this.cat.x || this.cat.y)) {
+    if (p.cat && !p.catAway && (this.cat.x || this.cat.y)) {
       const cx = Math.round(ox + this.cat.x), cy = Math.round(oy + this.cat.y);
       ctx.fillStyle = "#e0b070"; ctx.fillRect(cx - 2, cy - 1, 4, 2); ctx.fillRect(cx + 1, cy - 3, 2, 2); // body, head
       ctx.fillStyle = "#3a2a1a"; ctx.fillRect(cx - 3, cy - 2, 1, 1); // tail tip
@@ -771,7 +771,7 @@ export class InteriorScene implements Scene {
     const crewNear = p.crew.map((c, i) => ({ c, spot: spots[i], at: this.crewAt(i) })).find((x) => x.at && dist(x.at.x, x.at.y, this.px, this.py) < 16);
     const atWall = dist(1 * T + T / 2, 1 * T + T / 2, this.px, this.py) < 14;
     if (atWall && !fire && !breach) tooltip(ctx, ox, oy, 1, 0, "WALL OF RECORD", "[E] READ", "#c7a54a");
-    else if (p.cat && dist(this.cat.x, this.cat.y, this.px, this.py) < 14 && !crewNear) tooltip(ctx, ox, oy, Math.floor(this.cat.x / T), Math.floor(this.cat.y / T), p.cat.name.toUpperCase(), "[E] PAT", "#e0b070");
+    else if (p.cat && !p.catAway && dist(this.cat.x, this.cat.y, this.px, this.py) < 14 && !crewNear) tooltip(ctx, ox, oy, Math.floor(this.cat.x / T), Math.floor(this.cat.y / T), p.cat.name.toUpperCase(), "[E] PAT", "#e0b070");
     else if (fire) tooltip(ctx, ox, oy, fire.tx, fire.ty, "FIRE", "[HOLD E] EXTINGUISH", PAL.danger);
     else if (breach) tooltip(ctx, ox, oy, breach.tx, breach.ty, "HULL BREACH", "[HOLD E] SEAL (1 PART)", PAL.danger);
     else if (crewNear) tooltip(ctx, ox, oy, Math.floor(crewNear.at!.x / T), Math.floor(crewNear.at!.y / T), `${crewNear.c.name} - ${ROLE_INFO[crewNear.c.role].label}`, crewNear.c.sick ? "[E] TALK" : "[E] TALK  [C] CARDS", PAL.ui);

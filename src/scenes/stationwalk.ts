@@ -118,6 +118,14 @@ export class StationWalkScene implements Scene {
       this.npcs.push({ x: spot.x, y: spot.y, tx: spot.x, ty: spot.y, name: f.passengerName ?? "A FARE", skin: rng.pick(["#e8b48c", "#c78a5a", "#f0d0b0"]), suit: f.passengerKind === "vip" ? "#c7a54a" : f.passengerKind === "tourist" ? "#5ab3ff" : "#7a5aa5", pause: 6, tag: "WAITING FOR A SHIP",
         line: `${(f.passengerName ?? "").toUpperCase()}: '${f.desc.split(". ")[0]}. Ask at the lounge if you've a cabin.'` });
     }
+    // the ship's cat, if she's slipped out: a small walker with opinions, and a homecoming if she was left here before
+    if (p.cat && p.catAway === this.station.id) {
+      p.catAway = null; g.toast(`${p.cat.name.toUpperCase()} IS WAITING BY THE AIRLOCK, LOOKING SMUG AND A LITTLE FATTER. SHE'S BEEN FED.`);
+    } else if (p.cat && !p.catAway && rng.chance(0.25)) {
+      const spot = this.randomFloor(rng);
+      this.npcs.push({ x: spot.x, y: spot.y, tx: spot.x, ty: spot.y, name: p.cat.name, skin: "#e0b070", suit: "#e0b070", pause: 1, tag: "YOUR CAT", line: `${p.cat.name.toUpperCase()} LOOKS AT YOU AS IF YOU'RE THE ONE WHO WANDERED OFF. SHE FOLLOWS YOU BACK TO THE SHIP.` });
+      this.msg = `${p.cat.name.toUpperCase()} HAS SLIPPED OUT ONTO THE PROMENADE. FIND HER BEFORE YOU LEAVE (E BESIDE HER)`; this.msgTimer = 6;
+    }
     // the crowd matches the day: stalls on market day, pickets in a strike, revellers at a festival, mourners on remembrance
     {
       const oc = occasionFor();
@@ -248,6 +256,8 @@ export class StationWalkScene implements Scene {
     // kiosk interaction
     const near = this.nearestKiosk();
     if (inp.wasPressed("e") && !near) {
+      const cat = this.npcs.find((n) => n.tag === "YOUR CAT" && dist(this.px, this.py, n.x, n.y) < 16);
+      if (cat) { this.npcs = this.npcs.filter((n) => n !== cat); this.msg = cat.line!; this.msgTimer = 5; sfx.purr(); for (const c of g.world.player.crew) c.morale = Math.min(100, c.morale + 1); return; }
       const who = this.npcs.find((n) => dist(this.px, this.py, n.x, n.y) < 16);
       if (who) { if (!who.line) who.line = `${who.name.toUpperCase()}: ${concourseGossip(g.world, this.station, new RNG((Math.random() * 1e9) >>> 0))[0]}`; this.msg = who.line; this.msgTimer = 6; who.pause = Math.max(who.pause, 4); }
     }
@@ -265,6 +275,8 @@ export class StationWalkScene implements Scene {
         return;
       }
       if (near.def.tab === null) {
+        const loose = this.npcs.find((n) => n.tag === "YOUR CAT");
+        if (loose && g.world.player.cat) { g.world.player.catAway = this.station.id; this.npcs = this.npcs.filter((n) => n !== loose); g.toast(`YOU LEFT WITHOUT ${g.world.player.cat.name.toUpperCase()}. SHE'LL BE HERE WHEN YOU COME BACK. THE CREW WILL MENTION IT.`); }
         g.world.player.dockedAt = null;
         g.justUndocked = true;
         g.setScene("flight");
@@ -389,6 +401,7 @@ export class StationWalkScene implements Scene {
     // NPCs
     for (const n of this.npcs) {
       const x = Math.round(ox + n.x), y = Math.round(oy + n.y);
+      if (n.tag === "YOUR CAT") { ctx.fillStyle = "#e0b070"; ctx.fillRect(x - 2, y - 1, 4, 2); ctx.fillRect(x + 1, y - 3, 2, 2); ctx.fillStyle = "#3a2a1a"; ctx.fillRect(x - 3, y - 2, 1, 1); if (Math.floor(g.world.time * 2) % 4 === 0) { ctx.fillStyle = "#63f2c8"; ctx.fillRect(x + 2, y - 3, 1, 1); } continue; }
       ctx.fillStyle = n.skin;
       ctx.fillRect(x - 2, y - 4, 4, 3);
       ctx.fillStyle = n.suit;

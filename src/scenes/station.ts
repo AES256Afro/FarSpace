@@ -76,6 +76,7 @@ export class StationScene implements Scene {
     void wire.fetchSquadronData();
     if (p.ious?.length) { for (const iou of p.ious) { p.credits += iou.credits; g.toast(iou.text); } p.ious = []; sfx.pickup(); }
     { const bl = resolveBorder(g.world); if (bl) { g.toast(bl); sfx.select(); } }
+    if (p.cat && p.catAway && p.catAway !== this.station.id && Math.random() < 0.3) { const from = findStation(g.world, p.catAway)?.st.name ?? "somewhere"; p.catAway = null; g.toast(`A HAULER OUT OF ${from.toUpperCase()} HANDS OVER A CRATE WITH AIR HOLES. ${p.cat.name.toUpperCase()} IS NOT SPEAKING TO YOU.`); logEntry(g.world, `${p.cat.name} came home in a crate from ${from}`); sfx.purr(); }
     { const d = collectStake(g.world, this.station); if (d) { g.toast(`DIVIDEND ON YOUR ${p.stakes?.[this.station.id]} SHARES IN ${this.station.name.toUpperCase()}: +${d}CR`); sfx.pickup(); } }
 
     if (p.evacuees && p.evacuees.n > 0) { const pay = p.evacuees.n * (p.evacuees.from === "wounded" ? 200 : 150); if (p.evacuees.from === "wounded") p.lives = (p.lives ?? 0) + p.evacuees.n; logEntry(g.world, `Handed ${p.evacuees.n} survivors over at ${this.station.name}`); p.credits += pay; adjustRep(g.world, this.station.factionId, 4); g.toast(`${p.evacuees.n} SURVIVORS FROM THE ${p.evacuees.from.toUpperCase()} HANDED OVER +${pay}CR`); p.evacuees = null; flag(g, "lifeboat"); sfx.pickup(); }

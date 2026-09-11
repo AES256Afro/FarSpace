@@ -229,6 +229,15 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Lost and found
+
+- Now and then the ship's cat slips out onto the promenade. Find her (E
+  beside her) before you board. Leave without her and she waits at that
+  station, smug, until you come back, or until a passing hauler hands her
+  over in a crate. The crew will mention it either way.
+- The band now talks about the border contest, convoys forming for the gate,
+  and maydays on the wire.
+
 ## Pictures wanted
 
 - Research and trade stations post picture jobs: a wonder in a nearby system,

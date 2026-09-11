@@ -27,7 +27,8 @@ export function crewChatter(w: World, a: CrewMember, b: CrewMember, rng: RNG): s
   if ((p.wear ?? 0) > 60) pool.push("SHE NEEDS A YARD. LISTEN TO THAT BEARING. THAT'S NOT A NOISE SHE MAKES.");
   if (p.credits > 20000) pool.push("HEARD THE ACCOUNT'S HEALTHY. BONUS SEASON, YOU'D THINK.");
   if (p.credits < 300) pool.push("PAYDAY'S GOING TO BE INTERESTING.");
-  if (p.cat) pool.push(`${p.cat.name.toUpperCase()} WAS IN THE VENTS AGAIN.`, `WHO'S FEEDING ${p.cat.name.toUpperCase()}? NOT ME. I FED HER TWICE.`);
+  if (p.cat && p.catAway) pool.push(`WHERE'S ${p.cat.name.toUpperCase()}? ... WE LEFT HER? WE LEFT HER. THE SKIPPER LEFT THE CAT.`, `THE SHIP'S WRONG WITHOUT ${p.cat.name.toUpperCase()}. WE'RE GOING BACK FOR HER, RIGHT?`);
+  else if (p.cat) pool.push(`${p.cat.name.toUpperCase()} WAS IN THE VENTS AGAIN.`, `WHO'S FEEDING ${p.cat.name.toUpperCase()}? NOT ME. I FED HER TWICE.`);
   if (passengersAboard(p).length) pool.push("KEEP IT DOWN, WE'VE GOT PAYING PEOPLE ABOARD.", "THE ONE IN THE LOUNGE ASKED IF WE HAVE A POOL.");
   const t = a.trait ?? "";
   if (t.includes("cooks")) pool.push("I'M DOING SOMETHING WITH THE RATION BARS TONIGHT. DON'T ASK.");

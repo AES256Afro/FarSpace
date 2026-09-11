@@ -730,4 +730,8 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 91 — Pictures Wanted ✅ (Sep 2026)
 - [x] Photo missions completed by F7 postcards in the right place; STRINGER
 
+## Milestone 92 — Lost and Found ✅ (Sep 2026)
+- [x] The cat slips out on the promenade; left behind she waits or comes home
+      in a crate; band chatter about the border, convoys and maydays
+
 ## Later

@@ -318,6 +318,7 @@ export interface PlayerState {
   mealsCooked?: number;              // galley meals you cooked
   vistaViews?: number;               // times you looked out of the viewport
   convoys?: number;                  // convoys walked through a gate
+  catAway?: string | null;           // station id where the cat got left behind; she turns up again
   regatta?: number;                  // the regatta: 0 entered, 1 first course won, 2 second, 3 champion
   regattaCourse?: string[];          // the three stations of your regatta, set when you're entered
   wrecksOfMine?: string[];           // wreck ids of ships you lost; they stay where they fell
