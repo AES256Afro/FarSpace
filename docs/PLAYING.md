@@ -757,6 +757,10 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   Send them (they become a friendly captain in the lanes, write from the
   chair, and the chronicle says who they command), ask them to stay plainly
   (loyalty up a lot), or leave it to them and a coin.
+- Send Number One to a command and they'll hail you from their own cutter
+  when you pass in the lanes (the crew wave at the viewport), the promenade
+  talks about them, and if you help them out there, their letter says what
+  the chair taught them.
 - Cadets become crew proper at ten dockings: full wage, a skill up, and the
   crew mostly stop calling them the new one.
 - Freemen who let their belt standing fall too far lose the name at the next

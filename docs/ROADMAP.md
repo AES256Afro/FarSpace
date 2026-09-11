@@ -1819,6 +1819,17 @@ Time passes for the people on the ship, and for the ship.
 - [x] The chronicle's "served and went home" notes who commands their own
       ship now
 
+## Milestone 363 — From Their Own Chair ✅ (Sep 2026)
+- [x] Your old Number One hails from their own cutter when you pass: the
+      port mount, the plaque, the spanner; the crew wave (a deed)
+
+## Milestone 364 — The Lanes Know Their Name ✅ (Sep 2026)
+- [x] Gossip and the ship's voice on the Number One who has a cutter now
+
+## Milestone 365 — What They Learned From the Chair ✅ (Sep 2026)
+- [x] Help them in the lanes and their letter says what the chair taught
+      them
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

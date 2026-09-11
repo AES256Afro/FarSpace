@@ -1198,10 +1198,12 @@ export class FlightScene implements Scene {
       const cap = captainByName(g.world, n.name);
       if (!cap) continue;
       n.hailed = true;
-      const line = isRival(cap) ? rivalryLine(g.world, cap, new RNG((g.world.seed ^ Math.floor(g.world.time * 61)) >>> 0))
+      const old = (p.alumni ?? []).find((a) => a.name === cap.name && a.command === cap.ship);
+      const line = old ? ([`STILL FLYING HER LIKE SHE'S BORROWED, I SEE. HOW'S THE PORT MOUNT? ... I KNOW. I ALWAYS KNEW.`, `${cap.ship.toUpperCase()} HAS A PLAQUE NOW. IT SAYS WHAT YOURS SAYS. THE CREW THINK I MADE IT UP.`, `IF YOU'VE A CADET ABOARD, SEND THEM FOR A LEFT-HANDED SPANNER. IT'S TRADITION. I CHECKED.`][cap.met % 3]) : isRival(cap) ? rivalryLine(g.world, cap, new RNG((g.world.seed ^ Math.floor(g.world.time * 61)) >>> 0))
         : isFriend(cap) ? ([`GOOD TO SEE THAT HULL${captainNickname(g.world) ? `, ${captainNickname(g.world)}` : ""}. STILL OWE YOU.`, "IF YOU'RE HEADING MY WAY, THERE'S A DRINK WITH YOUR NAME ON IT.", "KEEP FLYING LIKE THAT AND I'LL HAVE TO START PAYING YOU."][cap.met % 3])
         : cap.helped > 0 ? "THAT YOU? I HAVEN'T FORGOTTEN." : cap.met > 3 ? "WE KEEP CROSSING PATHS. SMALL GALAXY." : "CLEAR SKIES, STRANGER.";
-      this.comms.push({ from: `${cap.name.toUpperCase()}, ${cap.ship.toUpperCase()}`, text: line, life: 7, color: isRival(cap) ? PAL.danger : isFriend(cap) ? PAL.gold : PAL.info });
+      this.comms.push({ from: `${cap.name.toUpperCase()}, ${cap.ship.toUpperCase()}`, text: line, life: 7, color: old ? PAL.gold : isRival(cap) ? PAL.danger : isFriend(cap) ? PAL.gold : PAL.info });
+      if (old && !(p.flags ?? {}).oldNumberOneMet) { (p.flags ??= {}).oldNumberOneMet = true; flag(g, "oldnumberone"); for (const c of p.crew) c.morale = Math.min(100, c.morale + 4); logEntry(g.world, `Passed ${cap.name} in the lanes, in ${cap.ship}; the crew waved at the viewport`); }
     }
     // the unnamed traffic hails too, now and then, with manners and opinions
     this.hailT -= dt;

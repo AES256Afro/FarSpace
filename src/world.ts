@@ -1596,7 +1596,7 @@ export function helpCaptain(w: World, name: string | undefined, kind: keyof type
   c.disposition = Math.min(3, c.disposition + 1); c.helped++; c.lastSeen = w.time;
   const home = findStation(w, c.homeStationId)?.st.name ?? "somewhere";
   const gift = rng.chance(0.5) ? { credits: rng.int(150, 400) } : rng.chance(0.5) ? { parts: 2 } : { data: 120 };
-  (w.mailQueue ??= []).push({ dueT: w.time + rng.int(300, 900), from: `${c.name}, ${c.ship}`, text: `${rng.pick(HELP_LINES[kind])} Look me up at ${home}.`, gift });
+  { const old = (w.player.alumni ?? []).find((a) => a.name === c.name && a.command === c.ship); (w.mailQueue ??= []).push({ dueT: w.time + rng.int(300, 900), from: `${c.name}, ${c.ship}`, text: old ? `You didn't have to. You were always going to. That's the thing I learned from that chair, and it's the thing I'm trying to teach this one. ${rng.pick(HELP_LINES[kind])} Look me up at ${home}; the crew want to meet the captain I keep going on about.` : `${rng.pick(HELP_LINES[kind])} Look me up at ${home}.`, gift }); }
   if (c.disposition >= 2 && c.helped === 2) return `${c.name.toUpperCase()} OF THE ${c.ship.toUpperCase()} CALLS YOU A FRIEND NOW. THEIR HOME IS ${home.toUpperCase()}.`;
   return null;
 }

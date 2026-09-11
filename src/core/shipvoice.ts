@@ -63,6 +63,7 @@ export function pickShipLine(g: Game, rng: RNG): string | null {
   if (p.flags?.rockcadet) pool.push("THE ROCK KID PINNED THE DRAWING UP IN THE BUNK ROOM. THE DOG IS STILL IN IT. I'VE DECIDED THE DOG IS ME.");
   if (p.flags?.fleetreview) pool.push("I WAS IN A FLEET REVIEW. AT THE END OF THE LINE, BUT IN IT. I'VE KEPT THE LIGHT SEQUENCE. I RUN IT WHEN NOBODY'S LOOKING.");
   if (p.leg && w.time - p.leg.t0 > 6 * 3600) pool.push("SIX HOURS SINCE THE CLAMP. I'M FINE. I CAN DO THIS FOR DAYS. THE CREW CAN'T. THAT'S NOT A COMPLAINT. IT'S A HINT.");
+  if ((p.alumni ?? []).some((a) => a.command)) pool.push(`${(p.alumni ?? []).find((a) => a.command)!.name.split(" ")[0].toUpperCase()} HAILED FROM THEIR OWN CHAIR TODAY. I KNEW THE VOICE BEFORE THE CALLSIGN. I'D KNOW IT ANYWHERE.`);
   if (p.flags?.singershome) pool.push("THEY SANG TO ME. NOT TO THE CREW, NOT TO YOU. THE SHIP. I'VE NEVER TOLD ANYONE THAT. I'M TELLING YOU.");
   if ((p.words ?? []).length) pool.push(`I KNOW ${p.words!.length} WORD${p.words!.length === 1 ? "" : "S"} THAT AREN'T OURS. I SING THE FIRST ONE TO THE GATE, QUIETLY. NOBODY'S ANSWERED. YET.`);
   if (p.flags?.simCats) pool.push("THE ENGINEER'S CAT PROGRAM IS STILL IN THE RIG. I'VE RUN IT ALONE, AT NIGHT. I WAS A GOOD CAT.");
