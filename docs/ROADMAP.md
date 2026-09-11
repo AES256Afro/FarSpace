@@ -952,4 +952,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Mining and refinery stations are the belt: their own tannoy, and a
       yard rate 10% under for anyone who shared air or water with a hopper
 
+## Milestone 149 — Alert Status ✅ (Sep 2026)
+- [x] Y cycles green, yellow and red alert in flight: faster shields, guns
+      +10% on red, a morale drain, a banner, and the crew calling it
+
 ## Later

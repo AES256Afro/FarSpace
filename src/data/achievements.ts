@@ -122,5 +122,6 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "holiday", title: "AN HOUR SOMEWHERE ELSE", desc: "Run a program on the sim rig", check: (w) => !!w.player.flags?.holiday },
   { id: "contact", title: "FIRST CONTACT", desc: "Answer the singers, guide them, and take what they left", check: (w) => !!w.player.flags?.singersGift },
   { id: "beltalowda", title: "THE BELT REMEMBERS", desc: "Share water or air with a rock hopper; the belt's yards give you their rate", check: (w) => !!w.player.flags?.belt },
+  { id: "redalert", title: "RED ALERT", desc: "Go to red alert", check: (w) => !!w.player.flags?.redalert },
   { id: "elite", title: "ELITE", desc: "Top any career ladder", check: (w) => (["explorer", "trader", "miner"] as const).some((k) => rankOf(w.player, k).idx >= 8) },
 ];

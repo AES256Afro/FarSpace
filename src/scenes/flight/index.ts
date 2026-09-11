@@ -5,7 +5,7 @@ import { ask, confirmBox } from "../../core/dialog";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra, raceCourse, racePar, racePrize, recordRace, beatHolder, captainNickname, leaveWreck, addWireWrecks, enterRegatta, regattaProgress, hasSpecialty, maydayAnswered, watchIndex, onWatch, raceHolder, askPassengerRequest, takeJuice } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra, raceCourse, racePar, racePrize, recordRace, beatHolder, captainNickname, leaveWreck, addWireWrecks, enterRegatta, regattaProgress, hasSpecialty, maydayAnswered, watchIndex, onWatch, raceHolder, askPassengerRequest, takeJuice, alertMods, AlertLevel } from "../../world";
 import { COMMODITIES, commodity } from "../../data/data";
 import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
@@ -225,6 +225,7 @@ export class FlightScene implements Scene {
     if (g.input.wasPressed("Tab")) this.mapOpen = !this.mapOpen;
     if (g.input.wasPressed("g")) { g.setScene("galaxy"); return; }
     if (g.input.wasPressed("i")) { g.setScene("interior"); return; }
+    if (g.input.wasPressed("y") && !this.docking) { this.alert = ((this.alert + 1) % 3) as AlertLevel; this.alertT = 0; if (this.alert === 2) { sfx.alarm(); const gun = p.crew.find((c) => c.role === "gunner" && !c.sick) ?? p.crew.find((c) => !c.sick); this.comms.push({ from: gun ? gun.name.split(" ")[0].toUpperCase() : "SHIP", text: gun ? "RED ALERT. SHIELDS UP, STATIONS. SOMEBODY GET THE CAT OFF THE CONSOLE." : "RED ALERT. I'VE PUT EVERYTHING INTO THE SHIELDS. I HOPE YOU KNOW SOMETHING I DON'T.", life: 6, color: PAL.danger }); flag(g, "redalert"); } else if (this.alert === 1) { sfx.blip(); this.comms.push({ from: "SHIP", text: "YELLOW ALERT. SHIELDS READY. THE CREW LOOK UP FROM THEIR CARDS.", life: 5, color: PAL.warn }); } else { sfx.select(); this.comms.push({ from: "SHIP", text: "STAND DOWN. CONDITION GREEN. THE CARDS COME BACK OUT.", life: 5, color: PAL.good }); } }
     if (g.input.wasPressed("F5")) g.save();
     if (g.input.wasPressed("F9")) g.load();
     if (g.input.wasPressed("f")) toggleFullscreen(g.canvas);
@@ -307,7 +308,7 @@ export class FlightScene implements Scene {
     p.x += p.vx * dt;
     p.y += p.vy * dt;
 
-    p.shield = Math.min(p.shieldMax, p.shield + dt * (p.focus === "tactical" ? 3 : 2));
+    p.shield = Math.min(p.shieldMax, p.shield + dt * (p.focus === "tactical" ? 3 : 2) * alertMods(this.alert).shield);
     if (p.fuel < 20) p.fuel = Math.min(20, p.fuel + dt * 0.4);
     // medic slowly patches the hull between fights
     if (crewBonus(p, "medic") > 0 && p.hull < p.hullMax) p.hull = Math.min(p.hullMax, p.hull + dt * 0.5);
@@ -318,7 +319,7 @@ export class FlightScene implements Scene {
     if (firing && this.fireCd <= 0 && weaponsSys.health > 5) {
       this.fireCd = h.fireRate;
       sfx.laser();
-      const dmg = h.weaponDmg * (0.4 + 0.6 * weaponsSys.health / 100) * (1 + crewBonus(p, "gunner") * 0.2) * (hasSpecialty(p, "marksman") ? 1.15 : 1);
+      const dmg = h.weaponDmg * (0.4 + 0.6 * weaponsSys.health / 100) * (1 + crewBonus(p, "gunner") * 0.2) * (hasSpecialty(p, "marksman") ? 1.15 : 1) * alertMods(this.alert).dmg;
       const a = this.aim;
       this.bullets.push({
         x: p.x + Math.cos(a) * 12, y: p.y + Math.sin(a) * 12,
@@ -634,8 +635,9 @@ export class FlightScene implements Scene {
 
   hardBurn = false;
   bridgeT = 40;
+  alert: AlertLevel = 0; alertT = 0;
   dockAt(g: Game, st: StationDef): boolean {
-    this.hardBurn = false;
+    this.hardBurn = false; this.alert = 0;
     const p = g.world.player;
     const rep = p.rep?.[st.factionId] ?? 0;
     if (st.military && rep < -20) { g.toast("DOCKING DENIED - YOUR RECORD PRECEDES YOU"); return false; }
@@ -1020,6 +1022,8 @@ export class FlightScene implements Scene {
     this.updateMayday(g, dt);
     // the ship's bell: the watch changes, and the lounge has something to say now and then
     { const wi = watchIndex(g.world.time); if (this.lastWatch < 0) this.lastWatch = wi; else if (wi !== this.lastWatch) { this.lastWatch = wi; if (p.crew.length >= 2) { const on = p.crew.filter((c, i) => onWatch(p, i, g.world.time) && !c.sick).map((c) => c.name.split(" ")[0].toUpperCase()); this.comms.push({ from: (p.shipName ?? "SHIP").toUpperCase(), text: `WATCH CHANGE. ${on.length ? on.join(" AND ") + " ON DECK." : "EVERYONE'S IN THEIR BUNK."}`, life: 7, color: PAL.uiDim }); sfx.blip(); } } }
+    // red alert wears the crew down: a point of morale every half minute at stations
+    if (this.alert === 2) { this.alertT += dt; if (this.alertT >= 30) { this.alertT = 0; for (const c of p.crew) c.morale = Math.max(0, c.morale + alertMods(2).morale); } }
     // bridge banter: two of the crew trade a line on the band now and then, when the channel is quiet
     this.bridgeT -= dt;
     if (this.bridgeT <= 0) { this.bridgeT = 80 + Math.random() * 70; const up = p.crew.filter((c) => !c.sick); if (up.length >= 2 && this.comms.length < 2 && !this.docking) { const a = up[Math.floor(Math.random() * up.length)]; let b = up[Math.floor(Math.random() * up.length)]; if (b === a) b = up[(up.indexOf(a) + 1) % up.length]; const rng = new RNG((Math.random() * 1e9) >>> 0); this.comms.push({ from: a.name.split(" ")[0].toUpperCase(), text: crewChatter(g.world, a, b, rng), life: 7, color: PAL.grey }); this.comms.push({ from: b.name.split(" ")[0].toUpperCase(), text: crewChatter(g.world, b, a, rng), life: 7, color: PAL.grey }); } }

@@ -4,7 +4,7 @@ import type { Game } from "../../game";
 import { VW, VH } from "../../game";
 import type { FlightScene } from "./index";
 import { drawText, textWidth } from "../../gfx/font";
-import { infraAt, infraLit, stormBlind, wondersIn, captainByName, isFriend, isRival, patientDeadline } from "../../world";
+import { infraAt, infraLit, stormBlind, wondersIn, captainByName, isFriend, isRival, patientDeadline, ALERT_NAME } from "../../world";
 import * as wire from "../../core/wire";
 import { PAL } from "../../gfx/palette";
 import { clamp, TAU, angDiff, dist } from "../../core/mathx";
@@ -636,6 +636,7 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
   if (fs.convoy && !fs.race) { const alive = fs.convoy.ships.filter((s) => s.hull > 0 && fs.npcs.includes(s)); const near = alive.filter((s) => dist(s.x, s.y, p.x, p.y) < 700).length; const line = `CONVOY: ${near}/${alive.length} WITH YOU - TAKE THEM TO ANY GATE AND JUMP`; drawText(ctx, line, VW / 2 - textWidth(line) / 2, VH - 34, near === alive.length ? PAL.gold : PAL.warn); }
   if (fs.docking?.hold) { const line = `HOLDING SHORT OF BAY ${fs.docking.bay} - CONTROL WILL CALL YOU IN`; drawText(ctx, line, VW / 2 - textWidth(line) / 2, VH - 34, PAL.warn); }
   if (fs.race) { const r = fs.race; const line = r.started ? `RING RACE  ${r.idx}/${r.gates.length}  ${r.t.toFixed(1)}S  (PAR ${r.par}S)` : `RING RACE - FLY THROUGH RING 1 TO START THE CLOCK`; drawText(ctx, line, VW / 2 - textWidth(line) / 2, VH - 34, PAL.gold); }
+  if (fs.alert > 0) { const a = ALERT_NAME[fs.alert]; const blink = fs.alert === 2 && Math.floor(g.world.time * 2) % 2 === 0; ctx.fillStyle = fs.alert === 2 ? (blink ? "rgba(120,20,20,0.75)" : "rgba(80,10,10,0.75)") : "rgba(90,70,10,0.7)"; ctx.fillRect(VW / 2 - textWidth(a) / 2 - 6, 28, textWidth(a) + 12, 11); drawText(ctx, a, VW / 2 - textWidth(a) / 2, 30, fs.alert === 2 ? PAL.white : PAL.warn); }
   if (g.toastTimer > 0) drawText(ctx, g.toastMsg, VW / 2 - textWidth(g.toastMsg) / 2, 40, PAL.ui);
 
   const active = p.missions.filter((m) => m.accepted && !m.done);

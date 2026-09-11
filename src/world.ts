@@ -964,6 +964,12 @@ export function settlePassengers(p: PlayerState): string[] {
   settleRequests(p, out);
   return out;
 }
+// Alert status: green, yellow, red. Yellow readies the shields; red readies everything and wears the crew down.
+export type AlertLevel = 0 | 1 | 2;
+export const ALERT_NAME: Record<AlertLevel, string> = { 0: "GREEN", 1: "YELLOW ALERT", 2: "RED ALERT" };
+export function alertMods(level: AlertLevel): { shield: number; dmg: number; morale: number } {
+  return level === 2 ? { shield: 2, dmg: 1.1, morale: -1 } : level === 1 ? { shield: 1.5, dmg: 1, morale: 0 } : { shield: 1, dmg: 1, morale: 0 };
+}
 // The Belt: mining and refinery stations run on air, water and grudges. Share once and the belt remembers.
 export function isBeltStation(st: StationDef): boolean { return st.type === "mining" || st.type === "refinery"; }
 export function beltRate(p: PlayerState, st: StationDef): number { return isBeltStation(st) && p.flags?.belt ? 0.9 : 1; }
