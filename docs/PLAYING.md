@@ -752,6 +752,9 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- The long leg: past six hours of ship time since the last clamp, crew
+  morale drains a point every ten minutes and the HUD's stations line reads
+  LONG LEG. A meal, a port, or both.
 - The RECORD log shows a stardate on every entry. The ship's review of the
   captain at the wall of record has an extra line for the quiet leg, the
   hundredth, three ribbons or your undock word. And with the hull under three

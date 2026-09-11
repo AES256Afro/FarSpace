@@ -37,6 +37,7 @@ export function concourseGossip(w: World, st: StationDef, rng: RNG): string[] {
   if ((p.inquiries ?? 0) > 0) pool.push("'STOOD BEFORE A BOARD AND TOLD IT STRAIGHT, THEY SAY. MOST DON'T. THE BOARD REMEMBERS THE ONES WHO DO.'");
   if (p.flags?.warningshot) pool.push("'PUT ONE ACROSS A CORSAIR'S BOW AND THE CORSAIR WENT HOME. NO SHOTS BACK. THAT'S A GUNNER.'");
   if (p.flags?.freeman && isBeltStation(st)) pool.push("'THE COUNCIL WROTE THAT ONE'S NAME IN THE MINUTES. AN INNER. I KNOW. I WAS THERE.'");
+  if (p.hull < p.hullMax * 0.75) pool.push("'THE HULL WITH THE DENT IS IN. NO, THAT'S WHAT THEY CALL IT. NO, THE CAPTAIN LIKES IT, APPARENTLY.'");
   if (p.flags?.longship) pool.push("'THAT HULL'S NAME IS ON A PLATE IN THE LONG SHIP. TWO HUNDRED YEARS BEFORE ANYONE READS IT. THAT'S A KIND OF FAITH.'");
   if (p.flags?.fleetreview) pool.push("'A MERCHANT TOOK STATION AT THE END OF THE LINE AT THE REVIEW. LIGHTS IN SEQUENCE. THE ADMIRAL NOTICED. THE ADMIRAL NOTICES EVERYTHING.'");
   if (p.flags?.hundredth) pool.push("'A HUNDRED ON THAT HULL'S COUNT, THEY SAY. THE MEDIC READ IT OUT. THE WHOLE BRIDGE STAYED FOR IT.'");

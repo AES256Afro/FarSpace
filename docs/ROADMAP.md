@@ -1665,6 +1665,17 @@ Time passes for the people on the ship, and for the ship.
 - [x] With the hull under three quarters, passing hails sometimes call the
       ship by its dent
 
+## Milestone 321 — The Long Leg ✅ (Sep 2026)
+- [x] Past six hours since the clamp, crew morale drains a point every ten
+      minutes; the HUD reads LONG LEG; a log line the first time
+
+## Milestone 322 — Naming the Rivets ✅ (Sep 2026)
+- [x] Chatter for the long leg, the beach that wasn't a sim, and the dent
+
+## Milestone 323 — The Dent, Ashore ✅ (Sep 2026)
+- [x] The dock-hand offers to take the dent out (you'd lose the name); the
+      promenade has heard
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

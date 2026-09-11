@@ -2235,6 +2235,7 @@ export interface World {
   captains?: NpcCaptain[];           // the recurring pilots of this galaxy, who remember you
   notables?: Notable[];              // a few people whose journeys matter: a senator, an heir, a singer
   mailQueue?: Letter[];              // letters on their way, delivered at a dock after dueT
+  longLegTick?: number;              // the long-leg clock: past six hours since the clamp, morale drains a point per ten minutes
   borderWeek?: string;               // the last week whose border contest was resolved
   borderLog?: { week: string; systemId: string; from: string; to: string; flipped: boolean; yours: number }[];
   serialsSeen?: string[];
@@ -2345,6 +2346,7 @@ export function tickWorld(w: World, dt: number): void {
     }
   }
   tickWear(w.player, dt);
+  { const p = w.player; w.longLegTick = (w.longLegTick ?? 0) + dt; if (w.longLegTick >= 600) { w.longLegTick = 0; const hours = p.leg ? (w.time - p.leg.t0) / 3600 : 0; if (hours > 6 && p.crew.length) { for (const c of p.crew) c.morale = Math.max(0, c.morale - 1); if (!(p.flags ?? {}).longLegNoted) { (p.flags ??= {}).longLegNoted = true; logEntry(w, "Six hours since the clamp; the crew are starting to count"); } } } }
   if ((w.player.modules ?? []).includes("greenhouse")) {
     w.greenTick = (w.greenTick ?? 0) + dt;
     if (w.greenTick >= 300) { w.greenTick = 0; if (addCargo(w.player, "food", 1)) w.player.grown = (w.player.grown ?? 0) + 1; }

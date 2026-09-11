@@ -32,6 +32,9 @@ export function crewChatter(w: World, a: CrewMember, b: CrewMember, rng: RNG): s
   if (p.cat && p.catAway) pool.push(`WHERE'S ${p.cat.name.toUpperCase()}? ... WE LEFT HER? WE LEFT HER. THE SKIPPER LEFT THE CAT.`, `THE SHIP'S WRONG WITHOUT ${p.cat.name.toUpperCase()}. WE'RE GOING BACK FOR HER, RIGHT?`);
   else if (p.cat) pool.push(`${p.cat.name.toUpperCase()} WAS IN THE VENTS AGAIN.`, `WHO'S FEEDING ${p.cat.name.toUpperCase()}? NOT ME. I FED HER TWICE.`);
   if (passengersAboard(p).length) pool.push("KEEP IT DOWN, WE'VE GOT PAYING PEOPLE ABOARD.", "THE ONE IN THE LOUNGE ASKED IF WE HAVE A POOL.");
+  if (p.leg && w.time - p.leg.t0 > 6 * 3600) pool.push("SIX HOURS SINCE THE CLAMP. I'VE STARTED NAMING THE RIVETS.", `${B}, WHAT DAY IS IT? ... NO, SHIP DAY. ... NO, REAL DAY.`);
+  if (p.flags?.shoreleave) pool.push("REMEMBER THE BEACH THAT WASN'T A SIM? I STILL HAVE SAND IN MY BOOTS. I'M KEEPING IT.");
+  if (p.hull < p.hullMax * 0.75) pool.push("THEY CALLED US 'THE HULL WITH THE DENT' ON THE BAND. I'M GETTING IT ON A JACKET.");
   if (p.flags?.simCats) pool.push("THE CAT PROGRAM'S STILL IN THE RIG. I WAS A GOOD CAT. I WAS THE BEST CAT. DON'T LOOK AT ME LIKE THAT.");
   if (p.flags?.cadetMistake) pool.push("TWO COLOURS ON THE VALVES NOW. TOOK A CADET. TOOK A BANG. TOOK YEARS OF ME SAYING IT.");
   if (Object.keys(p.flags ?? {}).some((k) => k.startsWith("talent:"))) pool.push(`${B}, YOU WERE ROBBED AT TALENT NIGHT. NO, YOU WERE. THE JUDGE WAS THE CAPTAIN. THE JUDGE WAS ROBBED TOO, PROBABLY.`);
