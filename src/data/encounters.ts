@@ -404,6 +404,14 @@ export const ENCOUNTERS: Encounter[] = [
     ],
   },
   {
+    id: "rockcadet", where: "space", weight: 2, title: "THE KID WITH THE DRAWING", when: (g) => !!p(g).flags?.rockkid && !p(g).flags?.rockcadet && sys(g).stations.some((st) => isBeltStation(st)) && berthsUsedW(p(g)) < hull(p(g).hullId).crewSlots,
+    text: "A skiff off the rock matching your course, badly, and a voice on the band that's broken since you last heard it: 'YOU WON'T REMEMBER ME. I DREW YOUR SHIP. WITH THE DOG. I'M SIXTEEN NOW AND THE ROCK SAYS I CAN GO IF SOMEBODY'LL TAKE ME, AND I'VE BEEN WAITING FOR THE HULL WITH THE DENT. THAT'S YOU. I CHECKED.'",
+    options: [
+      { label: "SIGN THEM ON. CADET RATE", hint: "A berth; a rock-born cadet with no dockings; the belt hears", result: (g, rng) => { const c = genCrewCandidate(rng); c.docks = 0; c.trait = "born on a rock"; c.wage = Math.max(10, Math.round(c.wage * 0.6)); c.morale = 95; c.loyalty = 1.5; c.home = sys(g).stations.find((st) => isBeltStation(st))?.id; p(g).crew.push(c); (p(g).flags ??= {}).rockcadet = true; p(g).beltStanding = (p(g).beltStanding ?? 0) + 2; logEntry(g.world, `Signed on ${c.name}, the rock kid with the drawing, as a cadet`); return `THEY COME ACROSS WITH ONE BAG AND THE DRAWING, FOLDED SMALL, AND PIN IT UP IN THE BUNK ROOM BEFORE THEY'VE PUT THE BAG DOWN. ${c.name.toUpperCase()}, ${c.role.toUpperCase()}, CADET RATE, BORN ON A ROCK. THE BELT HEARS INSIDE THE HOUR.`; } },
+      { label: "NOT THIS SHIP. NOT YET", hint: "They'll wait; the belt notes it, kindly", result: (g) => { (p(g).flags ??= {}).rockcadet = true; return "'THAT'S ALL RIGHT. I'LL WAIT FOR THE NEXT ONE WITH A DENT.' THE SKIFF PEELS OFF, BADLY. YOU'LL THINK ABOUT THAT ONE AT ODD HOURS."; } },
+    ],
+  },
+  {
     id: "theform", where: "space", weight: 3, title: "FORM 28-C", when: (g) => (p(g).officeLetters ?? 0) >= 1 && !p(g).flags?.formFiled && p(g).crew.length >= 2,
     text: "The office's form is on the galley table, three copies, and the crew have been at it: every box filled in, in four different hands, with a diagram of the fold drawn by the engineer and a section headed 'WOULD YOU DO IT AGAIN' answered by everyone, separately, in the margin. They'd like you to sign it.",
     options: [

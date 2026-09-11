@@ -56,6 +56,12 @@ export function pickShipLine(g: Game, rng: RNG): string | null {
   if ((p.hailsAnswered ?? 0) >= 3) pool.push("YOU ANSWER HAILS. THE LANES HAVE STARTED CALLING ME BY NAME. I LIKE THAT MORE THAN I'D ADMIT TO A HULL.");
   if ((p.waterToBelt ?? 0) >= 10) pool.push("THE ROCKS KNOW MY TANK BY ITS SOUND NOW. THAT'S WHAT THE DOCK-HAND SAID. I'M CHOOSING TO BELIEVE IT.");
   if (p.crew.some((c) => c.role === "gunner") && p.missions.some((m) => m.passengerKind === "prisoner" && m.accepted && !m.done)) pool.push("THE GUNNER HASN'T SAT DOWN SINCE THE PRISONER CAME ABOARD. I'VE WARMED THAT CORRIDOR A DEGREE.");
+  if (p.flags?.crewphoto) pool.push("I'M IN THE CREW PHOTO. I'M THE BACKGROUND. I'VE MADE MY PEACE WITH BEING THE BACKGROUND. MOSTLY.");
+  if (p.flags?.hundredth) pool.push("A HUNDRED ON THE COUNT. I CARRIED EVERY ONE OF THEM. I'M NOT SAYING THAT FOR CREDIT. I'M SAYING IT BECAUSE IT'S TRUE.");
+  if (p.flags?.theplace) pool.push("YOU WENT BACK TO THE PLACE. I WAS THERE TOO, THE FIRST TIME. I DIDN'T KNOW SHIPS COULD BE GLAD. I WAS GLAD.");
+  if (p.flags?.numberoneleg) pool.push("NUMBER ONE FLIES ME DIFFERENTLY. SMOOTHER, AND SLOWER INTO THE TURNS. I'M NOT SAYING BETTER. I'M NOT NOT SAYING IT.");
+  if (p.flags?.rockcadet) pool.push("THE ROCK KID PINNED THE DRAWING UP IN THE BUNK ROOM. THE DOG IS STILL IN IT. I'VE DECIDED THE DOG IS ME.");
+  if (p.flags?.fleetreview) pool.push("I WAS IN A FLEET REVIEW. AT THE END OF THE LINE, BUT IN IT. I'VE KEPT THE LIGHT SEQUENCE. I RUN IT WHEN NOBODY'S LOOKING.");
   if (p.flags?.dockhand) pool.push("THE DOCK-HAND PATCHED ME WITHOUT ASKING. I DIDN'T MIND. I MINDED A LITTLE. IT WAS A GOOD PATCH.");
   if (passengersAboard(p).some((m) => m.request && !m.requestMet)) pool.push("THE ONE IN THE LOUNGE WANTS SOMETHING. I HEARD THE ASK. I CAN'T COOK. YOU CAN.");
   if ((p.mealsCooked ?? 0) >= 5) pool.push("THE GALLEY SMELLS OF SOMETHING GOOD AGAIN. I DON'T EAT. I STILL NOTICE.");

@@ -16,7 +16,7 @@ import { flag } from "../core/achievements";
 import type { Encounter } from "../data/encounters";
 import { gainMaterials } from "../core/materials";
 import { GW, GH, GT, WATER, PLAIN, HILLS, MOUNTAIN, HAZARD, SAND, BIOMES, genGround, groundKey, passable, GroundMap, GroundNode } from "../ground";
-import { adjustRep, addCargo, groundProgress, GroundState, HOMESTEAD_PRICE, homesteadYield, settleHomestead, noteLeg, logEntry } from "../world";
+import { adjustRep, addCargo, groundProgress, GroundState, HOMESTEAD_PRICE, homesteadYield, settleHomestead, noteLeg, logEntry, firstOfficer } from "../world";
 import { commodity } from "../data/data";
 import { engGrade } from "../data/engineering";
 import { faction } from "../data/data";
@@ -76,6 +76,7 @@ export class SurfaceScene implements Scene {
     this.regionName = region.name; this.planetName = pl.name; this.biome = pl.palette;
     this.vx = 0; this.vy = 0;
     if (g.surfaceFresh) {
+      { const p1 = g.world.player; const fo = firstOfficer(p1); if (fo && !(p1.flags ?? {})[`objected:${fo.name}`]) { (p1.flags ??= {})[`objected:${fo.name}`] = true; g.toast(`${fo.name.split(" ")[0].toUpperCase()}: "REGULATIONS SAY THE CAPTAIN STAYS ABOARD FOR LANDINGS. I'M SAYING IT ONCE, FOR THE LOG. ... NOTED. MIND THE STEP."`); logEntry(g.world, `${fo.name} objected to the captain landing, once, for the log`); flag(g, "objected"); } }
       g.surfaceFresh = false;
       this.say(`TOUCHDOWN: ${region.name.toUpperCase()}, ${pl.name.toUpperCase()} - ${BIOMES[this.biome % BIOMES.length].name}`);
       sfx.dock();

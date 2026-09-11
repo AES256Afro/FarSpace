@@ -1565,6 +1565,18 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 293 — The Medic's Word ✅ (Sep 2026)
 - [x] The HUD's low-morale warning is the medic's line when a medic is aboard
 
+## Milestone 294 — Once, for the Log ✅ (Sep 2026)
+- [x] Number One objects to the captain landing, once per Number One, for
+      the log; then "mind the step"
+
+## Milestone 295 — The Hull With the Dent ✅ (Sep 2026)
+- [x] The rock kid who drew your ship turns up at sixteen in a skiff and asks
+      to sign on: a rock-born cadet at cadet rate, or not yet
+
+## Milestone 296 — The Ship Notices II ✅ (Sep 2026)
+- [x] Ship's-voice lines for the crew photo, the hundredth, the place,
+      Number One's leg, the rock cadet's drawing and the fleet review
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

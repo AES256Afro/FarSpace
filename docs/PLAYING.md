@@ -752,6 +752,10 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- The first time you land with a given Number One aboard they object, once,
+  for the log, and then tell you to mind the step.
+- Once you've talked to a rock kid, they may turn up years later in a skiff
+  asking to sign on: a rock-born cadet at cadet rate, with the drawing.
 - On a clean approach, control clears you by rank and bay: "LIEUTENANT
   LATE SUPPER, CLEARED BAY 4. WELCOME BACK. YOUR USUAL." On a rock, a
   freeman gets a hello from the rock.
