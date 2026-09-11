@@ -765,7 +765,7 @@ const FARE_DEMANDS: Record<string, string[]> = { vip: ["lux", "lux", "med"], tou
 // couriers want speed; VIPs want comfort; refugees want out.
 export interface GuestEntry { name: string; kind: string; from: string; to: string; mood: number; line: string; t: number }
 const GUEST_LINES = {
-  high: ["Best crew on the lanes. Sat with the cat the whole way.", "Slept. First time in a month. Thank you.", "Will ask for this ship by name.", "The engineer showed my kids the reactor. They haven't stopped talking.", "Smooth as glass. Even the gate."],
+  high: ["Best crew on the lanes. Sat with the cat the whole way.", "Slept. First time in a month. Thank you.", "Will ask for this ship by name.", "The engineer showed my kids the reactor. They haven't stopped talking.", "Smooth as glass. Even the gate.", "So that's what they mean on the lanes. Now I know."],
   mid: ["Got there. That's what I paid for.", "Fine. The coffee could be better.", "No complaints that I'll put in writing.", "Bit of a rattle over the belt. Otherwise fine."],
   low: ["Never again.", "I have been on prison barges with better manners.", "Late, cold, and somebody was singing.", "I'll be writing to the harbourmaster."],
 };
@@ -954,7 +954,20 @@ export function notableOutcome(w: World, m: Mission): string | null {
 // help them twice and they're a friend: warm hails, a seat in the lounge at
 // their home station, a letter now and then with something in it.
 export interface NpcCaptain { id: string; name: string; ship: string; homeStationId: string; disposition: number; met: number; helped: number; lastSeen: number }
-export interface Letter { dueT: number; from: string; text: string; gift?: { credits?: number; parts?: number; data?: number }; read?: boolean }
+export interface Letter { dueT: number; from: string; text: string; gift?: { credits?: number; parts?: number; data?: number }; read?: boolean; replied?: boolean }
+// Write back. Captains remember it; old shipmates pass it round the bar; the crew like a ship that answers its mail.
+export function replyToLetter(w: World, m: Letter): string {
+  const p = w.player;
+  if (m.replied) return "YOU'VE ALREADY WRITTEN BACK. THEY'LL ANSWER IN THEIR OWN TIME.";
+  m.replied = true;
+  const name = m.from.split(",")[0].trim();
+  const cap = (w.captains ?? []).find((c) => c.name === name);
+  if (cap) { cap.disposition = Math.min(5, cap.disposition + 1); cap.met++; logEntry(w, `Wrote back to ${cap.name}`); return `A LINE BACK TO ${cap.name.toUpperCase()} ON THE ${cap.ship.toUpperCase()}. CAPTAINS REMEMBER WHO WRITES.`; }
+  const al = (p.alumni ?? []).find((a) => a.name === name);
+  if (al) { for (const c of p.crew) c.morale = Math.min(100, c.morale + 2); logEntry(w, `Wrote back to ${al.name}`); return `A LINE BACK TO ${al.name.toUpperCase()}. THE CREW HEAR THE OLD HAND STILL GETS POST FROM THIS SHIP. MORALE UP.`; }
+  logEntry(w, `Wrote back to ${name}`);
+  return `A LINE BACK TO ${name.toUpperCase()}. IT'LL FIND THEM, OR IT WON'T. YOU WROTE IT.`;
+}
 const SHIP_NAMES = ["Long Patience", "Salt and Iron", "Quiet Ledger", "Ferrous Dawn", "Blue Hour", "Second Chance", "Margit's Folly", "Stubborn Mule", "Halfway House", "Late Supper", "Old Argument", "Tin Sparrow"];
 export function assignCaptains(systems: Record<string, SystemDef>, rng: RNG): NpcCaptain[] {
   const stations = Object.values(systems).flatMap((s) => s.stations.filter((st) => !st.military));

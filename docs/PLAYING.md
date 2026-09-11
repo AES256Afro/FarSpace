@@ -229,6 +229,12 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Writing back
+
+- Letters land on the NEWS tab. R writes back to the latest one you haven't
+  answered: a captain who gets a reply thinks a little more of you, an old
+  shipmate's reply cheers the crew, and a stranger's just gets written.
+
 ## The chronicle's week
 
 - The chronicle (C on RECORD, or exported) now carries a "The week" section:

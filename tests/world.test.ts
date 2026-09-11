@@ -1029,6 +1029,18 @@ describe("chronicle of the week", () => {
   });
 });
 
+describe("writing back", () => {
+  it("a reply to a captain's letter is remembered; a second reply is refused", () => {
+    const w = generateWorld(43, { realGalaxy: true });
+    const cap = (w.captains ?? [])[0]; const d0 = cap.disposition;
+    const m = { dueT: 0, from: `${cap.name}, ${cap.ship}`, text: "hello" };
+    expect(replyToLetter(w, m)).toContain(cap.name.toUpperCase());
+    expect(cap.disposition).toBe(Math.min(5, d0 + 1));
+    expect(replyToLetter(w, m)).toContain("ALREADY");
+    expect(replyToLetter(w, { dueT: 0, from: "A stranger", text: "x" })).toContain("A STRANGER");
+  });
+});
+
 describe("the signal", () => {
   it("every stage has an objective and its checks pass when the world reaches them", () => {
     const w = generateWorld(22, { realGalaxy: true });

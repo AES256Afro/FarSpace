@@ -791,4 +791,7 @@ Time passes for the people on the ship, and for the ship.
 - [x] Five more deeds (the band, family, cards, the breakers, mess call); the
       save slots show your name on the lanes
 
+## Milestone 108 — Writing Back ✅ (Sep 2026)
+- [x] R on the NEWS tab replies to letters; captains and old shipmates notice
+
 ## Later

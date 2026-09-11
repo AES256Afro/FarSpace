@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS, roleLabel } from "../
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, tickAlumniMail, catGift, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, notableOutcome, ledger, ledgerAround, LEDGER_LABELS, dockingsAt, OLD_HAND_AT, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter, RACE_GATES, raceHolder, postDelivered, captainNickname, charterRoute, tickWorld, signGuestbook, regattaObjective, buyStake, collectStake, stakeDividend, stakePrice, totalShares, hasSpecialty, crewOwnHull, OWN_HULL_CREW_FEE, favourFor, favourDone, resolveBorder, pushInfluence, weekKey, borderStanding } from "../world";
+  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, tickAlumniMail, catGift, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, notableOutcome, ledger, ledgerAround, LEDGER_LABELS, dockingsAt, OLD_HAND_AT, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter, RACE_GATES, raceHolder, postDelivered, captainNickname, charterRoute, tickWorld, signGuestbook, regattaObjective, buyStake, collectStake, stakeDividend, stakePrice, totalShares, hasSpecialty, crewOwnHull, OWN_HULL_CREW_FEE, favourFor, favourDone, resolveBorder, pushInfluence, weekKey, borderStanding, replyToLetter } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
 import { BLUEPRINTS, MATERIALS, engGrade, nextCost, canAfford, upgrade } from "../data/engineering";
@@ -568,6 +568,7 @@ export class StationScene implements Scene {
       case "NEWS":
         this.cursor = clamp(this.cursor, 0, g.world.news.length - 1);
         if (!st.military && st.factionId !== "vex" && (inp.wasPressed("y") || inp.wasPressed("n"))) { g.toast(castVote(g.world, st.factionId, inp.wasPressed("y"))); sfx.select(); }
+        if (inp.wasPressed("r")) { const m = [...(p.mail ?? [])].reverse().find((x) => !x.replied); if (!m) g.toast("NO LETTERS WAITING FOR AN ANSWER"); else { g.toast(replyToLetter(g.world, m)); sfx.letter(); } }
         break;
       case "WIRE":
         if (!this.wireLoaded) { this.wireLoaded = true; void this.loadWire(); }
@@ -1875,7 +1876,7 @@ export class StationScene implements Scene {
     if (this.station.museum?.length) { const m = this.station.museum[this.station.museum.length - 1]; drawText(ctx, `MUSEUM: ${this.station.museum.length} PIECE${this.station.museum.length > 1 ? "S" : ""} - LATEST ${m.item.toUpperCase()}, DONATED BY ${m.by.toUpperCase()}`.slice(0, 112), 8, top, PAL.gold); top += 9; }
     const mail = g.world.player.mail ?? [];
     if (mail.length) {
-      drawText(ctx, `LETTERS (${mail.length})`, 8, top, PAL.gold);
+      drawText(ctx, `LETTERS (${mail.length}) - R WRITES BACK${mail.some((x) => !x.replied) ? "" : " (ALL ANSWERED)"}`, 8, top, PAL.gold);
       let ly = top + 9;
       for (const m of mail.slice(-2).reverse()) { drawText(ctx, `FROM ${m.from.toUpperCase()}: ${m.text.toUpperCase()}`.slice(0, 112), 8, ly, PAL.grey); ly += 8; }
       top = ly + 4;
