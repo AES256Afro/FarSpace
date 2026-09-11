@@ -1159,6 +1159,17 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   their edge; past 70% systems start to fault. YARD SERVICE at any shipyard
   clears it and signs the berth log. An engineer aboard slows the wear.
 
+## Second acts
+
+- Every faction's story arc runs to five stages now. The first three are as
+  they were; the fourth opens at seventy-five rep with the faction and the
+  fifth at a hundred, on that faction's boards, one at a time: the Compact's
+  envoy's road and its first contact protocol, the Guild's dry rock and the
+  register's price, the Combine's ledger and its lane, the Autonomy's outer
+  signal and what the Ring owes, the Veil's price for a patrol and its
+  interest in the hull that sang. The record counts arcs out of twenty-five;
+  finishing any faction's second act is a deed.
+
 ## Politics and the second campaign
 
 - Faction envoys meet you at the airlock: an amnesty for sale when you're

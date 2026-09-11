@@ -2681,6 +2681,8 @@ export const ARCS: Record<string, { title: string; stages: { title: string; desc
       { title: "Compact: Courier Run", desc: "Carry sealed Compact dispatches to a neighbouring station. Do not open them.", kind: "delivery", reward: 500 },
       { title: "Compact: Clear the Lane", desc: "Corsairs are choking a Compact supply lane. Break them.", kind: "bounty", reward: 900 },
       { title: "Compact: The Quiet Gate", desc: "Survey the anomaly the Compact has been hiding from the news net. What you find decides who controls this gate.", kind: "research", reward: 1800 },
+      { title: "Compact: The Envoy's Road", desc: "Second act. The Compact's council wants a treaty carried where no envoy will go: sealed data to a neighbouring station, and a captain who won't open it.", kind: "delivery", reward: 2200 },
+      { title: "Compact: First Contact Protocol", desc: "The council has heard about the singing hulls. Survey the next signal and bring back readings they can build a protocol on. Nobody says 'first contact' out loud.", kind: "research", reward: 2600 },
     ],
   },
   fdm: {
@@ -2689,6 +2691,8 @@ export const ARCS: Record<string, { title: string; stages: { title: string; desc
       { title: "Guild: Ore Quota", desc: "The Guild needs ore and needs it quiet. Fill the quota.", kind: "mining", reward: 450 },
       { title: "Guild: Ride Shotgun", desc: "A Guild hauler is carrying something worth killing for. Get it home.", kind: "escort", reward: 900 },
       { title: "Guild: Belt Fever", desc: "Board the derelict the Guild lost in the belt. Bring back what the crew died for.", kind: "research", reward: 1600 },
+      { title: "Guild: The Dry Rock", desc: "Second act. A Guild rock has stopped answering and the Guild wants its ore quota filled before the inners notice. Fill it, and ask the rock what happened.", kind: "mining", reward: 2000 },
+      { title: "Guild: The Register's Price", desc: "The rock that went independent has corsairs at its door, and the Guild would rather it came back alive. Clear them. The Guild will settle the politics after.", kind: "bounty", reward: 2500 },
     ],
   },
   hex: {
@@ -2697,6 +2701,8 @@ export const ARCS: Record<string, { title: string; stages: { title: string; desc
       { title: "Combine: Audit Run", desc: "Carry Combine ledgers to a partner station. They're encrypted. They're also very heavy for what they are.", kind: "delivery", reward: 550 },
       { title: "Combine: Hostile Takeover", desc: "Someone is raiding Combine freighters with suspiciously good intel. Remove the raiders.", kind: "bounty", reward: 950 },
       { title: "Combine: Ledger of Glass", desc: "The intel came from an anomaly the Combine seeded years ago. Find it before their rivals do.", kind: "research", reward: 1900 },
+      { title: "Combine: The Ledger's Debt", desc: "Second act. The Combine owes a station it would rather forget. Carry the payment, in data, and don't read the ledger.", kind: "delivery", reward: 2100 },
+      { title: "Combine: Hexagon Protocol", desc: "Somebody has been selling the Combine's routes to the corsairs. The Combine knows which lane they use. Clear it.", kind: "bounty", reward: 2500 },
     ],
   },
   ora: {
@@ -2705,6 +2711,8 @@ export const ARCS: Record<string, { title: string; stages: { title: string; desc
       { title: "Autonomy: Fill the Silos", desc: "The Ring feeds itself or it doesn't eat. Bring ore.", kind: "mining", reward: 480 },
       { title: "Autonomy: Ride Along", desc: "A Ring hauler is running the blockade. Get it home.", kind: "escort", reward: 950 },
       { title: "Autonomy: Free Drift", desc: "Deliver what the hauler was really carrying. Don't ask what it is. Don't get scanned.", kind: "delivery", reward: 2200 },
+      { title: "Autonomy: The Outer Signal", desc: "Second act. A signal on the far side of the Ring that the Autonomy would like surveyed before anyone else surveys it.", kind: "research", reward: 2100 },
+      { title: "Autonomy: What the Ring Owes", desc: "The Autonomy pays its debts in kind. Carry the kind. Discreetly.", kind: "delivery", reward: 2500 },
     ],
   },
   vex: {
@@ -2713,6 +2721,8 @@ export const ARCS: Record<string, { title: string; stages: { title: string; desc
       { title: "Veil: Proof of Nerve", desc: "Run contraband through a guarded gate for the Corsairs. No scans, no seizures.", kind: "delivery", reward: 700 },
       { title: "Veil: Blood Debt", desc: "A Compact patrol killed a Corsair captain. The Veil wants a patrol in return.", kind: "bounty", reward: 1200 },
       { title: "Veil: The Accord", desc: "Broker the Veil's terms at a Compact star base. If they'll let you dock.", kind: "delivery", reward: 2500 },
+      { title: "Corsairs: The Patrol's Price", desc: "Second act. A patrol has been leaning on the Veil's lanes. The Veil would like it leaned on back.", kind: "bounty", reward: 2200 },
+      { title: "Corsairs: The Hull That Sang", desc: "The Veil has heard about the singing hulls too, and wants a survey of the next signal before the Compact gets its protocol. The Veil's interest is not scientific.", kind: "research", reward: 2600 },
     ],
   },
 };

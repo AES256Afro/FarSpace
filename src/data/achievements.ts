@@ -140,5 +140,6 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "quietones", title: "THREE, FIVE, THREE", desc: "Follow the quiet ones' lights all the way", check: (w) => !!w.player.flags?.quietOnesGift && (w.player.codex?.["contact:THE QUIET ONES"] ?? 0) >= 2 },
   { id: "shipcrew", title: "A LINE ON THE ROSTER", desc: "Put the ship on its own roster", check: (w) => !!w.player.flags?.shipCrew },
   { id: "register", title: "THE ROCK'S OWN", desc: "Sign the register at an independent rock", check: (w) => !!w.player.flags?.register },
+  { id: "secondact", title: "SECOND ACT", desc: "Finish a faction's second act", check: (w) => Object.values(w.player.arcs).some((v) => v >= 5) },
   { id: "elite", title: "ELITE", desc: "Top any career ladder", check: (w) => (["explorer", "trader", "miner"] as const).some((k) => rankOf(w.player, k).idx >= 8) },
 ];

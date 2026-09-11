@@ -1987,7 +1987,7 @@ export class StationScene implements Scene {
     const have = new Set(p.achievements ?? []);
     drawText(ctx, `SERVICE RECORD${w.hardcore ? " - HARDCORE" : ""} - L LOG - B LEDGER - P GUESTBOOK - W WEEK - O HARBOUR - C CHRONICLE - X EXPORT`, 8, top, PAL.info);
     const stats = [
-      `KILLS ${p.kills}`, `DISCOVERIES ${p.discoveries}`, `ARCS ${Object.values(p.arcs).reduce((a, b) => a + b, 0)}/15`,
+      `KILLS ${p.kills}`, `DISCOVERIES ${p.discoveries}`, `ARCS ${Object.values(p.arcs).reduce((a, b) => a + b, 0)}/25`,
       `CREDITS ${p.credits}`, `CREW ${p.crew.length}`, `HULL ${hull(p.hullId).name.toUpperCase()}`,
       `TIME ${Math.floor(w.time / 60)}M`, `ACHIEVEMENTS ${have.size}/${ACHIEVEMENTS.length}`,
       `EXPLORER ${rankOf(p, "explorer").title}`, `TRADER ${rankOf(p, "trader").title}`, `MINER ${rankOf(p, "miner").title}`, `RESCUER ${rankOf(p, "rescuer").title} (${rescuePoints(p)})`,

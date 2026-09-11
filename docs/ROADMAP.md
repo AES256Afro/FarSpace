@@ -1081,6 +1081,11 @@ Time passes for the people on the ship, and for the ship.
       water, rations and medicine pay, and a register by the clamp asks who's
       with it
 
+## Milestone 180 — Second Acts ✅ (Sep 2026)
+- [x] Every faction arc has two more stages after the third, at rep 75 and
+      100: envoys' roads, dry rocks, ledgers' debts, outer signals, the hull
+      that sang
+
 ## Later: Trek / Expanse / Orville
 
 - A second story arc per faction (first contact proper: the singers' home)

@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  weekKey, genCrewCandidate, secessionAt, tickGalaxyEvents, parleyChance, spinOutageSeen, spinOutageDue, logEntry, strangeReading, grievanceHeard, grievanceDue, registry, commandRank, hasSpecialty, legSummary, noteLeg, newLeg, SIM_PROGRAMS, reviewCrew, reviewDue, nameTheShip, shipVoiceName, receptionHeld, receptionDue, ALERT_NAME, alertMods, beltRate, isBeltStation, FURNISHINGS, runSim, setFocus, briefingReports, patientDeadline, patientOutcome, takeJuice, buyJuice, envoyOutcome, firstOfficer, stardate, cookMeal, LOST_KEEP_AFTER, LOST_REWARD, tickLostProperty, handInLostItem, leaveLostItem, passengersTookFire, passengersFed, askPassengerRequest, findStation, berthedCaptains, generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
+  weekKey, genCrewCandidate, ARCS, secessionAt, tickGalaxyEvents, parleyChance, spinOutageSeen, spinOutageDue, logEntry, strangeReading, grievanceHeard, grievanceDue, registry, commandRank, hasSpecialty, legSummary, noteLeg, newLeg, SIM_PROGRAMS, reviewCrew, reviewDue, nameTheShip, shipVoiceName, receptionHeld, receptionDue, ALERT_NAME, alertMods, beltRate, isBeltStation, FURNISHINGS, runSim, setFocus, briefingReports, patientDeadline, patientOutcome, takeJuice, buyJuice, envoyOutcome, firstOfficer, stardate, cookMeal, LOST_KEEP_AFTER, LOST_REWARD, tickLostProperty, handInLostItem, leaveLostItem, passengersTookFire, passengersFed, askPassengerRequest, findStation, berthedCaptains, generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
   missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn, captainByName, helpCaptain, isFriend, friendsAt, tickMail, pickCaptainFor, canUpgradeInfra, upgradeInfra, rivalOf, isRival, rivalTakesFare, rivalBeatsYouTo, askRideAlong, tickRideAlong, setHomePort, isHome, donateRelic, hullHistoryFor, notableById, notableOutcome, canFundProject, fundProject, PROJECTS, settlementNeeds, ledger, ledgerAround, LEDGER_LABELS, catGift, stationBulletin, dockingsAt } from "../src/world";
 import { occasionFor, OCCASIONS } from "../src/data/occasions";
@@ -278,9 +278,9 @@ describe("cloud save size", () => {
 });
 
 describe("milestone 10 content", () => {
-  it("five faction arcs, three stages each", () => {
+  it("five faction arcs, five stages each (a second act after the third)", () => {
     expect(Object.keys(ARCS).sort()).toEqual(["fdm", "hex", "ora", "tsc", "vex"]);
-    for (const a of Object.values(ARCS)) expect(a.stages.length).toBe(3);
+    for (const a of Object.values(ARCS)) expect(a.stages.length).toBe(5);
   });
   it("daily contract is identical for everyone on the same day and changes tomorrow", () => {
     const w = generateWorld(3);
@@ -774,6 +774,9 @@ describe("station hours and the tannoy", () => {
     expect(stationHour(sts[0], at)).toEqual(stationHour(sts[0], at));
     for (const st of sts.slice(0, 5)) { const lines = tannoyLines(w, st, new RNG(1), at); expect(lines.length).toBeGreaterThan(5); for (const l of lines) expect(l.length).toBeLessThanOrEqual(130); }
     w.player.postRuns = 10; expect(tannoyLines(w, sts[0], new RNG(2), at).some((l) => l.includes("THE POSTMAN"))).toBe(true);
+  });
+  it("every faction arc has a second act of two more stages", () => {
+    for (const k of ["tsc", "fdm", "hex", "ora", "vex"]) { expect(ARCS[k].stages.length).toBe(5); expect(ARCS[k].stages[3].desc).toContain("Second act"); }
   });
   it("a belt rock goes independent for a week: the register opens and the market moves", () => {
     const w = generateWorld(60, { realGalaxy: true });
