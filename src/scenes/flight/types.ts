@@ -27,6 +27,7 @@ export interface Npc {
   transit?: { tx: number; ty: number }; // through-traffic in a lit system: gate to gate, then gone
   companion?: boolean; // a friend's ship flying alongside
   ghost?: string;      // another real pilot's ship, spawned from what they posted on the wire from this system
+  mayday?: boolean;    // a real pilot stranded here with dry tanks, from their mayday on the wire
 }
 
 export interface Torpedo {

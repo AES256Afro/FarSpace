@@ -307,6 +307,7 @@ export interface PlayerState {
   lost?: { name: string; role: string; where: string; t: number }[]; // crew who didn't make it to the pod
   stakes?: Record<string, number>;   // station id -> shares held; they pay a dividend every time you dock there
   votes?: Record<string, "yes" | "no">; // "<week>:<faction>" -> how you voted
+  mayday?: { system: string; t: number } | null; // your own mayday on the wire, until somebody answers it
   regatta?: number;                  // the regatta: 0 entered, 1 first course won, 2 second, 3 champion
   regattaCourse?: string[];          // the three stations of your regatta, set when you're entered
   wrecksOfMine?: string[];           // wreck ids of ships you lost; they stay where they fell
@@ -754,6 +755,12 @@ export function leaveWreck(w: World, x: number, y: number, lostCrew: { name: str
   if (lostCrew) (p.lost ??= []).push({ name: lostCrew.name, role: lostCrew.role, where: sys.name, t: w.time });
   logEntry(w, `Lost ${name.replace(", yours", "")} off ${sys.name}${lostCrew ? `; ${lostCrew.name} didn't make it to the pod` : ""}. The wreck is still there.`);
   return wd;
+}
+// Somebody answered your mayday on the wire: their rescue post names you
+export function maydayAnswered(events: { kind: string; text: string; t: number; callsign: string }[], callsign: string, since: number): string | null {
+  const needle = `answered ${callsign.toLowerCase()}'s mayday`;
+  const e = events.find((x) => x.kind === "rescue" && x.t >= since && x.text.toLowerCase().includes(needle));
+  return e ? e.callsign : null;
 }
 // Other pilots' lost ships, from the wire: a wreck under their call sign, once per system, a little salvage
 export function addWireWrecks(w: World, lights: { callsign: string; kind: string; t?: number }[]): number {

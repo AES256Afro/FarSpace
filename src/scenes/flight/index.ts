@@ -5,7 +5,7 @@ import { ask, confirmBox } from "../../core/dialog";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra, raceCourse, racePar, racePrize, recordRace, beatHolder, captainNickname, leaveWreck, addWireWrecks, enterRegatta, regattaProgress, hasSpecialty } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra, raceCourse, racePar, racePrize, recordRace, beatHolder, captainNickname, leaveWreck, addWireWrecks, enterRegatta, regattaProgress, hasSpecialty, maydayAnswered } from "../../world";
 import { COMMODITIES, commodity } from "../../data/data";
 import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
@@ -25,7 +25,7 @@ import * as wire from "../../core/wire";
 import { presence } from "../../core/presence";
 import { pickEncounter } from "../../data/encounters";
 import { pickChatter } from "../../core/chatter";
-import { spawnGhost } from "./ai";
+import { spawnGhost, spawnMayday } from "./ai";
 import { voteMods } from "../../data/votes";
 import { pickShipLine } from "../../core/shipvoice";
 import { keeperScan, KEEPER_OWNER } from "../../core/keeper";
@@ -90,7 +90,7 @@ export class FlightScene implements Scene {
     this.comms = [];
     this.wonderSeen.clear();
     this.docking = null;
-    if (g.world.realGalaxy) { void wire.fetchWire(); void wire.fetchLights().then(() => { if (g.sceneName === "flight") { const n = addWireWrecks(g.world, wire.lightsAt(g.world.systems[g.world.player.systemId].name)); if (n) this.comms.push({ from: "CHART", text: `${n} WRECK${n > 1 ? "S" : ""} ON THE CHART HERE THAT ANOTHER PILOT LEFT. SALVAGE RIGHTS ARE WHOEVER GETS THERE.`, life: 9, color: PAL.greyDark }); } }); }
+    if (g.world.realGalaxy) { void wire.fetchWire(); void wire.fetchLights().then(() => { if (g.sceneName === "flight") { const here = wire.lightsAt(g.world.systems[g.world.player.systemId].name); const n = addWireWrecks(g.world, here); if (n) this.comms.push({ from: "CHART", text: `${n} WRECK${n > 1 ? "S" : ""} ON THE CHART HERE THAT ANOTHER PILOT LEFT. SALVAGE RIGHTS ARE WHOEVER GETS THERE.`, life: 9, color: PAL.greyDark }); for (const l of here.filter((x) => x.kind === "mayday")) { if (!this.npcs.some((x) => x.mayday && x.name === l.callsign)) { spawnMayday(this, g, l.callsign); this.comms.push({ from: l.callsign, text: `MAYDAY, MAYDAY. THIS IS ${l.callsign}. TANKS ARE DRY. ANYONE WITH TEN UNITS TO SPARE, I'LL OWE YOU ONE.`, life: 12, color: PAL.danger }); } } } }); }
     { const sysNow = g.world.systems[g.world.player.systemId]; if (!this.loreSeen.has(sysNow.id)) { this.loreSeen.add(sysNow.id); this.comms.push({ from: "CHART", text: systemLore(g.world, sysNow).toUpperCase(), life: 9, color: PAL.greyDark }); } }
     if (g.justUndocked) {
       // launch sequence: out of the bay along your nose, control on the band
@@ -753,6 +753,17 @@ export class FlightScene implements Scene {
       (g.scenes["encounter"] as import("../encounter").EncounterScene).open(g, enc, "flight", true);
       return;
     }
+    if (n.mayday) {
+      opts.push({ label: "PASS TEN UNITS OF FUEL ON A LINE", hint: "The Pilots' Fund pays 300cr for an answered mayday", requires: (g2) => g2.world.player.fuel >= 15, result: (g2) => {
+        const p2 = g2.world.player; p2.fuel -= 10; p2.credits += 300; ledger(p2, "rescues", 300); p2.rescues = (p2.rescues ?? 0) + 1; adjustRep(g2.world, g2.world.systems[p2.systemId].factionId, 3);
+        void wire.post("rescue", `answered ${n.name}'s mayday with fuel`, g2.world.systems[p2.systemId].name); flag(g2, "fuelrat"); logEntry(g2.world, `Answered ${n.name}'s mayday with fuel`);
+        this.npcs = this.npcs.filter((x) => x !== n);
+        return `${(n.name ?? "THE PILOT").toUpperCase()}: 'YOU BEAUTIFUL PEOPLE. I'M NOT CRYING, IT'S THE RECYCLED AIR.' THE FUND WIRES 300CR. THEIR DRIVE LIGHTS UP AND THEY'RE GONE.`; } });
+      opts.push({ label: "LEAVE THEM", result: () => "YOU BREAK OFF. THE MAYDAY STAYS ON THE WIRE FOR SOMEBODY ELSE." });
+      const enc: Encounter = { id: "help-mayday", where: "space", title: `MAYDAY - ${(n.name ?? "PILOT").toUpperCase()} (ON THE WIRE)`, weight: 0, text: `'THIS IS ${(n.name ?? "A PILOT").toUpperCase()}. TANKS ARE DRY, DRIFTING, LIFE SUPPORT'S FINE FOR NOW. TEN UNITS WOULD GET ME TO THE STATION. I'LL OWE YOU ONE. I MEAN IT.'`, options: opts };
+      (g.scenes["encounter"] as import("../encounter").EncounterScene).open(g, enc, "flight", true);
+      return;
+    }
     if (n.disabled) {
       opts.push({ label: "BOARD AND REPAIR IT YOURSELF", hint: "Three dead systems, a suit clock, maybe a fire", result: (g2) => { g2.repairTarget = n; setTimeout(() => g2.setScene("repair"), 0); return ""; } });
       if (eng) opts.push({ label: `SEND ${eng.name.toUpperCase()} ACROSS (ENGINEER ${eng.skill})`, hint: g.world.systems[p.systemId].pirateActivity > 0.4 ? "You stand guard; corsairs work this system" : "You stand guard; it's usually quiet out here", result: () => { this.repairJob = { npc: n, crewName: eng.name, progress: 0, need: 45 / (0.6 + 0.4 * eng.skill), wave: 0, kind: "repair" }; return `${eng.name.toUpperCase()} SUITS UP AND CROSSES. KEEP THEM SAFE.`; } });
@@ -914,9 +925,32 @@ export class FlightScene implements Scene {
   }
   chatterTimer = 25;
   trafficTimer = 40;
+  maydayCheck = 20;
+  updateMayday(g: Game, dt: number): void {
+    const p = g.world.player; const sys = g.world.systems[p.systemId];
+    if (!g.world.realGalaxy || !wire.getCallsign()) return;
+    // dry tanks: put it on the wire, once per system
+    if (p.fuel < p.fuelMax * 0.06 && !this.docking && !(p.mayday && p.mayday.system === sys.name)) {
+      p.mayday = { system: sys.name, t: Date.now() - 60_000 };
+      void wire.postLight(sys.name, "mayday", false);
+      this.comms.push({ from: (p.shipName ?? "SHIP").toUpperCase(), text: "MAYDAY ON THE WIRE. TANKS DRY. IF ANY OTHER PILOT IS OUT THIS WAY, THEY'LL SEE IT.", life: 10, color: PAL.danger });
+      g.showHint("mayday-wire", "YOUR MAYDAY IS ON THE WIRE FOR SIX HOURS. A DEPOT, A SCOOP, OR ANOTHER PILOT CAN GET YOU HOME");
+    }
+    if (!p.mayday) return;
+    this.maydayCheck -= dt; if (this.maydayCheck > 0) return; this.maydayCheck = 45;
+    const me = wire.getCallsign()!; const since = p.mayday.t;
+    void wire.fetchWire(true).then((evs) => {
+      const who = maydayAnswered(evs, me, since);
+      if (!who || !p.mayday) return;
+      p.fuel = Math.min(p.fuelMax, p.fuel + 20); p.mayday = null;
+      g.toast(`${who} ANSWERED YOUR MAYDAY. TWENTY UNITS ON THE LINE. YOU OWE THEM ONE.`);
+      logEntry(g.world, `${who} answered the mayday with fuel`); sfx.pickup();
+    });
+  }
   updateAmbient(g: Game, dt: number): void {
     const p = g.world.player;
     const sys = g.world.systems[p.systemId];
+    this.updateMayday(g, dt);
     // comms chatter when the channel is quiet
     if (g.world.infraNews?.length) { for (const line of g.world.infraNews) g.toast(line); g.world.infraNews = []; }
     // a passenger has heard about a wonder nearby and asks for a detour

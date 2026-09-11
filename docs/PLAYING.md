@@ -229,6 +229,15 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Maydays on the wire
+
+- In the real galaxy, run your tanks dry and your ship puts a mayday on the
+  wire for six hours. Other pilots see it on their galaxy map and, in that
+  system, find your ship drifting; ten units of fuel on a line gets them
+  300 credits from the Pilots' Fund, standing, and the FUEL RAT title. Your
+  ship checks the wire while you wait: when somebody answers, twenty units
+  arrive and you owe them one. A depot or a scoop still works too.
+
 ## Holding short
 
 - Dock behind traffic and control holds you short of the bay for a few

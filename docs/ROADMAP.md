@@ -691,4 +691,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Docking behind traffic: control holds you short of the bay, then calls
       you in
 
+## Milestone 82 — Maydays on the Wire ✅ (Sep 2026)
+- [x] Dry tanks post a six-hour mayday light; other pilots find the stranded
+      ship and pass fuel for a Fund bounty; the stranded ship receives it
+
 ## Later

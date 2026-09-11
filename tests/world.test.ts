@@ -15,7 +15,7 @@ import { STARS, starDistance } from "../src/data/stars";
 import { ACHIEVEMENTS } from "../src/data/achievements";
 import { ARCS, dailyContract, dailyKey, rankOf, logSystem, applyHull } from "../src/world";
 import { MODULES } from "../src/data/modules";
-import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook, leaveWreck, addWireWrecks, enterRegatta, regattaObjective, regattaProgress, buyStake, collectStake, stakePrice, STAKE_CAP, hasSpecialty, chooseSpecialty, wearRate, crewOwnHull, OWN_HULL_CREW_FEE } from "../src/world";
+import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook, leaveWreck, addWireWrecks, enterRegatta, regattaObjective, regattaProgress, buyStake, collectStake, stakePrice, STAKE_CAP, hasSpecialty, chooseSpecialty, wearRate, crewOwnHull, OWN_HULL_CREW_FEE, maydayAnswered } from "../src/world";
 import { RARES } from "../src/data/data";
 import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
@@ -900,6 +900,20 @@ describe("fleet at work", () => {
     expect(crewOwnHull(w, ship, sts[0].id, sts[1].id, "food", new RNG(1))).toContain("ISN'T HERE");
     releaseCharter(p, c);
     expect(p.haulers!.length).toBe(0); expect(p.fleet.length).toBe(1); expect(p.fleet[0].name).toBe("Tin Sparrow"); expect(p.fleet[0].stationId).toBe(sts[0].id);
+  });
+});
+
+describe("maydays on the wire", () => {
+  it("a rescue post naming you after your mayday counts; older or other posts don't", () => {
+    const evs = [
+      { kind: "rescue", text: "answered ABLE-1's mayday with fuel", t: 1000, callsign: "BAKER-2" },
+      { kind: "rescue", text: "answered CHARLIE-3's mayday with fuel", t: 2000, callsign: "BAKER-2" },
+      { kind: "trade", text: "answered ABLE-1's mayday with fuel", t: 3000, callsign: "DOG-4" },
+    ];
+    expect(maydayAnswered(evs, "ABLE-1", 500)).toBe("BAKER-2");
+    expect(maydayAnswered(evs, "ABLE-1", 1500)).toBeNull();
+    expect(maydayAnswered(evs, "able-1", 500)).toBe("BAKER-2");
+    expect(maydayAnswered(evs, "EASY-5", 0)).toBeNull();
   });
 });
 

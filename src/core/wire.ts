@@ -136,7 +136,7 @@ export function ageLabel(t: number): string {
 // there is no call sign or the wire is unreachable (nothing is lost; retried on
 // the next arrival).
 // Lights other pilots keep in the real galaxy, by system name
-export interface Light { callsign: string; system: string; kind: "beacon" | "depot" | "wreck"; upgraded: boolean; t: number }
+export interface Light { callsign: string; system: string; kind: "beacon" | "depot" | "wreck" | "mayday"; upgraded: boolean; t: number }
 let lightsCache: { at: number; lights: Light[] } | null = null;
 export async function fetchLights(force = false): Promise<Light[]> {
   if (!force && lightsCache && Date.now() - lightsCache.at < 180_000) return lightsCache.lights;
@@ -152,7 +152,7 @@ export function lightsAt(systemName: string): Light[] {
   const me = getCallsign();
   return (lightsCache?.lights ?? []).filter((l) => l.system.toLowerCase() === systemName.toLowerCase() && l.callsign !== me);
 }
-export async function postLight(system: string, kind: "beacon" | "depot" | "wreck", upgraded: boolean): Promise<boolean> {
+export async function postLight(system: string, kind: "beacon" | "depot" | "wreck" | "mayday", upgraded: boolean): Promise<boolean> {
   const callsign = getCallsign();
   if (!callsign) return false;
   try {

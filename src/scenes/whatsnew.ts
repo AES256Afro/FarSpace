@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.82 - MAYDAYS ON THE WIRE", [
+    "RUN DRY IN THE REAL GALAXY AND YOUR MAYDAY GOES ON THE WIRE. ANOTHER PILOT CAN FIND YOU AND PASS FUEL. FUEL RATS, THIS WAY.",
+  ]],
   ["0.81 - HOLDING SHORT", [
     "DOCK BEHIND TRAFFIC AND CONTROL HOLDS YOU SHORT OF THE BAY, THEN CALLS YOU IN.",
   ]],

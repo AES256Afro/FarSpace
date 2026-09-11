@@ -4,7 +4,7 @@
 import type { Game } from "../../game";
 import type { FlightScene } from "./index";
 import type { Npc, NpcKind, Platform } from "./types";
-import { RNG } from "../../core/rng";
+import { RNG, hashStr } from "../../core/rng";
 import { clamp, TAU, angDiff, dist } from "../../core/mathx";
 import { PAL } from "../../gfx/palette";
 import { sfx } from "../../core/sfx";
@@ -188,6 +188,16 @@ export function spawnGhost(fs: FlightScene, g: Game, rng: RNG, ev: { callsign: s
     hull: 80, hullMax: 80, fireCd: 0, targetIdx: (sys.stations.indexOf(from) + 1) % Math.max(1, sys.stations.length),
     cargo: { id: "parts", qty: 2 }, originStationId: from.id, name: ev.callsign, ghost: ev.text,
   });
+}
+
+// A real pilot's mayday from the wire: their ship, dead in the water off a station, waiting for fuel
+export function spawnMayday(fs: FlightScene, g: Game, callsign: string): void {
+  const sys = g.world.systems[g.world.player.systemId];
+  const rng = new RNG(hashStr(`mayday:${callsign}:${sys.id}`));
+  const from = sys.stations.length ? rng.pick(sys.stations) : null;
+  const cx = from ? Math.cos(from.angle) * from.orbit : 0, cy = from ? Math.sin(from.angle) * from.orbit : 0;
+  const a = rng.range(0, TAU), r = rng.int(500, 900);
+  fs.npcs.push({ kind: "trader", x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r, vx: 0, vy: 0, angle: a, hull: 60, hullMax: 60, fireCd: 0, targetIdx: 0, name: callsign, disabled: true, mayday: true, ghost: "stranded, tanks dry" });
 }
 
 // Through-traffic: a hauler comes in one gate, swings past the structure, and leaves by another.
