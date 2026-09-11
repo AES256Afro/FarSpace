@@ -752,6 +752,16 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- With a Number One aboard the chronicle carries their note on the captain:
+  rescues against fights, how the crew are holding, the boards you've stood
+  before.
+- Freemen of the belt, in a system with a rock, get the council's question on
+  the water tariff: hold it (belt standing up, faction rep down), fold to keep
+  the clinic (the reverse), or split it and let a coin decide whether clever
+  was a side.
+- A new card: an escape pod with an officer from the far side of a border in
+  it. Bring them aboard for rep with their people and a life, tow the pod
+  sealed to the clamp, or boost the beacon and fly on.
 - The senior staff briefing has an "any other business" line: one of the
   staff brings a motion (the drive run hot, a rest day, a live-fire drill, the
   long way round the star). Grant it, deny it, or table it for the next leg.

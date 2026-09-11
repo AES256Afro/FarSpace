@@ -145,6 +145,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "inspection", title: "A GOOD SHIP", desc: "Pass an inspection with three marks of four", check: (w) => !!w.player.flags?.inspection },
   { id: "freeman", title: "FREEMAN OF THE BELT", desc: "Earn a standing of three with the rocks", check: (w) => !!w.player.flags?.freeman },
   { id: "requisition", title: "COURTESY OF THE SERVICE", desc: "Requisition a full service at a naval station", check: (w) => !!w.player.flags?.requisition },
+  { id: "councilVote", title: "IN THE MINUTES", desc: "Answer the belt council's question", check: (w) => !!w.player.flags?.councilVote },
   { id: "motion", title: "ANY OTHER BUSINESS", desc: "Grant a motion at the senior staff briefing", check: (w) => !!w.player.flags?.motion },
   { id: "quietleg", title: "ONE QUIET LEG", desc: "Give the ship the quiet leg it asked for", check: (w) => !!w.player.flags?.quietleg },
   { id: "thirdcontact", title: "SHOPPING", desc: "Trade with the quiet ones", check: (w) => ((w.player.codex ?? {})["contact:THE QUIET ONES"] ?? 0) >= 3 },

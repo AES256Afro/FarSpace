@@ -1305,6 +1305,18 @@ Time passes for the people on the ship, and for the ship.
 - [x] The quiet ones set up shop: a crate in the ring for a trading stone
       (codex contact 3, data, a keepsake), or take it and the lights go out
 
+## Milestone 231 — Number One's Note ✅ (Sep 2026)
+- [x] The chronicle carries a paragraph from Number One about the captain:
+      rescues against fights, the crew's state, the boards stood before
+
+## Milestone 232 — The Council Asks ✅ (Sep 2026)
+- [x] Freemen in a belt system get the council's question on the water tariff:
+      hold (belt up, faction down), fold for the clinic, or split it (a coin)
+
+## Milestone 233 — A Pod With an Officer in It ✅ (Sep 2026)
+- [x] A card: an officer from the far side of a border in a failing pod;
+      bring them aboard (rep with their people), tow the pod sealed, or log it
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

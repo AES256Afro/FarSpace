@@ -693,6 +693,11 @@ export function chronicleText(w: World, callsign: string | null): string {
     if ((p.postRuns ?? 0) || (p.convoys ?? 0) || (p.races ?? 0)) parts.push(`${p.postRuns ?? 0} mail bags, ${p.convoys ?? 0} convoys walked, ${p.races ?? 0} races run.`);
     if (parts.length) { lines.push(""); lines.push("The week:"); for (const x of parts) lines.push(`  ${x}`); }
   }
+  { const fo = firstOfficer(p); if (fo) { const kills = p.kills ?? 0, rescues = p.rescues ?? 0; const mood = Math.round(p.crew.reduce((a, c) => a + c.morale, 0) / Math.max(1, p.crew.length));
+    const verdict = rescues > kills * 2 ? "pulls people out of the black more than they put them in it, and the crew fly like they know it" : kills > rescues * 2 ? "fights more than I'd like and wins more than I'd expect; the crew have stopped flinching, which worries me more than the fighting" : "keeps the ship between the lanes and the wrecks, which is where a ship should be";
+    const crewLine = mood >= 70 ? "The crew would follow them through a gate with the lights off." : mood >= 45 ? "The crew are tired and say so, which is healthy." : "The crew are worn thin. I've said so. I'll say so again.";
+    const you = (p.inquiries ?? 0) ? ` We've buried ${p.inquiries === 1 ? "one" : String(p.inquiries)} and stood before the board for ${p.inquiries === 1 ? "them" : "each"}; the captain told it straight.` : "";
+    lines.push(""); lines.push(`Number One's note, ${fo.name}:`); lines.push(`  The captain ${verdict}. ${crewLine}${you}`); } }
   if ((p.log ?? []).length) { lines.push(""); lines.push("Captain's log, last entries:"); for (const e of (p.log ?? []).slice(-5).reverse()) lines.push(`  ${e.text}`); }
   if ((p.guestbook ?? []).length) { lines.push(""); lines.push("Guestbook, last signatures:"); for (const e of (p.guestbook ?? []).slice(-5).reverse()) lines.push(`  ${e.name} (${e.kind}), ${e.from} to ${e.to}: "${e.line}"`); }
   if (p.crew.length) { lines.push(""); lines.push("Crew aboard:"); for (const c of p.crew) lines.push(`  ${c.name}, ${ROLE_INFO[c.role].label.toLowerCase()}${c.specialty ? ` (${(SPECIALTIES[c.role].find((x) => x.id === c.specialty)?.name ?? c.specialty).toLowerCase()})` : ""}, skill ${c.skill}, ${c.docks ?? 0} dockings${c.trait ? `, ${c.trait}` : ""}.`); }

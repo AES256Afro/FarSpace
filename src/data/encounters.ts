@@ -7,7 +7,8 @@ import { hull } from "./hulls";
 import { RNG } from "../core/rng";
 import { addMaterials } from "./engineering";
 import { commodity, FACTIONS } from "./data";
-import { officeWrites, findStation as findStationW } from "../world";
+import { officeWrites, findStation as findStationW, isBeltStation } from "../world";
+const facNameW2 = (id: string): string => FACTIONS.find((f) => f.id === id)?.name ?? id;
 
 export interface EncounterOption {
   label: string;
@@ -399,6 +400,24 @@ export const ENCOUNTERS: Encounter[] = [
       { label: "ALL HANDS TO THE VENTS", hint: "Morale up; an hour lost; the envoy is grateful", result: (g) => { const env = passengersAboard(p(g)).find((m) => m.passengerKind === "envoy"); if (env) env.mood = Math.min(100, (env.mood ?? 60) + 15); for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 4); g.world.time += 600; logEntry(g.world, "All hands to the vents for an envoy's escaped companion"); return "AN HOUR OF THE WHOLE CREW ON THEIR KNEES AT DUCT GRILLES MAKING NOISES. IT COMES OUT FOR THE ENGINEER, FOR SOME REASON. THE ENVOY WEEPS. MORALE UP, THEIRS AND EVERYBODY'S."; } },
       { label: "LET THE CAT HANDLE IT", hint: "The cat finds it in a minute; the cat is unbearable after", requires: (g) => !!p(g).cat && !p(g).catAway, result: (g) => { const env = passengersAboard(p(g)).find((m) => m.passengerKind === "envoy"); if (env) env.mood = Math.min(100, (env.mood ?? 60) + 10); logEntry(g.world, `${p(g).cat!.name} found an envoy's escaped companion in the vents`); return `${p(g).cat!.name.toUpperCase()} GOES INTO DUCT FOUR AND COMES OUT OF DUCT ONE WITH THE THING WALKING BEHIND, CHASTENED. NOBODY KNOWS WHAT WAS SAID. THE ENVOY IS GRATEFUL. THE CAT IS INSUFFERABLE FOR A WEEK.`; } },
       { label: "SEAL THE VENTS AND WAIT", hint: "The envoy's mood falls; it comes out at the gate, eventually", result: (g) => { const env = passengersAboard(p(g)).find((m) => m.passengerKind === "envoy"); if (env) env.mood = Math.max(0, (env.mood ?? 60) - 15); return "IT COMES OUT AT THE GATE, THIN AND FURIOUS, AND SO IS THE ENVOY. THE TREATY, IF THERE IS ONE, WILL BE COLDER FOR IT."; } },
+    ],
+  },
+  {
+    id: "council", where: "space", weight: 3, title: "THE COUNCIL ASKS", when: (g) => !!p(g).flags?.freeman && sys(g).stations.some((st) => isBeltStation(st)),
+    text: "A tight-beam from the rock, council seal on it, which you've never seen used for anything but tariffs. 'FREEMAN. THE INNERS WANT THE WATER TARIFF DROPPED FOR THEIR HAULERS OR THEY PULL THE CLINIC CONTRACT. THREE ROCKS SAY HOLD. TWO SAY FOLD. YOU'RE THE ONE WHO FLIES BOTH SIDES. WHICH IS IT?'",
+    options: [
+      { label: "HOLD THE TARIFF", hint: "Belt standing up; rep down with the system's faction", result: (g) => { p(g).beltStanding = (p(g).beltStanding ?? 0) + 4; adjustRep(g.world, sys(g).factionId, -3); logEntry(g.world, "The council asked; told them to hold the water tariff"); (p(g).flags ??= {}).councilVote = true; return "'HOLD, THEN.' THE SEAL GOES DARK. THE ROCK HOLDS, THE INNERS SHOUT, THE CLINIC CONTRACT STAYS BECAUSE IT WAS ALWAYS GOING TO. THE BELT WRITES YOUR NAME IN THE MINUTES. THE INNERS WRITE IT SOMEWHERE ELSE."; } },
+      { label: "FOLD. KEEP THE CLINIC", hint: "Rep up with the faction; the belt notes it, and forgives it", result: (g) => { adjustRep(g.world, sys(g).factionId, 3); p(g).beltStanding = Math.max(0, (p(g).beltStanding ?? 0) - 1); logEntry(g.world, "The council asked; told them to fold on the water tariff for the clinic"); (p(g).flags ??= {}).councilVote = true; return "'FOLD.' A LONG PAUSE. 'THE CLINIC, THEN.' THE ROCK FOLDS AND THE CLINIC STAYS AND THE HAULERS GET THEIR WATER CHEAP, AND SOMEBODY ON THE COUNCIL SAYS 'THAT'S WHY WE ASKED AN INNER.' THEY DON'T MEAN IT UNKINDLY. MOSTLY."; } },
+      { label: "SPLIT IT. HALF TARIFF, CLINIC STAYS", hint: "A little of both; the council didn't ask for clever", result: (g, rng) => { (p(g).flags ??= {}).councilVote = true; if (rng.chance(0.5)) { p(g).beltStanding = (p(g).beltStanding ?? 0) + 2; adjustRep(g.world, sys(g).factionId, 1); logEntry(g.world, "The council asked; split the water tariff and it took"); return "'HALF.' A LONGER PAUSE. THEN, GRUDGING: 'THE INNERS WILL TAKE HALF. WE'LL TAKE HALF. NOBODY'S HAPPY. THAT'S A DEAL, THEN.' BOTH SIDES REMEMBER YOU, A LITTLE."; } logEntry(g.world, "The council asked; split the water tariff and nobody liked it"); return "'HALF.' THE SEAL GOES DARK WITHOUT AN ANSWER. THE ROCK HOLDS ANYWAY, THE INNERS PULL THE CONTRACT ANYWAY, AND THE COUNCIL DOESN'T ASK YOU AGAIN FOR A WHILE. CLEVER ISN'T A SIDE."; } },
+    ],
+  },
+  {
+    id: "survivorpod", where: "space", weight: 2, title: "A POD WITH AN OFFICER IN IT",
+    text: "An escape pod on a slow tumble, beacon weak, one heartbeat on the scanner. The transponder is a navy code, and not the navy of anyone whose stations you've docked at lately: the far side of a border, an officer's rank on the pod's plate. They'll live an hour. Maybe two.",
+    options: [
+      { label: "BRING THEM ABOARD", hint: "A life; rep with their faction, wherever it is; a berth used for a leg", result: (g, rng) => { const facs = FACTIONS.map((f) => f.id).filter((f) => f !== sys(g).factionId); const f = facs.length ? rng.pick(facs) : sys(g).factionId; adjustRep(g.world, f, 5); p(g).lives = (p(g).lives ?? 0) + 1; for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 2); logEntry(g.world, `Pulled an officer of the ${facNameW2(f)} out of a pod`); return `THE POD COMES INTO THE LOCK STILL TUMBLING AND THE OFFICER COMES OUT OF IT ON THEIR FEET, JUST, AND SALUTES A MERCHANT'S DECK BECAUSE IT'S THE DECK THEY'RE ON. ONE LIFE. THE ${facNameW2(f).toUpperCase()} WILL HEAR. THEY'LL EAT WITH THE CREW AND ARGUE ABOUT EVERYTHING.`; } },
+      { label: "TOW THE POD TO THE NEAREST STATION", hint: "Slower; rep here instead, and the officer's people still hear", result: (g) => { adjustRep(g.world, sys(g).factionId, 2); p(g).lives = (p(g).lives ?? 0) + 1; p(g).tows = (p(g).tows ?? 0) + 1; g.world.time += 600; logEntry(g.world, "Towed an officer's pod to the clamp, sealed"); return "YOU TOW THE POD SEALED AND HAND IT TO THE HARBOURMASTER, WHO OPENS IT WITH THE MARINES WATCHING. ONE LIFE, AND A DIPLOMATIC INCIDENT THAT ISN'T YOURS. TEN MINUTES GONE."; } },
+      { label: "LOG THE BEACON AND FLY ON", hint: "Somebody with a warship will come; maybe in time", result: (g) => { p(g).expData = (p(g).expData ?? 0) + 10; for (const c of p(g).crew) c.morale = Math.max(0, c.morale - 3); return "YOU BOOST THE BEACON AND FILE ITS TRACK AND FLY ON, AND NOBODY ON THE BRIDGE SAYS THE WORD 'HOUR'. +10 DATA. MORALE DOWN."; } },
     ],
   },
   {
