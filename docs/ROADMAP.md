@@ -1842,6 +1842,16 @@ Time passes for the people on the ship, and for the ship.
 - [x] Newsletter lines for the Number One who has a ship and the singers'
       home
 
+## Milestone 369 — Tests for the Third Sitting ✅ (Sep 2026)
+- [x] Command offers, words learned, and the singers' chart under test
+
+## Milestone 370 — The Crew Page Catches Up ✅ (Sep 2026)
+- [x] A handbook line for the command offer, cadets and the away partner
+
+## Milestone 371 — Read to 0.224 ✅ (Sep 2026)
+- [x] What's New and the README's second-sitting paragraph carry the night's
+      later work
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

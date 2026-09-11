@@ -1,7 +1,7 @@
 // The second sitting (M201–M314): the pure functions behind the bridge, the belt, the service and life aboard.
 import { describe, it, expect } from "vitest";
 import { RNG } from "../src/core/rng";
-import { generateWorld, genCrewCandidate, inquiryDue, transferRequest, leavePair, anniversaryDue, birthdaysDue, droughtAt, fleetReviewAt, shipNewsletter, prisonerOutcome, systemLabel, dedication, officeWrites, birthdaysDue as bdays, shiftBond, briefingReports, firstOfficer, isBeltStation, genFares, genMissionsFor, MOTTOS, SYSTEM_NICKS, runSim, hashStr as _h } from "../src/world";
+import { commandOffer, learnWord, chartSingersHome, generateWorld, genCrewCandidate, inquiryDue, transferRequest, leavePair, anniversaryDue, birthdaysDue, droughtAt, fleetReviewAt, shipNewsletter, prisonerOutcome, systemLabel, dedication, officeWrites, birthdaysDue as bdays, shiftBond, briefingReports, firstOfficer, isBeltStation, genFares, genMissionsFor, MOTTOS, SYSTEM_NICKS, runSim, hashStr as _h } from "../src/world";
 
 const mk = () => { const w = generateWorld(0xfa25face); const p = w.player; const rng = new RNG(7); for (let i = 0; i < 3; i++) { const c = genCrewCandidate(rng); c.docks = 5; p.crew.push(c); } return { w, p, rng }; };
 
@@ -66,6 +66,16 @@ describe("the second sitting", () => {
     expect(back.player.numberOne).toBe(p.numberOne); expect(back.player.systemNicks?.reactor).toBe("Doris"); expect(back.mailQueue?.length).toBe(w.mailQueue?.length);
     expect(() => { briefingReports(back); shipNewsletter(back); dedication(back); anniversaryDue(back); birthdaysDue(back); leavePair(back); transferRequest(back); }).not.toThrow();
     expect(systemLabel(back.player, back.player.systems[0])).toContain("DORIS");
+  });
+  it("the third sitting: command offers, words, and the singers' chart", () => {
+    const { w, p } = mk();
+    expect(commandOffer(w)).toBeNull();
+    p.numberOne = p.crew[0].name; p.crew[0].docks = 14; p.crew[0].loyalty = 2.5; p.achievements = Array.from({ length: 30 }, (_, i) => `d${i}`);
+    expect(commandOffer(w)?.name).toBe(p.crew[0].name);
+    (p.flags ??= {})[`offer:${p.crew[0].name}`] = true; expect(commandOffer(w)).toBeNull();
+    expect(learnWord(p, "hello")).toMatch(/WORD LEARNED/); expect(learnWord(p, "hello")).toBeNull(); expect(p.words).toEqual(["hello"]);
+    const home = chartSingersHome(w, new RNG(3)); expect(home).toBeTruthy(); expect(home).not.toBe(p.systemId); expect(w.systems[home!].links).not.toContain(p.systemId);
+    expect(chartSingersHome(w, new RNG(4))).toBe(home);
   });
   it("observation, emergency and freeman runs generate with their fields", () => {
     const { w, p } = mk(); const stations = Object.values(w.systems).flatMap((s) => s.stations);

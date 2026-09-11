@@ -102,7 +102,7 @@ that sings in no known tongue, a visitor on the bridge, a loop, a sim rig
 stuck on a western, talent night, the lounge at war. The unnamed traffic hails
 as it passes and everybody has a word about the cat.
 
-**The second sitting.** The belt has freemen, droughts, a council with minutes and a long ship taking donations; the service has boards of inquiry, prisoner transfers, emergencies, fleet reviews and transfer requests; the office of anomalous incidents and the survey's board of ethics write letters; and aboard there are card and talent nights, wakes, birthdays, the captain's table, a plaque with a motto, a newsletter on the galley door, an undock word the helm answers, the engineer's names for the systems, a counsellor who knocks, a cadet who vents the wrong tank, and a Number One who objects once, for the log, and takes the ship for a leg when asked.
+**The second sitting.** The belt has freemen, droughts, a council with minutes and a long ship taking donations; the service has boards of inquiry, prisoner transfers, emergencies, fleet reviews and transfer requests; the office of anomalous incidents and the survey's board of ethics write letters; and aboard there are card and talent nights, wakes, birthdays, the captain's table, a plaque with a motto, a newsletter on the galley door, an undock word the helm answers, the engineer's names for the systems, a counsellor who knocks, a cadet who vents the wrong tank, and a Number One who objects once, for the log, and takes the ship for a leg when asked. Later the same night: the long leg, a service cutter for commodores, the singers' home at the end of a chart, words learned from the ones who don't use ours, an away partner for every landing, a hearing over the rule, the seconds' bar, and Number One offered a command of their own.
 
 **Keeping.** Postcards on F7, a chronicle you can read in-game or export,
 achievements and four career ladders to ELITE, a home port, museums that take
@@ -137,7 +137,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestones 1–368 are live (v0.223.0). See the [roadmap](docs/ROADMAP.md) for what's next.
+Milestones 1–371 are live (v0.224.0). See the [roadmap](docs/ROADMAP.md) for what's next.
 
 ```bash
 npm test         # vitest: world-gen, routing, economy, law, missions, save migrations
