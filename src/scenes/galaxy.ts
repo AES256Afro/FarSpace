@@ -1,7 +1,7 @@
 // Galaxy map: systems, territories, wars, links with distances, fuel-aware
 // course plotting with refuel stops highlighted.
 
-import { infraAt, infraLit, stormBlind, wondersIn } from "../world";
+import { infraAt, infraLit, stormBlind, wondersIn, borderContest, borderStanding } from "../world";
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
@@ -154,6 +154,7 @@ export class GalaxyScene implements Scene {
         ctx.fillStyle = PAL.gold; ctx.fillRect(Math.round(x) + 4, Math.round(y) - 4, 2, 2);
       }
       if (w.player.bookmarks?.includes(sys.id)) { ctx.fillStyle = PAL.gold; ctx.fillRect(Math.round(x) - 6, Math.round(y) - 6, 2, 2); ctx.fillRect(Math.round(x) + 4, Math.round(y) - 6, 2, 2); }
+      { const bc = borderContest(w); if (bc && bc.systemId === sys.id) { ctx.strokeStyle = Math.floor(w.time * 2) % 2 ? PAL.danger : PAL.warn; ctx.strokeRect(Math.round(x) - 8.5, Math.round(y) - 8.5, 17, 17); } }
       if (this.layers) { const wd = wondersIn(w, sys.id)[0]; if (wd && (wd.seen || w.player.flags?.[`rumour:${wd.id}`])) { ctx.fillStyle = PAL.gold; ctx.fillRect(Math.round(x) + 6, Math.round(y) + 4, 2, 2); ctx.fillRect(Math.round(x) + 7, Math.round(y) + 3, 1, 1); } }
       if (this.layers && w.realGalaxy && wire.lightsAt(sys.name).length) { ctx.fillStyle = PAL.info; ctx.fillRect(Math.round(x) - 9, Math.round(y) + 4, 2, 2); }
       if (this.layers) { const inf = infraAt(w, sys.id); if (inf.length) { const lit = inf.some(infraLit); if (lit && Math.floor(w.time * 1.5) % 2 === 0) { ctx.fillStyle = "#ffe9a0"; ctx.fillRect(Math.round(x) - 1, Math.round(y) - 9, 3, 3); } else if (!lit) { ctx.fillStyle = PAL.danger; ctx.fillRect(Math.round(x), Math.round(y) - 9, 2, 2); } } }
@@ -178,6 +179,7 @@ export class GalaxyScene implements Scene {
       const pir = sys.pirateActivity;
       drawText(ctx, `PIRACY: ${pir > 0.6 ? "SEVERE" : pir > 0.3 ? "MODERATE" : "LOW"}`, px + 6, y, pir > 0.6 ? PAL.danger : pir > 0.3 ? PAL.warn : PAL.good); y += 9;
       if (w.wars.some((ww) => ww.systemId === sys.id)) { drawText(ctx, "ACTIVE WAR ZONE", px + 6, y, PAL.danger); y += 9; }
+      { const bs = borderStanding(w); if (bs && bs.c.systemId === sys.id) { drawText(ctx, `CONTESTED THIS WEEK`, px + 6, y, PAL.warn); y += 9; drawText(ctx, `${faction(bs.c.incumbent).name.split(" ")[0].toUpperCase()} ${bs.inc} V ${faction(bs.c.challenger).name.split(" ")[0].toUpperCase()} ${bs.chal}`.slice(0, 27), px + 6, y, PAL.grey); y += 9; if (bs.yoursInc || bs.yoursChal) { drawText(ctx, `YOUR PUSH: ${bs.yoursInc ? `+${bs.yoursInc} HOLD` : ""}${bs.yoursInc && bs.yoursChal ? " " : ""}${bs.yoursChal ? `+${bs.yoursChal} FLIP` : ""}`.slice(0, 27), px + 6, y, PAL.gold); y += 9; } } }
       if (sys.permit) { drawText(ctx, permitDenied(w, sys.id) ? "PERMIT SPACE: ALLIED ONLY" : "PERMIT SPACE: YOU'RE CLEARED", px + 6, y, permitDenied(w, sys.id) ? PAL.warn : PAL.good); y += 9; }
       if (w.synWar && w.synWar.systemId === sys.id) { drawText(ctx, `SYNDICATE WAR: [${w.synWar.attacker}] VS [${w.synWar.defender}]`, px + 6, y, PAL.danger); y += 9; }
       if (w.crisis && w.crisis.systemId === sys.id && w.crisis.delivered < w.crisis.need && w.time < w.crisis.until) { drawText(ctx, `CRISIS: ${w.crisis.need - w.crisis.delivered} ${commodity(w.crisis.commodityId).name.toUpperCase()} NEEDED`, px + 6, y, PAL.danger); y += 9; }

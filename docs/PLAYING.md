@@ -229,6 +229,15 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## The border
+
+- Every week one system on a seam between two factions is contested; the
+  galaxy map flags it and shows the standing. Deliveries, fares and mail
+  landed there, votes cast there and stakes bought there all push for the
+  station's faction. On Monday the house lean plus the captains' pushes
+  settles it: hold, or change hands, stations and all. Push for the winning
+  side and it remembers you.
+
 ## Second stories
 
 - Every role now has two personal stories, and which one a crew member

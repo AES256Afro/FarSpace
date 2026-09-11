@@ -2,7 +2,7 @@
 // your standing is your weight. Whatever passes shapes the lanes until Monday.
 
 import type { World } from "../world";
-import { weekKey, adjustRep, logEntry } from "../world";
+import { weekKey, adjustRep, logEntry, pushInfluence } from "../world";
 import { faction } from "./data";
 import { hashStr } from "../core/rng";
 
@@ -36,6 +36,7 @@ export function castVote(w: World, factionId: string, yes: boolean, now = Date.n
   const k = key(factionId, now);
   if (p.votes?.[k]) return "YOU'VE VOTED THIS WEEK. THE COUNT STANDS.";
   (p.votes ??= {})[k] = yes ? "yes" : "no";
+  pushInfluence(w, p.systemId, factionId, 2, now);
   const r = voteResult(w, factionId, now);
   const issue = weeklyIssue(w, factionId, now);
   const withHouse = (r.passed && yes) || (!r.passed && !yes);

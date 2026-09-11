@@ -310,6 +310,7 @@ export interface PlayerState {
   votes?: Record<string, "yes" | "no">; // "<week>:<faction>" -> how you voted
   mayday?: { system: string; t: number } | null; // your own mayday on the wire, until somebody answers it
   racesUnderPar?: number;            // ring races finished under par
+  influence?: Record<string, number>; // "<week>:<system>:<faction>" -> your push in this week's border contest
   messes?: number;                   // mess calls you sat down for
   mealsCooked?: number;              // galley meals you cooked
   vistaViews?: number;               // times you looked out of the viewport
@@ -1105,6 +1106,58 @@ export function racePar(gates: { x: number; y: number }[]): number {
 export function racePrize(t: number, par: number): number {
   return Math.round(250 + (t <= par ? 200 : 0) + Math.max(0, par - t) * 25);
 }
+// The border: every week one system on a faction seam is contested. The house lean of each side plus
+// what captains do there (deliveries, votes, stakes) decides it on Monday; if the challenger wins, the
+// system and its stations change hands. Your push is remembered and rewarded by the side that took it.
+export function borderContest(w: World, now = Date.now()): { systemId: string; incumbent: string; challenger: string } | null {
+  const wk = weekKey(now);
+  const seams = Object.values(w.systems).filter((s) => s.factionId && s.factionId !== "vex" && s.stations.length && s.links.some((l) => { const o = w.systems[l]; return o && o.factionId && o.factionId !== "vex" && o.factionId !== s.factionId; }));
+  if (!seams.length) return null;
+  const sys = seams[hashStr(`border:${wk}:${w.seed}`) % seams.length];
+  const rivals = [...new Set(sys.links.map((l) => w.systems[l]?.factionId).filter((f): f is string => !!f && f !== "vex" && f !== sys.factionId))];
+  if (!rivals.length) return null;
+  return { systemId: sys.id, incumbent: sys.factionId!, challenger: rivals[hashStr(`chal:${wk}:${sys.id}`) % rivals.length] };
+}
+export function pushInfluence(w: World, systemId: string, factionId: string, n: number, now = Date.now()): boolean {
+  const c = borderContest(w, now);
+  if (!c || c.systemId !== systemId || (factionId !== c.incumbent && factionId !== c.challenger)) return false;
+  const k = `${weekKey(now)}:${systemId}:${factionId}`;
+  (w.player.influence ??= {})[k] = ((w.player.influence ?? {})[k] ?? 0) + n;
+  return true;
+}
+export function borderStanding(w: World, now = Date.now()): { c: { systemId: string; incumbent: string; challenger: string }; inc: number; chal: number; yoursInc: number; yoursChal: number } | null {
+  const c = borderContest(w, now); if (!c) return null;
+  const wk = weekKey(now);
+  const lean = 8 + (hashStr(`lean:${wk}:${c.systemId}`) % 9); // the house: 8..16 for the incumbent
+  const push = 6 + (hashStr(`push:${wk}:${c.systemId}`) % 9); // the challenger's own effort: 6..14
+  const yoursInc = w.player.influence?.[`${wk}:${c.systemId}:${c.incumbent}`] ?? 0;
+  const yoursChal = w.player.influence?.[`${wk}:${c.systemId}:${c.challenger}`] ?? 0;
+  return { c, inc: lean + yoursInc, chal: push + yoursChal, yoursInc, yoursChal };
+}
+// Called at a dock: settles any week that has ended since the last time
+export function resolveBorder(w: World, now = Date.now()): string | null {
+  const wk = weekKey(now);
+  if (w.borderWeek === wk) return null;
+  const prevWeek = w.borderWeek;
+  w.borderWeek = wk;
+  if (!prevWeek) return null;
+  const prevNow = new Date(prevWeek + "T12:00:00Z").getTime();
+  const st = borderStanding(w, prevNow); if (!st) return null;
+  const sys = w.systems[st.c.systemId]; if (!sys) return null;
+  const flipped = st.chal > st.inc;
+  const yours = flipped ? st.yoursChal : st.yoursInc;
+  if (flipped) { sys.factionId = st.c.challenger; for (const s2 of sys.stations) s2.factionId = st.c.challenger; }
+  (w.borderLog ??= []).push({ week: prevWeek, systemId: sys.id, from: st.c.incumbent, to: st.c.challenger, flipped, yours });
+  if (w.borderLog.length > 12) w.borderLog.shift();
+  const winner = flipped ? st.c.challenger : st.c.incumbent;
+  if (yours > 0) adjustRep(w, winner, Math.min(10, 2 + yours));
+  const text = flipped ? `${sys.name} changes hands: the ${facName(st.c.challenger)} take it from the ${facName(st.c.incumbent)}` : `${sys.name} holds: the ${facName(st.c.incumbent)} see off the ${facName(st.c.challenger)}`;
+  w.news.unshift({ headline: text.toUpperCase().slice(0, 60), body: `${text}. ${yours ? `Captains who pushed for the winning side, you among them, are remembered.` : "The captains who pushed for it are remembered."}` });
+  if (w.news.length > 12) w.news.pop();
+  logEntry(w, text + (yours ? ` (your push: ${yours})` : ""));
+  return `THE BORDER: ${text.toUpperCase()}${yours ? ` - YOUR PUSH COUNTED. STANDING UP WITH THE ${facName(winner).toUpperCase()}` : ""}`;
+}
+
 // Stakes: buy into a station. Shares cost what the place is worth; every docking there pays a dividend
 // on what it's doing, and the crowd starts calling you one of the owners.
 export const STAKE_CAP = 50;
@@ -1129,6 +1182,7 @@ export function buyStake(w: World, st: StationDef, n: number): string {
   if (p.credits < cost) return `${n} SHARE${n > 1 ? "S" : ""} HERE COSTS ${cost}CR. YOU'RE SHORT`;
   p.credits -= cost; ledger(p, "stakes", -cost);
   (p.stakes ??= {})[st.id] = held + n;
+  { const sys = findStation(w, st.id)?.sys; if (sys) pushInfluence(w, sys.id, st.factionId, n); }
   if (held === 0) logEntry(w, `Bought into ${st.name}`);
   return `${n} SHARE${n > 1 ? "S" : ""} IN ${st.name.toUpperCase()} FOR ${cost}CR. ${held + n} HELD`;
 }
@@ -1528,6 +1582,8 @@ export interface World {
   captains?: NpcCaptain[];           // the recurring pilots of this galaxy, who remember you
   notables?: Notable[];              // a few people whose journeys matter: a senator, an heir, a singer
   mailQueue?: Letter[];              // letters on their way, delivered at a dock after dueT
+  borderWeek?: string;               // the last week whose border contest was resolved
+  borderLog?: { week: string; systemId: string; from: string; to: string; flipped: boolean; yours: number }[];
   serialsSeen?: string[];
   serialTick?: number;
   greenTick?: number;

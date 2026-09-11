@@ -15,7 +15,7 @@ import { STARS, starDistance } from "../src/data/stars";
 import { ACHIEVEMENTS } from "../src/data/achievements";
 import { ARCS, dailyContract, dailyKey, rankOf, logSystem, applyHull } from "../src/world";
 import { MODULES } from "../src/data/modules";
-import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook, leaveWreck, addWireWrecks, enterRegatta, regattaObjective, regattaProgress, buyStake, collectStake, stakePrice, STAKE_CAP, hasSpecialty, chooseSpecialty, wearRate, crewOwnHull, OWN_HULL_CREW_FEE, maydayAnswered, favourFor, favourDone } from "../src/world";
+import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook, leaveWreck, addWireWrecks, enterRegatta, regattaObjective, regattaProgress, buyStake, collectStake, stakePrice, STAKE_CAP, hasSpecialty, chooseSpecialty, wearRate, crewOwnHull, OWN_HULL_CREW_FEE, maydayAnswered, favourFor, favourDone, borderContest, pushInfluence, borderStanding, resolveBorder } from "../src/world";
 import { RARES } from "../src/data/data";
 import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
@@ -953,6 +953,29 @@ describe("second stories", () => {
     expect(def.stages[1].check(g, c)).toBe(false);
     w.player.vistaViews = 1;
     expect(def.stages[1].check(g, c)).toBe(true);
+  });
+});
+
+describe("the border", () => {
+  it("one seam system a week; pushes count; Monday settles it and can flip the system", () => {
+    const w = generateWorld(39, { realGalaxy: true });
+    const at = Date.UTC(2026, 8, 9, 12);
+    const c = borderContest(w, at)!;
+    expect(c).toBeTruthy(); expect(c.incumbent).not.toBe(c.challenger);
+    expect(borderContest(w, at + 3600_000)!.systemId).toBe(c.systemId);
+    expect(pushInfluence(w, c.systemId, "nobody", 1, at)).toBe(false);
+    expect(pushInfluence(w, c.systemId, c.challenger, 40, at)).toBe(true);
+    const st = borderStanding(w, at)!;
+    expect(st.yoursChal).toBe(40); expect(st.chal).toBeGreaterThan(st.inc);
+    w.borderWeek = "2026-09-07";
+    const later = Date.UTC(2026, 8, 16, 12);
+    const line = resolveBorder(w, later);
+    expect(line).toContain("CHANGES HANDS");
+    expect(w.systems[c.systemId].factionId).toBe(c.challenger);
+    expect(w.systems[c.systemId].stations.every((x) => x.factionId === c.challenger)).toBe(true);
+    expect(w.player.rep[c.challenger]).toBeGreaterThan(0);
+    expect(resolveBorder(w, later)).toBeNull();
+    expect(w.borderLog!.length).toBe(1);
   });
 });
 

@@ -707,4 +707,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] A second crew arc per role, about races, mess call, the viewport,
       maydays and the vote
 
+## Milestone 86 — The Border ✅ (Sep 2026)
+- [x] A weekly contested seam system; deliveries, votes and stakes push;
+      Monday settles it and can flip the system's faction
+
 ## Later
