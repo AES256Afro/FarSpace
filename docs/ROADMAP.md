@@ -1794,6 +1794,18 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 356 — The Commission in the Handbook ✅ (Sep 2026)
 - [x] A handbook line under the bridge for the cutter
 
+## Milestone 357 — The Name Taken Back ✅ (Sep 2026)
+- [x] A freeman whose belt standing falls too far loses the name at the next
+      clamp (a letter, the inners' yard rate); earn it back and the belt says
+      twice is rarer (a deed)
+
+## Milestone 358 — A Certificate of Compliance ✅ (Sep 2026)
+- [x] Signing the office's form earns its first certificate, framed, aboard
+
+## Milestone 359 — Standing in the Chronicle ✅ (Sep 2026)
+- [x] The chronicle's Standing paragraph: rank by deeds, belt standing,
+      ribbons, boards, hearings, prisoners, people carried out
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

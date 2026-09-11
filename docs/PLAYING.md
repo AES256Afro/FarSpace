@@ -752,6 +752,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- Freemen who let their belt standing fall too far lose the name at the next
+  clamp, with a letter and the inners' yard rate. Earn it back and the belt
+  says twice is rarer than once.
+- Sign the office's form and its first certificate of compliance comes with
+  the reply, framed.
+- The chronicle has a Standing paragraph: rank by deeds, belt standing,
+  ribbons, boards of inquiry, hearings, prisoners delivered, people carried
+  out of bad weeks.
 - At commodore rank, undocking from a naval station puts a service cutter on
   your quarter for the leg: it shadows the ship, engages corsairs, and peels
   off at the gate with a word.

@@ -145,6 +145,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "inspection", title: "A GOOD SHIP", desc: "Pass an inspection with three marks of four", check: (w) => !!w.player.flags?.inspection },
   { id: "freeman", title: "FREEMAN OF THE BELT", desc: "Earn a standing of three with the rocks", check: (w) => !!w.player.flags?.freeman },
   { id: "requisition", title: "COURTESY OF THE SERVICE", desc: "Requisition a full service at a naval station", check: (w) => !!w.player.flags?.requisition },
+  { id: "freemanTwice", title: "TWICE IS RARER", desc: "Earn the freeman's name back after losing it", check: (w) => !!w.player.flags?.freemanTwice },
   { id: "navalescort", title: "AS FAR AS THE GATE", desc: "Leave a naval station with a service cutter on your quarter", check: (w) => !!w.player.flags?.navalescort },
   { id: "singershome", title: "THE ROLL-CALL", desc: "Reach the singers' home", check: (w) => !!w.player.flags?.singershome },
   { id: "words", title: "NOT OURS", desc: "Learn a word from the singers or the quiet ones", check: (w) => !!w.player.flags?.words },
