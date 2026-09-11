@@ -25,8 +25,14 @@ exterior salvage alongside the existing generated boarding interiors.
   Browser checks used temporary voyages with storage intercepted in memory
   and online requests disabled. No actual saves or identity settings changed.
   Physical touch and gamepad checks remain unperformed.
-- Release publication and live verification are pending. Bigbox and the
-  BoxPilot catalog PR remain outside this update.
+- Published as `fcb029292df2842f3d6049b5c01bd231e22c7086`, tag `v0.259.0`.
+  CI `34657574910` passed, including Cloudflare deployment. Container run
+  `34657574848` passed. The hosted title displays v0.259.0; live JS and CSS
+  hashes match the tested build. The health endpoint returned ok.
+- JavaScript: `index-CFCvbOmC.js`. CSS: `index-DLwGHPCy.css`. The work log
+  records hashes and browser evidence. Dev5199 runs v0.259.0; temporary
+  fixtures and the production preview on 5198 are closed. Bigbox and the
+  BoxPilot catalog PR were not changed.
 
 ## Previous checkpoint: v0.258.0
 
