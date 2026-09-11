@@ -403,6 +403,15 @@ export const ENCOUNTERS: Encounter[] = [
     ],
   },
   {
+    id: "wake", where: "space", weight: 6, title: "A WAKE", when: (g) => (p(g).lost ?? []).length > (p(g).wakes ?? 0) && p(g).crew.length >= 1,
+    text: (() => "Somebody has put the galley table against the bulkhead and a cup on it that nobody's drinking from. The crew are standing around it not quite looking at each other. It isn't a meeting. Nobody called it. It's the thing that happens on a ship when there's a name that isn't on the roster any more.")(),
+    options: [
+      { label: "SAY THE NAME. SAY SOMETHING", hint: "Morale and loyalty up; a log line; the ship goes quiet after", result: (g) => { const lost = (p(g).lost ?? [])[p(g).wakes ?? 0]; p(g).wakes = (p(g).wakes ?? 0) + 1; for (const c of p(g).crew) { c.morale = Math.min(100, c.morale + 8); c.loyalty = (c.loyalty ?? 0) + 0.2; } (p(g).flags ??= {}).wake = true; logEntry(g.world, `Held a wake in the galley for ${lost?.name ?? "the one we lost"}`); return `YOU SAY ${(lost?.name ?? "THE NAME").toUpperCase()}, AND WHAT THEY WERE FOR, AND THE ONE STORY EVERYBODY KNOWS AND ONE THEY DON'T. THE ENGINEER CRIES. THE GUNNER DOESN'T, WHICH IS WORSE. THE CUP STAYS ON THE TABLE UNTIL THE NEXT PORT. MORALE UP, THE STRANGE WAY.`; } },
+      { label: "STAND WITH THEM AND SAY NOTHING", hint: "Morale up a little; sometimes that's the job", result: (g) => { p(g).wakes = (p(g).wakes ?? 0) + 1; for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 4); return "YOU STAND AT THE TABLE WITH THEM UNTIL SOMEBODY ELSE SPEAKS, AND SOMEBODY DOES, AND THEN EVERYBODY DOES. THE CUP STAYS. MORALE UP, A LITTLE."; } },
+      { label: "WE HAVE A COURSE. BACK TO STATIONS", hint: "Morale and loyalty down; they'll hold it themselves, later, without you", result: (g) => { p(g).wakes = (p(g).wakes ?? 0) + 1; for (const c of p(g).crew) { c.morale = Math.max(0, c.morale - 6); c.loyalty = (c.loyalty ?? 0) - 0.2; } return "THEY GO BACK TO STATIONS. THE CUP IS GONE FROM THE TABLE BY THE NEXT WATCH, AND YOU DON'T KNOW WHO MOVED IT, AND YOU WON'T BE TOLD."; } },
+    ],
+  },
+  {
     id: "corona", where: "space", weight: 2, title: "A HULL IN THE CORONA",
     text: "A mayday from sunward, where nobody flies on purpose: a survey cutter with a dead drive, falling into the star's outer corona a little faster every minute. Three aboard. The scanner paints the heat between you and them in a colour it doesn't usually use.",
     options: [

@@ -1356,6 +1356,19 @@ Time passes for the people on the ship, and for the ship.
       Number One, or the ship answers it on the band; cards must have unique
       ids (a test)
 
+## Milestone 243 — A Wake ✅ (Sep 2026)
+- [x] After a crew member is lost the galley holds a wake: say the name
+      (morale, loyalty, a log line), stand with them, or send them to stations
+
+## Milestone 244 — Talent Night ✅ (Sep 2026)
+- [x] With three fit crew and a galley, once a week: three acts by role, the
+      captain judges (morale, bonds), or calls a draw and the ship says coward
+
+## Milestone 245 — The Board of Ethics ✅ (Sep 2026)
+- [x] The survey's board of ethics writes once after a first contact broken
+      (a child drew your lander) and once after one kept (a grant; they
+      invented the wheel)
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

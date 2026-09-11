@@ -4,7 +4,7 @@
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond, onWatch, watchIndex, captainNickname, borderStanding, passengersFed, cookMeal, briefingReports, setFocus, runSim, SIM_PROGRAMS, nameTheShip, weekKey, dedication, MOTTOS, stardate, birthdaysDue, shipNewsletter } from "../world";
+import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond, onWatch, watchIndex, captainNickname, borderStanding, passengersFed, cookMeal, briefingReports, setFocus, runSim, SIM_PROGRAMS, nameTheShip, weekKey, dedication, MOTTOS, stardate, birthdaysDue, shipNewsletter, shiftBond } from "../world";
 import { commodity, faction } from "../data/data";
 import { crewChatter, soloChatter, MESS_LINES, passengerChatter } from "../data/chatter";
 import { RNG } from "../core/rng";
@@ -266,6 +266,25 @@ export class InteriorScene implements Scene {
         ...picks.map((m: string) => ({ label: `"${m.toUpperCase()}"`, result: (g2: Game) => set(g2, m) })),
         { label: "WRITE YOUR OWN", hint: "Up to forty characters", result: (g2) => { const m = (ask("The engraver waits with the pencil. What goes on the plaque?", p.motto ?? "") ?? "").trim().slice(0, 40); if (!m) return "THE LINE STAYS BLANK. THE ENGRAVER SAYS THAT'S A CHOICE TOO."; return set(g2, m); } },
         { label: "LEAVE IT BLANK", result: () => "YOU LEAVE IT. THE ENGRAVER NODS LIKE MOST DO." },
+      ] };
+    (g.scenes["encounter"] as EncounterScene).open(g, enc, "interior", true);
+  }
+  // talent night: three fit crew, a galley, and the captain as the judge nobody asked for
+  talentNight(g: Game): void {
+    const p = g.world.player; const key = `talent:${weekKey()}`; const rng = new RNG(Math.floor(g.world.time * 5) + 3);
+    const fit = p.crew.filter((c) => !c.sick); const acts = [...fit].sort(() => rng.chance(0.5) ? 1 : -1).slice(0, 3);
+    const ACT: Record<string, string[]> = {
+      pilot: ["FLIES THE SHIP THROUGH A RING OF SPOONS, BLINDFOLD, IN THE SIM", "DOES EVERY PORT CONTROL VOICE ON THE LINE, IN ORDER"],
+      engineer: ["PLAYS THE DECK PLATES LIKE A DRUM KIT, WITH THE HUM AS THE BASS", "TAKES A COFFEE MACHINE APART AND PUTS IT BACK TOGETHER AS A CLOCK"],
+      medic: ["RECITES THE SHIP'S ENTIRE MEDICAL LOG AS A LOVE POEM", "DOES A DEADPAN LECTURE ON THE CAPTAIN'S POSTURE"],
+      gunner: ["SINGS. NOBODY KNEW. NOBODY WILL FORGET", "JUGGLES THREE SHIELD CELLS AND A CUP OF TEA"],
+    };
+    const lines = acts.map((c) => `${c.name.split(" ")[0].toUpperCase()} ${rng.pick(ACT[c.role] ?? ACT.pilot)}.`);
+    const enc: Encounter = { id: "talent", where: "space", title: "TALENT NIGHT", weight: 0,
+      text: `The galley's been cleared again, and this time there's a sheet up and a torch for a spotlight. Three acts. You're the judge, because somebody has to be and the ship recused itself.\n\n${lines.join("\n")}`,
+      options: [
+        ...acts.map((c) => ({ label: `THE WINNER: ${c.name.split(" ")[0].toUpperCase()}`, hint: "Their morale up most; everybody's up a little", result: (g2: Game) => { (p.flags ??= {})[key] = true; c.morale = Math.min(100, c.morale + 8); c.loyalty = (c.loyalty ?? 0) + 0.2; for (const o of fit) if (o !== c) o.morale = Math.min(100, o.morale + 3); for (const o of fit) if (o !== c) shiftBond(c, o, 0.05); flag(g2, "talent"); logEntry(g2.world, `Talent night in the galley; ${c.name} took it`); return `${c.name.split(" ")[0].toUpperCase()} TAKES IT, TO BOOING FROM THE OTHER TWO THAT IS ENTIRELY AFFECTIONATE. THE PRIZE IS THE LAST OF THE RATION SUGAR. MORALE UP ALL ROUND.`; } })),
+        { label: "A DRAW. EVERYBODY WINS", hint: "Everybody up a little; nobody believes you", result: (g2) => { (p.flags ??= {})[key] = true; for (const o of fit) o.morale = Math.min(100, o.morale + 4); flag(g2, "talent"); return "A DRAW. THE GALLEY GROANS. THE SHIP, WHICH RECUSED ITSELF, SAYS 'COWARD' ON THE BAND, AND THEN 'SORRY', AND THEN 'NOT SORRY'."; } },
       ] };
     (g.scenes["encounter"] as EncounterScene).open(g, enc, "interior", true);
   }
@@ -662,6 +681,9 @@ export class InteriorScene implements Scene {
           this.say("YOU SLEEP. 60S PASS. +10 HULL, SHIELDS AND O2 RESTORED");
         } else if (near.ch === "K" && p.crew.filter((c) => !c.sick).length >= 2 && !(p.flags ?? {})[`cards:${weekKey()}`]) {
           this.cardNight(g);
+          return;
+        } else if (near.ch === "K" && p.crew.filter((c) => !c.sick).length >= 3 && !(p.flags ?? {})[`talent:${weekKey()}`]) {
+          this.talentNight(g);
           return;
         } else if (near.ch === "K") {
           const meal = cookMeal(p);

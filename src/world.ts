@@ -351,6 +351,7 @@ export interface PlayerState {
   lostProperty?: LostItem[];         // what fares left in the cabin; hand it in, or keep it
   keepsakes?: string[];              // small things that stayed aboard: unclaimed lost property
   inquiries?: number;                // boards of inquiry sat through, one per crew member lost
+  wakes?: number;                    // wakes held in the galley, one per crew member lost
   motto?: string;                    // the line on the dedication plaque by the airlock
   prisoners?: number;                // prisoners delivered to a brig
   evacuated?: number;                // people carried out of a bad week

@@ -752,6 +752,15 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- After a crew member is lost the galley holds a wake on the next leg: say
+  the name (morale and loyalty up, a log line), stand with them and say
+  nothing, or send them back to stations and find the cup gone by morning.
+- With three fit crew, once a week, E at the galley is talent night: three
+  acts by role, and you judge. Pick a winner (their morale up most, bonds
+  form) or call a draw and hear what the ship thinks of that.
+- The survey's board of ethics writes once after you break a first contact
+  (a child drew your lander; guidance enclosed) and once after you keep one
+  (a grant, and news about the wheel).
 - A mayday from sunward: a survey cutter falling into the corona. Go in
   (hull down twelve, three lives, rep up), send the engineer's drone with a
   tow line (a part, two of three), or call it in and read about it later.
