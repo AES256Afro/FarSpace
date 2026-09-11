@@ -1,4 +1,5 @@
 import { piratePassageRemaining } from "../../core/piracy";
+import { wreckAvailable } from "../../core/salvage";
 import { serviceObjective } from "../../core/service";
 // Rendering for the flight scene: world, HUD, radar markers, system map.
 
@@ -187,14 +188,15 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
   // wrecks
   const wreckSpr = g.wreckSprite();
   for (const w of sys.wrecks) {
-    if (w.looted) continue;
+    if (!wreckAvailable(w)) continue;
     const [sx, sy] = toScreen(w.x, w.y);
     if (sx < -40 || sx > VW + 40 || sy < -40 || sy > VH + 40) continue;
     const s = wreckSpr.width * z;
     ctx.drawImage(wreckSpr, sx - s / 2, sy - s / 2, s, s);
     if (dist(p.x, p.y, w.x, w.y) < 160) {
-      drawText(ctx, "DERELICT", sx - 16, sy - s / 2 - 8, PAL.grey);
-      if (dist(p.x, p.y, w.x, w.y) < 60) drawText(ctx, "[E] BOARD", sx - 18, sy + s / 2 + 3, PAL.gold);
+      const label = w.looted ? "SALVAGE REMAINS" : "DERELICT";
+      drawText(ctx, label, sx - textWidth(label) / 2, sy - s / 2 - 8, PAL.grey);
+      if (dist(p.x, p.y, w.x, w.y) < 60) drawText(ctx, "[E] BOARD / SALVAGE", sx - textWidth("[E] BOARD / SALVAGE") / 2, sy + s / 2 + 3, PAL.gold);
     }
   }
 
@@ -521,7 +523,7 @@ export function drawEdgeMarkers(fs: FlightScene, g: Game, ctx: CanvasRenderingCo
   for (const gh of presence.ghosts.values()) { const pos = presence.at(gh); mark(pos.x, pos.y, PAL.info, gh.callsign); }
   for (const m of fs.maydays) if (Math.floor(g.world.time * 3) % 2 === 0) mark(m.x, m.y, PAL.danger, `MAYDAY ${m.from}`);
   const wreckRange = hasModule(p, "fss") || hull(p.hullId).scanner ? 1e9 : 1500;
-  for (const w of sys.wrecks) if (!w.looted && dist(w.x, w.y, p.x, p.y) < wreckRange) mark(w.x, w.y, PAL.grey, "WRECK");
+  for (const w of sys.wrecks) if (wreckAvailable(w) && dist(w.x, w.y, p.x, p.y) < wreckRange) mark(w.x, w.y, PAL.grey, "WRECK");
 }
 
 export function drawRotated(ctx: CanvasRenderingContext2D, spr: HTMLCanvasElement, x: number, y: number, ang: number, z: number): void {

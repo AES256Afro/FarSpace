@@ -1,3 +1,4 @@
+import { wreckAvailable } from "../core/salvage";
 import type { Game } from "../game";
 import { drawText } from "../gfx/font";
 import { PAL } from "../gfx/palette";
@@ -17,7 +18,7 @@ export function systemContacts(g: Game, knownTarget?: string): SystemContact[] {
   sys.planets.forEach((pl,i) => out.push({ id: `planet:${i}`, name: pl.name, kind: "PLANET", x: Math.cos(pl.angle)*pl.orbit, y: Math.sin(pl.angle)*pl.orbit, color: PAL.grey, detail: "APPROACH TO ENTER ORBIT", range: pl.radius+70 }));
   for (const j of sys.jumpPoints) out.push({ id:`gate:${j.id}`, name:g.world.systems[j.targetSystemId].name, kind:"GATE", x:j.x,y:j.y,color:PAL.info,detail:`JUMP TO ${g.world.systems[j.targetSystemId].name.toUpperCase()}`,range:45 });
   const wreckRange = hasModule(p,"fss") || hull(p.hullId).scanner ? Infinity : 1500;
-  for (const w of sys.wrecks) if (!w.looted && (Math.hypot(w.x-p.x,w.y-p.y)<wreckRange || knownTarget === `wreck:${w.id}`)) out.push({ id:`wreck:${w.id}`,name:w.name,kind:"WRECK",x:w.x,y:w.y,color:PAL.warn,detail:w.boarding?.survivor && !w.boarding.rescued ? "SURVIVOR ABOARD" : `BOARD / SALVAGE / HAZARD ${Math.round(w.hazard*100)}%`,range:35 });
+  for (const w of sys.wrecks) if (wreckAvailable(w) && (Math.hypot(w.x-p.x,w.y-p.y)<wreckRange || knownTarget === `wreck:${w.id}`)) out.push({ id:`wreck:${w.id}`,name:w.name,kind:"WRECK",x:w.x,y:w.y,color:PAL.warn,detail:w.boarding?.survivor && !w.boarding.rescued ? "SURVIVOR ABOARD" : w.looted ? "INTERIOR CLEARED / EXTERIOR SALVAGE" : `BOARD / SALVAGE / HAZARD ${Math.round(w.hazard*100)}%`,range:35 });
   for (const a of sys.anomalies) if (a.discovered && !a.claimed) out.push({ id:`signal:${a.id}`,name:a.name,kind:"SIGNAL",x:a.x,y:a.y,color:PAL.info,detail:a.kind === "derelict" ? "DERELICT / BOARDABLE" : "APPROACH TO INVESTIGATE",range:35 });
   for (const i of infraAt(g.world,sys.id)) out.push({ id:`infra:${i.id}`,name:i.kind.toUpperCase(),kind:"STRUCTURE",x:i.x,y:i.y,color:infraLit(i) ? PAL.gold : PAL.danger,detail:infraLit(i) ? "OPERATIONAL" : "POWER OFFLINE",range:60 });
   for (const w of wondersIn(g.world,sys.id)) if (w.seen || p.flags?.[`rumour:${w.id}`]) out.push({ id:`wonder:${w.id}`,name:w.seen ? w.name : "RUMOURED SITE",kind:"SIGNAL",x:w.x,y:w.y,color:PAL.gold,detail:w.kind.toUpperCase(),range:100 });

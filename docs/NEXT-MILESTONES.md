@@ -410,8 +410,10 @@ system and real-time multiplayer outside this cycle.
 
 ## Current release follow-through
 
-v0.257.1 is deployed. The title and save-library milestones are complete.
-M418 is next in the approved sequence. No new timed automation was created.
+The title and save-library milestones are complete. v0.258.0 added map
+navigation and generated boarding interiors. v0.259.0 adds wreck salvage.
+These are portions of the approved plan; M418-M427 are not complete.
+No new timed automation was created.
 
 BoxPilot PR259 targets 0.257.1. Local checks passed with 1,632 tests. The
 catalog registry check resolved FarSpace with HTTP 200, then failed on the

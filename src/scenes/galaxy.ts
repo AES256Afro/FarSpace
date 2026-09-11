@@ -1,3 +1,4 @@
+import { wreckAvailable } from "../core/salvage";
 import { Game, Scene } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
@@ -136,7 +137,7 @@ export class GalaxyScene implements Scene {
       line( fac.name, px + 6, y, fac.color); y += 9;
       line( `STANDING: ${repLabel(w.player.rep[sys.factionId] ?? 0)}`, px + 6, y, PAL.grey); y += 11;
       line( `PLANETS ${sys.planets.length}  STATIONS ${sys.stations.length}`, px + 6, y, PAL.grey); y += 9;
-      line( `WRECKS ${sys.wrecks.filter((x) => !x.looted).length}  SIGNALS ${sys.anomalies.filter((a) => !a.claimed).length}`, px + 6, y, PAL.grey); y += 9;
+      line( `WRECKS ${sys.wrecks.filter(wreckAvailable).length}  SIGNALS ${sys.anomalies.filter((a) => !a.claimed).length}`, px + 6, y, PAL.grey); y += 9;
       const pir = sys.pirateActivity;
       line( `PIRACY: ${pir > 0.6 ? "SEVERE" : pir > 0.3 ? "MODERATE" : "LOW"}`, px + 6, y, pir > 0.6 ? PAL.danger : pir > 0.3 ? PAL.warn : PAL.good); y += 9;
       if (w.wars.some((ww) => ww.systemId === sys.id)) { line( "ACTIVE WAR ZONE", px + 6, y, PAL.danger); y += 9; }

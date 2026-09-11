@@ -1,6 +1,34 @@
 # FarSpace handoff, September 11, 2026
 
-## Current checkpoint: v0.258.0
+## Current checkpoint: v0.259.0
+
+The user requested salvage features for wrecks. This release adds finite
+exterior salvage alongside the existing generated boarding interiors.
+
+- E near an ordinary wreck or a derelict signal opens a salvage panel. B or
+  the first row boards it. Leaving the deck returns to the panel; Esc from
+  the panel resumes the same flight population and jobs.
+- Drive assemblies yield spare parts, hull plating yields refined metals,
+  control circuits yield germanium, and reactor shielding yields nickel,
+  carbon or vanadium. Stocks vary deterministically by wreck and world seed.
+- Each unit takes four seconds and 0.5 fuel. An available engineer reduces
+  the time to 2.8 seconds. Select a section and Enter or click to cut or pause.
+  Cutting continues until paused, that section is stripped, storage is full,
+  or fuel is exhausted. Paid partial work remains on the wreck.
+- Cargo and material capacity are checked before spending fuel. Survivors
+  must be rescued first. Existing salvage claims cover exterior stock too.
+  Occupied arks cannot be stripped. Old cleared wrecks do not gain stock.
+- `WreckDef.looted` still means the interior is recovered for story checks.
+  Flight, radar and maps use `wreckAvailable` to retain a contact while any
+  exterior stock remains. Wreck salvage state survives schema 14 saves.
+- 510 tests pass, including 16 salvage cases. TypeScript and build pass.
+  Browser checks used temporary voyages with storage intercepted in memory
+  and online requests disabled. No actual saves or identity settings changed.
+  Physical touch and gamepad checks remain unperformed.
+- Release publication and live verification are pending. Bigbox and the
+  BoxPilot catalog PR remain outside this update.
+
+## Previous checkpoint: v0.258.0
 
 The user requested more wreck and derelict actions, generated repair interiors,
 and improvements to both maps. This follow-up is implemented in v0.258.0.

@@ -59,7 +59,7 @@ describe("map layout and navigation",()=>{
     const {g,flight}=fixture(),sys=g.world.systems[g.world.player.systemId],p=g.world.player;
     p.x=50000;p.y=50000;p.vx=0;p.vy=0;const set=vi.spyOn(g,"setScene").mockImplementation(()=>{});
     const signal={id:"boarding-signal",name:"Silent Hauler",kind:"derelict" as const,x:p.x,y:p.y,discovered:true,claimed:false,reward:100};sys.anomalies.push(signal);
-    flight.tryInteract(g);expect(signal.claimed).toBe(true);expect(set).toHaveBeenCalledWith("wreck");expect(g.wreckTarget?.name).toBe(signal.name);
+    flight.tryInteract(g);expect(signal.claimed).toBe(true);expect(set).toHaveBeenCalledWith("salvage");expect(g.wreckTarget?.name).toBe(signal.name);
     const count=sys.wrecks.length;flight.tryInteract(g);expect(sys.wrecks).toHaveLength(count);expect(flight.loot).toHaveLength(0);
   });
   it("respects undiscovered signals and wreck scanner range",()=>{

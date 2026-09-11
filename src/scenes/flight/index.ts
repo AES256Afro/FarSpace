@@ -1,4 +1,6 @@
 import { SystemMap, resolveLocalTarget, type LocalMapTarget } from "../systemmap";
+import { wreckAvailable } from "../../core/salvage";
+import type { WreckScene } from "../wreck";
 import { wreckFromSignal } from "../../core/derelicts";
 import { grantPiratePassage, piratePassageRemaining, piratesPeaceful, tickPiratePassage } from "../../core/piracy";
 import { LAW_COOLDOWN, lawActive, lawCases, lawSettlement, recordOffence, settleLaw, tickLawCooldown } from "../../core/law";
@@ -1630,13 +1632,13 @@ export class FlightScene implements Scene {
       let wk = sys.wrecks.find((x) => x.id === `ark-${wd.id}`);
       if (!wk) { wk = { id: `ark-${wd.id}`, x: wd.x, y: wd.y, looted: false, loot: [{ id: "relics", qty: 3 }, { id: "data", qty: 2 }, { id: "parts", qty: 2 }], hazard: 0.2, name: wd.name }; sys.wrecks.push(wk); }
       if (wk.looted) { g.toast(`${wd.name.toUpperCase()}: YOU'VE WALKED ITS CORRIDORS ALREADY. IT TURNS ON, SLOWLY, WITHOUT YOU.`); return; }
-      p.vx = 0; p.vy = 0; g.wreckTarget = wk; g.setScene("wreck"); return;
+      p.vx = 0; p.vy = 0; g.wreckTarget = wk; (g.scenes.wreck as WreckScene).returnToSalvage = false; g.setScene("wreck"); return;
     }
     for (const w of sys.wrecks) {
-      if (!w.looted && dist(p.x, p.y, w.x, w.y) < 60) {
+      if (wreckAvailable(w) && dist(p.x, p.y, w.x, w.y) < 60) {
         p.vx = 0; p.vy = 0;
         g.wreckTarget = w;
-        g.setScene("wreck");
+        g.setScene("salvage");
         return;
       }
     }
@@ -1647,7 +1649,7 @@ export class FlightScene implements Scene {
           if (!sys.wrecks.includes(wreck)) sys.wrecks.push(wreck);
           an.claimed = true; p.discoveries = (p.discoveries ?? 0) + 1;
           logEntry(g.world, `Located the derelict ${an.name}`);
-          p.vx = 0; p.vy = 0; g.wreckTarget = wreck; g.setScene("wreck"); return;
+          p.vx = 0; p.vy = 0; g.wreckTarget = wreck; g.setScene("salvage"); return;
         }
         an.claimed = true;
         const reward = an.reward;

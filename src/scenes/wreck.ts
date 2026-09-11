@@ -6,6 +6,7 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 import { RNG, hashStr } from "../core/rng";
 import { prepareWreck, wreckRecovered, type WreckBoarding } from "../core/derelicts";
+import { contestedWreck, prepareSalvage, shareSalvage } from "../core/salvage";
 import type { ShipDeck, DeckPoint } from "../core/shipdeck";
 import { logEntry } from "../world";
 import { addCargo, WreckDef } from "../world";
@@ -34,6 +35,7 @@ export class WreckScene implements Scene {
   layout!: ShipDeck;
   state!: WreckBoarding;
   resumeNext = false;
+  returnToSalvage = false;
 
   enter(g: Game): void {
     const w = g.wreckTarget;
@@ -41,6 +43,7 @@ export class WreckScene implements Scene {
     if (this.resumeNext && this.wreck === w) { this.resumeNext = false; return; }
     this.resumeNext = false;
     this.wreck = w;
+    prepareSalvage(w, g.world.seed);
     const prepared = prepareWreck(w, g.world.seed);
     this.layout = prepared.layout; this.state = prepared.state;
     this.deck = this.layout.tiles;
@@ -64,17 +67,17 @@ export class WreckScene implements Scene {
       this.askedFor = w.id; this.partner = null;
       const p = g.world.player;
       const has = (r: string) => p.crew.some((c) => c.role === r && !c.sick);
-      if (!w.id.startsWith("wreck-mine") && !w.looted && !this.state.claimResolved && rng.chance(0.3)) {
+      if (contestedWreck(w)) {
         // salvage rights: another cutter is already latched on, and the belt has rules about that
         const cut = rng.pick(["a Corsair cutter", "a belt tug with three names painted over", "a Guild salvage barge", "a family skiff, kids at the port"]);
-        const half = () => { for (const c of this.crates) c.qty = Math.max(1, Math.ceil(c.qty / 2)); };
+        const half = () => { for (const c of this.crates) c.qty = Math.max(1, Math.ceil(c.qty / 2)); shareSalvage(w, g.world.seed); };
         const enc: Encounter = { id: "claimjumpers", where: "space", title: "SALVAGE RIGHTS", weight: 0,
           text: `${cut.charAt(0).toUpperCase() + cut.slice(1)} is latched to the far lock with its lights on and a cutting torch already going. The band: 'WE WERE HERE FIRST. BELT RULES. HALF, OR NOTHING, OR YOU CAN COME AND ARGUE ABOUT IT.'`,
           options: [
-            { label: "HALF EACH. BELT RULES", hint: "Half the crates; nobody bleeds", result: (g2) => { half(); this.state.claimResolved = true; (p.flags ??= {}).claimjumpers = true; logEntry(g2.world, `Split ${w.name} with ${cut}, belt rules`); return "YOU TAKE THE NEAR ROOMS AND THEY TAKE THE FAR ONES, AND THE TWO CREWS PASS IN THE CORRIDOR WITHOUT A WORD, WHICH IS BELT MANNERS. HALF THE CRATES ARE YOURS."; } },
+            { label: "HALF EACH. BELT RULES", hint: "Half the crates and exterior salvage; nobody bleeds", result: (g2) => { half(); this.state.claimResolved = true; (p.flags ??= {}).claimjumpers = true; logEntry(g2.world, `Split ${w.name} with ${cut}, belt rules`); return "YOU TAKE THE NEAR ROOMS AND THEY TAKE THE FAR ONES, AND THE TWO CREWS PASS IN THE CORRIDOR WITHOUT A WORD, WHICH IS BELT MANNERS. HALF THE CRATES ARE YOURS."; } },
             { label: "BUY THEIR CLAIM (150CR)", hint: "Full salvage; they cast off happy", requires: () => p.credits >= 150, result: (g2) => { p.credits -= 150; this.state.claimResolved = true; (p.flags ??= {}).claimjumpers = true; logEntry(g2.world, `Bought ${cut}'s claim on ${w.name}`); return "THEY TAKE THE MONEY AND CAST OFF, AND ONE OF THEM WAVES. IT'S CHEAPER THAN A FIGHT AND YOU BOTH KNOW IT. THE WRECK IS YOURS."; } },
             { label: "STAND YOUR GROUND", hint: has("gunner") ? "The gunner at the lock; they back off" : "Half the time they back off. Half the time they don't.", result: (g2, rng2) => { this.state.claimResolved = true; (p.flags ??= {}).claimjumpers = true; if (has("gunner") || rng2.chance(0.5)) { logEntry(g2.world, `Stared ${cut} off ${w.name}`); return has("gunner") ? "THE GUNNER STANDS IN THE LOCK WITH THE EXTINGUISHER HELD LIKE IT ISN'T ONE. THE TORCH GOES OUT. THEY CAST OFF. THE WRECK IS YOURS, AND THEY'LL REMEMBER YOUR HULL." : "YOU TELL THEM THE RULES WERE WRITTEN FOR TUGS, NOT FOR THE SHIP THAT TOWED THE TUGS. A LONG PAUSE ON THE BAND. THEY CAST OFF. THE WRECK IS YOURS."; } half(); for (const c of p.crew) c.morale = Math.max(0, c.morale - 3); logEntry(g2.world, `Argued salvage with ${cut} at ${w.name} and lost the far rooms`); return "THEY DON'T BACK OFF. THEY CUT THROUGH TO THE FAR ROOMS WHILE YOU'RE STILL TALKING, AND NOBODY WANTS TO BE THE ONE WHO STARTS IT IN A SUIT. HALF THE CRATES. MORALE DOWN."; } },
-            { label: "LET THEM HAVE IT", hint: "Nothing here; the belt hears you were fair", result: (g2) => { for (const c of this.crates) c.taken = true; this.state.claimResolved = true; (p.flags ??= {}).claimjumpers = true; p.beltStanding = (p.beltStanding ?? 0) + 2; logEntry(g2.world, `Left ${w.name} to ${cut}`); return "YOU CAST OFF AND LEAVE THEM TO IT. SOMEBODY ON THEIR BAND SAYS YOUR CALLSIGN LIKE THEY'RE WRITING IT DOWN, THE GOOD WAY. THE BELT HEARS. NOTHING FOR THE HOLD."; } },
+            { label: "LET THEM HAVE IT", hint: "Nothing here; the belt hears you were fair", result: (g2) => { for (const c of this.crates) c.taken = true; shareSalvage(w, g.world.seed, true); this.state.claimResolved = true; (p.flags ??= {}).claimjumpers = true; p.beltStanding = (p.beltStanding ?? 0) + 2; logEntry(g2.world, `Left ${w.name} to ${cut}`); return "YOU CAST OFF AND LEAVE THEM TO IT. SOMEBODY ON THEIR BAND SAYS YOUR CALLSIGN LIKE THEY'RE WRITING IT DOWN, THE GOOD WAY. THE BELT HEARS. NOTHING FOR THE HOLD."; } },
           ] };
         this.resumeNext = true; (g.scenes["encounter"] as EncounterScene).open(g, enc, "wreck", true);
       } else if (has("engineer") || has("medic") || has("gunner")) {
@@ -106,6 +109,7 @@ export class WreckScene implements Scene {
   leave(g: Game): void {
     if (this.wreck.id.startsWith("ark-") && !this.wreck.looted && wreckRecovered(this.state)) { (g.world.player.codex ??= {})["signal:THE SLEEPERS"] = 1; g.toast("SOMEWHERE DEEP IN THE ARK, A LIGHT COMES ON THAT WASN'T ON BEFORE."); logEntry(g.world, `Walked the corridors of ${this.wreck.name}`); flag(g, "arkWalker"); }
     if (!this.wreck.looted && wreckRecovered(this.state)) { this.wreck.looted = true; flag(g, "wreckLooted"); gainMaterials(g, { germanium: 1 + Math.floor(Math.random() * 2), iron: 2, nickel: Math.random() < 0.5 ? 2 : 0 }); }
+    if (this.returnToSalvage) { this.returnToSalvage = false; g.setScene("salvage"); return; }
     (g.scenes.flight as FlightScene).resumeNext = true; g.setScene("flight");
   }
 

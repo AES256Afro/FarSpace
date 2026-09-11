@@ -102,10 +102,11 @@ export interface JumpPointDef {
 }
 
 export interface WreckDef {
+  salvage?: import("./core/salvage").WreckSalvage;
   boarding?: import("./core/derelicts").WreckBoarding;
   id: string;
   x: number; y: number;
-  looted: boolean;
+  looted: boolean; // Interior recovered; exterior salvage may still remain.
   loot: { id: string; qty: number }[];
   hazard: number; // 0..1 how much fire/breach inside
   name: string;
