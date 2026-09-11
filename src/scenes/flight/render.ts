@@ -573,7 +573,7 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
       wy += 8;
     }
   }
-  if (p.crew && p.crew.some((c) => c.morale < 30)) { drawText(ctx, "! CREW MORALE LOW", 4, wy, PAL.warn); wy += 8; }
+  if (p.crew && p.crew.some((c) => c.morale < 30)) { const med = p.crew.find((c) => c.role === "medic" && !c.sick); drawText(ctx, med ? `! ${med.name.split(" ")[0].toUpperCase()}: THEY NEED A PORT. OR A MEAL. OR BOTH.` : "! CREW MORALE LOW", 4, wy, PAL.warn); wy += 8; }
   if (p.crew && p.crew.some((c) => c.sick)) { drawText(ctx, `! ${p.crew.filter((c) => c.sick).length} CREW LAID UP`, 4, wy, PAL.warn); wy += 8; }
   {
     const mine = (g.world.infra ?? []).filter((i) => i.owner === (wire.getCallsign() ?? "YOU"));

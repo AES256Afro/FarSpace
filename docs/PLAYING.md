@@ -752,6 +752,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- On a clean approach, control clears you by rank and bay: "LIEUTENANT
+  LATE SUPPER, CLEARED BAY 4. WELCOME BACK. YOUR USUAL." On a rock, a
+  freeman gets a hello from the rock.
+- With a rock-born or spin-sick hand at the table, card night opens with a
+  toast to the churn.
+- With a medic aboard, the HUD's low-morale warning is theirs: they need a
+  port, or a meal, or both.
 - After a letter from the office, the crew fill in its form in four hands
   with a diagram of the fold. Sign it (data, and the office writes back
   about the drawing) or burn all three copies.

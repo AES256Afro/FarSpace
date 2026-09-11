@@ -1554,6 +1554,17 @@ Time passes for the people on the ship, and for the ship.
 - [x] After the council's vote the rock writes with the minutes; your name
       is in them
 
+## Milestone 291 — Cleared by Rank ✅ (Sep 2026)
+- [x] On a clean approach, control clears you by rank and bay, welcomes
+      regulars back, and on a rock says hello to a freeman
+
+## Milestone 292 — To the Churn ✅ (Sep 2026)
+- [x] With a rock-born or spin-sick hand at the table, card night opens with
+      a toast nobody explains
+
+## Milestone 293 — The Medic's Word ✅ (Sep 2026)
+- [x] The HUD's low-morale warning is the medic's line when a medic is aboard
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
