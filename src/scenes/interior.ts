@@ -204,6 +204,21 @@ export class InteriorScene implements Scene {
       }
     }
   }
+  // card night: once a week the crew deal at the galley table, and the captain is either in or watching
+  cardNight(g: Game): void {
+    const p = g.world.player; const key = `cards:${weekKey()}`;
+    const players = p.crew.filter((c) => !c.sick);
+    const shark = [...players].sort((a, b) => b.skill - a.skill)[0];
+    const enc: Encounter = { id: "cards", where: "space", title: "CARD NIGHT", weight: 0,
+      text: `The galley table's been cleared and somebody's found a deck with the sixes marked. ${players.map((c) => c.name.split(" ")[0]).join(", ")} are already dealt in, and there's a chair with your name on it, or there isn't, depending on what you say next.`,
+      options: [
+        { label: "DEAL ME IN (50CR STAKE)", hint: "Morale up all round; the pot goes where the skill is", requires: () => p.credits >= 50, result: (g2, rng) => { (p.flags ??= {})[key] = true; p.credits -= 50; for (const c of players) c.morale = Math.min(100, c.morale + 5); const win = rng.chance(0.4); if (win) { p.credits += 50 * players.length; flag(g2, "cards"); logEntry(g2.world, "Card night in the galley; took the pot"); sfx.pickup(); return `YOU TAKE THE POT OFF THE WHOLE TABLE, ${50 * players.length}CR, AND ${shark.name.split(" ")[0].toUpperCase()} WANTS IT NOTED THAT THE SIXES WERE MARKED BEFORE YOU SAT DOWN. MORALE UP. NOBODY MINDS LOSING TO THE CAPTAIN AS MUCH AS THEY SAY.`; } shark.morale = Math.min(100, shark.morale + 5); flag(g2, "cards"); logEntry(g2.world, `Card night in the galley; ${shark.name} took the pot`); return `${shark.name.toUpperCase()} TAKES YOUR FIFTY WITH A FACE LIKE A BULKHEAD AND THEN CAN'T KEEP IT. MORALE UP ALL ROUND, ESPECIALLY THEIRS. THE CREW WILL TELL THIS ONE AT EVERY BAR ON THE LINE.`; } },
+        { label: "PLAY FOR MATCHES", hint: "Morale +3; no money on the table", result: (g2) => { (p.flags ??= {})[key] = true; for (const c of players) c.morale = Math.min(100, c.morale + 3); flag(g2, "cards"); logEntry(g2.world, "Card night in the galley, for matches"); return "YOU PLAY FOR MATCHES AND LOSE THEM ALL, AND THE MATCHES ARE THE SHIP'S ANYWAY. MORALE UP. THE HUM GOES ON UNDER THE TABLE TALK LIKE IT'S DEALT IN TOO."; } },
+        { label: "WATCH FROM THE HATCH", hint: "They play; you learn who bluffs", result: (g2) => { (p.flags ??= {})[key] = true; for (const c of players) c.morale = Math.min(100, c.morale + 2); const bluffer = [...players].sort((a, b) => (b.loyalty ?? 0) - (a.loyalty ?? 0))[0]; logEntry(g2.world, "Card night in the galley; watched"); return `YOU LEAN IN THE HATCH AND LEARN THAT ${bluffer.name.split(" ")[0].toUpperCase()} BLUFFS WITH THEIR LEFT HAND FLAT ON THE TABLE, AND THAT ${shark.name.split(" ")[0].toUpperCase()} KNOWS IT. MORALE UP. USEFUL, ON A BRIDGE.`; } },
+        { label: "NOT TONIGHT. GALLEY'S FOR COOKING", hint: "Cook instead; they'll deal another week", result: (g2) => { const meal = cookMeal(p); if (meal) { for (const l of meal.slice(1)) g2.toast(l); return meal[0]; } return "THE DECK GOES BACK IN THE DRAWER AND THE GALLEY'S EMPTY ANYWAY. BUY PROVISIONS AT A STATION."; } },
+      ] };
+    (g.scenes["encounter"] as EncounterScene).open(g, enc, "interior", true);
+  }
   paxPos: Record<string, { x: number; y: number; tx: number; ty: number; pause: number; path?: { tx: number; ty: number }[] }> = {};
   // passengers stretch their legs: the seat, the galley, the viewport, back to the seat
   wanderPassengers(p: import("../world").PlayerState, dt: number): void {
@@ -571,6 +586,9 @@ export class InteriorScene implements Scene {
           p.hull = Math.min(p.hullMax, p.hull + 10);
           for (const c of p.crew) c.morale = Math.min(100, c.morale + 5);
           this.say("YOU SLEEP. 60S PASS. +10 HULL, SHIELDS AND O2 RESTORED");
+        } else if (near.ch === "K" && p.crew.filter((c) => !c.sick).length >= 2 && !(p.flags ?? {})[`cards:${weekKey()}`]) {
+          this.cardNight(g);
+          return;
         } else if (near.ch === "K") {
           const meal = cookMeal(p);
           if (meal) { this.say(meal[0]); for (const l of meal.slice(1)) g.toast(l); }

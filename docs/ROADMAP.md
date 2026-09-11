@@ -1173,6 +1173,15 @@ Time passes for the people on the ship, and for the ship.
 - [x] The rock's council writes when the belt makes you a freeman (water
       money and a tab); the inspectorate writes after a good ship (two spares)
 
+## Milestone 202 — A Board of Inquiry ✅ (Sep 2026)
+- [x] Naval stations convene a board for every crew member who didn't make
+      the pod: tell it straight, let Number One speak, blame the hull, or
+      decline; rep, loyalty and morale follow (deed "no fault")
+
+## Milestone 203 — Card Night ✅ (Sep 2026)
+- [x] Once a week, with two crew fit, the galley table is a card table: deal
+      in for fifty, play for matches, watch who bluffs, or cook instead
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

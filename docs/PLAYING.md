@@ -752,6 +752,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- Lose a crew member and the next naval station convenes a board of inquiry:
+  three officers, a file, the name. Tell it straight (rep and loyalty up), let
+  Number One speak for the ship, blame the hull (the crew always hear), or
+  decline to answer (rep down, the file stays open).
+- Once a week, with two crew fit, E at the galley deals you into card night:
+  fifty on the table, or matches, or watch from the hatch and learn who bluffs.
+  Say no and you cook instead.
 - When the belt makes you a freeman, the rock's council writes: they don't
   write to inners, there's water money in it, and a tab at every bar with a
   spin. Pass an inspection and the inspectorate writes too, with two spares
