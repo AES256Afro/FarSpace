@@ -4,6 +4,7 @@ import { FACTIONS } from "../../data/data";
 
 import { ask, confirmBox } from "../../core/dialog";
 import { atSingersBerth, singersBerth } from "../../core/singers";
+import { stationCourseTarget } from "../../core/lastleg";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
@@ -1386,7 +1387,9 @@ export class FlightScene implements Scene {
     const p = g.world.player;
     const sys = g.world.systems[p.systemId];
     const berth = singersBerth(g.world);
+    const stationTarget = stationCourseTarget(g.world);
     if (berth && p.singersCourse && (!p.navTarget || p.navTarget === p.systemId)) return { ...berth, label: "SINGERS' BERTH" };
+    if (stationTarget) return stationTarget;
     if (p.navTarget && p.navTarget !== p.systemId) {
       const route = navRoute(g.world, p.systemId, p.navTarget);
       const next = route && route[1];

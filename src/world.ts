@@ -256,6 +256,7 @@ export interface PlayerState {
   kills: number;
   wanted: number;
   navTarget?: string | null;
+  navStationId?: string; // an exact station at the end of the plotted route
   hullId: string;
   rep: Record<string, number>;
   hints: Record<string, boolean>;
@@ -519,7 +520,7 @@ export function beaconDiscount(w: World, fromId: string, toId: string): number {
 }
 
 export interface ShoreLeave { member: CrewMember; stationId: string; docks: number }
-export interface Alumnus { name: string; role: CrewRole | "captain"; docks: number; stationId: string; t: number; command?: string }
+export interface Alumnus { name: string; role: CrewRole | "captain"; docks: number; stationId: string; t: number; command?: string; finalJourney?: boolean }
 export interface Captain { name: string; from: number; to: number; stationId: string; credits: number; deeds: number }
 
 // ---------- The ledger: where the money comes from and goes ----------
@@ -1271,7 +1272,7 @@ export function leavePair(w: World, now = Date.now()): [CrewMember, CrewMember] 
 }
 // A command of their own: the service offers a long-serving, loyal Number One a ship, at a naval station, once.
 export function commandOffer(w: World): CrewMember | null {
-  const p = w.player; const fo = firstOfficer(p); if (!fo) return null;
+  const p = w.player; const fo = firstOfficer(p); if (!fo || fo.lastLeg) return null;
   const rk = commandRank(p); if (rk === "SKIPPER" || rk === "LIEUTENANT") return null;
   if ((fo.docks ?? 0) < 12 || (fo.loyalty ?? 0) < 2 || (p.flags ?? {})[`offer:${fo.name}`]) return null;
   return fo;
@@ -1279,7 +1280,7 @@ export function commandOffer(w: World): CrewMember | null {
 // A transfer request: a crew member with a long record and a low mood asks, at a naval station, for a posting ashore.
 export function transferRequest(w: World): CrewMember | null {
   const p = w.player;
-  return p.crew.find((c) => c.morale < 40 && (c.docks ?? 0) >= 5 && !c.sick && !(p.flags ?? {})[`transfer:${c.name}`]) ?? null;
+  return p.crew.find((c) => c.morale < 40 && (c.docks ?? 0) >= 5 && !c.sick && !c.lastLeg && !(p.flags ?? {})[`transfer:${c.name}`]) ?? null;
 }
 export function grievanceHeard(w: World, now = Date.now()): void { (w.player.flags ??= {})[`grievance:${weekKey(now)}`] = true; }
 // Receptions: dock with standing (rep 20+) and now and then the faction throws one in your honour, once a week.

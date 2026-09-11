@@ -38,7 +38,7 @@ export class GalaxyScene implements Scene {
     if (inp.wasPressed("F9")) g.load();
     const p = g.world.player;
     if (knowsSingersBerth(p) && (inp.wasPressed("r") || (inp.mousePressed && inp.mouseX >= 8 && inp.mouseX < 160 && inp.mouseY >= 16 && inp.mouseY < 28))) {
-      this.selected = p.singersHome!; p.navTarget = p.singersHome!; p.singersCourse = true;
+      this.selected = p.singersHome!; p.navTarget = p.singersHome!; p.singersCourse = true; delete p.navStationId;
       g.toast("COURSE: SINGERS' BERTH. ESC TO FLIGHT, N FOR AUTOPILOT.");
       sfx.select(); return;
     }
@@ -53,7 +53,7 @@ export class GalaxyScene implements Scene {
         if (this.selected === best && best !== g.world.player.systemId) {
           const p = g.world.player;
           p.navTarget = p.navTarget === best ? null : best;
-          p.singersCourse = false;
+          p.singersCourse = false; delete p.navStationId;
           sfx.select();
         }
         this.selected = best;
@@ -70,7 +70,7 @@ export class GalaxyScene implements Scene {
     if (inp.wasPressed("n") && this.selected) {
       const p = g.world.player;
       p.navTarget = p.navTarget === this.selected ? null : this.selected;
-      p.singersCourse = false;
+      p.singersCourse = false; delete p.navStationId;
       sfx.select();
     }
   }

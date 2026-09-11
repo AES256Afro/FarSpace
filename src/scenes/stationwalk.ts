@@ -16,6 +16,8 @@ import type { EncounterScene } from "./encounter";
 import { wrap } from "./encounter";
 import { faction, genPersonName } from "../data/data";
 import { StationScene } from "./station";
+import type { CrewMember } from "../data/crew";
+import { finishLastLeg, lastLegAtPort } from "../core/lastleg";
 import { concourseGossip } from "../data/gossip";
 import { stationHour, clockText, tannoyLines } from "../data/tannoy";
 import { dockhandLines, dockhandFavour } from "../data/dockhand";
@@ -66,6 +68,7 @@ interface WalkerNpc {
   pause: number;
   tag?: string;   // ON LEAVE, RETIRED: someone from your own ship, here on the deck
   line?: string;  // what they say when you press E beside them
+  farewell?: CrewMember;
 }
 
 export class StationWalkScene implements Scene {
@@ -107,6 +110,22 @@ export class StationWalkScene implements Scene {
     { const dx = 36 * T + 4, dy = 4 * T + 4; this.npcs.push({ x: dx, y: dy, tx: dx, ty: dy, name: genPersonName(new RNG(hashStr(`dockhand:${this.station.id}`))), skin: "#c78a5a", suit: "#c7a54a", pause: 1e9, tag: "DOCK-HAND", line: `DOCK-HAND: ${new RNG((Math.random() * 1e9) >>> 0).pick(dockhandLines(g.world, this.station, rng))}` }); }
     // your own people, out on the deck: crew on shore leave here, and shipmates who retired here
     const p = g.world.player;
+    const waiting = p.crew.filter(c => lastLegAtPort(g.world, c));
+    for (const [i, c] of waiting.entries()) {
+      const spot = i === 0 ? { x: 365, y: 75 } : this.randomFloor(rng);
+      this.npcs.push({ x: spot.x, y: spot.y, tx: spot.x, ty: spot.y, name: c.name,
+        skin: "#e8b48c", suit: "#c7a54a", pause: 1e9, tag: "LAST JOURNEY", farewell: c,
+        line: "THE BAG IS PACKED. THE REST OF THE CREW ARE WAITING TO SAY GOODBYE." });
+    }
+    if (waiting.length) {
+      const partySpots = [{ x: 355, y: 85 }, { x: 375, y: 85 }];
+      for (const [i, c] of p.crew.filter(c => !waiting.includes(c)).slice(0, 2).entries()) {
+        const spot = partySpots[i];
+        this.npcs.push({ x: spot.x, y: spot.y, tx: spot.x, ty: spot.y, name: c.name,
+          skin: "#c78a5a", suit: "#5d6680", pause: 1e9, tag: "SHIPMATE",
+          line: `${c.name.toUpperCase()}: SOMEONE HAS TO CARRY THE BAG. NONE OF US WANTED THAT TO BE OUR LAST JOB TOGETHER.` });
+      }
+    }
     for (const sl of (p.shoreCrew ?? []).filter((x) => x.stationId === this.station.id)) {
       const spot = this.randomFloor(rng);
       this.npcs.push({ x: spot.x, y: spot.y, tx: spot.x, ty: spot.y, name: sl.member.name, skin: "#c78a5a", suit: sl.member.role === "engineer" ? "#c7a54a" : sl.member.role === "gunner" ? "#a53a3a" : sl.member.role === "pilot" ? "#3a6ea5" : "#3aa55e", pause: 2, tag: "ON LEAVE",
@@ -131,7 +150,7 @@ export class StationWalkScene implements Scene {
     for (const a of (p.alumni ?? []).filter((x) => x.stationId === this.station.id).slice(-2)) {
       const spot = this.randomFloor(rng);
       this.npcs.push({ x: spot.x, y: spot.y, tx: spot.x, ty: spot.y, name: a.name, skin: "#e8b48c", suit: "#5d6680", pause: 4, tag: "RETIRED",
-        line: rng.pick([`${a.name.toUpperCase()}: '${a.docks} dockings with you. I still count the gates in my sleep. How's the old ship?'`, `${a.name.toUpperCase()}: 'They let me run the ${a.role === "engineer" ? "yard" : a.role === "medic" ? "clinic" : a.role === "gunner" ? "range" : a.role === "captain" ? "harbour office" : "tug"} here. Quieter. Good quiet.'`, a.role === "captain" ? `${a.name.toUpperCase()}: 'How's my ship? Don't answer that. She's yours now. Fly her like you stole her.'` : `${a.name.toUpperCase()}: 'If you ever need a ${a.role} again... no. No, I'm done. But it was good.'`]) });
+        line: a.finalJourney ? `${a.name.toUpperCase()}: 'You brought me to the place I chose. The kettle is on. Tell me where you went next.'` : rng.pick([`${a.name.toUpperCase()}: '${a.docks} dockings with you. I still count the gates in my sleep. How's the old ship?'`, `${a.name.toUpperCase()}: 'They let me run the ${a.role === "engineer" ? "yard" : a.role === "medic" ? "clinic" : a.role === "gunner" ? "range" : a.role === "captain" ? "harbour office" : "tug"} here. Quieter. Good quiet.'`, a.role === "captain" ? `${a.name.toUpperCase()}: 'How's my ship? Don't answer that. She's yours now. Fly her like you stole her.'` : `${a.name.toUpperCase()}: 'If you ever need a ${a.role} again... no. No, I'm done. But it was good.'`]) });
     }
     // fares waiting for a ship, luggage at their feet
     const stScene = (g.scenes["station"] as StationScene | undefined);
@@ -167,11 +186,30 @@ export class StationWalkScene implements Scene {
       if (ev?.kind === "festival" && ev.stationId === this.station.id) crowd.push({ tag: "REVELLER", suit: "#e060ff", n: 3, lines: ["'FESTIVAL! Are you the band? You look like the band.'", "'Three days of this. My feet are gone. I regret nothing.'", "'Tourists everywhere. Bless them. They tip.'"] });
       for (const c of crowd) for (let i = 0; i < c.n; i++) { const spot = this.randomFloor(rng); this.npcs.push({ x: spot.x, y: spot.y, tx: spot.x, ty: spot.y, name: genPersonName(rng), skin: rng.pick(["#e8b48c", "#c78a5a", "#f0d0b0"]), suit: c.suit, pause: rng.range(1, 5), tag: c.tag, line: c.lines[i % c.lines.length] }); }
     }
-    this.msg = `${this.station.name.toUpperCase()} PROMENADE`;
-    this.msgTimer = 3;
+    this.msg = waiting.length ? `${waiting[0].name.toUpperCase()} IS ON THE LOWER RIGHT DECK. E TO SAY GOODBYE.` : `${this.station.name.toUpperCase()} PROMENADE`;
+    this.msgTimer = waiting.length ? 12 : 3;
     this.bubbles = []; this.gossipCd = 1;
     this.tannoy = ""; this.tannoyT = 2;
   }
+  farewell(g: Game, c: CrewMember): void {
+    if (!lastLegAtPort(g.world, c)) return;
+    const finish = (g2: Game, bonus: boolean) => {
+      const line = finishLastLeg(g2.world, c, bonus);
+      if (!line) return "THE FAREWELL COULDN'T BE SETTLED. CHECK THE CREW, PORT, AND CREDITS.";
+      g2.autosave(); return line;
+    };
+    const enc: Encounter = { id: "last-leg-farewell", where: "space", weight: 0,
+      title: `${c.name.toUpperCase()} - THE LAST ENTRY`,
+      text: `${this.station.name.toUpperCase()}. THE SHIP'S CREW STAND ON THE DECK WITH ONE KIT BAG BETWEEN THEM. ${c.name.toUpperCase()} KEEPS LOOKING AT THE AIRLOCK, AS IF SOMEONE MIGHT CALL THE NEXT WATCH. 'THIS IS THE ONE, CAPTAIN. I'LL WRITE WHEN I'VE FOUND THE KETTLE.'`,
+      options: [
+        { label: "GO WELL. THANK YOU FOR THE WATCHES.", result: g2 => finish(g2, false) },
+        { label: "TAKE 300CR TO GET SETTLED.", requires: g2 => g2.world.player.credits >= 300, result: g2 => finish(g2, true) },
+        { label: "ANOTHER MINUTE TOGETHER.", result: () => "NOBODY MOVES. THERE IS TIME FOR ANOTHER MINUTE. COME BACK WHEN YOU'RE READY." },
+      ],
+    };
+    (g.scenes.encounter as EncounterScene).open(g, enc, "stationwalk", true);
+  }
+
   tickTannoy(g: Game, dt: number): void {
     this.tannoyT -= dt;
     if (this.tannoyT > 0) return;
@@ -299,8 +337,12 @@ export class StationWalkScene implements Scene {
     this.tickTannoy(g, dt);
     // the cat comes first, kiosk or no kiosk
     if (inp.wasPressed("e")) {
+      const farewell = this.npcs.find(n => n.farewell && dist(this.px, this.py, n.x, n.y) < 16);
+      if (farewell && lastLegAtPort(g.world, farewell.farewell!)) { this.farewell(g, farewell.farewell!); return; }
       const cat = this.npcs.find((n) => n.tag === "YOUR CAT" && dist(this.px, this.py, n.x, n.y) < 16);
       if (cat) { this.npcs = this.npcs.filter((n) => n !== cat); this.msg = cat.line!; this.msgTimer = 5; sfx.purr(); for (const c of g.world.player.crew) c.morale = Math.min(100, c.morale + 1); return; }
+      const retired = this.npcs.find(n => n.tag === "RETIRED" && dist(this.px, this.py, n.x, n.y) < 16);
+      if (retired) { this.msg = retired.line!; this.msgTimer = 7; retired.pause = Math.max(retired.pause, 4); return; }
     }
     // kiosk interaction
     const near = this.nearestKiosk();

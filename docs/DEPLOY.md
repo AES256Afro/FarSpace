@@ -58,6 +58,12 @@ built by `.github/workflows/image.yml` whenever a `v<version>` tag matching
 is submitted to the BoxPilot catalog so it appears under **Games** in the App
 Catalog on any BoxPilot release that includes it.
 
+The Node stage uses `FROM --platform=$BUILDPLATFORM`: Vite emits the same
+static assets for both architectures, so npm and Node run on the builder
+without QEMU. The final nginx stage still targets each requested architecture.
+The image workflow verifies both targets. See Docker
+[cross-compilation builds](https://docs.docker.com/build/building/multi-platform/#cross-compilation).
+
 To add it to a BoxPilot box before that release ships (the catalog directory is
 re-read within seconds; no restart):
 

@@ -1969,6 +1969,21 @@ Time passes for the people on the ship, and for the ship.
 - [x] Regression tests cover temporary visits, load and jump boundaries,
       docking, and delayed wire responses. Browser checks cover real controls.
 
+## Milestone 397: The Last Entry (Sep 2026)
+- [x] Extend crew retirement with a final journey to a chosen reachable port,
+      including old saves whose crew already had the retirement conversation.
+- [x] Keep the crew member aboard without a deadline, record the destination
+      on the roster, and plot the exact station through the gate route.
+- [x] Place the old hand and shipmates on the station deck for a farewell,
+      with an optional settlement gift and an option to wait before parting.
+- [x] Add a keepsake, a settled alumnus, and one later letter. Reject stale
+      offers, duplicate completion, missing crew, wrong ports, and unpaid gifts.
+- [x] Read complete letters from NEWS with keyboard and pointer navigation,
+      scroll long messages, and preserve the services tab on return.
+- [x] Keep retired shipmate dialogue available beside station kiosks.
+- [x] Build shared static container assets with native Node, avoiding the
+      QEMU dependency-install crash while publishing both target architectures.
+
 ## Later: Trek / Expanse / Orville (the fourth sitting)
 
 The third sitting shipped everything on the last list (M330–M386): the
@@ -1980,8 +1995,6 @@ the roster, a command of their own. Next:
   a cutter of your own on loan, orders that conflict with a fare)
 - The belt's council as a place: a seat you sit in, votes every week, a
   rock that asks you to speak for it to the inners
-- An old hand's last leg: a chosen destination, a farewell on the deck,
-  and a letter from the place they settled
 - The ship's voice in the sim rig: a program it wrote about you
 
 The office's retirement and files, the wedding keepsake, the child named
@@ -1989,3 +2002,4 @@ after the ship, and the cadet's path through command are covered by
 M360-M392. Visible ground teams are covered by M393.
 The singers' dockable home, exchange, and homeward passenger are covered by
 M394-M395.
+An old hand's final journey, deck farewell, and letter are covered by M397.

@@ -1655,6 +1655,18 @@ place when returning from a story card or a site.
   halves the lay-up.
 - After thirty dockings someone may want to go home. Send them off with a
   bonus and the rest of the crew remember it; alumni wave from the lounge.
+- Offer one last journey and they choose a port, usually their home. They
+  keep their working berth until you say goodbye, with no time or docking
+  limit. The roster shows the destination; N there restores the route, and
+  N in flight flies through the gates to that exact station.
+- At the chosen port, P opens the station deck. Find the old hand on the
+  lower right deck and press E for the farewell. You can wait a little
+  longer, give 300 credits, or thank them without paying. They settle there,
+  leave a watch tally for the ship, and write after ten minutes of world time.
+- On NEWS, L or a click on a letter opens its full text. Left/Right selects
+  newer or older letters; Up/Down, Page Up/Down, and the wheel scroll long
+  letters. Escape returns to NEWS. Retired shipmates can be spoken to with
+  E even when they are standing beside a service kiosk.
 - Walk the deck (P) and you'll find your own people: crew on leave here and
   shipmates who retired here, marked in gold, with something to say (E).
 - The ship wears: hours under way and every jump. Past 50% the thrusters lose

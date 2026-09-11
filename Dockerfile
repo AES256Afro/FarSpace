@@ -1,5 +1,5 @@
-# Build stage
-FROM node:22-alpine AS build
+# Static assets are identical on both targets. Build with the runner's Node.
+FROM --platform=$BUILDPLATFORM node:22-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund

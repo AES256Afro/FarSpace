@@ -10,6 +10,7 @@ import type { Encounter } from "../data/encounters";
 import type { EncounterScene } from "./encounter";
 import { flag } from "../core/achievements";
 import { arcObjective } from "../core/crewarcs";
+import { lastLegObjective, plotLastLeg } from "../core/lastleg";
 import { sfx } from "../core/sfx";
 
 export class RosterScene implements Scene {
@@ -22,6 +23,12 @@ export class RosterScene implements Scene {
     if (g.input.wasPressed("Escape") || g.input.wasPressed("r")) { const back = g.settingsReturn; g.settingsReturn = "title"; if (back === "flight") (g.scenes.flight as unknown as { resumeNext: boolean }).resumeNext = true; g.setScene(back); return; }
     const n = p.crew.length;
     if (!n) return;
+    if (g.input.wasPressed("n")) {
+      const c = p.crew[this.cursor];
+      g.toast(plotLastLeg(g.world, c) ? "FINAL JOURNEY COURSE SET. N IN FLIGHT TAKES THE ROUTE."
+        : c.lastLeg ? "THE ROUTE IS CLOSED. THE PROMISE CAN WAIT." : "THIS CREW MEMBER HAS NO FINAL JOURNEY PLANNED.");
+      g.autosave(); return;
+    }
     if (g.input.wasPressed("ArrowDown")) { this.cursor = (this.cursor + 1) % n; sfx.blip(); }
     if (g.input.wasPressed("ArrowUp")) { this.cursor = (this.cursor + n - 1) % n; sfx.blip(); }
     if (g.input.wasPressed("s") && p.flags?.shipCrew && p.crew.length) {
@@ -71,6 +78,8 @@ export class RosterScene implements Scene {
       const rel = p.crew.filter((o) => o !== c && bond(c, o) !== 0).map((o) => `${o.name} ${bondLabel(bond(c, o)).toLowerCase()}`).join(", ");
       const arc = arcObjective(w, c);
       drawText(ctx, `${c.trait ? c.trait.toUpperCase() + ". " : ""}${rel ? rel.toUpperCase() + ". " : ""}${c.request ? "HAS AN ASK. " : ""}${c.arc?.done ? "STORY TOLD." : arc ? arc.split(": ").slice(1).join(": ").slice(0, 50) : ""}`.slice(0, 112), 12, y + 18, PAL.greyDark);
+      const last = lastLegObjective(w, c);
+      if (last) drawText(ctx, `${last} - N: PLOT`.slice(0, 112), 12, y + 28, PAL.gold);
       y += 44;
     });
     for (const s of p.shoreCrew ?? []) { drawText(ctx, `${s.member.name.toUpperCase()} - ON LEAVE AT ${(findStation(w, s.stationId)?.st.name ?? "?").toUpperCase()} (${s.docks} DOCKINGS SO FAR)`, 12, y, PAL.gold); y += 10; }

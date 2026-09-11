@@ -2,6 +2,7 @@
 // fires, talk to crew and passengers, study, eat, sleep.
 
 import type { FlightScene } from "./flight/index";
+import { lastLegTalk } from "../core/lastleg";
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
@@ -649,9 +650,11 @@ export class InteriorScene implements Scene {
       this.cat.pause = 3;
       sfx.purr();
     } else if (inp.wasPressed("e")) {
-      if (crewNear && crewNear.c.skill >= 3 && !crewNear.c.specialty && !crewNear.c.sick) { this.offerSpecialty(g, crewNear.c); return; }
+      if (crewNear && crewNear.c.skill >= 3 && !crewNear.c.specialty && !crewNear.c.sick && !crewNear.c.lastLeg) { this.offerSpecialty(g, crewNear.c); return; }
       if (crewNear) {
         const c = crewNear.c;
+        const finalJourney = lastLegTalk(g.world, c);
+        if (finalJourney) { this.talk = finalJourney; this.talkTimer = 7; return; }
         const couns = p.crew.find((o) => o !== c && o.specialty === "counsellor" && !o.sick);
         if (couns && !c.sick && c.morale < 60 && !c.counselled) {
           c.counselled = true; c.morale = Math.min(100, c.morale + 6);

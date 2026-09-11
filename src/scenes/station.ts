@@ -10,6 +10,8 @@ import { clamp } from "../core/mathx";
 import { commodity, faction } from "../data/data";
 import { HULLS, hull } from "../data/hulls";
 import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS, roleLabel } from "../data/crew";
+import { beginLastLeg, lastLegAtPort, lastLegDestination } from "../core/lastleg";
+import type { LettersScene } from "./letters";
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
@@ -50,6 +52,7 @@ export class StationScene implements Scene {
   station!: StationDef;
   returnTo: "flight" | "stationwalk" = "flight";
   rowBoxes: [number, number][] = [];
+  mailRows: { y0: number; y1: number; index: number }[] = [];
   arrivedOnce = "";
   wireEvents: wire.WireEvent[] = [];
   boards: Record<string, wire.BoardEntry[]> = {};
@@ -161,6 +164,8 @@ export class StationScene implements Scene {
 
   settleCrew(g: Game): void {
     const p = g.world.player;
+    const farewell = p.crew.find(c => lastLegAtPort(g.world, c));
+    if (farewell) g.showHint(`last-journey:${farewell.name}`, `${farewell.name.toUpperCase()}'S CHOSEN PORT. P WALKS THE DECK; E BESIDE THEM SAYS GOODBYE.`);
     if (!p.crew.length) {
       (p.dockings ??= {})[this.station.id] = dockingsAt(p, this.station.id) + 1;
       for (const line of settlePassengers(p)) g.toast(line);
@@ -228,7 +233,7 @@ export class StationScene implements Scene {
     const evHere = galaxyEventAt(g.world, p.systemId);
     if (evHere?.kind === "festival" && evHere.stationId === this.station.id && logSight(p, "festival", `the festival at ${this.station.name}`, p.systemId)) g.toast("YOUR PASSENGERS ARE OFF INTO THE FESTIVAL CROWD. THEY'LL REMEMBER THIS ONE.");
     this.crewRequest(g);
-    if (g.sceneName !== "encounter" && (p.tutorial ?? -1) < 0) { const cand = p.crew.find((c) => (c.loyalty ?? 0) >= 2 && !c.arc && arcFor(c.role)); if (cand && rng.chance(0.35)) offerArc(g, cand, "station"); }
+    if (g.sceneName !== "encounter" && (p.tutorial ?? -1) < 0) { const cand = p.crew.find((c) => (c.loyalty ?? 0) >= 2 && !c.arc && !c.lastLeg && arcFor(c.role)); if (cand && rng.chance(0.35)) offerArc(g, cand, "station"); }
     if (g.sceneName !== "encounter") this.retirement(g, rng);
     if (g.sceneName !== "encounter") this.envoy(g);
   }
@@ -249,13 +254,20 @@ export class StationScene implements Scene {
   retirement(g: Game, rng: RNG): void {
     const p = g.world.player;
     if ((p.tutorial ?? -1) >= 0) return;
-    const c = p.crew.find((x) => (x.docks ?? 0) >= RETIRE_DOCKS && !x.retireAsked && rng.chance(0.2));
+    const c = p.crew.find((x) => (x.docks ?? 0) >= RETIRE_DOCKS && !x.lastLeg && (!x.retireAsked || !x.lastLegOffered) && rng.chance(0.2));
     if (!c) return;
     c.retireAsked = true;
+    c.lastLegOffered = true;
     const name = c.name.toUpperCase();
     const stId = this.station.id;
-    const text = `${name} FINDS YOU AT THE AIRLOCK, KIT BAG PACKED. '${c.docks} DOCKINGS, CAPTAIN. I'VE BEEN COUNTING. THIS IS A GOOD PORT TO STOP AT. I'D LIKE TO GO HOME WHILE I STILL REMEMBER WHAT IT LOOKS LIKE.'`;
+    const destination = lastLegDestination(g.world, c);
+    const text = `${name} FINDS YOU AT THE AIRLOCK WITH AN OLD ROUTE CHART. '${c.docks} DOCKINGS, CAPTAIN. I'VE BEEN COUNTING. ${destination ? `I COULD STOP HERE. BUT IF YOU HAVE ONE MORE JOURNEY IN YOU, I'D CHOOSE ${destination.st.name.toUpperCase()}, IN ${destination.sys.name.toUpperCase()}. I'D LIKE THE LAST ENTRY TO BE SOMEWHERE I CHOSE.` : "THIS IS A GOOD PORT TO STOP AT. I'D LIKE TO GO HOME WHILE I STILL REMEMBER WHAT IT LOOKS LIKE."}'`;
     const opts: Encounter["options"] = [];
+    if (destination) opts.push({ label: "ONE LAST LEG. WE'LL TAKE YOU THERE.", hint: `${destination.st.name.toUpperCase()}, ${destination.sys.name.toUpperCase()}. No deadline.`, result: (g2) => {
+      if (!beginLastLeg(g2.world, c, destination.st.id)) return "THE JOURNEY COULDN'T BE ENTERED. CHECK THE CREW AND THE CHART.";
+      g2.autosave();
+      return `${name} MARKS THE PORT ON THE CHART. 'I'M STILL ON THE WATCH BILL UNTIL THEN.' COURSE SET FOR ${destination.st.name.toUpperCase()}. N FLIES THE ROUTE. THE ROSTER KEEPS THE DESTINATION. SAY GOODBYE ON THAT STATION'S DECK.`;
+    } });
     opts.push({ label: "GO WELL. TAKE 300CR FOR THE ROAD.", requires: (g2) => g2.world.player.credits >= 300, result: (g2) => {
       const p2 = g2.world.player; p2.credits -= 300; retireCrew(p2, c, stId, g2.world.time);
       for (const o of p2.crew) { o.morale = Math.min(100, o.morale + 8); o.loyalty = (o.loyalty ?? 0) + 1; }
@@ -311,7 +323,7 @@ export class StationScene implements Scene {
     if (!p.crew.length || (p.tutorial ?? -1) >= 0) return;
     const rng = new RNG((g.world.seed ^ Math.floor(g.world.time) ^ 0xc4e) >>> 0);
     if (!rng.chance(0.22)) return;
-    const c = rng.pick(p.crew.filter((x) => !x.request));
+    const c = rng.pick(p.crew.filter((x) => !x.request && !x.lastLeg));
     if (!c) return;
     const name = c.name.toUpperCase();
     const kinds = ["leave", "visit", "training", "family", "shore", "goods", "letter"] as const;
@@ -607,6 +619,10 @@ export class StationScene implements Scene {
       }
       case "NEWS":
         this.cursor = clamp(this.cursor, 0, g.world.news.length - 1);
+        if (inp.wasPressed("l") || (inp.mousePressed && inp.mouseX >= 8 && this.mailRows.some(row => inp.mouseY >= row.y0 && inp.mouseY < row.y1))) {
+          const row = inp.mousePressed ? this.mailRows.find(row => inp.mouseY >= row.y0 && inp.mouseY < row.y1) : null;
+          (g.scenes.letters as LettersScene).open(g, row?.index ?? 0); return;
+        }
         if (!st.military && st.factionId !== "vex" && (inp.wasPressed("y") || inp.wasPressed("n"))) { g.toast(castVote(g.world, st.factionId, inp.wasPressed("y"))); sfx.select(); }
         if (inp.wasPressed("r")) { const m = [...(p.mail ?? [])].reverse().find((x) => !x.replied); if (!m) g.toast("NO LETTERS WAITING FOR AN ANSWER"); else { g.toast(replyToLetter(g.world, m)); sfx.letter(); } }
         break;
@@ -767,7 +783,7 @@ export class StationScene implements Scene {
     this.fares = this.fares.filter((f) => f !== m);
     if (m.passengerKind === "singer") {
       this.fares = this.fares.filter(f => f.passengerKind !== "singer");
-      p.navTarget = m.targetSystemId; p.singersCourse = true;
+      p.navTarget = m.targetSystemId; p.singersCourse = true; delete p.navStationId;
       g.toast(`${(m.passengerName ?? "THE SINGER").toUpperCase()} BOARDS. ${m.lightReward ?? 25} LIGHT AT HOME. COURSE PLOTTED.`);
       g.autosave(); return;
     }
@@ -1151,6 +1167,7 @@ export class StationScene implements Scene {
 
   draw(g: Game, ctx: CanvasRenderingContext2D): void {
     this.rowBoxes = [];
+    this.mailRows = [];
     const p = g.world.player;
     const st = this.station;
     const fac = faction(st.factionId);
@@ -2240,9 +2257,10 @@ export class StationScene implements Scene {
     if (this.station.museum?.length) { const m = this.station.museum[this.station.museum.length - 1]; drawText(ctx, `MUSEUM: ${this.station.museum.length} PIECE${this.station.museum.length > 1 ? "S" : ""} - LATEST ${m.item.toUpperCase()}, DONATED BY ${m.by.toUpperCase()}`.slice(0, 112), 8, top, PAL.gold); top += 9; }
     const mail = g.world.player.mail ?? [];
     if (mail.length) {
-      drawText(ctx, `LETTERS (${mail.length}) - R WRITES BACK${mail.some((x) => !x.replied) ? "" : " (ALL ANSWERED)"}`, 8, top, PAL.gold);
+      drawText(ctx, `LETTERS (${mail.length}) - L READ ALL - R WRITES BACK${mail.some((x) => !x.replied) ? "" : " (ALL ANSWERED)"}`, 8, top, PAL.gold);
+      this.mailRows.push({ y0: top - 2, y1: top + 8, index: 0 });
       let ly = top + 9;
-      for (const m of mail.slice(-2).reverse()) { drawText(ctx, `FROM ${m.from.toUpperCase()}: ${m.text.toUpperCase()}`.slice(0, 112), 8, ly, PAL.grey); ly += 8; }
+      for (const [index, m] of mail.slice(-2).reverse().entries()) { drawText(ctx, `FROM ${m.from.toUpperCase()}: ${m.text.toUpperCase()}`.slice(0, 112), 8, ly, PAL.grey); this.mailRows.push({ y0: ly, y1: ly + 8, index }); ly += 8; }
       top = ly + 4;
     }
     const serial = serialLines(g.world);

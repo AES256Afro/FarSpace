@@ -19,6 +19,8 @@ export interface CrewMember {
   sick?: { kind: string; until: number } | null; // laid up until world time; no bonus while sick
   counselled?: boolean; // had a session with the ship's counsellor this leg
   retireAsked?: boolean; // the retirement talk has happened
+  lastLegOffered?: boolean; // older crews can hear the expanded retirement offer once
+  lastLeg?: { stationId: string; startedAt: number }; // stays aboard until the farewell at this port
   xp?: number;      // marks toward the next skill, earned by doing the job
   bonds?: Record<string, number>; // other crew by name: -3 feud .. 3 fast friends
   arc?: { id: string; stage: number; targetStationId?: string; targetSystemId?: string; wreckId?: string; planetIdx?: number; baseline?: number; done?: boolean } | null; // their own story
