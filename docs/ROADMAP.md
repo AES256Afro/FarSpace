@@ -899,4 +899,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] An encounter: the owner of lost property chases the ship down; hand it
       over or keep it
 
+## Milestone 136 — Handbook III ✅ (Sep 2026)
+- [x] Help and handbook cover the harbour: hours, paging, the dock-hand,
+      neighbours, lost property, requests, the galley; the ship has lines too
+
 ## Later

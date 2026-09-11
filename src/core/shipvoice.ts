@@ -35,6 +35,11 @@ export function pickShipLine(g: Game, rng: RNG): string | null {
   if ((p.mail ?? []).some((m) => m.replied)) pool.push("YOU WRITE BACK TO PEOPLE. NOT EVERY SHIP'S CAPTAIN DOES. I NOTICE THESE THINGS.");
   if (p.crew.some((c) => c.home)) pool.push("HALF MY CREW HAVE PEOPLE AT SOME PORT OR OTHER. I TRY TO FLY LIKE IT.");
   if (p.lastWeekSeen) pool.push("NEW WEEK. THE FACTIONS ARE ASKING THEIR QUESTIONS AGAIN. I DON'T GET A VOTE. I HAVE OPINIONS.");
+  if ((p.keepsakes ?? []).length) pool.push("THERE'S SOMEBODY'S GLOVE ON THE PASSENGER SEAT. IT'S BEEN THERE FOUR PORTS. I'VE DECIDED IT'S MINE.");
+  if ((p.lostProperty ?? []).length) pool.push(`${p.lostProperty![0].owner.toUpperCase()} LEFT SOMETHING IN MY CABIN. I'D LIKE IT BACK WITH THEM. IT'S NOT MINE TO KEEP.`);
+  if (p.flags?.dockhand) pool.push("THE DOCK-HAND PATCHED ME WITHOUT ASKING. I DIDN'T MIND. I MINDED A LITTLE. IT WAS A GOOD PATCH.");
+  if (passengersAboard(p).some((m) => m.request && !m.requestMet)) pool.push("THE ONE IN THE LOUNGE WANTS SOMETHING. I HEARD THE ASK. I CAN'T COOK. YOU CAN.");
+  if ((p.mealsCooked ?? 0) >= 5) pool.push("THE GALLEY SMELLS OF SOMETHING GOOD AGAIN. I DON'T EAT. I STILL NOTICE.");
   if (p.mayday) pool.push("MY TANKS ARE DRY AND MY MAYDAY IS OUT THERE. SOMEBODY WILL COME. SOMEBODY ALWAYS COMES. USUALLY.");
   const deck = hull(p.hullId).deck;
   if (deck === "scout") pool.push("I'M SMALL. I'M FAST. I'M NOT CARRYING THAT MANY CRATES AGAIN.", "SCOUT HULLS DON'T GET STATUES. WE GET THERE FIRST, THOUGH.");
