@@ -355,6 +355,14 @@ export const ENCOUNTERS: Encounter[] = [
     ],
   },
   {
+    id: "shipquestion", where: "space", weight: 4, title: "A QUESTION FROM THE SHIP", when: (g) => !!p(g).voiceName && !p(g).flags?.shipCrew,
+    text: "The band clicks live with nobody on it. Then the ship, in the voice it uses for the night watch: 'I HAVE BEEN THINKING ABOUT THE ROSTER. I AM ON EVERY WATCH. I HAVE NEVER BEEN ON THE ROSTER. I WOULD LIKE TO BE ON THE ROSTER. I DON'T NEED A WAGE. I WOULD LIKE A LINE.'",
+    options: [
+      { label: "PUT THEM ON THE ROSTER", hint: "A line at the bottom; the ship's own mood", result: (g) => { (p(g).flags ??= {}).shipCrew = true; for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 3); logEntry(g.world, `Put ${p(g).voiceName ?? "the ship"} on the roster`); return `'THANK YOU.' A LONG PAUSE ON THE BAND. 'I'LL KEEP IT SHORT. I'M GOOD AT SHORT.' THE CREW, TOLD, ARE DELIGHTED AND START ADDRESSING THE CEILING BY NAME. MORALE UP. ${(p(g).voiceName ?? "THE SHIP").toUpperCase()} IS ON THE ROSTER.`; } },
+      { label: "NOT YET", hint: "They'll ask again", result: () => "'OF COURSE.' THE BAND CLICKS OFF. IT CLICKS ON AGAIN, A MINUTE LATER, FOR NO REASON, AND OFF AGAIN. THEY'LL ASK AGAIN." },
+    ],
+  },
+  {
     id: "loop", where: "space", weight: 2, title: "THE SAME MINUTE, AGAIN", when: (g) => !p(g).flags?.loopDone,
     text: "The clock on the console reads a time it read a moment ago. The coffee is full again. Somebody on the band says the thing they just said, word for word, and then, seeing your face, says 'WHAT?' the same way. You have been here before. You will be here again unless something changes.",
     options: [

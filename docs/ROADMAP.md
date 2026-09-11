@@ -1072,6 +1072,10 @@ Time passes for the people on the ship, and for the ship.
 - [x] A second contact, on the ground: lights on a ridge that answer the
       rover's headlights, then a line of lights that leads somewhere
 
+## Milestone 178 — A Line on the Roster ✅ (Sep 2026)
+- [x] Once it has a name, the ship asks to be on the roster; say yes and it
+      gets a line at the bottom with its own mood
+
 ## Later: Trek / Expanse / Orville
 
 - A second story arc per faction (first contact proper: the singers' home)

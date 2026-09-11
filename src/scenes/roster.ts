@@ -5,7 +5,7 @@ import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 import { ROLE_INFO, XP_STEPS_LABEL, SPECIALTIES } from "../data/crew";
-import { bond, bondLabel, findStation, ledger, XP_STEPS, onWatch, captainNickname, firstOfficer, reviewDue, reviewCrew } from "../world";
+import { bond, bondLabel, findStation, ledger, XP_STEPS, onWatch, captainNickname, firstOfficer, reviewDue, reviewCrew, shipVoiceName } from "../world";
 import type { Encounter } from "../data/encounters";
 import type { EncounterScene } from "./encounter";
 import { flag } from "../core/achievements";
@@ -68,6 +68,7 @@ export class RosterScene implements Scene {
       y += 44;
     });
     for (const s of p.shoreCrew ?? []) { drawText(ctx, `${s.member.name.toUpperCase()} - ON LEAVE AT ${(findStation(w, s.stationId)?.st.name ?? "?").toUpperCase()} (${s.docks} DOCKINGS SO FAR)`, 12, y, PAL.gold); y += 10; }
+    if (p.flags?.shipCrew) { const wear = Math.round(p.wear ?? 0); const mood = wear > 70 ? "ACHING" : p.hull < p.hullMax * 0.5 ? "HOLED" : p.fuel < p.fuelMax * 0.2 ? "HUNGRY" : "FINE"; const line = `${shipVoiceName(p)} - THE SHIP - EVERY WATCH - WEAR ${wear}% - ${mood} - "${wear > 70 ? "A YARD, WHEN YOU CAN." : "I'M GOOD AT SHORT."}"`; drawText(ctx, line, 12, VH - 22, PAL.uiDim); }
     drawText(ctx, `CREDITS ${p.credits}   WAGES ${p.crew.reduce((a, c) => a + c.wage, 0)}CR A DOCKING   CAT ${p.cat ? p.cat.name.toUpperCase() : "NONE"}   BERTHS ${p.crew.length + (p.shoreCrew ?? []).length}${captainNickname(w) ? `   THE LANES CALL YOU ${captainNickname(w)}` : ""}`, 12, VH - 12, PAL.greyDark);
     void textWidth;
   }

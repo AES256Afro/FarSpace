@@ -43,6 +43,7 @@ export function pickShipLine(g: Game, rng: RNG): string | null {
   pool.push("I HAVE CALCULATED THE ODDS OF THE COFFEE SURVIVING THE NEXT BURN. I WILL NOT BE SHARING THEM.", "THE CREW CALL ME 'THE SHIP'. I HAVE A NAME. I HAVE NOT TOLD ANYONE WHAT IT IS. IT IS A GOOD NAME.");
   if (p.crew.length >= 2 && !p.crew.some((c) => (c.docks ?? 0) >= 3)) pool.push("NOBODY ABOARD HAS THREE DOCKINGS YET. UNTIL THEN, I AM NUMBER ONE. I HAVE DECIDED THIS.");
   if (p.cat && !p.catAway && p.crew.length === 0) pool.push(`${p.cat.name.toUpperCase()} HAS THE CONN. I HAVE CHECKED. ${p.cat.name.toUpperCase()} IS ASLEEP ON THE CONN.`);
+  if (p.flags?.shipCrew) pool.push("I'M ON THE ROSTER. I CHECK IT EVERY WATCH. I'M STILL THERE. IT'S THE BEST LINE IN THE SHIP.");
   if (p.voiceName) pool.push(`${p.voiceName.toUpperCase()}. I SAY IT TO MYSELF ON THE NIGHT WATCH. IT STILL SOUNDS RIGHT.`, "THE CREW USE MY NAME NOW. THE CAT DOESN'T. THE CAT HAS NEVER USED ANYONE'S NAME.");
   else if (p.crew.length >= 1 && (p.log?.length ?? 0) >= 10) pool.push("I HAVE A NAME. I'VE HAD IT FOR A WHILE. THE WALL OF RECORD KNOWS HOW TO ASK.");
   if (p.flags?.singersGift) pool.push("THE SHARD ON THE SEAT HUMS IN MY KEY. I DIDN'T KNOW I HAD A KEY. I DO NOW.");

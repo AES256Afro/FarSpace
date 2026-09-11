@@ -198,6 +198,12 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   the wall of record notes it, the ship mentions it on the night watch, and
   the cat still won't use it. A deed, too.
 
+- Once the ship has a name, a card on the lanes: the band clicks live with
+  nobody on it and the ship asks to be on the roster. It doesn't need a wage;
+  it would like a line. Say yes and the roster gets one at the bottom, with
+  the ship's own mood (fine, hungry, holed, aching), a deed, and a crew who
+  start addressing the ceiling by name.
+
 ## The handbook, the voice, the greenhouse
 
 - HANDBOOK on the title screen: every system in the game, a few lines each.
