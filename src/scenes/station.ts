@@ -1869,7 +1869,7 @@ export class StationScene implements Scene {
     drawText(ctx, lost.length ? `LOST PROPERTY: ${lost.map((it) => `${it.name.toUpperCase().split(",")[0]} (${it.owner.toUpperCase()}${it.stationId === st.id ? ", GOT OFF HERE" : ""})`).join("; ")}`.slice(0, 104) : "LOST PROPERTY: NOTHING LEFT IN THE CABIN.", 8, y, PAL.grey); y += 9;
     drawText(ctx, (p.keepsakes ?? []).length ? `KEPT ABOARD: ${(p.keepsakes ?? []).slice(-3).map((k) => k.toUpperCase().split(",")[0]).join(", ")}`.slice(0, 104) : "KEPT ABOARD: NOTHING YET.", 8, y, PAL.grey); y += 9;
     const open = passengersAboard(p).filter((m) => m.request && !m.requestSettled);
-    drawText(ctx, open.length ? `FARES ASKING: ${open.map((m) => `${(m.passengerName ?? "A FARE").toUpperCase()} WANTS ${m.request === "meal" ? "A HOT MEAL" : m.request === "quiet" ? "A QUIET RUN" : "A VIEW"}${m.requestMet ? " (DONE)" : ""}`).join("; ")}`.slice(0, 104) : "FARES ASKING: NOTHING OPEN.", 8, y, PAL.grey); y += 9;
+    drawText(ctx, open.length ? `FARES ASKING: ${open.map((m) => `${(m.passengerName ?? "A FARE").toUpperCase()} WANTS ${m.request === "meal" ? "A HOT MEAL" : m.request === "quiet" ? "A QUIET RUN" : m.request === "star" ? "THE STAR UP CLOSE" : "A VIEW"}${m.requestMet ? " (DONE)" : ""}`).join("; ")}`.slice(0, 104) : "FARES ASKING: NOTHING OPEN.", 8, y, PAL.grey); y += 9;
     y += 3;
     drawText(ctx, "PAGING", 8, y, PAL.gold); y += 9;
     const pages: string[] = [];

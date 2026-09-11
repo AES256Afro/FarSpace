@@ -318,6 +318,14 @@ export const ENCOUNTERS: Encounter[] = [
     ],
   },
   {
+    id: "loop", where: "space", weight: 2, title: "THE SAME MINUTE, AGAIN", when: (g) => !p(g).flags?.loopDone,
+    text: "The clock on the console reads a time it read a moment ago. The coffee is full again. Somebody on the band says the thing they just said, word for word, and then, seeing your face, says 'WHAT?' the same way. You have been here before. You will be here again unless something changes.",
+    options: [
+      { label: "DO SOMETHING DIFFERENT", hint: "Anything. The other chair. The other hand.", result: (g, rng) => { const n = ((p(g).flags?.loopCount as unknown as number) ?? 0); if (n >= 2 || rng.chance(0.35)) { (p(g).flags ??= {}).loopDone = true; p(g).expData = (p(g).expData ?? 0) + 100; logEntry(g.world, "Broke a loop in the lane by sitting in the other chair"); return "YOU SIT IN THE OTHER CHAIR. THE CLOCK TICKS FORWARD. THE COFFEE GOES DOWN. THE BAND SAYS SOMETHING NEW. +100 DATA FOR THE READINGS, AND NOBODY WILL EVER BELIEVE YOU."; } (p(g).flags ??= {} as any)["loopCount" as string] = (n + 1) as unknown as boolean; return "YOU TRY THE OTHER HAND. THE CLOCK READS THE SAME TIME AGAIN. THE COFFEE REFILLS. NOT THAT, THEN. YOU'LL BE BACK."; } },
+      { label: "RIDE IT", hint: "A free minute is a free minute", result: (g) => { const n = ((p(g).flags?.loopCount as unknown as number) ?? 0); (p(g).flags ??= {} as any)["loopCount" as string] = (n + 1) as unknown as boolean; for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 2); return "YOU LET IT RUN. THE CREW WORK OUT WHAT'S HAPPENING AND START USING THE MINUTE: A NAP, A HAND OF CARDS, THE SAME JOKE THREE TIMES. MORALE UP. THE CLOCK WAITS."; } },
+    ],
+  },
+  {
     id: "quietworld", where: "space", weight: 2, title: "THE QUIET WORLD",
     text: "A settlement on the third moon that has never launched anything is on the radio, crackling and desperate: a fever, a hundred sick, no medicine. They don't know anyone is up here. Nobody is supposed to be.",
     options: [

@@ -1078,8 +1078,9 @@ export function envoyOutcome(w: World, m: Mission): { ok: boolean; lines: string
   return { ok, lines: [late ? `${name} IS TOO LATE. THE OTHER DELEGATION HAS GONE HOME. THE TREATY GOES BACK IN THE CASE. REP DOWN ON BOTH SIDES.` : `${name} ARRIVES WITH SCORCH ON THE HULL BEHIND THEM AND THE TALKS COLLAPSE BEFORE THEY START. 'THEY SHOT AT A TREATY.' REP DOWN ON BOTH SIDES.`] };
 }
 // Passenger requests: somebody in the lounge wants something on this leg. Meet it and they tip at the end.
-export type PaxRequest = "meal" | "quiet" | "view";
+export type PaxRequest = "meal" | "quiet" | "view" | "star";
 export const PAX_REQUEST_LINES: Record<PaxRequest, string> = {
+  star: "MY PEOPLE GREET EVERY NEW STAR UP CLOSE. TAKE ME NEAR THE STAR HERE, CLOSE ENOUGH TO FEEL IT. I'LL SING. YOU'LL LIVE.",
   meal: "ANY CHANCE OF A HOT MEAL BEFORE WE ARRIVE? SHIP'S FOOD, I DON'T MIND. JUST HOT.",
   quiet: "I'D PAY EXTRA FOR A QUIET RUN. NO HOLES IN THE HULL BETWEEN HERE AND THERE.",
   view: "I HEAR THERE ARE THINGS WORTH SEEING OUT HERE. SHOW ME ONE AND I'LL REMEMBER YOU AT THE END.",
@@ -1088,7 +1089,7 @@ export function askPassengerRequest(p: PlayerState, rng: RNG): { m: Mission; tex
   const pax = passengersAboard(p).filter((m) => !m.request);
   if (!pax.length) return null;
   const m = rng.pick(pax);
-  const kinds: PaxRequest[] = ["quiet", "view"]; if (p.crew.filter((c) => !c.sick).length >= 2) kinds.push("meal");
+  const kinds: PaxRequest[] = ["quiet", "view", "star"]; if (p.crew.filter((c) => !c.sick).length >= 2) kinds.push("meal");
   m.request = rng.pick(kinds); m.requestMet = false; m.tip = 40 + Math.round(m.reward * 0.15);
   return { m, text: PAX_REQUEST_LINES[m.request] };
 }
@@ -1125,8 +1126,9 @@ function settleRequests(p: PlayerState, out: string[]): void {
     if (m.request === "view") m.requestMet = (m.sights?.length ?? 0) > 0 || !!m.sightSeen;
     const name = (m.passengerName ?? "YOUR PASSENGER").toUpperCase();
     m.requestSettled = true;
-    if (m.requestMet) { m.mood = Math.min(100, (m.mood ?? 60) + 15); out.push(`${name} GOT THE ${m.request === "meal" ? "HOT MEAL" : m.request === "quiet" ? "QUIET RUN" : "VIEW"} THEY ASKED FOR. +${m.tip ?? 0}CR TIP AT THE END OF THE FARE.`); }
-    else { m.tip = 0; m.mood = Math.max(0, (m.mood ?? 60) - 6); out.push(`${name} ASKED FOR A ${m.request === "meal" ? "HOT MEAL" : m.request === "quiet" ? "QUIET RUN" : "VIEW"} AND DIDN'T GET ONE. NOTED, QUIETLY.`); }
+    const what = m.request === "meal" ? "HOT MEAL" : m.request === "quiet" ? "QUIET RUN" : m.request === "star" ? "STAR UP CLOSE" : "VIEW";
+    if (m.requestMet) { m.mood = Math.min(100, (m.mood ?? 60) + 15); out.push(`${name} GOT THE ${what} THEY ASKED FOR. +${m.tip ?? 0}CR TIP AT THE END OF THE FARE.`); }
+    else { m.tip = 0; m.mood = Math.max(0, (m.mood ?? 60) - 6); out.push(`${name} ASKED FOR A ${what} AND DIDN'T GET ONE. NOTED, QUIETLY.`); }
   }
 }
 // Sights along the way: tourists pay for what they saw. Their booked sight also completes the fare.

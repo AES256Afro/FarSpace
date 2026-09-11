@@ -968,4 +968,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Ask the ship at the wall of record what it wants to be called; its
       voice signs its lines with that name from then on
 
+## Milestone 153 — The Star Up Close, and the Loop ✅ (Sep 2026)
+- [x] A fourth lounge request: take them near the star; a card that repeats
+      the same minute until you do something different
+
 ## Later

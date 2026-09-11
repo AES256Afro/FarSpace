@@ -775,6 +775,15 @@ describe("station hours and the tannoy", () => {
     for (const st of sts.slice(0, 5)) { const lines = tannoyLines(w, st, new RNG(1), at); expect(lines.length).toBeGreaterThan(5); for (const l of lines) expect(l.length).toBeLessThanOrEqual(130); }
     w.player.postRuns = 10; expect(tannoyLines(w, sts[0], new RNG(2), at).some((l) => l.includes("THE POSTMAN"))).toBe(true);
   });
+  it("a fare who wants the star up close, and a loop that breaks on the third try", () => {
+    const w = generateWorld(49, { realGalaxy: true }); const p = w.player;
+    p.missions.push({ id: "s", kind: "passenger", title: "t", desc: "d", fromStationId: "a", targetSystemId: "b", reward: 100, accepted: true, done: false, passengerName: "Rook", mood: 50, request: "star", requestMet: true, tip: 30 } as Mission);
+    expect(settlePassengers(p).some((l) => l.includes("STAR UP CLOSE") && l.includes("+30CR"))).toBe(true);
+    const g = { world: w, scenes: {} } as unknown as import("../src/game").Game;
+    const loop = ENCOUNTERS.find((e) => e.id === "loop")!; expect(loop.when!(g)).toBe(true);
+    let tries = 0; while (!p.flags?.loopDone && tries < 5) { loop.options[0].result(g, new RNG(100 + tries)); tries++; }
+    expect(p.flags?.loopDone).toBe(true); expect(tries).toBeLessThanOrEqual(3); expect(loop.when!(g)).toBe(false);
+  });
   it("the ship's voice signs with the hull until it is asked its name", () => {
     const w = generateWorld(48, { realGalaxy: true }); const p = w.player;
     expect(shipVoiceName(p)).toBe(shipVoiceName(p).toUpperCase()); expect(p.voiceName).toBeUndefined();

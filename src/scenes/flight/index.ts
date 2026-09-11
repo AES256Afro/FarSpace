@@ -1323,6 +1323,7 @@ export class FlightScene implements Scene {
     const flare = galaxyEventAt(g.world, sys.id)?.kind === "flare";
     const scoopZone = d < 200;
     const hot = d < (flare ? 900 : 320);
+    if (d < 1100) for (const m of passengersAboard(p)) if (m.request === "star" && !m.requestMet) { m.requestMet = true; g.toast(`${(m.passengerName ?? "YOUR PASSENGER").toUpperCase()} SINGS TO THE STAR FROM THE VIEWPORT. THE WHOLE LOUNGE HEARS IT. THE REQUEST IS MET.`); }
     if (flare) p.heat += dt * 4;
     this.scooping = false;
     if (hot) p.heat += dt * 26 * (1 - Math.max(0, d) / 320);
