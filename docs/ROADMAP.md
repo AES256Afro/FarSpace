@@ -822,4 +822,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] The title marks What's New when unread; race day on the tannoy; the
       ship on the pacer
 
+## Milestone 116 — The Marshal's Challenge ✅ (Sep 2026)
+- [x] A wager card that doubles the next under-par race prize; a bay of your
+      own at a station you hold a big stake in
+
 ## Later

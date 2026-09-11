@@ -316,6 +316,7 @@ export interface PlayerState {
   racesUnderPar?: number;            // ring races finished under par
   influence?: Record<string, number>; // "<week>:<system>:<faction>" -> your push in this week's border contest
   lastWeekSeen?: string;             // the week key last announced at a dock
+  marshalWager?: boolean;            // the marshal's challenge: the next under-par race pays double
   messes?: number;                   // mess calls you sat down for
   mealsCooked?: number;              // galley meals you cooked
   vistaViews?: number;               // times you looked out of the viewport

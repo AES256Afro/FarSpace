@@ -572,7 +572,8 @@ export class FlightScene implements Scene {
     if (!r.started) { r.started = true; r.t = 0; }
     if (r.idx < r.gates.length) return;
     // the finish
-    const prize = racePrize(r.t, r.par);
+    let prize = racePrize(r.t, r.par);
+    if (p.marshalWager) { p.marshalWager = false; if (r.t <= r.par) { prize *= 2; this.comms.push({ from: "MARSHAL", text: "UNDER PAR. THE WAGER STANDS: DOUBLE.", life: 8, color: PAL.gold }); } else { prize = Math.max(0, prize - 100); this.comms.push({ from: "MARSHAL", text: "OVER PAR. THE MARSHALS THANK YOU FOR THE ROUND.", life: 8, color: PAL.grey }); } }
     p.credits += prize; ledger(p, "races", prize);
     const best = recordRace(p, r.stationId, r.t);
     if (r.t <= r.par) p.racesUnderPar = (p.racesUnderPar ?? 0) + 1;
@@ -642,7 +643,7 @@ export class FlightScene implements Scene {
     g.lastBay = bay;
     this.cruise = false; this.autopilot = false;
     if (hold) { this.comms.push({ from: `${st.name.toUpperCase()} CONTROL`, text: `${(p.shipName ?? "VESSEL").toUpperCase()}, HOLD SHORT OF THE BAY. ${traffic ? "TRAFFIC ON THE APPROACH" : "BAY IS CYCLING"}. WE'LL CALL YOU IN.`, life: 8, color: PAL.warn }); sfx.blip(); return true; }
-    this.comms.push({ from: `${st.name.toUpperCase()} CONTROL`, text: `${(p.shipName ?? "VESSEL").toUpperCase()}, CLEARED FOR BAY ${bay}. FOLLOW THE LIGHTS, WE HAVE YOU.`, life: 6, color: PAL.ui });
+    this.comms.push({ from: `${st.name.toUpperCase()} CONTROL`, text: (p.stakes?.[st.id] ?? 0) >= 25 ? `${(p.shipName ?? "VESSEL").toUpperCase()}, CLEARED FOR BAY ${bay}. WHICH IS YOURS, TECHNICALLY. FOLLOW THE LIGHTS.` : `${(p.shipName ?? "VESSEL").toUpperCase()}, CLEARED FOR BAY ${bay}. FOLLOW THE LIGHTS, WE HAVE YOU.`, life: 6, color: PAL.ui });
     sfx.blip();
     return true;
   }

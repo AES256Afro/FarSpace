@@ -243,6 +243,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## The marshal's challenge
+
+- Once you've raced, a marshal's tender may pull alongside on the lanes and
+  offer a wager: your next run under par pays double; over par costs a round
+  for the marshals. Hold twenty-five shares in a station and control clears
+  you into a bay that is, technically, yours.
+
 ## Cheques in the post
 
 - Holdings at other stations pay a quarter of their dividend on any docking,

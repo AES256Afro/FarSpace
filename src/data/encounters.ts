@@ -417,6 +417,14 @@ export const ENCOUNTERS: Encounter[] = [
       { label: "READ THE PLATE AND GO", result: (g) => { p(g).expData = (p(g).expData ?? 0) + 20; return "SIX NAMES. FOUR WALKED OUT. YOU LOG THE POSITION SO THE NEXT CREW KNOWS WHERE THE RIDGE IS. +20 DATA."; } },
     ],
   },
+  {
+    id: "marshal", where: "space", weight: 2, title: "THE MARSHAL'S CHALLENGE", when: (g) => (p(g).races ?? 0) >= 1 && !p(g).marshalWager,
+    text: "A race marshal's tender pulls alongside, all flags and no manners. 'HEARD YOU RUN THE RINGS. HEARD YOU'RE QUICK. I'LL DOUBLE THE PRIZE ON YOUR NEXT RUN IF IT'S UNDER PAR. IF IT ISN'T, YOU BUY THE MARSHALS A ROUND.'",
+    options: [
+      { label: "YOU'RE ON", result: (g) => { p(g).marshalWager = true; return "THE TENDER PEELS OFF WITH A FLASH OF ITS FLAGS. THE NEXT RING RACE YOU RUN UNDER PAR PAYS DOUBLE. OVER PAR COSTS YOU 100CR AND SOME PRIDE."; } },
+      { label: "NOT TODAY", result: () => "'SUIT YOURSELF. THE RINGS AREN'T GOING ANYWHERE.' THEY AREN'T." },
+    ],
+  },
 ];
 
 // Pick one for the place, weighting down anything seen recently
