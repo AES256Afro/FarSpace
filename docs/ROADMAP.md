@@ -992,4 +992,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] A translator module: first contacts always land and the singers say
       more; tactical calls yellow alert on its own when a hostile closes
 
+## Milestone 159 — Diplomatic Passage ✅ (Sep 2026)
+- [x] An envoy aboard waves their seal at customs and nobody opens the hold;
+      the klaxon keeps going at red
+
 ## Later

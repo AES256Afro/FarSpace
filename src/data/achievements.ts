@@ -127,5 +127,6 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "shipnamed", title: "SHE HAS A NAME", desc: "Ask the ship what it wants to be called", check: (w) => !!w.player.flags?.shipnamed },
   { id: "review", title: "THE KETTLE ON", desc: "Hold a crew review", check: (w) => !!w.player.flags?.review },
   { id: "conditions", title: "CHANGED THE CONDITIONS", desc: "Pass the unwinnable scenario", check: (w) => !!w.player.flags?.conditions },
+  { id: "immunity", title: "DIPLOMATIC PASSAGE", desc: "Wave an envoy's seal at customs", check: (w) => !!w.player.flags?.immunity },
   { id: "elite", title: "ELITE", desc: "Top any career ladder", check: (w) => (["explorer", "trader", "miner"] as const).some((k) => rankOf(w.player, k).idx >= 8) },
 ];
