@@ -8,7 +8,7 @@ const CODE_KEY = "farspace-cloud-code";
 import { activeSlot } from "../save";
 function codeKey(): string { const n = activeSlot(); return n === 0 ? CODE_KEY : `${CODE_KEY}-${n}`; }
 const BASE_KEY = "farspace-cloud-base";
-const ALPHABET = "ABCDEFGHJKMNPQRSTVWXYZ23456789"; // no I/L/O/0/1 confusion, all valid base32-ish
+const ALPHABET = "ABCDEFGHJKMNPQRSTVWXYZ234567"; // Each character is accepted by the save API and link form.
 
 export function cloudBase(): string {
   try {

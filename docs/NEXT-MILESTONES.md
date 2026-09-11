@@ -3,7 +3,7 @@
 Date: September 11, 2026. Status: approved implementation sequence.
 Baseline: v0.255.0, M415, release 9bef5b4540c4393de3654a710053bf6d0b66fb06.
 The preceding release has 404 passing tests and a verified hosted deployment.
-M416 and M417 are implemented through v0.257.0 and are undergoing release validation.
+M416 and M417 are implemented through v0.257.1 and are undergoing release validation.
 M418-M427 remain planned. The user approved implementation after reviewing
 the three title concepts and choosing random selection between them.
 

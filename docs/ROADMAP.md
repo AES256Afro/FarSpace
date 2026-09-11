@@ -2219,7 +2219,7 @@ The decision between service orders and booked fares is covered by M402.
 
 The [next development plan](NEXT-MILESTONES.md) contains dependencies,
 implementation boundaries, acceptance checks, effort ranges and release gates.
-M416 and M417 are implemented through v0.257.0. M418-M427 remain planned.
+M416 and M417 are implemented through v0.257.1. M418-M427 remain planned.
 
 | Milestone | Planned outcome |
 | --- | --- |
