@@ -11,7 +11,7 @@ The guide grew a section per milestone; this is where to look.
 - **Flying:** [Docking and launching](#docking-and-launching) · [Holding short](#holding-short) · [Traffic control](#traffic-control) · [Combat, when it finds you](#combat-when-it-finds-you) · [The ring race](#the-ring-race) · [The regatta](#the-regatta) · [The convoy](#the-convoy) · [Hum](#hum) · [Calls and courses](#calls-and-courses)
 - **Trading and industry:** [Trader](#trader) · [Miner](#miner) · [Syndicates and trade routes](#syndicates-and-trade-routes) · [Charters](#charters) · [The liner trade](#the-liner-trade) · [Fleet at work](#fleet-at-work) · [Scrapping a hull](#scrapping-a-hull) · [Passage on a liner](#passage-on-a-liner) · [Stakes](#stakes) · [The post](#the-post) · [Pictures wanted](#pictures-wanted) · [The lighthouse](#the-lighthouse) · [The waystation](#the-waystation) · [The ledger](#the-ledger) · [Settlements](#settlements) · [Settlements grow](#settlements-grow) · [Town projects](#town-projects)
 - **People aboard:** [Shipmates](#shipmates) · [The galley](#the-galley) · [Life on the deck](#life-on-the-deck) · [A life aboard](#a-life-aboard) · [Crew arcs](#crew-arcs) · [Second stories](#second-stories) · [A trade of their own](#a-trade-of-their-own) · [The roster](#the-roster) · [Watches and passengers](#watches-and-passengers) · [Requests from the lounge](#requests-from-the-lounge) · [Corridor talk](#corridor-talk) · [Cards after watch](#cards-after-watch) · [The band](#the-band) · [The viewport and the bays](#the-viewport-and-the-bays) · [Rites of passage](#rites-of-passage) · [The guestbook](#the-guestbook) · [Lost property](#lost-property) · [Family](#family) · [Lost and found](#lost-and-found) · [Company](#company) · [Belonging](#belonging) · [Small kindnesses](#small-kindnesses) · [Keepsakes](#keepsakes)
-- **Places:** [Explorer](#explorer) · [A living galaxy](#a-living-galaxy) · [Wonders](#wonders) · [More wonders](#more-wonders) · [Station hours and the tannoy](#station-hours-and-the-tannoy) · [Concourse gossip](#concourse-gossip) · [Ports remember you](#ports-remember-you) · [Places with detail](#places-with-detail) · [Lore](#lore) · [The dock-hand](#the-dock-hand) · [Berth neighbours](#berth-neighbours) · [Regulars](#regulars) · [Contacts](#contacts) · [Rivals and the harbourmaster](#rivals-and-the-harbourmaster) · [Favours](#favours) · [Faces](#faces)
+- **Places:** [Explorer](#explorer) · [A living galaxy](#a-living-galaxy) · [Wonders](#wonders) · [More wonders](#more-wonders) · [Station hours and the tannoy](#station-hours-and-the-tannoy) · [Concourse gossip](#concourse-gossip) · [Ports remember you](#ports-remember-you) · [Places with detail](#places-with-detail) · [Away teams](#away-teams) · [Lore](#lore) · [The dock-hand](#the-dock-hand) · [Berth neighbours](#berth-neighbours) · [Regulars](#regulars) · [Contacts](#contacts) · [Rivals and the harbourmaster](#rivals-and-the-harbourmaster) · [Favours](#favours) · [Faces](#faces)
 - **Stories and encounters:** [The Signal and encounters](#the-signal-and-encounters) · [The Keeper](#the-keeper) · [GalNet serials](#galnet-serials) · [Helping ships](#helping-ships) · [More encounters](#more-encounters) · [Four more cards](#four-more-cards) · [Quiet moments](#quiet-moments) · [Rhythms](#rhythms) · [Loose ends](#loose-ends)
 - **Politics:** [Politics and the second campaign](#politics-and-the-second-campaign) · [The week's vote](#the-weeks-vote) · [The border](#the-border) · [The week](#the-week) · [A name on the lanes](#a-name-on-the-lanes)
 - **Sharing:** [Squadron](#squadron) · [Squadron treaties](#squadron-treaties) · [The shared sky and the log](#the-shared-sky-and-the-log) · [Ghosts on the lanes](#ghosts-on-the-lanes) · [What the void keeps](#what-the-void-keeps) · [Maydays on the wire](#maydays-on-the-wire) · [Notes at the wonders](#notes-at-the-wonders) · [Other keepers](#other-keepers)
@@ -700,6 +700,19 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   says so; at ten the harbourmaster keeps a bay warm, control greets you, and
   yard work is 5% cheaper. Land a fare there and the bulletin carries the
   review.
+
+## Away teams
+
+- Ten cards on the lanes and the ground with a certain flavour: a hull that
+  sings in no known tongue (run the translator, answer with music, or log
+  it), a quiet world that has never launched anything and needs medicine it
+  isn't supposed to know exists, a rock hopper family out of air off the
+  belt, a courier's case under hard burn with juice for the crew, talent
+  night in the lounge, the rec deck's sim rig stuck on a bad western, a
+  diplomat without a ship, an anomaly the scanner has no name for, a place
+  somebody built, and the outpost's one bar with its one board game.
+- They pay in data, rep, lives saved, morale and stories; a few of them cost
+  something, and a couple leave a mark the crew remember.
 
 ## Lore
 

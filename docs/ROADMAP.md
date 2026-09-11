@@ -911,4 +911,9 @@ Time passes for the people on the ship, and for the ship.
 - [x] A fare's open request rides on their line on the flight HUD: wanted,
       done, or a quiet run broken
 
+## Milestone 139 — Away Teams ✅ (Sep 2026)
+- [x] Ten encounter cards with a Trek / Expanse / Orville flavour: first
+      contact, the quiet world, the rock hopper, hard burn, lounge night,
+      the sim rig, the diplomat, the anomaly, the old temple, the outpost bar
+
 ## Later

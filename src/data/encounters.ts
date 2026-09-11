@@ -290,6 +290,99 @@ export const ENCOUNTERS: Encounter[] = [
       { label: "NO TIME", result: () => "'UNDERSTOOD.' THEY CLOSE UP AND PLOD ON. YOU CHECK THE SCOPE FOR THEM TWICE BEFORE YOU JUMP." },
     ],
   },
+  // ---- Away teams: first contacts, quiet worlds, rock hoppers, lounge nights ----
+  {
+    id: "firstcontact", where: "space", weight: 3, title: "A SIGNAL IN NO KNOWN TONGUE",
+    text: "A hull like nothing in the registry drifts alongside, all curves, and sings at you in tones that the comms panel can't file. It waits. It seems to be waiting.",
+    options: [
+      { label: "RUN THE TRANSLATOR (20 DATA)", hint: "The comms core chews on it", requires: (g) => (p(g).expData ?? 0) >= 20, result: (g, rng) => { p(g).expData = (p(g).expData ?? 0) - 20; if (rng.chance(0.7)) { p(g).expData = (p(g).expData ?? 0) + 80; (p(g).flags ??= {}).firstContact = true; logEntry(g.world, "First contact: a curved hull that sang, and star charts in return"); return "THE CORE FINDS THE PATTERN. IT'S A GREETING, THEN A GIFT: STAR CHARTS FOR SOMEWHERE THE MAP DOESN'T GO. +80 DATA. THEY SING ONCE MORE AND ARE GONE."; } return "THE CORE FINDS THE PATTERN. IT'S A RECIPE. A VERY LONG RECIPE. THEY SEEM PLEASED YOU LISTENED, AND LEAVE."; } },
+      { label: "ANSWER WITH MUSIC", hint: "The crew pick a song", result: (g) => { for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 5); p(g).expData = (p(g).expData ?? 0) + 20; return "THE CREW ARGUE ABOUT THE SONG, THEN PLAY IT. THE HULL SINGS IT BACK, WRONG AND BEAUTIFUL. +20 DATA, AND A STORY FOR THE BAR."; } },
+      { label: "HOLD POSITION AND LOG IT", result: (g) => { p(g).expData = (p(g).expData ?? 0) + 10; return "YOU LOG EVERYTHING AND TOUCH NOTHING. IT SINGS A LAST TIME AND FOLDS AWAY. +10 DATA. THE SCIENCE POSTS WILL WANT THE TAPE."; } },
+    ],
+  },
+  {
+    id: "quietworld", where: "space", weight: 2, title: "THE QUIET WORLD",
+    text: "A settlement on the third moon that has never launched anything is on the radio, crackling and desperate: a fever, a hundred sick, no medicine. They don't know anyone is up here. Nobody is supposed to be.",
+    options: [
+      { label: "DROP MED SUPPLIES QUIETLY (2)", hint: "No contact; a crate on a chute", requires: (g) => (p(g).cargo.med ?? 0) >= 2, result: (g) => { removeCargo(p(g), "med", 2); for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 6); p(g).lives = (p(g).lives ?? 0) + 20; (p(g).flags ??= {}).quietWorld = true; logEntry(g.world, "Dropped medicine on a world that hadn't reached orbit yet. Told nobody"); return "THE CRATE GOES DOWN ON A CHUTE IN THE NIGHT. THE RADIO GOES QUIET, THEN, HOURS LATER, SOMEBODY ON IT LAUGHS. YOU DON'T FILE IT. THE CREW DON'T ASK."; } },
+      { label: "OBSERVE AND RECORD", hint: "The rule is the rule", result: (g) => { p(g).expData = (p(g).expData ?? 0) + 40; const m = p(g).crew.find((c) => c.role === "medic"); if (m) m.morale = Math.max(0, m.morale - 8); return `YOU RECORD THE BROADCASTS FOR THE SCIENCE POSTS. +40 DATA.${m ? ` ${m.name.toUpperCase()} DOESN'T SPEAK TO YOU FOR A WATCH.` : ""}`; } },
+      { label: "CALL IT IN TO THE SECTOR", result: (g) => { adjustRep(g.world, sys(g).factionId, 2); return "YOU HAND IT UP THE CHAIN. SOMEBODY WITH A COMMITTEE WILL DECIDE. REP UP FOR DOING IT PROPERLY; THE RADIO IS STILL CRACKLING WHEN YOU JUMP."; } },
+    ],
+  },
+  {
+    id: "rockhopper", where: "space", weight: 3, title: "ROCK HOPPER OUT OF AIR",
+    text: "A family skiff off the belt, scrubbers dead, four aboard and a child. The mother's voice is flat the way belt voices go when it's bad: 'WATER AND A FILTER, INNER. WE'LL SQUARE IT. WE ALWAYS SQUARE IT.'",
+    options: [
+      { label: "PASS WATER AND A FILTER (1 WATER, 1 PART)", requires: (g) => (p(g).cargo.water ?? 0) >= 1 && (p(g).cargo.parts ?? 0) >= 1, result: (g) => { removeCargo(p(g), "water", 1); removeCargo(p(g), "parts", 1); p(g).rescues = (p(g).rescues ?? 0) + 1; p(g).lives = (p(g).lives ?? 0) + 4; adjustRep(g.world, sys(g).factionId, 2); (p(g).flags ??= {}).belt = true; logEntry(g.world, "Passed water and a scrubber filter to a rock hopper family off the belt"); return "THE FILTER GOES ACROSS ON A LINE, THEN THE WATER. THE CHILD WAVES THROUGH THE PORT. 'WE SQUARE IT, INNER. THE BELT REMEMBERS.' FOUR LIVES."; } },
+      { label: "SHARE YOUR AIR ON A LINE", hint: "Half an hour docked hull to hull", result: (g) => { for (const c of p(g).crew) c.morale = Math.max(0, c.morale - 2); p(g).rescues = (p(g).rescues ?? 0) + 1; p(g).lives = (p(g).lives ?? 0) + 4; logEntry(g.world, "Shared air with a rock hopper family, hull to hull"); return "YOU CLAMP ON AND OPEN THE LINE. HALF AN HOUR OF YOUR AIR AND THEIR SCRUBBERS CATCH. THE CREW GRUMBLE ABOUT THE HEADACHE. FOUR LIVES."; } },
+      { label: "LEAVE THEM", result: (g) => { for (const c of p(g).crew) c.morale = Math.max(0, c.morale - 6); adjustRep(g.world, sys(g).factionId, -2); return "YOU BURN AWAY. THE CREW DON'T SAY ANYTHING. THAT'S THE PROBLEM. THE BELT REMEMBERS THAT TOO."; } },
+    ],
+  },
+  {
+    id: "hardburn", where: "space", weight: 2, title: "A CASE UNDER HARD BURN",
+    text: "An inner-system courier with a sealed case and no ship of her own: 'GET THIS TO THE NEXT DOCK BEFORE THE MARKET OPENS AND I'LL PAY WHAT IT'S WORTH. IT MEANS A HARD BURN. YOUR CREW WILL HATE IT. THERE'S JUICE FOR THAT.'",
+    options: [
+      { label: "TAKE THE JUICE AND BURN", hint: "+400cr; the crew and the frame pay for it", result: (g) => { p(g).credits += 400; p(g).wear = (p(g).wear ?? 0) + 8; for (const c of p(g).crew) c.morale = Math.max(0, c.morale - 5); logEntry(g.world, "Hard burn under the juice for a courier's case; the crew were green for a day"); return "THE COUCHES TAKE THE BURN AND THE JUICE TAKES THE EDGE OFF, MOSTLY. THE CASE ARRIVES BEFORE THE BELL. +400CR. NOBODY EATS BREAKFAST. THE FRAME REMEMBERS THE G."; } },
+      { label: "TAKE IT AT A CIVIL PACE (150CR)", result: (g) => { p(g).credits += 150; return "YOU CARRY IT LIKE ANY OTHER CRATE. SHE PAYS HALF, WITHOUT ARGUMENT. 'YOU'RE NOT WRONG. I'D HAVE HATED YOU FOR IT.' +150CR."; } },
+      { label: "DECLINE", result: () => "SHE SHRUGS AND HAILS THE NEXT HULL. SOMEBODY ALWAYS SAYS YES TO THE JUICE." },
+    ],
+  },
+  {
+    id: "loungenight", where: "space", weight: 3, title: "LOUNGE NIGHT",
+    text: "Somebody has rigged a microphone in the lounge and written 'TALENT NIGHT' on the whiteboard with a drawing that is probably you. The crew are already sitting down. The chair at the front is empty.",
+    when: (g) => p(g).crew.length >= 2,
+    options: [
+      { label: "SING", hint: "Nobody will ever speak of it", result: (g, rng) => { for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 8); const [a, b] = p(g).crew; if (a && b) shiftBond(a, b, 0.5); (p(g).flags ??= {}).sang = true; return rng.pick(["YOU SING. IT IS NOT GOOD. IT IS THE BEST THING THAT HAS HAPPENED ON THIS SHIP ALL MONTH. MORALE UP, A LOT.", "YOU SING THE ONE EVERYBODY KNOWS. BY THE SECOND CHORUS THE WHOLE LOUNGE IS IN. THE CAT LEAVES. MORALE UP, A LOT."]); } },
+      { label: "JUDGE", hint: "Somebody has to", result: (g) => { for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 4); const [a, b] = p(g).crew; if (a && b) shiftBond(a, b, -0.3); return "YOU GIVE MARKS OUT OF TEN. YOU ARE FAIR. THIS IS A MISTAKE. THE TWO WHO CAME SECOND AND THIRD ARE NOT SPEAKING. MORALE UP ANYWAY."; } },
+      { label: "SEND EVERYONE TO BED", result: (g) => { for (const c of p(g).crew) c.morale = Math.max(0, c.morale - 3); return "YOU PULL THE PLUG ON THE MICROPHONE. THE WHITEBOARD DRAWING GAINS A SMALL MOUSTACHE OVERNIGHT."; } },
+    ],
+  },
+  {
+    id: "simstuck", where: "space", weight: 2, title: "THE SIM RIG IS STUCK",
+    text: "The rec deck's old environment rig has jammed on a program called 'FRONTIER TOWN, HIGH NOON' and will not let the engineer out. Through the door: tinny piano, a horse, and the engineer saying 'I DON'T WANT ANY TROUBLE, MISTER.'",
+    when: (g) => p(g).crew.length >= 1,
+    options: [
+      { label: "RIDE IT OUT WITH THEM", hint: "An hour of bad westerns", result: (g) => { for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 6); return "YOU GO IN. THERE IS A SHOOTOUT. YOU LOSE, TWICE. THE RIG RESETS AT SUNDOWN AND EVERYBODY COMES OUT DUSTY AND PLEASED. MORALE UP."; } },
+      { label: "PULL THE PLUG", result: (g, rng) => { if (rng.chance(0.4)) { const s = rng.pick(p(g).systems); if (s) s.health = Math.max(10, s.health - 12); return `THE RIG DIES WITH A BANG AND TAKES A BREAKER WITH IT. ${s ? s.name.toUpperCase() + " -12%." : ""} THE ENGINEER COMES OUT WITH A HAT THEY DIDN'T GO IN WITH.`; } return "THE RIG POWERS DOWN. THE PIANO STOPS MID-BAR. THE ENGINEER COMES OUT SQUINTING AND ASKS WHAT YEAR IT IS."; } },
+      { label: "LET THE ENGINEER FIX IT FROM INSIDE", requires: (g) => p(g).crew.some((c) => c.role === "engineer"), result: (g) => { const x = crewXp(p(g), "engineer", 2); return `YOU TALK THEM THROUGH THE PANEL BEHIND THE SALOON BAR. TWENTY MINUTES AND A DUEL LATER THE DOOR OPENS.${x ? " " + x : ""}`; } },
+    ],
+  },
+  {
+    id: "envoyplea", where: "space", weight: 2, title: "A DIPLOMAT WITHOUT A SHIP",
+    text: "A shuttle hails with an envoy aboard, a treaty in a case and a broken drive: two stations that have hated each other for a decade are meeting at the next system, and if the envoy is late they will go back to hating. 'A LIFT. THAT'S ALL. HISTORY WILL NOT REMEMBER YOU, BUT I WILL.'",
+    options: [
+      { label: "GIVE THEM A LIFT", hint: "Rep with both sides", result: (g) => { const s = sys(g); adjustRep(g.world, s.factionId, 3); const o = s.links.map((l) => g.world.systems[l]).find((x) => x && x.factionId !== s.factionId); if (o) adjustRep(g.world, o.factionId, 3); p(g).credits += 120; (p(g).flags ??= {}).envoy = true; logEntry(g.world, "Carried an envoy and a treaty to a meeting that would have failed without them"); return "THE ENVOY TAKES THE SPARE COUCH AND SAYS NOTHING FOR THE WHOLE LEG, THEN SHAKES YOUR HAND LIKE IT MATTERS. REP UP ON BOTH SIDES OF THE TABLE. +120CR FOR THE FUEL."; } },
+      { label: "TOW THE SHUTTLE INSTEAD", hint: "Slow, but the case never leaves their hands", result: (g) => { p(g).tows = (p(g).tows ?? 0) + 1; adjustRep(g.world, sys(g).factionId, 2); return "YOU TAKE THE SHUTTLE ON A LINE AT A CRAWL. THE ENVOY ARRIVES LATE, FURIOUS, AND IN TIME. REP UP. THEY DO NOT SHAKE YOUR HAND."; } },
+      { label: "NOT YOUR TREATY", result: () => "YOU LEAVE THEM HAILING. SOMEWHERE, TWO STATIONS GO BACK TO HATING EACH OTHER ON SCHEDULE." },
+    ],
+  },
+  {
+    id: "anomaly", where: "space", weight: 2, title: "THE ANOMALY",
+    text: "The scanner draws a shape it has no name for: a slow fold in the dark ahead, stars bending around it like light through a glass. The science posts pay for this sort of thing. The science posts are not here.",
+    options: [
+      { label: "SCAN IT CLOSE", hint: "Data, or a bad hour", result: (g, rng) => { if (rng.chance(0.65)) { p(g).expData = (p(g).expData ?? 0) + 90; (p(g).flags ??= {}).anomaly = true; return "THE READINGS ARE LIKE NOTHING ON FILE. +90 DATA. THE SCIENCE POSTS WILL NAME IT AFTER SOMEBODY ELSE, BUT YOU WERE HERE."; } p(g).hull = Math.max(1, p(g).hull - 10); g.world.time += 600; return "THE FOLD TAKES THE SHIP LIKE A HAND. TEN MINUTES PASS ON THE CLOCK THAT NOBODY ABOARD REMEMBERS. HULL -10. THE CAT WAS ALREADY UNDER THE BUNK."; } },
+      { label: "KEEP YOUR DISTANCE AND LOG IT", result: (g) => { p(g).expData = (p(g).expData ?? 0) + 30; return "YOU CIRCLE IT AT A SAFE RANGE AND LET THE SCANNER FILL. +30 DATA. IT DOES NOT SEEM TO NOTICE YOU. YOU'RE NOT SURE THAT'S BETTER."; } },
+      { label: "GO THROUGH", hint: "Because it's there", result: (g) => { for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 5); p(g).fuel = Math.max(0, p(g).fuel - 8); g.world.time += 1200; return "YOU PUT THE BOW INTO IT. THE STARS GO WHITE, THEN COME BACK IN THE WRONG ORDER, THEN THE RIGHT ONE. TWENTY MINUTES OLDER, EIGHT FUEL LIGHTER, AND THE CREW ARE GRINNING."; } },
+    ],
+  },
+  {
+    id: "oldtemple", where: "ground", weight: 2, title: "A PLACE SOMEBODY BUILT",
+    text: "Stone stairs into the hillside, cut by hands that had thumbs and were not yours. A chamber at the bottom, dry, with a shelf, and on the shelf one object that is very clearly not for you.",
+    options: [
+      { label: "TAKE THE ARTEFACT", requires: (g) => cargoUsed(p(g)) + 1 <= p(g).cargoMax, result: (g) => { addCargo(p(g), "relics", 1); (p(g).flags ??= {}).tombRobber = true; for (const c of p(g).crew) c.morale = Math.max(0, c.morale - 3); return "IT COMES OFF THE SHELF WITHOUT A SOUND. +1 RELIC. THE CHAMBER FEELS SMALLER ON THE WAY OUT. THE CREW DON'T LOOK AT IT."; } },
+      { label: "PHOTOGRAPH IT AND LEAVE", result: (g) => { p(g).expData = (p(g).expData ?? 0) + 40; return "YOU TAKE THE PICTURES AND THE MEASUREMENTS AND LEAVE THE SHELF AS YOU FOUND IT. +40 DATA. THE SCIENCE POSTS CAN ARGUE ABOUT THE REST."; } },
+      { label: "LEAVE AN OFFERING (1 PROVISIONS)", requires: (g) => (p(g).cargo.food ?? 0) >= 1, result: (g) => { removeCargo(p(g), "food", 1); for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 4); (p(g).flags ??= {}).offering = true; return "YOU PUT A RATION TIN ON THE SHELF BESIDE IT, WHICH IS ABSURD, AND FEELS RIGHT. THE CREW ARE QUIET ON THE STAIRS. MORALE UP."; } },
+    ],
+  },
+  {
+    id: "outpostbar", where: "ground", weight: 2, title: "THE OUTPOST'S ONE BAR",
+    text: "A pressure hut with a bar in it and one person behind the bar, who has clearly been waiting a long time for anyone at all. There is a board game on the counter with rules written on the back of a ration box.",
+    options: [
+      { label: "PLAY THEIR GAME (80CR STAKE)", requires: (g) => p(g).credits >= 80, result: (g, rng) => { if (rng.chance(0.5)) { p(g).credits += 80; return "THE RULES CHANGE TWICE AND YOU WIN ANYWAY. +80CR AND A LOOK OF DEEP RESPECT. THEY WANT A REMATCH. NEXT TIME."; } p(g).credits -= 80; return "YOU LOSE ON A RULE THAT WAS NOT ON THE BOX. -80CR. THEY ARE VERY HAPPY. THAT WAS THE POINT, YOU THINK."; } },
+      { label: "BUY A ROUND FOR THE HUT (40CR)", requires: (g) => p(g).credits >= 40, result: (g) => { p(g).credits -= 40; adjustRep(g.world, sys(g).factionId, 2); for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 3); return "A ROUND FOR EVERYBODY, WHICH IS THE BARTENDER, YOUR CREW, AND A DOG. REP UP. THE DOG'S NAME IS CAPTAIN."; } },
+      { label: "TALK SHOP", result: (g) => { p(g).expData = (p(g).expData ?? 0) + 15; return "THEY KNOW EVERY ROCK IN THE VALLEY AND TELL YOU ABOUT ALL OF THEM. +15 DATA, AND THE FEELING YOU'VE MADE SOMEBODY'S MONTH."; } },
+    ],
+  },
   {
     id: "lostowner", where: "space", weight: 3, title: "SOMETHING OF THEIRS", when: (g) => (p(g).lostProperty ?? []).length > 0,
     text: "A shuttle hails on the short band, out of breath: 'THAT'S YOU, ISN'T IT? THE SHIP I CAME IN ON. I LEFT SOMETHING IN THE CABIN. I'VE BEEN CHASING YOU SINCE THE GATE. PLEASE.'",
