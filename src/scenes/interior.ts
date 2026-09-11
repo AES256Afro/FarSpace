@@ -3,10 +3,11 @@
 
 import type { FlightScene } from "./flight/index";
 import { lastLegTalk } from "../core/lastleg";
+import type { SimRigScene } from "./simrig";
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond, onWatch, watchIndex, captainNickname, borderStanding, passengersFed, cookMeal, briefingReports, setFocus, runSim, SIM_PROGRAMS, nameTheShip, weekKey, dedication, MOTTOS, stardate, birthdaysDue, shipNewsletter, shiftBond, shipVoiceName } from "../world";
+import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond, onWatch, watchIndex, captainNickname, borderStanding, passengersFed, cookMeal, briefingReports, setFocus, nameTheShip, weekKey, dedication, MOTTOS, stardate, birthdaysDue, shipNewsletter, shiftBond, shipVoiceName } from "../world";
 import { commodity, faction } from "../data/data";
 import { crewChatter, soloChatter, MESS_LINES, passengerChatter } from "../data/chatter";
 import { RNG } from "../core/rng";
@@ -727,13 +728,8 @@ export class InteriorScene implements Scene {
             ] };
           (g.scenes["encounter"] as EncounterScene).open(g, enc, "interior", true);
           return;
-        } else if (near.ch === "S" && (p.furnishings ?? []).includes("simrig") && !p.simUsed) {
-          const enc: Encounter = { id: "simrig", where: "space", title: "THE SIM RIG", weight: 0, text: "The rig hums up. A menu on the door, hand-lettered, with a warning under it in a different hand: 'IF IT JAMS, DON'T PANIC. PANIC IS A PROGRAM.'",
-            options: [
-              ...SIM_PROGRAMS.map((sp) => ({ label: sp.name, hint: sp.blurb, result: (g2: Game, rng: RNG) => { sfx.select(); flag(g2, "holiday"); return runSim(g2.world, sp.id, rng); } })),
-              { label: "NOT NOW. STUDY INSTEAD", result: (g2) => { g2.world.player.simUsed = true; return "THE RIG HUMS DOWN, DISAPPOINTED. E TO READ."; } },
-            ] };
-          (g.scenes["encounter"] as EncounterScene).open(g, enc, "interior", true);
+        } else if (near.ch === "S" && (p.furnishings ?? []).includes("simrig") && (!p.simUsed || p.shipSim?.active)) {
+          (g.scenes.simrig as SimRigScene).open(g);
           return;
         } else if (near.ch === "S") {
           const which = (p.skills.piloting ?? 0) <= (p.skills.engineering ?? 0) ? "piloting" : "engineering";

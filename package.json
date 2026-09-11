@@ -1,7 +1,7 @@
 {
   "name": "farspace",
   "private": true,
-  "version": "0.238.0",
+  "version": "0.239.0",
   "type": "module",
   "scripts": {
     "dev": "vite",

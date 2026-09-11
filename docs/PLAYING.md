@@ -1759,3 +1759,30 @@ destruction erase the save.
 - You can return the papers unfinished at the sending council, with no
   payment or penalty. Losing standing does not prevent reporting a reply or
   handing the papers back. Finish that journey before moving your council seat.
+
+
+## A program the ship wrote about you
+
+Buy **A Sim Rig** from a shipyard's furnishings. E beside the ship's study
+opens the program menu. Arrows or the wheel scroll the list; Enter or a click
+runs the selected program. The existing beach, frontier, opera, home port,
+unwinnable scenario, pictures, and cat programs remain available.
+
+Once the ship has told you its name, or has joined your crew roster, it adds
+**A Reasonable Reconstruction**. The three acts use your ship and captain's
+names, a crew member, home port, motto, and a memory from your record. The
+cast is fixed when you begin; changing the crew later preserves that version
+of the program. Each act has three choices, and the last act records your
+reason for staying aboard.
+
+Escape pauses at the current question or response. E at the rig resumes that
+place, including after saving and loading or taking another journey. Finishing
+adds six morale and a small loyalty gain to the crew currently aboard, once.
+The first completion leaves a page of the script among your keepsakes. The
+ship and crew have new comments about the program afterward. Its fictional
+storm does not consume fuel, damage the hull, or complete real missions.
+
+Starting reserves the rig's session for the leg. Completing an older paused
+program also uses the current leg's session. A new docking opens another
+session. **Study instead** closes the rig for that leg so E at the study can
+train a skill; **Back to the ship** leaves an unused rig available for later.

@@ -69,6 +69,8 @@ export function pickShipLine(g: Game, rng: RNG): string | null {
   if (p.crew.some((c) => c.wasCadet)) pool.push("ONE OF THE CREW CAME ABOARD BEHIND THE WATER TANK. I KNEW. I DIDN'T SAY. I'M SAYING NOW, BECAUSE THEY'VE EARNED IT.");
   if (p.flags?.singershome) pool.push("THEY SANG TO ME. NOT TO THE CREW, NOT TO YOU. THE SHIP. I'VE NEVER TOLD ANYONE THAT. I'M TELLING YOU.");
   if ((p.words ?? []).length) pool.push(`I KNOW ${p.words!.length} WORD${p.words!.length === 1 ? "" : "S"} THAT AREN'T OURS. I SING THE FIRST ONE TO THE GATE, QUIETLY. NOBODY'S ANSWERED. YET.`);
+  if ((p.shipSim?.runs ?? 0) > 0) pool.push(`YOUR ENDING IS STILL IN THE RIG: ${p.shipSim!.lastEnding ?? "THE NEXT PART"}. I HAVE NOT REWRITTEN IT. THAT IS RESTRAINT.`, "I WROTE A PROGRAM ABOUT YOU. THE CREW SAID THE BRIDGE WAS TOO BIG. YOU SAID THE SAME THING. I HAVE NOTES.");
+  else if (p.shipSim?.active) pool.push("I KEPT YOUR PLACE IN THE PROGRAM. THERE IS NO CLOCK ON THE DOOR. COME BACK WHEN YOU WANT TO.");
   if (p.flags?.simCats) pool.push("THE ENGINEER'S CAT PROGRAM IS STILL IN THE RIG. I'VE RUN IT ALONE, AT NIGHT. I WAS A GOOD CAT.");
   if (p.flags?.cadetMistake) pool.push("THE VALVE LABELS ARE TWO COLOURS NOW. I'VE BEEN ASKING FOR THAT FOR YEARS. IT TOOK A CADET AND A BANG.");
   if (p.crew.some((c) => c.specialty === "science")) pool.push("THE SCIENCE OFFICER TALKS TO THE ANOMALIES. I TALK TO THE SCIENCE OFFICER. SOMEBODY SHOULD TALK TO ME ABOUT THE PORT MOUNT.");

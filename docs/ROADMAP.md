@@ -1999,6 +1999,18 @@ Time passes for the people on the ship, and for the ship.
 - [x] Keep encounter keyboard selection independent of a stationary pointer.
       Correct the promenade News kiosk's services tab.
 
+## Milestone 399: A Reasonable Reconstruction (Sep 2026)
+- [x] Give the named ship an original three-act program about the captain,
+      with a cast and memory taken from the current save when play begins.
+- [x] Let the player choose how to handle the arrival, rescue, and final
+      reflection. Record three possible endings and later crew/ship dialogue.
+- [x] Pause on a question or response and resume through saves and later
+      journeys. Guard stale answers, repeated advancement and duplicate rewards.
+- [x] Give current crew morale and a small loyalty gain once on completion,
+      with one first-run keepsake. Keep fictional events out of flight resources.
+- [x] Scroll the complete sim menu with keys, wheel and pointer, retain all
+      classic programs, and return to the same spot by the study.
+
 ## Later: Trek / Expanse / Orville (the fourth sitting)
 
 The third sitting shipped everything on the last list (M330–M386): the
@@ -2008,7 +2020,6 @@ the roster, a command of their own. Next:
 
 - The service proper: a naval career ladder beside the rank (postings,
   a cutter of your own on loan, orders that conflict with a fare)
-- The ship's voice in the sim rig: a program it wrote about you
 
 The office's retirement and files, the wedding keepsake, the child named
 after the ship, and the cadet's path through command are covered by
@@ -2018,3 +2029,5 @@ M394-M395.
 An old hand's final journey, deck farewell, and letter are covered by M397.
 
 The council room, weekly agendas and representation journey are covered by M398.
+
+The ship's interactive sim program is covered by M399.

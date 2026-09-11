@@ -1,3 +1,4 @@
+import type { ShipSimState } from "./core/shipsim";
 import type { CouncilState } from "./core/council";
 // World model + procedural galaxy generation + world simulation rules.
 // Pure data and pure functions — scenes render it. No DOM here (tests run in node).
@@ -355,6 +356,7 @@ export interface PlayerState {
   numberOne?: string;                // a first officer chosen at review, by name; otherwise the longest-serving
   focus?: FocusKind | null;          // the senior staff's focus for this leg, set at the briefing, cleared at the clamp
   briefed?: boolean;                 // the briefing has been held this leg
+  shipSim?: ShipSimState;
   simUsed?: boolean;                 // the sim rig has run this leg
   lostProperty?: LostItem[];         // what fares left in the cabin; hand it in, or keep it
   keepsakes?: string[];              // small things that stayed aboard: unclaimed lost property
