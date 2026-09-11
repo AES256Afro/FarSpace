@@ -446,6 +446,23 @@ export const ENCOUNTERS: Encounter[] = [
     ],
   },
   {
+    id: "quietones", where: "ground", weight: 3, title: "LIGHTS ON THE RIDGE", when: (g) => !p(g).flags?.quietOnes,
+    text: "The rover's headlights sweep the ridge and the ridge lights back: three points of soft green, then five, then three again, in the same rhythm your lights made when you came over the rise. Not a reflection. Not a settlement the survey knows. Something up there is answering, and waiting for the next line.",
+    options: [
+      { label: "ANSWER WITH THE LIGHTS", hint: "Three, five, three. Then something new.", result: (g) => { (p(g).flags ??= {}).quietOnes = true; (p(g).codex ??= {})["contact:THE QUIET ONES"] = 1; p(g).expData = (p(g).expData ?? 0) + 60; logEntry(g.world, "Answered lights on a ridge with the rover's headlights; something answered back"); return "YOU FLASH THREE, FIVE, THREE. THE RIDGE FLASHES IT BACK, AND THEN A LONGER THING, SLOWER, THAT THE ROVER RECORDS AND CANNOT READ. THEY GO DARK ON A LAST SINGLE LIGHT, LIKE A NOD. +60 DATA. THE CODEX HAS A CONTACT."; } },
+      { label: "DRIVE UP AND LOOK", hint: "The rover's slow on hills; they might not wait", result: (g, rng) => { if (rng.chance(0.5)) { (p(g).flags ??= {}).quietOnes = true; (p(g).codex ??= {})["contact:THE QUIET ONES"] = 1; p(g).expData = (p(g).expData ?? 0) + 40; return "YOU GRIND UP THE HILL AND FIND NOTHING BUT WARM STONES, ARRANGED IN A LINE, STILL FAINTLY GREEN. THE ROVER RECORDS THE WARMTH. +40 DATA, AND THE FEELING OF HAVING BEEN POLITE TOO LATE."; } return "YOU GRIND UP THE HILL. THE LIGHTS GO OUT BEFORE YOU'RE HALFWAY, ALL AT ONCE, AND THE RIDGE IS A RIDGE. THE ROVER LOGS A ROCK."; } },
+      { label: "LOG IT AND DRIVE ON", result: (g) => { p(g).expData = (p(g).expData ?? 0) + 15; return "YOU LOG THE POSITION AND DRIVE ON. IN THE MIRRORS THE RIDGE FLASHES ONCE MORE, THREE-FIVE-THREE, AND GOES DARK. +15 DATA."; } },
+    ],
+  },
+  {
+    id: "quietones2", where: "ground", weight: 4, title: "THE QUIET ONES", when: (g) => !!p(g).flags?.quietOnes && !p(g).flags?.quietOnesGift,
+    text: "A green light ahead, low and steady, and another beyond it, and another: a line of them across the flats, laid out like a runway for something that doesn't fly. When you stop, the nearest one brightens. When you drive, the next one does. They are leading you somewhere, and they are being very patient about it.",
+    options: [
+      { label: "FOLLOW THE LIGHTS", result: (g) => { (p(g).flags ??= {}).quietOnesGift = true; (p(g).codex ??= {})["contact:THE QUIET ONES"] = 2; p(g).expData = (p(g).expData ?? 0) + 90; (p(g).keepsakes ??= []).push("a stone that glows green when breathed on, from the quiet ones"); if (p(g).keepsakes!.length > 8) p(g).keepsakes!.shift(); logEntry(g.world, "Followed the quiet ones' lights to a stone that glows when breathed on"); return "THE LIGHTS LEAD YOU TWO KILOMETRES TO A HOLLOW WITH ONE STONE IN IT, AND THE STONE GLOWS GREEN WHEN THE ROVER'S AIR TOUCHES IT. THEY LEAVE IT FOR YOU. THEY GO DARK THE WAY THEY DID THE FIRST TIME, ONE LAST LIGHT LIKE A NOD. +90 DATA, A KEEPSAKE, AND A CONTACT THAT WENT ALL THE WAY."; } },
+      { label: "THANK THEM AND TURN BACK", hint: "The rover's power is what it is", result: (g) => { (p(g).flags ??= {}).quietOnesGift = true; p(g).expData = (p(g).expData ?? 0) + 30; return "YOU FLASH THREE-FIVE-THREE, WHICH IS ALL THE WORDS YOU HAVE, AND TURN THE ROVER FOR THE LANDER. THE LINE OF LIGHTS GOES OUT ONE BY ONE BEHIND YOU. +30 DATA. THEY WON'T ASK AGAIN. YOU'LL WONDER."; } },
+    ],
+  },
+  {
     id: "village", where: "ground", weight: 2, title: "THE VILLAGE",
     text: "Over the ridge, smoke from cookfires and a cluster of stone houses that the survey called 'geology'. People. Not many, not armed, not expecting a rover. A child has already seen you and is running back to tell everyone. The rule about this is very clear. The rule was written by somebody who wasn't here.",
     options: [

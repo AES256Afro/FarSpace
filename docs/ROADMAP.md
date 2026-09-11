@@ -1068,6 +1068,10 @@ Time passes for the people on the ship, and for the ship.
 - [x] L at the lander with crew aboard: an hour on the ground, a photo by
       the lander for the keepsakes, or back to work
 
+## Milestone 177 — The Quiet Ones ✅ (Sep 2026)
+- [x] A second contact, on the ground: lights on a ridge that answer the
+      rover's headlights, then a line of lights that leads somewhere
+
 ## Later: Trek / Expanse / Orville
 
 - A second story arc per faction (first contact proper: the singers' home)

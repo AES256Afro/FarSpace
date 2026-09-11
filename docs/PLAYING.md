@@ -872,6 +872,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   knows the answer), refuse politely (nobody says that; they're impressed
   and gone for good), or tell them it's your ship. They keep coming back
   until you do one of the last two.
+- The quiet ones, on the ground: the rover's headlights sweep a ridge and
+  the ridge lights back, three, five, three. Answer with the lights (a
+  contact for the codex, and data), drive up and look (warm stones, maybe),
+  or log it and drive on. Later a line of green lights across the flats
+  leads the rover somewhere, patiently: follow it to a stone that glows when
+  breathed on (a keepsake, the contact complete, a deed), or thank them and
+  turn back.
 - The village, on the ground: smoke from cookfires where the survey said
   geology, and a child already running to tell everyone. Back the rover out
   quietly (the rule; data, and a deed), go down with your hands open (bread,
