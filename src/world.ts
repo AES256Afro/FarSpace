@@ -258,6 +258,7 @@ export interface PlayerState {
   missions: Mission[];
   dockedAt: string | null;
   dockVisit?: DockVisit;
+  yardFittings?: { cargo: number; shield: number };
   kills: number;
   wanted: number;
   navTarget?: string | null;
@@ -3997,25 +3998,47 @@ export function findStation(world: World, stationId: string): { sys: SystemDef; 
   return null;
 }
 
-// Swap hulls: stats reset to the new hull's, cargo must fit
-export function applyHull(p: PlayerState, hullId: string): void {
+function baseFittedStats(p: PlayerState, hullId: string): { hullMax: number; shieldMax: number; fuelMax: number; cargoMax: number } {
   const h = hull(hullId);
-  p.hullId = hullId;
-  p.hullMax = h.hullMax; p.hull = h.hullMax;
-  p.shieldMax = h.shieldMax; p.shield = h.shieldMax;
-  p.fuelMax = h.fuelMax; p.fuel = Math.min(p.fuel, h.fuelMax);
-  p.cargoMax = h.cargoMax;
-  // fitted modules move across with you
+  const stats = { hullMax: h.hullMax, shieldMax: h.shieldMax, fuelMax: h.fuelMax, cargoMax: h.cargoMax };
   for (const id of p.modules ?? []) {
-    const m = moduleDef(id);
-    if (!m) continue;
-    p.fuelMax += m.fuel ?? 0; p.cargoMax += m.cargo ?? 0;
-    p.shieldMax = Math.round(p.shieldMax * (1 + (m.shield ?? 0)));
+    const m = moduleDef(id); if (!m) continue;
+    stats.fuelMax += m.fuel ?? 0; stats.cargoMax += m.cargo ?? 0;
+    stats.shieldMax = Math.round(stats.shieldMax * (1 + (m.shield ?? 0)));
   }
-  // engineering grades are part of the pilot, not the hull
-  p.shieldMax = Math.round(p.shieldMax * (1 + 0.1 * (p.engineering?.shields ?? 0)));
-  p.cargoMax += 5 * (p.engineering?.cargo ?? 0);
-  p.shield = p.shieldMax;
+  stats.shieldMax = Math.round(stats.shieldMax * (1 + 0.1 * (p.engineering?.shields ?? 0)));
+  stats.cargoMax += 5 * (p.engineering?.cargo ?? 0);
+  return stats;
+}
+function yardFittings(p: PlayerState): { cargo: number; shield: number } {
+  if (p.yardFittings) return p.yardFittings;
+  const base = baseFittedStats(p, p.hullId);
+  // Old saves only stored total capacity. Preserve their remaining surplus.
+  return { cargo: Math.max(0, p.cargoMax - base.cargoMax), shield: Math.max(0, p.shieldMax - base.shieldMax) };
+}
+export function rememberYardFittings(p: PlayerState): void { p.yardFittings ??= yardFittings(p); }
+export function fittedHullStats(p: PlayerState, hullId = p.hullId): { hullMax: number; shieldMax: number; fuelMax: number; cargoMax: number } {
+  const stats = baseFittedStats(p, hullId), yard = yardFittings(p);
+  stats.cargoMax += yard.cargo; stats.shieldMax += yard.shield;
+  return stats;
+}
+export function refreshFittedStats(p: PlayerState): void {
+  rememberYardFittings(p); Object.assign(p, fittedHullStats(p));
+  p.hull = Math.min(p.hull, p.hullMax); p.shield = Math.min(p.shield, p.shieldMax); p.fuel = Math.min(p.fuel, p.fuelMax);
+}
+export function hullTransferReason(p: PlayerState, hullId: string): string | null {
+  const next = fittedHullStats(p, hullId), def = hull(hullId);
+  if (cargoUsed(p) > next.cargoMax) return `THE HOLD NEEDS ${cargoUsed(p)} SPACE; THE ${def.name.toUpperCase()} HAS ${next.cargoMax}. STORE OR SELL CARGO FIRST.`;
+  if (berthsUsed(p) > def.crewSlots) return `CREW AND RESERVED LEAVE BERTHS NEED ${berthsUsed(p)} PLACES; THE ${def.name.toUpperCase()} HAS ${def.crewSlots}. KEEP THE CURRENT SHIP UNTIL EVERYONE FITS.`;
+  return null;
+}
+
+// Swap hulls after checking cargo and all reserved crew berths.
+export function applyHull(p: PlayerState, hullId: string): void {
+  rememberYardFittings(p);
+  p.hullId = hullId;
+  Object.assign(p, fittedHullStats(p));
+  p.hull = p.hullMax; p.shield = p.shieldMax; p.fuel = Math.min(p.fuel, p.fuelMax);
   p.systems = defaultSystems();
   p.breaches = [];
   p.fires = [];

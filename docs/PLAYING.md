@@ -1899,3 +1899,25 @@ arrival settles the next visit, even if you return to the same station.
 
 Older saves without a port-visit record are treated as already settled when
 loaded while docked. Arrival autosaves now include the completed leg reset.
+
+
+## Fitted hull capacity
+
+The hull market shows shield, cargo and fuel capacity with your current
+modules, engineering and yard fittings. Hull purchases, parked-ship swaps,
+liner boarding and cutter loans use the same capacity calculation. Crew on
+shore leave keep reserved berths and count against the destination hull.
+
+Repeatable cargo pods add ten cargo space each; booster plates add 25 shield
+capacity each. Both now transfer with the captain's fittings. The shield
+capacitor and engineering grades apply to hull shields; booster plates then
+add their flat capacity. Buying the capacitor before or after engineering
+produces the same result. Three shield grades on a Wren give 65 capacity,
+or 85 with its capacitor, before adding plates.
+
+When older saves first fit equipment or change hull, capacity above the
+calculated hull/module/engineering total is retained as a fixed yard bonus.
+This preserves the surplus still recorded on that ship, including old shield
+rounding differences. Previously lost capacity cannot be inferred from a save
+that no longer records it. Existing damage and stores are preserved when
+recalculating fitted capacity. Fuel transfers up to the new fitted tank size.

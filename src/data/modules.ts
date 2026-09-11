@@ -26,7 +26,7 @@ export const MODULES: ModuleDef[] = [
   { id: "fss", name: "Discovery Scanner", price: 1100, desc: "Logs every system fully on arrival and marks its signals and derelicts." },
   { id: "dss", name: "Surface Scanner", price: 1600, desc: "Orbital surveys map a whole world in one pass and pay double." },
   { id: "thrusters", name: "Tuned Thrusters", price: 2200, desc: "+15% thrust and top speed." },
-  { id: "booster", name: "Shield Capacitor", price: 1300, desc: "+30% shield capacity, stacks with booster plates.", shield: 0.3 },
+  { id: "booster", name: "Shield Capacitor", price: 1300, desc: "+30% hull shield capacity. Booster plates add their own flat capacity.", shield: 0.3 },
   { id: "greenhouse", name: "Greenhouse", price: 900, desc: "Grows a crate of provisions every five minutes under way. Crew eat better and know it." },
   { id: "cabins", name: "Passenger Cabins", price: 1300, desc: "Two cabins in the hold: carry three fares at once from any station lounge." },
 ];

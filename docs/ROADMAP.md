@@ -2056,6 +2056,16 @@ Time passes for the people on the ship, and for the ship.
 - [x] Treat older docked saves as already settled and save after arrival resets.
       Reject delayed port data from another visit or world.
 
+## Milestone 404: The Fittings Come With You (Sep 2026)
+- [x] Persist repeatable cargo pods and booster plates across hull changes and
+      cutter custody. Retain old saves' currently recorded capacity surplus.
+- [x] Use one fitted-capacity calculation for previews, purchases and swaps;
+      include reserved shore-leave crew berths before changing the fleet.
+- [x] Make shield grades and capacitor purchase order consistent. Clamp fuel
+      after adding the destination hull's fitted auxiliary tank.
+- [x] Keep damage and stores while recalculating equipment; reject duplicate
+      captured module purchases without charging twice.
+
 ## Later: Trek / Expanse / Orville (the fourth sitting)
 
 The third sitting shipped everything on the last list (M330–M386): the

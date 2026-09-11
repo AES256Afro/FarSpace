@@ -1,6 +1,7 @@
 import { loanHullChangeReason, loanReturnReason, loanSummary, plotLoanDepot, returnServiceCutter } from "../core/serviceloan";
 import { beginDockVisit, currentDockVisit, type DockVisit } from "../core/docking";
 import type { World } from "../world";
+import { fittedHullStats, hullTransferReason, refreshFittedStats, rememberYardFittings } from "../world";
 import { plotServiceOrder, recordServiceFareDelivery, serviceAudienceAt, serviceObjective, syncServiceFares } from "../core/service";
 // Station scene: docked services — market, shipyard, ships, missions, bar (crew), storage, news.
 
@@ -706,8 +707,6 @@ export class StationScene implements Scene {
           if (!cost) g.toast("ALREADY AT MAXIMUM GRADE");
           else if (!canAfford(p, cost)) g.toast("NOT ENOUGH MATERIALS - MINE, SALVAGE, SURVEY");
           else if (upgrade(p, bp)) {
-            if (bp.id === "shields") { p.shieldMax = Math.round(p.shieldMax * 1.1); p.shield = p.shieldMax; }
-            if (bp.id === "cargo") p.cargoMax += 5;
             flag(g, "engineer");
             g.toast(`${bp.name.toUpperCase()} GRADE ${engGrade(p, bp.id)} APPLIED`);
             sfx.repair();
@@ -969,7 +968,7 @@ export class StationScene implements Scene {
     const dest = findStation(w, f.stationId); if (!dest) return;
     const h = hull(f.hullId);
     if (cargoUsed(p) > 0) { g.toast("THE LINER TAKES PEOPLE, NOT CARGO. STORE OR SELL YOUR HOLD FIRST"); return; }
-    if (p.crew.length > h.crewSlots) { g.toast(`THE ${h.name.toUpperCase()} HAS ${h.crewSlots} BERTHS. TOO MANY CREW TO MOVE`); return; }
+    const transferReason = hullTransferReason(p, f.hullId); if (transferReason) { g.toast(transferReason); return; }
     const fare = (120 + 140 * hops) * (1 + p.crew.length);
     if (p.credits < fare) { g.toast(`PASSAGE FOR YOU AND ${p.crew.length} CREW IS ${fare}CR. YOU'RE SHORT`); return; }
     if (!confirmBox(`Take the liner to ${dest.st.name}, ${dest.sys.name} (${hops} jump${hops > 1 ? "s" : ""}) for ${fare}cr? The ${(p.shipName ?? hull(p.hullId).name)} stays parked here; you fly the ${f.name ?? h.name} from there.`)) return;
@@ -998,8 +997,7 @@ export class StationScene implements Scene {
     const p = g.world.player;
     const h = hull(ship.hullId);
     if (!p.fleet?.includes(ship) || ship.stationId !== this.station.id || ship.hullId === SERVICE_CUTTER.id) { g.toast("THAT OWNED HULL IS NOT PARKED HERE"); return; }
-    if (cargoUsed(p) > h.cargoMax + 25 * ((p.modules ?? []).includes("rack") ? 1 : 0) + 5 * (p.engineering?.cargo ?? 0)) { g.toast(`CARGO WON'T FIT IN THE ${h.name.toUpperCase()} - STORE OR SELL FIRST`); return; }
-    if (p.crew.length > h.crewSlots) { g.toast(`TOO MUCH CREW FOR ${h.crewSlots} BERTHS`); return; }
+    const transferReason = hullTransferReason(p, ship.hullId); if (transferReason) { g.toast(transferReason); return; }
     const parked: StoredShip = { hullId: p.hullId, stationId: this.station.id, name: p.shipName, hull: p.hull, torpedoes: p.torpedoes ?? 0 };
     p.fleet = (p.fleet ?? []).filter((f) => f !== ship);
     p.fleet.push(parked);
@@ -1023,8 +1021,7 @@ export class StationScene implements Scene {
     const tradeIn = keepOld ? 0 : Math.round(hull(p.hullId).price * 0.6);
     const cost = Math.max(0, h.price - tradeIn);
     if (p.credits < cost) { g.toast(keepOld ? `NEED ${cost}CR TO BUY WITHOUT TRADE-IN` : `NEED ${cost}CR AFTER TRADE-IN`); return; }
-    if (cargoUsed(p) > h.cargoMax) { g.toast(`CARGO WON'T FIT: ${cargoUsed(p)}/${h.cargoMax} - STORE OR SELL FIRST`); return; }
-    if (p.crew.length > h.crewSlots) { g.toast(`TOO MUCH CREW FOR ${h.crewSlots} BERTHS`); return; }
+    const transferReason = hullTransferReason(p, id); if (transferReason) { g.toast(transferReason); return; }
     p.credits -= cost;
     if (keepOld) {
       (p.fleet ??= []).push({ hullId: p.hullId, stationId: this.station.id, name: p.shipName, hull: p.hull, torpedoes: p.torpedoes ?? 0 });
@@ -1116,11 +1113,12 @@ export class StationScene implements Scene {
       if (hasModule(p, m.id)) continue;
       opts.push({ label: `FIT ${m.name.toUpperCase()}`, sub: `${m.price}CR`, action: () => {
         if (p.credits < m.price) return g.toast("NOT ENOUGH CREDITS");
+        if (hasModule(p, m.id)) return g.toast("THIS MODULE IS ALREADY FITTED");
+        rememberYardFittings(p);
         p.credits -= m.price;
         (p.modules ??= []).push(m.id);
-        if (m.fuel) p.fuelMax += m.fuel;
-        if (m.cargo) p.cargoMax += m.cargo;
-        if (m.shield) { p.shieldMax = Math.round(p.shieldMax * (1 + m.shield)); p.shield = p.shieldMax; }
+        refreshFittedStats(p);
+        if (m.shield) p.shield = p.shieldMax;
         flag(g, "outfitted");
         g.toast(`${m.name.toUpperCase()} FITTED - ${m.desc.toUpperCase()}`);
       } });
@@ -1175,11 +1173,11 @@ export class StationScene implements Scene {
     }
     opts.push({ label: `CARGO POD +10 (NOW ${p.cargoMax})`, sub: "500CR", action: () => {
       if (p.credits < 500) return g.toast("NOT ENOUGH CREDITS");
-      p.credits -= 500; p.cargoMax += 10; g.toast("CARGO EXPANDED");
+      rememberYardFittings(p); p.credits -= 500; p.yardFittings!.cargo += 10; refreshFittedStats(p); g.toast("CARGO POD FITTED. +10 CAPACITY; MOVES WITH YOUR FITTINGS.");
     } });
     opts.push({ label: `SHIELD BOOSTER +25 (NOW ${p.shieldMax})`, sub: "800CR", action: () => {
       if (p.credits < 800) return g.toast("NOT ENOUGH CREDITS");
-      p.credits -= 800; p.shieldMax += 25; g.toast("SHIELD CAPACITY UP");
+      rememberYardFittings(p); p.credits -= 800; p.yardFittings!.shield += 25; refreshFittedStats(p); g.toast("BOOSTER PLATE FITTED. +25 SHIELD CAPACITY; MOVES WITH YOUR FITTINGS.");
     } });
     if (p.wanted > 0 && !st.military) {
       const cost = Math.round(p.wanted * 1000);
@@ -1444,13 +1442,14 @@ export class StationScene implements Scene {
     const elsewhere = (p.fleet ?? []).filter((f) => f.stationId !== this.station.id);
     const rowH = 26; // seven hulls have to fit above the parked list
     HULLS.forEach((h, i) => {
+      const fitted = fittedHullStats(p, h.id);
       const y = top + 12 + i * rowH;
       this.row(ctx, y, i === this.cursor);
       const own = h.id === p.hullId;
       drawText(ctx, h.name.toUpperCase() + (own ? "  (YOURS)" : ""), 8, y, own ? PAL.ui : PAL.white);
       const cost = Math.max(0, h.price - tradeIn);
       drawText(ctx, own ? "-" : `${cost}CR`, VW - textWidth(`${cost}CR`) - 8, y, PAL.gold);
-      drawText(ctx, `HULL ${h.hullMax}  SHLD ${h.shieldMax}  CARGO ${h.cargoMax}  FUEL ${h.fuelMax}  THRUST ${h.accel}  TOP ${h.maxSpeed}  MINE x${h.miningRate}  GUNS ${h.weaponDmg}  CREW ${h.crewSlots}`, 8, y + 9, PAL.grey);
+      drawText(ctx, `HULL ${h.hullMax}  SHLD ${fitted.shieldMax}  CARGO ${fitted.cargoMax}  FUEL ${fitted.fuelMax}  THRUST ${h.accel}  TOP ${h.maxSpeed}  MINE x${h.miningRate}  GUNS ${h.weaponDmg}  CREW ${h.crewSlots}`, 8, y + 9, PAL.grey);
       if (!stored.length) drawText(ctx, h.desc.slice(0, 94), 8, y + 18, PAL.greyDark);
       // preview sprite
       const spr = g.sprite(`hull-preview-${h.id}`, () => {

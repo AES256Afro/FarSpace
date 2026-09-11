@@ -1,7 +1,7 @@
 // Materials and engineering: raw stuff you pick up while mining, salvaging and
 // surveying, spent at engineers on permanent ship upgrades.
 
-import type { PlayerState } from "../world";
+import { refreshFittedStats, rememberYardFittings, type PlayerState } from "../world";
 
 export interface MaterialDef { id: string; name: string; rarity: "common" | "uncommon" | "rare" }
 export const MATERIALS: MaterialDef[] = [
@@ -63,10 +63,13 @@ export function canAfford(p: PlayerState, cost: Record<string, number>): boolean
 export function upgrade(p: PlayerState, bp: Blueprint): boolean {
   const cost = nextCost(p, bp);
   if (!cost || !canAfford(p, cost)) return false;
+  rememberYardFittings(p);
   p.materials ??= {};
   for (const [id, n] of Object.entries(cost)) p.materials[id] -= n;
   p.engineering ??= {};
   p.engineering[bp.id] = engGrade(p, bp.id) + 1;
+  refreshFittedStats(p);
+  if (bp.id === "shields") p.shield = p.shieldMax;
   return true;
 }
 

@@ -1,5 +1,5 @@
 import type { PlayerState, World } from "../world";
-import { applyHull, berthsUsed, cargoUsed, findStation, logEntry, navRoute, permitDenied } from "../world";
+import { applyHull, findStation, hullTransferReason, logEntry, navRoute, permitDenied } from "../world";
 import { faction } from "../data/data";
 import { hull, SERVICE_CUTTER } from "../data/hulls";
 import { serviceOffice } from "./service";
@@ -7,15 +7,7 @@ import { serviceOffice } from "./service";
 export type HeldHull = Pick<PlayerState, "hullId" | "shipName" | "paint" | "hull" | "shield" | "fuel" | "systems" | "breaches" | "fires" | "torpedoes" | "wear" | "berthLog" | "hullHistory" | "commissionedAt">;
 export interface ServiceLoan { serial: number; stationId: string; issuedAt: number; name: string; held: HeldHull }
 
-function hullPreview(p: PlayerState, hullId: string): PlayerState {
-  const preview = { ...p }; applyHull(preview, hullId); return preview;
-}
-export function hullTransferReason(p: PlayerState, hullId: string): string | null {
-  const next = hullPreview(p, hullId), def = hull(hullId);
-  if (cargoUsed(p) > next.cargoMax) return `THE HOLD NEEDS ${cargoUsed(p)} SPACE; THE ${def.name.toUpperCase()} HAS ${next.cargoMax}. STORE OR SELL CARGO FIRST.`;
-  if (berthsUsed(p) > def.crewSlots) return `CREW AND RESERVED LEAVE BERTHS NEED ${berthsUsed(p)} PLACES; THE ${def.name.toUpperCase()} HAS ${def.crewSlots}. KEEP THE CURRENT SHIP UNTIL EVERYONE FITS.`;
-  return null;
-}
+export { hullTransferReason } from "../world";
 export function loanBorrowReason(w: World): string | null {
   const p = w.player, record = p.service, office = serviceOffice(w);
   if (!record || !office || office.factionId !== record.factionId || record.stationId !== office.id) return "THE CUTTER IS ISSUED AT YOUR CURRENT SERVICE POSTING.";
