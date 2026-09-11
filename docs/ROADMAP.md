@@ -1165,6 +1165,10 @@ Time passes for the people on the ship, and for the ship.
 - [x] The bulletin carries the register and the freemen; the tannoy shows
       off a ship that passed inspection; the concourse knows a freeman
 
+## Milestone 200 — The Bridge, in the Handbook ✅ (Sep 2026)
+- [x] A handbook section for everything the bridge learned this block, and
+      two more lines under life aboard
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
