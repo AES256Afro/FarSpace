@@ -229,6 +229,12 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Scrapping a hull
+
+- X on a parked hull on the SHIPS tab sells her to the yard for scrap: less
+  than a trade-in, worse if she's battered, but credits today. There's no
+  getting her back.
+
 ## Family
 
 - Dock at a crew member's home port and someone of theirs is on the

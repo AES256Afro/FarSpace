@@ -765,4 +765,10 @@ Time passes for the people on the ship, and for the ship.
 - [x] Crew members' families on the promenade at their home ports; a gift
       and a lift once a week
 
+## Milestone 101 — Scrap ✅ (Sep 2026)
+- [x] X on a parked hull scraps her for credits
+
+## Milestone 102 — The Border on the Title ✅ (Sep 2026)
+- [x] The title ticker shows this week's contested system and the standing
+
 ## Later

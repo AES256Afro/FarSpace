@@ -11,7 +11,8 @@ import * as cloud from "../core/cloud";
 import * as wire from "../core/wire";
 import { settings, toggleFullscreen } from "../core/settings";
 import { activeSlot, loadSave } from "../save";
-import { rankOf } from "../world";
+import { rankOf, borderStanding } from "../world";
+import { faction } from "../data/data";
 import { occasionFor } from "../data/occasions";
 import { hull } from "../data/hulls";
 import { music } from "../core/music";
@@ -191,7 +192,9 @@ export class TitleScene implements Scene {
       // alternate the shared wire with your own galaxy's news (syndicate wars, annexations)
       const local = g.world.events.slice(-6).reverse();
       const slot = Math.floor(this.t / 6);
-      if (slot % 3 === 2) { const oc = occasionFor(); const line = `TODAY IS ${oc.name}: ${oc.line}`.slice(0, 110); drawText(ctx, line, VW / 2 - textWidth(line) / 2, VH - 38, PAL.gold); }
+      const bs = slot % 4 === 3 ? borderStanding(g.world) : null;
+      if (bs) { const sysName = g.world.systems[bs.c.systemId]?.name.toUpperCase() ?? "?"; const line = `THE BORDER THIS WEEK: ${sysName} - ${faction(bs.c.incumbent).name.split(" ")[0].toUpperCase()} ${bs.inc} V ${faction(bs.c.challenger).name.split(" ")[0].toUpperCase()} ${bs.chal}`.slice(0, 92); drawText(ctx, line, VW / 2 - textWidth(line) / 2, VH - 38, PAL.warn); }
+      else if (slot % 3 === 2) { const oc = occasionFor(); const line = `TODAY IS ${oc.name}: ${oc.line}`.slice(0, 110); drawText(ctx, line, VW / 2 - textWidth(line) / 2, VH - 38, PAL.gold); }
       else {
       const useLocal = local.length && (!this.ticker.length || slot % 2 === 1);
       if (useLocal) {

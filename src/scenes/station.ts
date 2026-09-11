@@ -468,6 +468,7 @@ export class StationScene implements Scene {
         if (inp.wasPressed("k") && this.cursor < HULLS.length) this.buyHull(g, HULLS[this.cursor].id, true);
         if (inp.wasPressed("l")) this.takeTheLiner(g);
         if (inp.wasPressed("w") && this.cursor >= HULLS.length) this.putToWork(g, stored[this.cursor - HULLS.length]);
+        if (inp.wasPressed("x") && this.cursor >= HULLS.length) this.scrapHull(g, stored[this.cursor - HULLS.length]);
         if (inp.wasPressed("r") && (p.haulers ?? []).length) {
           const c = p.haulers![p.haulers!.length - 1];
           if (confirmBox(`Release ${c.name} from the charter? The till (${Math.round(c.till)}cr) pays out now; the crew find other work.`)) { p.credits += Math.round(c.till); releaseCharter(p, c); g.toast(`${c.name.toUpperCase()} RELEASED. THE CREW WAVE FROM THE BAY.`); }
@@ -816,6 +817,17 @@ export class StationScene implements Scene {
   }
 
   // Park the current hull here and take another one out of storage
+  // The yard buys a parked hull for scrap and parts: less than a trade-in, but it's credits today
+  scrapHull(g: Game, ship: StoredShip | undefined): void {
+    if (!ship) return;
+    const p = g.world.player; const h = hull(ship.hullId);
+    const price = Math.max(150, Math.round(Math.max(h.price, 900) * 0.45 * Math.max(0.5, ship.hull / h.hullMax)));
+    if (!confirmBox(`Scrap the ${ship.name ?? h.name} here for ${price}cr? The yard breaks her up; there's no getting her back.`)) return;
+    p.fleet = (p.fleet ?? []).filter((f) => f !== ship);
+    p.credits += price; ledger(p, "yard", price);
+    logEntry(g.world, `Scrapped the ${ship.name ?? h.name} at ${this.station.name} for ${price}cr`);
+    g.toast(`THE YARD TAKES THE ${(ship.name ?? h.name).toUpperCase()} FOR ${price}CR. THE CREW WATCH FROM THE GALLERY. NOBODY SAYS MUCH.`); sfx.select();
+  }
   // A parked hull of yours goes to work on your best known run from here, with a hired crew
   putToWork(g: Game, ship: StoredShip | undefined): void {
     if (!ship) return;
@@ -1291,7 +1303,7 @@ export class StationScene implements Scene {
     });
     let y = top + 12 + HULLS.length * rowH;
     if (stored.length) {
-      drawText(ctx, "PARKED HERE - ENTER TO SWAP - W PUTS HER TO WORK ON YOUR BEST KNOWN RUN:", 8, y, PAL.greyDark); y += 10;
+      drawText(ctx, "PARKED HERE - ENTER TO SWAP - W PUTS HER TO WORK ON YOUR BEST KNOWN RUN - X SCRAPS HER:", 8, y, PAL.greyDark); y += 10;
       stored.forEach((f, i) => {
         this.row(ctx, y, this.cursor === HULLS.length + i);
         drawText(ctx, `${(f.name ?? hull(f.hullId).name).toUpperCase()} (${hull(f.hullId).name.toUpperCase()})  HULL ${Math.round(f.hull)}/${hull(f.hullId).hullMax}`, 8, y, PAL.ui);
