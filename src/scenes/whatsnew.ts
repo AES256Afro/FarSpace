@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.93 - MORE WONDERS", [
+    "THE LOOM, THE CLOCK AND THE CHOIR: THREE NEW KINDS OF VAST THING FOR NEW GALAXIES, WITH THEIR OWN LOOKS AND SOUNDS.",
+  ]],
   ["0.92 - LOST AND FOUND", [
     "THE CAT SLIPS OUT ON THE PROMENADE. FIND HER BEFORE YOU BOARD, OR SHE WAITS FOR YOU, SMUG. THE BAND TALKS ABOUT THE WEEK.",
   ]],

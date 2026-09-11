@@ -734,4 +734,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] The cat slips out on the promenade; left behind she waits or comes home
       in a crate; band chatter about the border, convoys and maydays
 
+## Milestone 93 — More Wonders ✅ (Sep 2026)
+- [x] The Loom, the Clock and the Choir: three new wonder kinds with their own
+      looks and sounds
+
 ## Later

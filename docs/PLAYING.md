@@ -229,6 +229,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## More wonders
+
+- Three more kinds of vast thing for new galaxies: the Loom, filaments of gas
+  weaving past each other; the Clock, a worked-metal ring wider than a station,
+  turning once an hour; and the Choir, an asteroid field that rings when the
+  light hits it. Up to twelve wonders in a big galaxy now.
+
 ## Lost and found
 
 - Now and then the ship's cat slips out onto the promenade. Find her (E

@@ -15,7 +15,7 @@ import { STARS, starDistance } from "../src/data/stars";
 import { ACHIEVEMENTS } from "../src/data/achievements";
 import { ARCS, dailyContract, dailyKey, rankOf, logSystem, applyHull } from "../src/world";
 import { MODULES } from "../src/data/modules";
-import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook, leaveWreck, addWireWrecks, enterRegatta, regattaObjective, regattaProgress, buyStake, collectStake, stakePrice, STAKE_CAP, hasSpecialty, chooseSpecialty, wearRate, crewOwnHull, OWN_HULL_CREW_FEE, maydayAnswered, favourFor, favourDone, borderContest, pushInfluence, borderStanding, resolveBorder, photoTaken, WONDER_RANGE } from "../src/world";
+import { WONDER_DEFS, rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook, leaveWreck, addWireWrecks, enterRegatta, regattaObjective, regattaProgress, buyStake, collectStake, stakePrice, STAKE_CAP, hasSpecialty, chooseSpecialty, wearRate, crewOwnHull, OWN_HULL_CREW_FEE, maydayAnswered, favourFor, favourDone, borderContest, pushInfluence, borderStanding, resolveBorder, photoTaken, WONDER_RANGE } from "../src/world";
 import { RARES } from "../src/data/data";
 import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
@@ -997,6 +997,19 @@ describe("pictures wanted", () => {
     else { expect(photoTaken(w, { systemId: ph.systemId, x: 0, y: 0, inOrbit: false }).length).toBe(0); expect(photoTaken(w, { systemId: ph.systemId, x: 0, y: 0, inOrbit: true, orbitPlanetIdx: ph.planetIdx }).length).toBe(1); }
     expect(m!.photoDone).toBe(true);
     expect(missionDeliverable(w, m!, from)).toBe(true);
+  });
+});
+
+describe("more wonders", () => {
+  it("twelve kinds, all with names and descriptions, all assignable", () => {
+    const kinds = Object.keys(WONDER_DEFS);
+    expect(kinds.length).toBe(12);
+    for (const k of kinds) { expect(WONDER_DEFS[k as keyof typeof WONDER_DEFS].names.length).toBe(3); expect(WONDER_DEFS[k as keyof typeof WONDER_DEFS].desc.length).toBeGreaterThan(30); }
+    const w = generateWorld(41, { realGalaxy: true });
+    for (const wd of w.wonders ?? []) expect(kinds).toContain(wd.kind);
+    const seen = new Set<string>();
+    for (let seed = 0; seed < 8; seed++) for (const wd of generateWorld(100 + seed, { realGalaxy: true }).wonders ?? []) seen.add(wd.kind);
+    expect(seen.has("loom") || seen.has("clock") || seen.has("choir")).toBe(true);
   });
 });
 

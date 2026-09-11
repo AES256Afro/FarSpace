@@ -1379,7 +1379,7 @@ export function planetLore(w: World, sys: SystemDef, idx: number): string {
 }
 
 // ---------- Wonders: the places people cross a galaxy to see ----------
-export type WonderKind = "ring" | "pulsar" | "ark" | "glass" | "twins" | "nursery" | "cathedral" | "lantern" | "garden";
+export type WonderKind = "ring" | "pulsar" | "ark" | "glass" | "twins" | "nursery" | "cathedral" | "lantern" | "garden" | "loom" | "clock" | "choir";
 export interface Wonder { id: string; kind: WonderKind; name: string; systemId: string; x: number; y: number; seen: boolean; seenBy?: string; desc: string }
 export const WONDER_DEFS: Record<WonderKind, { names: string[]; desc: string }> = {
   ring: { names: ["The Halo", "Saint Iver's Ring", "The Coronet"], desc: "A ring of ice and dust a thousand kilometres across, lit from inside by something that isn't a star." },
@@ -1389,6 +1389,9 @@ export const WONDER_DEFS: Record<WonderKind, { names: string[]; desc: string }> 
   twins: { names: ["The Twins", "The Dancers", "Two Lamps"], desc: "A pair of stars so close they share an atmosphere, trading fire across a bridge you can see from here." },
   nursery: { names: ["The Nursery", "The Comet Garden", "Snowfield"], desc: "Ten thousand comets in a slow cloud, tails all pointing the same way. Drifters come here to breed." },
   cathedral: { names: ["The Cathedral", "The Pillars", "Stone Choir"], desc: "Rock spires kilometres tall standing in open space. Nobody built them. Everybody argues about it." },
+  loom: { names: ["The Loom", "The Threads", "Weaver's Field"], desc: "Filaments of glowing gas a hundred kilometres long, drifting past each other, weaving and unweaving something." },
+  clock: { names: ["The Clock", "The Great Wheel", "Turning Point"], desc: "A ring of worked metal wider than a station, turning once an hour, older than anyone's records. Nobody knows what it measures." },
+  choir: { names: ["The Choir", "Singing Stones", "The Bell Field"], desc: "An asteroid field that rings. Every rock hums a note when the light hits it, and the light is always hitting some of them." },
   lantern: { names: ["The Lantern", "The Ember Cloud", "Saint Elmo's"], desc: "A cloud of gas lit from within, orange and slow, that brightens when a ship passes as if it were pleased." },
   garden: { names: ["The Hanging Garden", "The Green Shard", "Orchard Rock"], desc: "A fragment of a world, green side up, still growing under a sky that isn't there any more." },
 };

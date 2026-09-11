@@ -1044,7 +1044,8 @@ export class FlightScene implements Scene {
         const d = dist(p.x, p.y, wd.x, wd.y);
         if (d > 1600) continue;
         if (wd.kind === "pulsar") sfx.tick(1 - d / 1600);
-        else if (wd.kind === "cathedral" || wd.kind === "twins") { if (Math.floor(g.world.time) % 4 === 0) sfx.choir(1 - d / 1600); }
+        else if (wd.kind === "clock") { if (Math.floor(g.world.time) % 5 === 0) sfx.tick(0.5 * (1 - d / 1600)); }
+        else if (wd.kind === "cathedral" || wd.kind === "twins" || wd.kind === "choir") { if (Math.floor(g.world.time) % (wd.kind === "choir" ? 2 : 4) === 0) sfx.choir(1 - d / 1600); }
       }
     }
     // a wonder within sight: the codex, the data, the tourists
