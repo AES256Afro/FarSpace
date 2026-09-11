@@ -48,6 +48,14 @@ export function pickShipLine(g: Game, rng: RNG): string | null {
   if (p.lastWeekSeen) pool.push("NEW WEEK. THE FACTIONS ARE ASKING THEIR QUESTIONS AGAIN. I DON'T GET A VOTE. I HAVE OPINIONS.");
   if ((p.keepsakes ?? []).length) pool.push("THERE'S SOMEBODY'S GLOVE ON THE PASSENGER SEAT. IT'S BEEN THERE FOUR PORTS. I'VE DECIDED IT'S MINE.");
   if ((p.lostProperty ?? []).length) pool.push(`${p.lostProperty![0].owner.toUpperCase()} LEFT SOMETHING IN MY CABIN. I'D LIKE IT BACK WITH THEM. IT'S NOT MINE TO KEEP.`);
+  if (p.motto) pool.push(`THE PLAQUE SAYS '${p.motto.toUpperCase()}'. I READ IT EVERY TIME THE LOCK CYCLES. I'M TRYING TO LIVE UP TO IT.`);
+  if ((p.prisoners ?? 0) >= 1) pool.push("THE BUNK ROOM STILL HAS THE IRONS IN IT. I'D LIKE THEM OFF MY DECK BEFORE THE NEXT FARE SEES THEM.");
+  if ((p.inquiries ?? 0) >= 1) pool.push("THE BOARD ASKED ABOUT THE LOG. I GAVE THEM THE LOG. I DIDN'T GIVE THEM THE PARTS I KEEP FOR MYSELF.");
+  if (p.flags?.birthday) pool.push("THERE'S STILL RATION SUGAR ON THE GALLEY DECK FROM THE BIRTHDAY. I'M LEAVING IT. IT'S A NICE STAIN.");
+  if ((p.officeLetters ?? 0) >= 2) pool.push("ANOTHER LETTER FROM THE OFFICE. I'VE STARTED FILING THEM UNDER 'WEATHER'.");
+  if ((p.hailsAnswered ?? 0) >= 3) pool.push("YOU ANSWER HAILS. THE LANES HAVE STARTED CALLING ME BY NAME. I LIKE THAT MORE THAN I'D ADMIT TO A HULL.");
+  if ((p.waterToBelt ?? 0) >= 10) pool.push("THE ROCKS KNOW MY TANK BY ITS SOUND NOW. THAT'S WHAT THE DOCK-HAND SAID. I'M CHOOSING TO BELIEVE IT.");
+  if (p.crew.some((c) => c.role === "gunner") && p.missions.some((m) => m.passengerKind === "prisoner" && m.accepted && !m.done)) pool.push("THE GUNNER HASN'T SAT DOWN SINCE THE PRISONER CAME ABOARD. I'VE WARMED THAT CORRIDOR A DEGREE.");
   if (p.flags?.dockhand) pool.push("THE DOCK-HAND PATCHED ME WITHOUT ASKING. I DIDN'T MIND. I MINDED A LITTLE. IT WAS A GOOD PATCH.");
   if (passengersAboard(p).some((m) => m.request && !m.requestMet)) pool.push("THE ONE IN THE LOUNGE WANTS SOMETHING. I HEARD THE ASK. I CAN'T COOK. YOU CAN.");
   if ((p.mealsCooked ?? 0) >= 5) pool.push("THE GALLEY SMELLS OF SOMETHING GOOD AGAIN. I DON'T EAT. I STILL NOTICE.");

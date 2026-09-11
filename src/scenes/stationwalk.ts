@@ -8,6 +8,7 @@ import { RNG, hashStr } from "../core/rng";
 import { dist } from "../core/mathx";
 import { sfx } from "../core/sfx";
 import { flag } from "../core/achievements";
+import { isBeltStation } from "../world";
 import { StationDef, findStation, isFriend, isRival, rivalOf, galaxyEventAt, dockingsAt, raceHolder, stakeDividend, weekKey, addCargo, logEntry, berthedCaptains, rivalryLine, handInLostItem, buyJuice, JUICE_PRICE, passengersAboard } from "../world";
 import { occasionFor } from "../data/occasions";
 import type { Encounter } from "../data/encounters";
@@ -153,6 +154,7 @@ export class StationWalkScene implements Scene {
       const ev = galaxyEventAt(g.world, p.systemId);
       const crowd: { tag: string; suit: string; lines: string[]; n: number }[] = [];
       if (oc.id === "market") crowd.push({ tag: "STALLHOLDER", suit: "#c7a54a", n: 3, lines: ["'Fresh in from the belt! Well. Fresh-ish.'", "'Two for the price of one and a half. Market day, captain.'", "'Don't squeeze the fruit. Or do. I'm not your mother.'"] });
+      if (isBeltStation(this.station)) crowd.push({ tag: "ROCK KID", suit: "#d9a066", n: 2, lines: ["'Is that your ship? The one with the dent? My mam says the dent means it's been somewhere.'", "'I've never been down a well. What's it like when things fall? ... Down? Just down? That's stupid.'", "'The inners send water in bottles. You brought it in a tank. Everybody says so.'", "'When I'm big I'm flying a rock hopper. Or yours. Yours if you're still around. Are you still going to be around?'", "'Show us the airlock. Just the outside. Just the button. We won't press it. We might press it.'"] });
       if (this.station.military) crowd.push({ tag: "MARINE", suit: "#3a6a3a", n: 2, lines: ["'Brig's aft of the yard, captain. Transfers sign in there. Don't let them talk to you on the way. They all talk.'", "'Board of inquiry sits at ten. You're not on the list. That's the good version of that sentence.'", "'Emergency call went out an hour ago. Reactor, next system over. If you've an engineer aboard, the board's got your name on it already.'", "'We don't salute merchants. ... All right, we salute the ones with a rank. Carry on, captain.'", "'Patrol orders on the board for anyone with a stripe. Hold station, show the flag, come home. It's not hard. People make it hard.'"] });
       if (oc.id === "remembrance") crowd.push({ tag: "MOURNER", suit: "#5d6680", n: 2, lines: ["'My brother flew the lanes. They read his name at noon.'", "'It's a good list. A long one. Mind how you go out there.'"] });
       if (night && !curfew) {

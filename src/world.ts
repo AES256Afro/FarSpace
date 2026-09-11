@@ -137,7 +137,7 @@ export interface SystemDef {
   permit?: boolean; // entry needs ALLIED standing with the owning faction
 }
 
-export type MissionKind = "delivery" | "bounty" | "mining" | "escort" | "passenger" | "research" | "arc" | "ground" | "repair" | "post" | "photo" | "convoy" | "patrol" | "emergency";
+export type MissionKind = "delivery" | "bounty" | "mining" | "escort" | "passenger" | "research" | "arc" | "ground" | "repair" | "post" | "photo" | "convoy" | "patrol" | "emergency" | "observe";
 
 export interface Mission {
   id: string;
@@ -164,6 +164,7 @@ export interface Mission {
   patrolNeed?: number;
   patrolDone?: boolean;
   byT?: number;                       // emergencies: world time the clamp needs the engineer by; half pay after
+  observeBlown?: boolean;             // observation posts: went to red alert in orbit; the world below noticed
   riteDone?: boolean;                 // the envoy's rite has been offered a room
   sightPlanetIdx?: number;  // tourists want to orbit this planet in the target system first
   sightSeen?: boolean;
@@ -2856,6 +2857,7 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
   if (station.military) kinds.push("bounty", "bounty");
   if (station.military && commandRank(world.player) !== "SKIPPER") kinds.push("patrol", "patrol");
   if (tier >= 1 && linked.length && rng.chance(0.4)) kinds.push("emergency");
+  if (station.type === "research" && rng.chance(0.6)) kinds.push("observe");
   // a picture wanted: a magazine, a museum, a family; a postcard (F7) taken in the right place
   if (!station.military && (station.type === "research" || station.type === "trade") && rng.chance(0.5)) {
     const pool: { systemId: string; wonderId?: string; planetIdx?: number; label: string }[] = [];
@@ -2958,6 +2960,18 @@ export function genMissionsFor(world: World, station: StationDef, rng: RNG): Mis
         desc: `Orders from the ${station.name} watch: hold station in ${target.name} for ${need} seconds, no cruise, and show the flag. Report back here. The lanes are quieter for a hull that's seen.`,
         fromStationId: station.id, targetSystemId: target.id,
         patrolT: 0, patrolNeed: need, reward: Math.round((300 + tier * 150 + rng.int(0, 120)) * payMult), repReward: 4,
+      });
+    } else if (kind === "observe") {
+      // an observation post: hold a quiet orbit over a world that doesn't know anyone is up here, and don't be seen
+      const ts = rng.chance(0.6) && linked.length ? rng.pick(linked) : sys;
+      if (!ts.planets.length) continue;
+      const pi = rng.int(0, ts.planets.length - 1); const pl = ts.planets[pi]; const need = 60 + tier * 20;
+      missions.push({
+        id: idn, kind, accepted: false, done: false, tier,
+        title: `Observation: ${pl.name}`,
+        desc: `The survey wants ${need} seconds of quiet orbit over ${pl.name}, ${ts.name}: close, no cruise, no red alert. There may be somebody down there who doesn't know about ships. Don't be the one who tells them. Report back here.`,
+        fromStationId: station.id, targetSystemId: ts.id, sightPlanetIdx: pi,
+        patrolT: 0, patrolNeed: need, reward: Math.round((450 + tier * 150 + rng.int(0, 150)) * payMult), repReward: 4,
       });
     } else if (kind === "emergency") {
       // a call on the long band: somebody's reactor, somebody's air plant, and their engineer on a cot
@@ -3742,6 +3756,7 @@ export function missionDeliverable(world: World, m: Mission, station: StationDef
   if (m.kind === "post") return m.targetStationId === station.id;
   if (m.kind === "patrol") return m.fromStationId === station.id && (m.patrolT ?? 0) >= (m.patrolNeed ?? 90);
   if (m.kind === "emergency") return m.targetStationId === station.id && p.crew.some((c) => c.role === "engineer" && !c.sick);
+  if (m.kind === "observe") return m.fromStationId === station.id && !!m.patrolDone;
   if (m.kind === "photo") return !!m.photoDone && m.fromStationId === station.id;
   if (m.kind === "convoy") return false; // settled at the gate, never turned in
   if (m.targetStationId !== station.id) return false;

@@ -1113,6 +1113,14 @@ export class FlightScene implements Scene {
     // the ship's bell: the watch changes, and the lounge has something to say now and then
     { const wi = watchIndex(g.world.time); if (this.lastWatch < 0) this.lastWatch = wi; else if (wi !== this.lastWatch) { this.lastWatch = wi; if (p.crew.length >= 2) { const on = p.crew.filter((c, i) => onWatch(p, i, g.world.time) && !c.sick).map((c) => c.name.split(" ")[0].toUpperCase()); this.comms.push({ from: (p.shipName ?? "SHIP").toUpperCase(), text: `WATCH CHANGE. ${on.length ? on.join(" AND ") + " ON DECK." : "EVERYONE'S IN THEIR BUNK."}`, life: 7, color: PAL.uiDim }); sfx.blip(); } } }
     // patrol orders: the clock runs while you hold station in the target system, off cruise
+    if (!this.cruise && !this.docking) for (const m of p.missions) if (m.kind === "observe" && m.accepted && !m.done && !m.patrolDone && m.targetSystemId === p.systemId) {
+      const pl = g.world.systems[p.systemId].planets[m.sightPlanetIdx ?? -1]; if (!pl) continue;
+      const near = dist(p.x, p.y, Math.cos(pl.angle) * pl.orbit, Math.sin(pl.angle) * pl.orbit) < pl.radius + 320;
+      if (!near) continue;
+      if (this.alert === 2 && !m.observeBlown) { m.observeBlown = true; m.reward = Math.round(m.reward / 2); m.patrolT = 0; g.toast(`${m.title.toUpperCase()}: RED ALERT IN ORBIT. IF ANYONE'S DOWN THERE, THEY SAW THAT. HALF PAY, AND START AGAIN.`); continue; }
+      m.patrolT = (m.patrolT ?? 0) + dt;
+      if (m.patrolT >= (m.patrolNeed ?? 60)) { m.patrolDone = true; noteLeg(p, "cards", g.world.time); flag(g, "observe"); g.toast(`${m.title.toUpperCase()}: ORBIT HELD, NOBODY LOOKED UP. REPORT TO ${(findStation(g.world, m.fromStationId)?.st.name ?? "THE SURVEY").toUpperCase()}`); }
+    }
     if (!this.cruise && !this.docking) for (const m of p.missions) if (m.kind === "patrol" && m.accepted && !m.done && m.targetSystemId === p.systemId) { m.patrolT = (m.patrolT ?? 0) + dt; if (!m.patrolDone && m.patrolT >= (m.patrolNeed ?? 90)) { m.patrolDone = true; g.toast(`${m.title.toUpperCase()}: STATION HELD. REPORT BACK TO ${(findStation(g.world, m.fromStationId)?.st.name ?? "THE WATCH").toUpperCase()}`); sfx.select(); } }
     // tactical calls yellow alert when a hostile closes and nobody has yet
     this.autoAlertT -= dt;

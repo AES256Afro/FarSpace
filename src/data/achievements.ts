@@ -145,6 +145,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "inspection", title: "A GOOD SHIP", desc: "Pass an inspection with three marks of four", check: (w) => !!w.player.flags?.inspection },
   { id: "freeman", title: "FREEMAN OF THE BELT", desc: "Earn a standing of three with the rocks", check: (w) => !!w.player.flags?.freeman },
   { id: "requisition", title: "COURTESY OF THE SERVICE", desc: "Requisition a full service at a naval station", check: (w) => !!w.player.flags?.requisition },
+  { id: "observe", title: "NOBODY LOOKED UP", desc: "Hold a quiet orbit for the survey", check: (w) => !!w.player.flags?.observe },
   { id: "captainstable", title: "THERE'S ALWAYS A CHAIR", desc: "Seat a passenger at the captain's table", check: (w) => !!w.player.flags?.captainstable },
   { id: "officevisit", title: "NOTED", desc: "Receive the office's representative", check: (w) => !!w.player.flags?.officevisit },
   { id: "transfer", title: "WITHOUT A SPEECH", desc: "Sign a crew member's transfer ashore", check: (w) => !!w.player.flags?.transfer },

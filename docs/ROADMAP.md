@@ -1264,6 +1264,20 @@ Time passes for the people on the ship, and for the ship.
 - [x] At a naval station a long-serving, unhappy crew member asks for a posting
       ashore: sign it (rep, a letter later), talk them round, or refuse
 
+## Milestone 222 — Observation Posts ✅ (Sep 2026)
+- [x] Research stations post observation orders: hold a quiet orbit over a
+      world for a minute or so, no cruise, no red alert (red in orbit halves
+      the pay and resets the clock); the HUD counts; deed "nobody looked up"
+
+## Milestone 223 — Rock Kids ✅ (Sep 2026)
+- [x] Two kids on every belt promenade with questions about the dent, the
+      well, the tank and the airlock button
+
+## Milestone 224 — The Ship Notices ✅ (Sep 2026)
+- [x] Eight more ship's-voice lines keyed on the plaque, the irons, the board,
+      the birthday, the office, answered hails, water to the belt and a guarded
+      prisoner
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

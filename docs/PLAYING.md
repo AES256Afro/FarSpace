@@ -752,6 +752,10 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- Research stations post observation orders: hold a close, quiet orbit over a
+  named world for a minute or so with no cruise and no red alert. Going to
+  red in orbit halves the pay and resets the clock. Report back to the survey.
+- Belt promenades have rock kids now. They have questions.
 - Talk to a passenger during a mess call and it's the captain's table: sit
   with me (their mood up a lot, and a story by kind), sit with the crew, or
   send them to the lounge. Once per fare.
