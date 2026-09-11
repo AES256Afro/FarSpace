@@ -229,6 +229,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Hum
+
+- The tannoy speaks on the services screen as well as the promenade. In
+  flight the ship calls the watch change and names who's on deck, and the
+  lounge is on the band now and then: a passenger's question, a crew
+  member's answer.
+
 ## Scrapping a hull
 
 - X on a parked hull on the SHIPS tab sells her to the yard for scrap: less

@@ -5,7 +5,7 @@ import { ask, confirmBox } from "../../core/dialog";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra, raceCourse, racePar, racePrize, recordRace, beatHolder, captainNickname, leaveWreck, addWireWrecks, enterRegatta, regattaProgress, hasSpecialty, maydayAnswered } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra, raceCourse, racePar, racePrize, recordRace, beatHolder, captainNickname, leaveWreck, addWireWrecks, enterRegatta, regattaProgress, hasSpecialty, maydayAnswered, watchIndex, onWatch } from "../../world";
 import { COMMODITIES, commodity } from "../../data/data";
 import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
@@ -27,6 +27,7 @@ import { pickEncounter, ENCOUNTERS } from "../../data/encounters";
 import { pickChatter } from "../../core/chatter";
 import { spawnGhost, spawnMayday } from "./ai";
 import { voteMods } from "../../data/votes";
+import { passengerChatter } from "../../data/chatter";
 import { pickShipLine } from "../../core/shipvoice";
 import { keeperScan, KEEPER_OWNER } from "../../core/keeper";
 import { isOccasion } from "../../data/occasions";
@@ -975,6 +976,8 @@ export class FlightScene implements Scene {
   chatterTimer = 25;
   trafficTimer = 40;
   maydayCheck = 20;
+  lastWatch = -1;
+  loungeT = 40;
   updateMayday(g: Game, dt: number): void {
     const p = g.world.player; const sys = g.world.systems[p.systemId];
     if (!g.world.realGalaxy || !wire.getCallsign()) return;
@@ -1000,6 +1003,10 @@ export class FlightScene implements Scene {
     const p = g.world.player;
     const sys = g.world.systems[p.systemId];
     this.updateMayday(g, dt);
+    // the ship's bell: the watch changes, and the lounge has something to say now and then
+    { const wi = watchIndex(g.world.time); if (this.lastWatch < 0) this.lastWatch = wi; else if (wi !== this.lastWatch) { this.lastWatch = wi; if (p.crew.length >= 2) { const on = p.crew.filter((c, i) => onWatch(p, i, g.world.time) && !c.sick).map((c) => c.name.split(" ")[0].toUpperCase()); this.comms.push({ from: (p.shipName ?? "SHIP").toUpperCase(), text: `WATCH CHANGE. ${on.length ? on.join(" AND ") + " ON DECK." : "EVERYONE'S IN THEIR BUNK."}`, life: 7, color: PAL.uiDim }); sfx.blip(); } } }
+    this.loungeT -= dt;
+    if (this.loungeT <= 0) { this.loungeT = 60 + Math.random() * 60; const pax = passengersAboard(p); const c = p.crew.find((x) => !x.sick); if (pax.length && c && this.comms.length < 3) { const m = pax[Math.floor(Math.random() * pax.length)]; const q = passengerChatter(m, c, new RNG((Math.random() * 1e9) >>> 0)); this.comms.push({ from: `${(m.passengerName ?? "PASSENGER").toUpperCase()} (LOUNGE)`, text: q.ask, life: 7, color: "#b28fe0" }); this.comms.push({ from: c.name.split(" ")[0].toUpperCase(), text: q.reply, life: 7, color: PAL.grey }); } }
     // comms chatter when the channel is quiet
     if (g.world.infraNews?.length) { for (const line of g.world.infraNews) g.toast(line); g.world.infraNews = []; }
     // a passenger has heard about a wonder nearby and asks for a detour

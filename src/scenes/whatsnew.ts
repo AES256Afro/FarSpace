@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.102 - HUM", [
+    "THE TANNOY SPEAKS WHILE YOU TRADE. THE SHIP CALLS THE WATCH CHANGE. THE LOUNGE IS ON THE BAND.",
+  ]],
   ["0.101 - SCRAP", [
     "X ON A PARKED HULL SELLS HER TO THE YARD FOR SCRAP. CREDITS TODAY; NO GETTING HER BACK.",
     "THE TITLE TICKER SHOWS THIS WEEK'S CONTESTED SYSTEM AND HOW IT STANDS.",

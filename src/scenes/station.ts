@@ -27,7 +27,7 @@ import { serialMissionFor, serialRecruitFor, serialPremium, serialLines } from "
 import { isOccasion, occasionFor } from "../data/occasions";
 import { sfx } from "../core/sfx";
 import * as wire from "../core/wire";
-import { stationHour, clockText } from "../data/tannoy";
+import { stationHour, clockText, tannoyLines } from "../data/tannoy";
 import { weeklyIssue, myVote, voteResult, castVote, voteMods } from "../data/votes";
 import { drawTutorial } from "../core/tutorial";
 import { music } from "../core/music";
@@ -344,6 +344,8 @@ export class StationScene implements Scene {
     }
     if (inp.wasPressed("p")) { g.setScene("stationwalk"); return; }
     if (inp.wasPressed("F5")) g.save();
+    this.tannoyT -= dt;
+    if (this.tannoyT <= 0) { if (this.tannoy) { this.tannoy = ""; this.tannoyT = 20 + Math.random() * 20; } else { const rng = new RNG((Math.random() * 1e9) >>> 0); this.tannoy = rng.pick(tannoyLines(g.world, this.station, rng)); this.tannoyT = 8; } }
     if (inp.wasPressed("ArrowLeft") || inp.wasPressed("q")) { this.tab = (this.tab + TABS.length - 1) % TABS.length; this.cursor = 0; }
     if (inp.wasPressed("ArrowRight") || inp.wasPressed("e")) { this.tab = (this.tab + 1) % TABS.length; this.cursor = 0; }
     if (inp.wasPressed("ArrowUp")) { this.cursor--; sfx.blip(); }
@@ -653,6 +655,7 @@ export class StationScene implements Scene {
   recordView: "achievements" | "log" | "ledger" | "guestbook" | "week" = "achievements";
   surveyView: "data" | "codex" = "data";
   raceRecords: wire.RaceRec[] | null = null; // the wire's course records for this station
+  tannoy = ""; tannoyT = 4;
   base: wire.BaseRec | null = null;   // my squadron's base record
   baseLoaded = false;
   baseOwner: string | null = null;    // tag owning THIS station
@@ -1080,6 +1083,7 @@ export class StationScene implements Scene {
     drawText(ctx, `${p.credits}CR   CARGO ${cargoUsed(p)}/${p.cargoMax}   REP ${repLabel(rep)} (${rep})`, 42, 26, PAL.gold);
     const escLabel = this.returnTo === "stationwalk" ? "ESC PROMENADE" : "ESC UNDOCK";
     drawText(ctx, `P WALK DECK - ${escLabel}`, VW - textWidth(`P WALK DECK - ${escLabel}`) - 6, 8, PAL.greyDark);
+    if (this.tannoy) { const tl = `TANNOY: ${this.tannoy}`.slice(0, 96); drawText(ctx, tl, VW - textWidth(tl) - 6, 17, PAL.gold); }
     if (st.military) drawText(ctx, "SECURITY LEVEL: HIGH", VW - textWidth("SECURITY LEVEL: HIGH") - 6, 17, PAL.danger);
     const war = g.world.wars.find((w) => w.systemId === p.systemId);
     const gev = galaxyEventAt(g.world, p.systemId);

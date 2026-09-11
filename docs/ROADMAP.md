@@ -771,4 +771,8 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 102 — The Border on the Title ✅ (Sep 2026)
 - [x] The title ticker shows this week's contested system and the standing
 
+## Milestone 103 — Hum ✅ (Sep 2026)
+- [x] Tannoy while docked; watch changes called on the band in flight; the
+      lounge on the band
+
 ## Later
