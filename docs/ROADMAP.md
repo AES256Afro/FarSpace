@@ -2146,3 +2146,10 @@ The decision between service orders and booked fares is covered by M402.
   Service Office. Read every retained report with its date and actual payment.
 - Keep the archive newest first, scroll to final lines, and reuse section
   navigation and search. Reading preserves credits, assignments and hulls.
+
+### M411: The Back of the Warehouse
+
+- Scroll every held and stored commodity into view, with matching pointer rows,
+  transfer direction, quantities and fitted hold capacity.
+- Preserve the selected stored commodity when loading creates a new hold row.
+  Keep transfers to one unit and leave stock unchanged when the hold is full.

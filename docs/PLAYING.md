@@ -2009,3 +2009,11 @@ and all twelve retained reports with their filed stardate and actual payment.
 Use the reader's scrolling, section navigation and search controls. Escape
 returns to the duty desk. Reading does not file an assignment, collect pay,
 or transfer a hull.
+
+## Warehouse transfers
+
+The station Storage tab scrolls through all goods aboard and stored locally.
+Up/Down or the wheel moves the selection. Enter or a pointer click transfers
+one unit: hold rows store, warehouse rows load. Loading a new commodity keeps
+its warehouse row selected while stock remains. A full hold leaves warehouse
+stock untouched. Each station keeps its own stored goods.

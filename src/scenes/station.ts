@@ -639,21 +639,18 @@ export class StationScene implements Scene {
         break;
       }
       case "STORAGE": {
-        const held = Object.keys(p.cargo);
-        const stored = Object.keys(p.storage[st.id] ?? {});
-        const rows = held.length + stored.length;
-        this.cursor = clamp(this.cursor, 0, Math.max(0, rows - 1));
-        if (enter && rows) {
-          p.storage[st.id] ??= {};
-          const box = p.storage[st.id];
-          if (this.cursor < held.length) {
-            const id = held[this.cursor];
-            if (removeCargo(p, id, 1)) box[id] = (box[id] ?? 0) + 1;
-          } else {
-            const id = stored[this.cursor - held.length];
-            if (box[id] > 0 && addCargo(p, id, 1)) { box[id]--; if (box[id] <= 0) delete box[id]; }
-            else g.toast("CARGO FULL");
-          }
+        const rows = this.storageRows(g);
+        this.cursor = clamp(this.cursor, 0, Math.max(0, rows.length - 1));
+        const row = rows[this.cursor];
+        if (enter && row) {
+          const box = p.storage[st.id] ??= {};
+          if (row.kind === "held") {
+            if (removeCargo(p, row.id, 1)) box[row.id] = (box[row.id] ?? 0) + 1;
+          } else if (box[row.id] > 0 && addCargo(p, row.id, 1)) {
+            box[row.id]--; if (box[row.id] <= 0) delete box[row.id];
+          } else g.toast("CARGO FULL");
+          const next = this.storageRows(g), selected = next.findIndex(r => r.kind === row.kind && r.id === row.id);
+          this.cursor = selected >= 0 ? selected : clamp(this.cursor, 0, Math.max(0, next.length - 1));
         }
         break;
       }
@@ -1675,21 +1672,35 @@ export class StationScene implements Scene {
     }
   }
 
-  drawStorage(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
+  storageRows(g: Game): { kind: "held" | "stored"; id: string; qty: number }[] {
     const p = g.world.player;
-    const st = this.station;
-    const box = p.storage[st.id] ?? {};
-    drawText(ctx, "STATION WAREHOUSE - ENTER MOVES ONE UNIT", 8, top, PAL.greyDark);
-    let y = top + 12; let idx = 0;
-    drawText(ctx, "IN YOUR HOLD:", 8, y, PAL.grey); y += 10;
-    const held = Object.keys(p.cargo);
-    if (!held.length) { drawText(ctx, "EMPTY", 12, y, PAL.greyDark); y += 10; }
-    for (const id of held) { this.row(ctx, y, idx === this.cursor); drawText(ctx, `${commodity(id).name} x${p.cargo[id]}  → STORE`, 12, y, PAL.white); y += 11; idx++; }
-    y += 6;
-    drawText(ctx, `STORED AT ${st.name.toUpperCase()}:`, 8, y, PAL.grey); y += 10;
-    const stored = Object.keys(box);
-    if (!stored.length) { drawText(ctx, "EMPTY", 12, y, PAL.greyDark); }
-    for (const id of stored) { this.row(ctx, y, idx === this.cursor); drawText(ctx, `${commodity(id).name} x${box[id]}  → LOAD`, 12, y, PAL.ui); y += 11; idx++; }
+    return [
+      ...Object.entries(p.cargo).filter(([, qty]) => qty > 0).map(([id, qty]) => ({ kind: "held" as const, id, qty })),
+      ...Object.entries(p.storage[this.station.id] ?? {}).filter(([, qty]) => qty > 0).map(([id, qty]) => ({ kind: "stored" as const, id, qty })),
+    ];
+  }
+
+  storageWindow(g: Game, top = 56) {
+    const rows = this.storageRows(g), cursor = clamp(this.cursor, 0, Math.max(0, rows.length - 1));
+    const offset = Math.max(0, cursor - 11);
+    return rows.slice(offset, offset + 12).map((row, i) => ({ row, index: offset + i, y: top + 28 + i * 11 }));
+  }
+
+  drawStorage(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
+    const p = g.world.player, rows = this.storageRows(g), visible = this.storageWindow(g, top);
+    drawText(ctx, "WAREHOUSE - ENTER / CLICK MOVES ONE UNIT - ARROWS / WHEEL SCROLL", 8, top, PAL.greyDark);
+    drawText(ctx, `HOLD ${cargoUsed(p)}/${p.cargoMax}   ${rows.filter(r => r.kind === "held").length} GOODS ABOARD / ${rows.filter(r => r.kind === "stored").length} STORED`, 8, top + 12, PAL.grey);
+    for (const { row, index, y } of visible) {
+      this.row(ctx, y, index === this.cursor, index);
+      drawText(ctx, `${row.kind === "held" ? "HOLD" : "WAREHOUSE"}: ${commodity(row.id).name.toUpperCase()}`, 12, y, row.kind === "held" ? PAL.white : PAL.ui);
+      drawText(ctx, `X${row.qty}   ${row.kind === "held" ? "STORE" : "LOAD"}`, 324, y, PAL.gold);
+    }
+    if (!rows.length) drawText(ctx, "THE HOLD AND THIS STATION'S WAREHOUSE ARE EMPTY.", 12, top + 30, PAL.greyDark);
+    const selected = rows[this.cursor];
+    if (selected) {
+      drawText(ctx, `${this.cursor + 1}/${rows.length} - ${commodity(selected.id).name.toUpperCase()}`, 8, 222, PAL.gold);
+      drawText(ctx, selected.kind === "held" ? "STORE ONE HERE. STORED GOODS STAY AT THIS STATION." : cargoUsed(p) < p.cargoMax ? "LOAD ONE INTO YOUR HOLD. OTHER STATIONS KEEP THEIR OWN STOCK." : "HOLD FULL. STORE SOMETHING BEFORE LOADING MORE.", 8, 233, PAL.greyDark);
+    }
   }
 
   drawWire(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
