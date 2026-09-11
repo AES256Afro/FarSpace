@@ -546,6 +546,10 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   is always the night shift. The promenade and the news page show station
   time. At night the deck lights are down, the crowd is thin, and the gossip
   changes.
+- On the night shift, when there's no curfew, a band plays the promenade:
+  three of them by the bar with a hat for requests. E beside them to stand
+  for a set, once a week per station: morale up for the crew, mood up for the
+  fares aboard, a line in the log, and a deed the first time.
 - The tannoy speaks on the promenade now and then: bay calls, last calls for
   the liner, lost cats, the crisis, the festival, and once you've a name on the
   lanes, the odd kindness from control.

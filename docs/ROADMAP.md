@@ -1050,6 +1050,10 @@ Time passes for the people on the ship, and for the ship.
       strange readings pay more; the ship reports at the briefing; a hostage
       on the band
 
+## Milestone 173 — The Band on the Promenade ✅ (Sep 2026)
+- [x] On the night shift a band plays the promenade; E to stand for a set,
+      once a week per station, for the crew and the fares
+
 ## Later: Trek / Expanse / Orville
 
 - A second story arc per faction (first contact proper: the singers' home)

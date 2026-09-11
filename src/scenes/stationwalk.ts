@@ -8,7 +8,7 @@ import { RNG, hashStr } from "../core/rng";
 import { dist } from "../core/mathx";
 import { sfx } from "../core/sfx";
 import { flag } from "../core/achievements";
-import { StationDef, findStation, isFriend, isRival, rivalOf, galaxyEventAt, dockingsAt, raceHolder, stakeDividend, weekKey, addCargo, logEntry, berthedCaptains, rivalryLine, handInLostItem, buyJuice, JUICE_PRICE } from "../world";
+import { StationDef, findStation, isFriend, isRival, rivalOf, galaxyEventAt, dockingsAt, raceHolder, stakeDividend, weekKey, addCargo, logEntry, berthedCaptains, rivalryLine, handInLostItem, buyJuice, JUICE_PRICE, passengersAboard } from "../world";
 import { occasionFor } from "../data/occasions";
 import type { Encounter } from "../data/encounters";
 import type { EncounterScene } from "./encounter";
@@ -154,6 +154,7 @@ export class StationWalkScene implements Scene {
       const crowd: { tag: string; suit: string; lines: string[]; n: number }[] = [];
       if (oc.id === "market") crowd.push({ tag: "STALLHOLDER", suit: "#c7a54a", n: 3, lines: ["'Fresh in from the belt! Well. Fresh-ish.'", "'Two for the price of one and a half. Market day, captain.'", "'Don't squeeze the fruit. Or do. I'm not your mother.'"] });
       if (oc.id === "remembrance") crowd.push({ tag: "MOURNER", suit: "#5d6680", n: 2, lines: ["'My brother flew the lanes. They read his name at noon.'", "'It's a good list. A long one. Mind how you go out there.'"] });
+      if (night && !curfew) crowd.push({ tag: "THE BAND", suit: "#e060ff", n: 3, lines: ["'REQUESTS IN THE HAT. NO, NOT THAT ONE. EVERYBODY ASKS FOR THAT ONE.'", "'WE PLAY THE NIGHT SHIFT BECAUSE THE NIGHT SHIFT LISTENS.'", "'ONE MORE, THEN THE BAR CLOSES. THE BAR DOESN'T CLOSE. ONE MORE ANYWAY.'"] });
       if (ev?.kind === "strike" && ev.stationId === this.station.id) crowd.push({ tag: "PICKET", suit: "#a53a3a", n: 3, lines: ["'No yard work at standard rates! Not until they pay the night shift!'", "'You want your hull patched, captain? Tell the harbourmaster to settle.'", "'We're not against you. We're against them. Have a sandwich.'"] });
       if (ev?.kind === "festival" && ev.stationId === this.station.id) crowd.push({ tag: "REVELLER", suit: "#e060ff", n: 3, lines: ["'FESTIVAL! Are you the band? You look like the band.'", "'Three days of this. My feet are gone. I regret nothing.'", "'Tourists everywhere. Bless them. They tip.'"] });
       for (const c of crowd) for (let i = 0; i < c.n; i++) { const spot = this.randomFloor(rng); this.npcs.push({ x: spot.x, y: spot.y, tx: spot.x, ty: spot.y, name: genPersonName(rng), skin: rng.pick(["#e8b48c", "#c78a5a", "#f0d0b0"]), suit: c.suit, pause: rng.range(1, 5), tag: c.tag, line: c.lines[i % c.lines.length] }); }
@@ -301,6 +302,13 @@ export class StationWalkScene implements Scene {
         const key = `family:${this.station.id}:${c?.name ?? first}:${weekKey()}`;
         this.msg = fam.line!; this.msgTimer = 6;
         if (c && !(g.world.player.flags ?? {})[key]) { (g.world.player.flags ??= {})[key] = true; c.morale = Math.min(100, c.morale + 12); c.loyalty = (c.loyalty ?? 0) + 0.5; addCargo(g.world.player, "food", 1); flag(g, "family"); g.toast(`${c.name.toUpperCase()} IS GLAD YOU STOPPED. +1 PROVISIONS FOR THE GALLEY, MORALE UP`); sfx.pickup(); logEntry(g.world, `Met ${c.name}'s ${fam.name.split("'s ")[1] ?? "family"} at ${this.station.name}`); }
+        return;
+      }
+      const band = this.npcs.find((n) => n.tag === "THE BAND" && dist(this.px, this.py, n.x, n.y) < 16);
+      if (band) {
+        const p2 = g.world.player; const key = `band:${this.station.id}:${weekKey()}`;
+        this.msg = band.line!; this.msgTimer = 6;
+        if (!(p2.flags ?? {})[key]) { (p2.flags ??= {})[key] = true; for (const c of p2.crew) c.morale = Math.min(100, c.morale + 4); for (const m of passengersAboard(p2)) m.mood = Math.min(100, (m.mood ?? 60) + 4); flag(g, "encore"); logEntry(g.world, `Stood for a set on the night promenade at ${this.station.name}`); g.toast("YOU STAND FOR A SET. THE CREW DRIFT OVER. SOMEBODY REQUESTS THE ONE ABOUT THE GATE. MORALE UP."); sfx.select(); }
         return;
       }
       const dh = this.npcs.find((n) => n.tag === "DOCK-HAND" && dist(this.px, this.py, n.x, n.y) < 16);

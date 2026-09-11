@@ -134,5 +134,6 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "strange", title: "STRANGE READINGS", desc: "Reach a fold, a lens or an echo", check: (w) => !!w.player.flags?.strange },
   { id: "spinner", title: "UP THE SPOKE", desc: "Help a belt rock get its spin back", check: (w) => !!w.player.flags?.spinner },
   { id: "parley", title: "NOT TODAY, THEN", desc: "Talk a corsair off without a shot", check: (w) => !!w.player.flags?.parley },
+  { id: "encore", title: "ONE MORE ANYWAY", desc: "Stand for a set on a night promenade", check: (w) => !!w.player.flags?.encore },
   { id: "elite", title: "ELITE", desc: "Top any career ladder", check: (w) => (["explorer", "trader", "miner"] as const).some((k) => rankOf(w.player, k).idx >= 8) },
 ];
