@@ -75,6 +75,17 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   heat vents, rover suspension and battery.
 - The Ox Mining Barge hull cracks rocks fastest and carries the most.
 
+## Browsing station lists
+
+- Use the arrow keys or wheel to browse market, shipyard and other station
+  lists. Moving the pointer keeps your selection and scroll position.
+- Clicking a row selects it and performs its action. In the market, Enter or
+  click sells a unit when you hold that good; otherwise it buys one. B buys,
+  S sells, and Shift applies the existing bulk-trade behavior.
+- The market shows twelve goods at a time and scrolls to include every rare
+  in your hold. The row count shows your place. Information below the list
+  does not activate a trade.
+
 ## Squadron
 
 - Pick a 2-5 letter tag on the title screen. Members rank together on the WIRE

@@ -51,8 +51,6 @@ type ShipRow = { kind: "market"; hull: HullDef } | { kind: "parked"; ship: Store
 const TABS = ["MARKET", "SHIPYARD", "SHIPS", "MISSIONS", "BAR", "SURVEY", "ENGINEER", "STORAGE", "BASE", "NEWS", "WIRE", "RECORD"] as const;
 
 export class StationScene implements Scene {
-  lastPointerX = -1;
-  lastPointerY = -1;
   touchMode = "menu" as const;
   tab = 0;
   cursor = 0;
@@ -451,9 +449,9 @@ export class StationScene implements Scene {
         tx += w;
       }
     }
-    const pointerMoved = inp.mouseX !== this.lastPointerX || inp.mouseY !== this.lastPointerY;
-    this.lastPointerX = inp.mouseX; this.lastPointerY = inp.mouseY;
-    if ((pointerMoved || inp.mousePressed || inp.mouseRightPressed) && inp.mouseX > 4 && inp.mouseX < (TABS[this.tab] === "SHIPS" ? 242 : TABS[this.tab] === "SHIPYARD" ? 290 : 476)) {
+    // Pointer drift during wheel or keyboard browsing must not change the
+    // selected purchase. Only a click selects a row under the pointer.
+    if ((inp.mousePressed || inp.mouseRightPressed) && inp.mouseX > 4 && inp.mouseX < (TABS[this.tab] === "SHIPS" ? 242 : TABS[this.tab] === "SHIPYARD" ? 290 : 476)) {
       const row = this.rowBoxes.findIndex(([y0, y1]) => inp.mouseY >= y0 && inp.mouseY <= y1);
       if (row >= 0) { this.cursor = row; if (inp.mousePressed) clickedRow = true; if (inp.mouseRightPressed) rightClickedRow = true; }
     }
@@ -1291,6 +1289,12 @@ export class StationScene implements Scene {
     return rows;
   }
 
+  marketWindow(g: Game, top = 56): { id: string; index: number; y: number }[] {
+    const rows = this.marketRows(g), count = 12;
+    const start = clamp(this.cursor - Math.floor(count / 2), 0, Math.max(0, rows.length - count));
+    return rows.slice(start, start + count).map((id, i) => ({ id, index: start + i, y: top + 12 + i * 9 }));
+  }
+
   // What this base pays a premium for this week (syndicate or squadron base)
   demandHere(g: Game): { key: string; goods: string[]; label: string } | null {
     const sy = syndicateAt(g.world, this.station.id);
@@ -1360,12 +1364,12 @@ export class StationScene implements Scene {
     const selHeld = selId ? (p.cargo[selId] ?? 0) : 0;
     drawText(ctx, selHeld > 0 ? "ENTER SELLS  SHIFT ALL  N PLOT" : "ENTER BUYS  SHIFT X10  N PLOT", 366, top, selHeld > 0 ? PAL.gold : PAL.greyDark);
     const rows = this.marketRows(g);
-    const rowH = rows.length > 12 ? 9 : 11;
-    rows.forEach((id, i) => {
-      const y = top + 12 + i * rowH;
+    const visible = this.marketWindow(g, top);
+    this.rowBoxes = rows.map(() => [Infinity, -Infinity]);
+    visible.forEach(({ id, index: i, y }) => {
       const c = commodity(id);
       const listed = id in st.prices;
-      this.row(ctx, y, i === this.cursor);
+      this.row(ctx, y, i === this.cursor, i);
       drawText(ctx, c.name + (c.illegal ? " *" : c.rare ? " +" : ""), 8, y, c.illegal ? PAL.danger : c.rare ? PAL.gold : PAL.white);
       drawText(ctx, listed ? `${buyPrice(st, id, rep)}` : "-", 150, y, listed ? PAL.gold : PAL.greyDark);
       drawText(ctx, `${c.rare ? rareSellPrice(g.world, st, id, rep) : sellPrice(st, id, rep)}`, 190, y, c.rare && st.rare !== id ? PAL.gold : PAL.grey);
@@ -1384,7 +1388,9 @@ export class StationScene implements Scene {
         drawText(ctx, ratio > 1.3 ? "HIGH" : ratio < 0.8 ? "LOW" : "-", 320, y, ratio > 1.3 ? PAL.danger : ratio < 0.8 ? PAL.good : PAL.greyDark);
       }
     });
-    const ny = top + 12 + rows.length * rowH + 6;
+    const ny = top + 12 + visible.length * 9 + 16;
+    const first = (visible[0]?.index ?? -1) + 1, last = (visible.at(-1)?.index ?? -1) + 1;
+    drawText(ctx, `ROWS ${first}-${last}/${rows.length} - ARROWS/WHEEL BROWSE`, 8, ny - 10, PAL.greyDark);
     {
       const id = rows[this.cursor];
       const best = id ? this.bestKnownSell(g, id) : null;

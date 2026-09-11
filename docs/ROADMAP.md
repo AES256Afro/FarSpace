@@ -2162,3 +2162,12 @@ The decision between service orders and booked fares is covered by M402.
   mission and all postings. Preserve descriptions and passenger progress.
 - Return to the same board selection without accepting or paying a mission
   through reading. Keep existing acceptance and completion requirements.
+
+### M413: Keep Your Place
+
+- Preserve station list selection through pointer drift during wheel and
+  keyboard navigation. Only a click selects the row under the pointer.
+- Scroll all market commodities into view, including carried rares, with
+  actual row indices for trades and a visible range count.
+- Keep market information outside actionable rows and preserve existing
+  buy, sell and bulk-trade behavior.
