@@ -1531,6 +1531,16 @@ Time passes for the people on the ship, and for the ship.
 ## Milestone 284 — The Crew in the Handbook ✅ (Sep 2026)
 - [x] A handbook section for everything the crew do now
 
+## Milestone 285 — The Stardate Aboard ✅ (Sep 2026)
+- [x] The interior header carries the ship's name and the stardate
+
+## Milestone 286 — The Paper on Undock ✅ (Sep 2026)
+- [x] Once the ship has a name or a roster line, a third of undocks it reads
+      a line from the galley door on the band
+
+## Milestone 287 — Codex Sweep ✅ (Sep 2026)
+- [x] The long ship and the rock's council get codex entries
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

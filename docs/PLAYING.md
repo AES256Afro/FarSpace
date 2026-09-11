@@ -752,6 +752,9 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- The interior header shows the ship's name and the stardate.
+- Once the ship has a name or a roster line, about a third of undocks it
+  reads a line from the galley door on the band.
 - Board a wreck of your own where a crew member was lost and the crew go
   quiet in the lock. Say the name and leave something of the ship's there
   (loyalty up, a keepsake given up), or work the wreck the way they'd have
