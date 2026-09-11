@@ -336,6 +336,8 @@ export interface PlayerState {
   juice?: number;                    // doses of burn juice from a clinic: one hard burn each
   voiceName?: string;                // what the ship asked to be called; its lines come from that name
   leg?: LegLog;                      // what happened since the last clamp, for the supplemental log
+  envoys?: number;                   // treaties landed clean
+  patients?: number;                 // patients landed in time
   numberOne?: string;                // a first officer chosen at review, by name; otherwise the longest-serving
   focus?: FocusKind | null;          // the senior staff's focus for this leg, set at the briefing, cleared at the clamp
   briefed?: boolean;                 // the briefing has been held this leg
@@ -651,6 +653,7 @@ export function chronicleText(w: World, callsign: string | null): string {
     if ((p.postRuns ?? 0) || (p.convoys ?? 0) || (p.races ?? 0)) parts.push(`${p.postRuns ?? 0} mail bags, ${p.convoys ?? 0} convoys walked, ${p.races ?? 0} races run.`);
     if (parts.length) { lines.push(""); lines.push("The week:"); for (const x of parts) lines.push(`  ${x}`); }
   }
+  if ((p.log ?? []).length) { lines.push(""); lines.push("Captain's log, last entries:"); for (const e of (p.log ?? []).slice(-5).reverse()) lines.push(`  ${e.text}`); }
   if ((p.guestbook ?? []).length) { lines.push(""); lines.push("Guestbook, last signatures:"); for (const e of (p.guestbook ?? []).slice(-5).reverse()) lines.push(`  ${e.name} (${e.kind}), ${e.from} to ${e.to}: "${e.line}"`); }
   if (p.crew.length) { lines.push(""); lines.push("Crew aboard:"); for (const c of p.crew) lines.push(`  ${c.name}, ${ROLE_INFO[c.role].label.toLowerCase()}${c.specialty ? ` (${(SPECIALTIES[c.role].find((x) => x.id === c.specialty)?.name ?? c.specialty).toLowerCase()})` : ""}, skill ${c.skill}, ${c.docks ?? 0} dockings${c.trait ? `, ${c.trait}` : ""}.`); }
   if (p.alumni?.length) { lines.push(""); lines.push("Served and went home:"); for (const a of p.alumni) lines.push(`  ${a.name}, ${a.role}, ${a.docks} dockings, at ${findStation(w, a.stationId)?.st.name ?? "a station"}.`); }
@@ -1069,6 +1072,18 @@ export function receptionDue(w: World, st: StationDef, now = Date.now()): boolea
   if ((p.flags ?? {})[key]) return false;
   return hashStr(`${key}:${w.seed}:${st.id}`) % 100 < 35;
 }
+export function inspectionDue(w: World, st: StationDef, now = Date.now()): boolean {
+  const rk = commandRank(w.player); if (rk !== "COMMODORE" && rk !== "ADMIRAL") return false;
+  return receptionDue(w, st, now) && hashStr(`inspect:${st.factionId}:${weekKey(now)}:${w.seed}`) % 100 < 40;
+}
+export function inspectionScore(p: PlayerState): { score: number; notes: string[] } {
+  const notes: string[] = []; let score = 0;
+  if ((p.wear ?? 0) < 40) score++; else notes.push("THE FRAME RATTLES");
+  const mood = p.crew.length ? p.crew.reduce((a, c) => a + c.morale, 0) / p.crew.length : 60; if (mood >= 60) score++; else notes.push("THE CREW LOOK WORN");
+  if ((p.furnishings ?? []).length >= 2) score++; else notes.push("THE DECK IS BARE");
+  if (p.hull >= p.hullMax * 0.7) score++; else notes.push("THE HULL IS PATCHED");
+  return { score, notes };
+}
 export function receptionHeld(w: World, st: StationDef, now = Date.now()): void { (w.player.flags ??= {})[`reception:${st.factionId}:${weekKey(now)}`] = true; }
 // Alert status: green, yellow, red. Yellow readies the shields; red readies everything and wears the crew down.
 export type AlertLevel = 0 | 1 | 2;
@@ -1152,7 +1167,7 @@ export function patientOutcome(w: World, m: Mission): { ok: boolean; lines: stri
   const p = w.player; const name = (m.passengerName ?? "THE PATIENT").toUpperCase();
   const ok = (m.docksAboard ?? 0) <= patientDeadline(p, m);
   const medic = p.crew.find((c) => c.role === "medic" && !c.sick);
-  if (ok) { m.mood = Math.min(100, (m.mood ?? 50) + 25); p.lives = (p.lives ?? 0) + 1; logEntry(w, `Landed the patient ${m.passengerName ?? ""} at the clinic in time`); return { ok, lines: [`${name} GOES DOWN THE GANGWAY ON A STRETCHER, AWAKE, AND THE CLINIC TAKES OVER.${medic ? ` ${medic.name.toUpperCase()} HANDS OVER THE NOTES.` : ""} ONE LIFE.`] }; }
+  if (ok) { m.mood = Math.min(100, (m.mood ?? 50) + 25); p.lives = (p.lives ?? 0) + 1; p.patients = (p.patients ?? 0) + 1; logEntry(w, `Landed the patient ${m.passengerName ?? ""} at the clinic in time`); return { ok, lines: [`${name} GOES DOWN THE GANGWAY ON A STRETCHER, AWAKE, AND THE CLINIC TAKES OVER.${medic ? ` ${medic.name.toUpperCase()} HANDS OVER THE NOTES.` : ""} ONE LIFE.`] }; }
   m.mood = Math.max(0, (m.mood ?? 50) - 25); adjustRep(w, findStation(w, m.targetStationId ?? "")?.st.factionId ?? "", -1);
   logEntry(w, `The patient ${m.passengerName ?? ""} arrived late; the clinic is doing what it can`);
   return { ok, lines: [`${name} ARRIVES TOO LATE FOR THE EASY VERSION. THE CLINIC IS DOING WHAT IT CAN. HALF THE FARE, AND A LONG WALK BACK TO THE SHIP.`] };
@@ -1163,7 +1178,7 @@ export function envoyOutcome(w: World, m: Mission): { ok: boolean; lines: string
   const late = (m.docksAboard ?? 0) > (m.patience ?? 2);
   const ok = !late && !m.tookFire;
   const name = (m.passengerName ?? "THE ENVOY").toUpperCase();
-  if (ok) { adjustRep(w, t.a, 4); adjustRep(w, t.b, 4); m.mood = Math.min(100, (m.mood ?? 60) + 25); logEntry(w, `Landed the envoy ${m.passengerName ?? ""} in time and unshot; the treaty between the ${facNameW(t.a)} and the ${facNameW(t.b)} holds`); return { ok, lines: [`${name} WALKS DOWN THE GANGWAY WITH THE CASE AND THE TALKS BEGIN ON TIME. REP UP WITH THE ${facNameW(t.a).toUpperCase()} AND THE ${facNameW(t.b).toUpperCase()}.`] }; }
+  if (ok) { adjustRep(w, t.a, 4); adjustRep(w, t.b, 4); m.mood = Math.min(100, (m.mood ?? 60) + 25); w.player.envoys = (w.player.envoys ?? 0) + 1; logEntry(w, `Landed the envoy ${m.passengerName ?? ""} in time and unshot; the treaty between the ${facNameW(t.a)} and the ${facNameW(t.b)} holds`); return { ok, lines: [`${name} WALKS DOWN THE GANGWAY WITH THE CASE AND THE TALKS BEGIN ON TIME. REP UP WITH THE ${facNameW(t.a).toUpperCase()} AND THE ${facNameW(t.b).toUpperCase()}.`] }; }
   adjustRep(w, t.a, -2); adjustRep(w, t.b, -2); m.mood = Math.max(0, (m.mood ?? 60) - 30);
   logEntry(w, `The envoy ${m.passengerName ?? ""} arrived ${late ? "late" : "shot at"}; the talks failed`);
   return { ok, lines: [late ? `${name} IS TOO LATE. THE OTHER DELEGATION HAS GONE HOME. THE TREATY GOES BACK IN THE CASE. REP DOWN ON BOTH SIDES.` : `${name} ARRIVES WITH SCORCH ON THE HULL BEHIND THEM AND THE TALKS COLLAPSE BEFORE THEY START. 'THEY SHOT AT A TREATY.' REP DOWN ON BOTH SIDES.`] };

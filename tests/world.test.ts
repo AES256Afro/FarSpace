@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  weekKey, genCrewCandidate, ARCS, secessionAt, tickGalaxyEvents, parleyChance, spinOutageSeen, spinOutageDue, logEntry, strangeReading, grievanceHeard, grievanceDue, registry, commandRank, hasSpecialty, legSummary, noteLeg, newLeg, SIM_PROGRAMS, reviewCrew, reviewDue, nameTheShip, shipVoiceName, receptionHeld, receptionDue, ALERT_NAME, alertMods, beltRate, isBeltStation, FURNISHINGS, runSim, setFocus, briefingReports, patientDeadline, patientOutcome, takeJuice, buyJuice, envoyOutcome, firstOfficer, stardate, cookMeal, LOST_KEEP_AFTER, LOST_REWARD, tickLostProperty, handInLostItem, leaveLostItem, passengersTookFire, passengersFed, askPassengerRequest, findStation, berthedCaptains, generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
+  weekKey, genCrewCandidate, inspectionScore, inspectionDue, ARCS, secessionAt, tickGalaxyEvents, parleyChance, spinOutageSeen, spinOutageDue, logEntry, strangeReading, grievanceHeard, grievanceDue, registry, commandRank, hasSpecialty, legSummary, noteLeg, newLeg, SIM_PROGRAMS, reviewCrew, reviewDue, nameTheShip, shipVoiceName, receptionHeld, receptionDue, ALERT_NAME, alertMods, beltRate, isBeltStation, FURNISHINGS, runSim, setFocus, briefingReports, patientDeadline, patientOutcome, takeJuice, buyJuice, envoyOutcome, firstOfficer, stardate, cookMeal, LOST_KEEP_AFTER, LOST_REWARD, tickLostProperty, handInLostItem, leaveLostItem, passengersTookFire, passengersFed, askPassengerRequest, findStation, berthedCaptains, generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
   missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn, captainByName, helpCaptain, isFriend, friendsAt, tickMail, pickCaptainFor, canUpgradeInfra, upgradeInfra, rivalOf, isRival, rivalTakesFare, rivalBeatsYouTo, askRideAlong, tickRideAlong, setHomePort, isHome, donateRelic, hullHistoryFor, notableById, notableOutcome, canFundProject, fundProject, PROJECTS, settlementNeeds, ledger, ledgerAround, LEDGER_LABELS, catGift, stationBulletin, dockingsAt } from "../src/world";
 import { occasionFor, OCCASIONS } from "../src/data/occasions";
@@ -774,6 +774,16 @@ describe("station hours and the tannoy", () => {
     expect(stationHour(sts[0], at)).toEqual(stationHour(sts[0], at));
     for (const st of sts.slice(0, 5)) { const lines = tannoyLines(w, st, new RNG(1), at); expect(lines.length).toBeGreaterThan(5); for (const l of lines) expect(l.length).toBeLessThanOrEqual(130); }
     w.player.postRuns = 10; expect(tannoyLines(w, sts[0], new RNG(2), at).some((l) => l.includes("THE POSTMAN"))).toBe(true);
+  });
+  it("an inspection scores wear, morale, the deck and the hull", () => {
+    const w = generateWorld(61, { realGalaxy: true }); const p = w.player;
+    p.wear = 10; p.crew = [genCrewCandidate(new RNG(1))]; p.crew[0].morale = 80; p.furnishings = ["plant", "rug"]; p.hull = p.hullMax;
+    expect(inspectionScore(p)).toEqual({ score: 4, notes: [] });
+    p.wear = 80; p.hull = 1; expect(inspectionScore(p).score).toBe(2); expect(inspectionScore(p).notes).toEqual(["THE FRAME RATTLES", "THE HULL IS PATCHED"]);
+    const st = Object.values(w.systems).flatMap((s) => s.stations).find((s) => s.factionId !== "vex")!; p.rep[st.factionId] = 40;
+    expect(inspectionDue(w, st)).toBe(false); p.achievements = Array.from({ length: 70 }, (_, i) => `a${i}`);
+    expect(typeof inspectionDue(w, st)).toBe("boolean");
+    expect(chronicleText(w, null)).not.toContain("Captain's log, last entries:"); logEntry(w, "A test entry"); expect(chronicleText(w, null)).toContain("Captain's log, last entries:");
   });
   it("every faction arc has a second act of two more stages", () => {
     for (const k of ["tsc", "fdm", "hex", "ora", "vex"]) { expect(ARCS[k].stages.length).toBe(5); expect(ARCS[k].stages[3].desc).toContain("Second act"); }

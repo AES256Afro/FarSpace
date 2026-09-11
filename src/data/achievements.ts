@@ -142,5 +142,6 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "register", title: "THE ROCK'S OWN", desc: "Sign the register at an independent rock", check: (w) => !!w.player.flags?.register },
   { id: "secondact", title: "SECOND ACT", desc: "Finish a faction's second act", check: (w) => Object.values(w.player.arcs).some((v) => v >= 5) },
   { id: "overrun", title: "A SHIFT IN THE CLINIC", desc: "Send your medic down to an overrun clinic", check: (w) => !!w.player.flags?.overrun },
+  { id: "inspection", title: "A GOOD SHIP", desc: "Pass an inspection with three marks of four", check: (w) => !!w.player.flags?.inspection },
   { id: "elite", title: "ELITE", desc: "Top any career ladder", check: (w) => (["explorer", "trader", "miner"] as const).some((k) => rankOf(w.player, k).idx >= 8) },
 ];

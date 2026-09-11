@@ -1090,6 +1090,11 @@ Time passes for the people on the ship, and for the ship.
 - [x] Where the crisis is medicine the clamp asks for your medic or your
       crates; the ready room on the pause menu is a word with Number One
 
+## Milestone 182 — Keeping II ✅ (Sep 2026)
+- [x] The chronicle carries the log's last five entries; the codex counts
+      envoys landed and patients saved; at commodore and up an inspection
+      walks your deck now and then instead of a reception
+
 ## Later: Trek / Expanse / Orville
 
 - A second story arc per faction (first contact proper: the singers' home)
