@@ -22,6 +22,8 @@ import { RNG } from "../../core/rng";
 import { inSafeZone } from "./ai";
 import { drawTouchControls } from "../../core/touch";
 import { drawTutorial } from "../../core/tutorial";
+import { singersBerth, SINGERS_DOCK_RANGE } from "../../core/singers";
+import { drawSingersRing } from "../../gfx/singers";
 
 export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D): void {
   const p = g.world.player;
@@ -144,6 +146,16 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
       const label = `${inf.upgraded ? "WAYSTATION" : inf.kind.toUpperCase()} (${inf.owner === (wire.getCallsign() ?? "YOU") ? "YOURS" : inf.owner})${lit ? "" : " - DARK"}`;
       drawText(ctx, label, sx - textWidth(label) / 2, sy - 14 * z - 8, lit ? PAL.gold : PAL.danger);
       if (d < 90) drawText(ctx, inf.upgraded ? `[E] WALK IN - TILL ${Math.round(inf.till)}CR` : `[E] TEND - TILL ${Math.round(inf.till)}CR${inf.kind === "depot" ? ` - STOCK ${inf.stock}` : ""} - ${inf.health}%`, sx - 60, sy + 10 * z + 3, PAL.gold);
+    }
+  }
+  const berth = singersBerth(g.world);
+  if (berth) {
+    const [sx, sy] = toScreen(berth.x, berth.y);
+    if (sx > -80 && sx < VW + 80 && sy > -80 && sy < VH + 80) {
+      drawSingersRing(ctx, sx, sy, z, g.world.time);
+      drawText(ctx, "SINGERS' BERTH", sx - 26, sy - 31 * z, PAL.ui);
+      if (dist(p.x, p.y, berth.x, berth.y) < SINGERS_DOCK_RANGE)
+        drawText(ctx, Math.hypot(p.vx, p.vy) > 45 ? "BRAKE BELOW 45" : "[E] COME ABOARD", sx - 28, sy + 29 * z, PAL.gold);
     }
   }
   // stations
@@ -460,6 +472,8 @@ export function drawEdgeMarkers(fs: FlightScene, g: Game, ctx: CanvasRenderingCo
     if (Math.floor(g.world.time * 3) % 2 === 0) drawText(ctx, "RADAR: STORM", VW - textWidth("RADAR: STORM") - 4, 34, PAL.warn);
     return;
   }
+  const berth = singersBerth(g.world);
+  if (berth) mark(berth.x, berth.y, PAL.ui, "SINGERS");
   for (const st of sys.stations) {
     mark(Math.cos(st.angle) * st.orbit, Math.sin(st.angle) * st.orbit, st.military ? PAL.danger : PAL.ui, st.military ? "BASE" : "STN");
   }
@@ -728,9 +742,16 @@ export function drawSystemMap(g: Game, ctx: CanvasRenderingContext2D): void {
     ctx.fillRect(Math.round(cx + wd.x * sc) - 2, Math.round(cy + wd.y * sc) - 2, 5, 5);
     drawText(ctx, wd.seen ? wd.name.toUpperCase() : "WONDER?", cx + wd.x * sc + 5, cy + wd.y * sc - 2, PAL.gold);
   }
+  const berth = singersBerth(g.world);
+  if (berth) {
+    const sx = cx + berth.x * sc, sy = cy + berth.y * sc;
+    ctx.strokeStyle = PAL.ui; ctx.strokeRect(Math.round(sx) - 3, Math.round(sy) - 3, 6, 6);
+    drawText(ctx, "SINGERS' BERTH", sx + 6, sy - 2, PAL.ui);
+  }
   const px = cx + p.x * sc, py = cy + p.y * sc;
   ctx.fillStyle = PAL.white;
   ctx.fillRect(Math.round(px) - 1, Math.round(py) - 1, 3, 3);
-  drawText(ctx, "YOU", px + 4, py - 2, PAL.white);
+  const atBerth = berth && dist(p.x, p.y, berth.x, berth.y) * sc < 16;
+  drawText(ctx, "YOU", px + 4, py + (atBerth ? 7 : -2), PAL.white);
   drawText(ctx, "TAB CLOSE - G GALAXY MAP", cx - textWidth("TAB CLOSE - G GALAXY MAP") / 2, VH - 10, PAL.greyDark);
 }

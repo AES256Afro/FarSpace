@@ -1112,6 +1112,17 @@ Time passes for the people on the ship, and for the ship.
 - [x] Research stations post the strange readings first, at a better rate;
       a captain's chair for the bridge
 
+## Milestone 394: The Returning Room (Sep 2026)
+- [x] A dockable singers' berth outside the home system's planetary orbits,
+      with flight, edge, and map markers and a dedicated return course.
+- [x] Trade survey data for light; spend it on fuel, repairs, parts, or
+      relics. Quote partial services and reject trades without room or funds.
+- [x] Persist the exchange account and admit old listeners without requiring
+      a keepsake. Keep human credits and reputation separate.
+- [x] Preserve flight contacts when returning from the berth or galaxy map.
+- [x] Test admission, placement, transactions, old saves, and navigation;
+      exercise docking and exchange controls in the local browser.
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
@@ -1945,8 +1956,8 @@ singers' home, the commission, the hearing, away partners, the rival's
 Number One, the long ship's launch, standing orders II and III, the ship on
 the roster, a command of their own. Next:
 
-- The singers as a faction: a berth at their home you can dock at, a market
-  that trades in light, and a fare who wants to go there
+- A singer passenger who wants to go home, with a berth destination and
+  payment in light. The dockable home and exchange are covered by M394.
 - The service proper: a naval career ladder beside the rank (postings,
   a cutter of your own on loan, orders that conflict with a fare)
 - The belt's council as a place: a seat you sit in, votes every week, a

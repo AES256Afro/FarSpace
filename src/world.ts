@@ -366,6 +366,8 @@ export interface PlayerState {
   hearings?: number;                 // hearings sat through over the rule, one per contact broken
   words?: string[];                  // words learned from the singers and the quiet ones
   singersHome?: string;              // the system the singers' last gift pointed at; a survey will post orders
+  singersExchange?: import("./core/singers").SingersAccount;
+  singersCourse?: boolean;           // the plotted course ends at their berth
   awayTrips?: number;                // landings with a crew member in the rover
   motto?: string;                    // the line on the dedication plaque by the airlock
   prisoners?: number;                // prisoners delivered to a brig

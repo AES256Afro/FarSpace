@@ -9,6 +9,8 @@ import { faction, commodity } from "../data/data";
 import { dist } from "../core/mathx";
 import { navRoute, routeFuel, jumpFuelCost, repLabel, permitDenied, syndicateAt, findStation, galaxyEventAt } from "../world";
 import { sfx } from "../core/sfx";
+import { knowsSingersBerth } from "../core/singers";
+import type { FlightScene } from "./flight/index";
 import * as wire from "../core/wire";
 
 const OX = 90;
@@ -31,9 +33,15 @@ export class GalaxyScene implements Scene {
 
   update(g: Game, dt: number): void {
     const inp = g.input;
-    if (inp.wasPressed("Escape") || inp.wasPressed("g")) { g.setScene("flight"); return; }
+    if (inp.wasPressed("Escape") || inp.wasPressed("g")) { (g.scenes.flight as FlightScene).resumeNext = true; g.setScene("flight"); return; }
     if (inp.wasPressed("F5")) g.save();
     if (inp.wasPressed("F9")) g.load();
+    const p = g.world.player;
+    if (knowsSingersBerth(p) && (inp.wasPressed("r") || (inp.mousePressed && inp.mouseX >= 8 && inp.mouseX < 160 && inp.mouseY >= 16 && inp.mouseY < 28))) {
+      this.selected = p.singersHome!; p.navTarget = p.singersHome!; p.singersCourse = true;
+      g.toast("COURSE: SINGERS' BERTH. ESC TO FLIGHT, N FOR AUTOPILOT.");
+      sfx.select(); return;
+    }
     if (inp.mousePressed) {
       let best: string | null = null;
       let bestD = 14;
@@ -45,6 +53,7 @@ export class GalaxyScene implements Scene {
         if (this.selected === best && best !== g.world.player.systemId) {
           const p = g.world.player;
           p.navTarget = p.navTarget === best ? null : best;
+          p.singersCourse = false;
           sfx.select();
         }
         this.selected = best;
@@ -61,6 +70,7 @@ export class GalaxyScene implements Scene {
     if (inp.wasPressed("n") && this.selected) {
       const p = g.world.player;
       p.navTarget = p.navTarget === this.selected ? null : this.selected;
+      p.singersCourse = false;
       sfx.select();
     }
   }
@@ -77,6 +87,10 @@ export class GalaxyScene implements Scene {
     const w = g.world;
     const title = w.realGalaxy ? `SOL NEIGHBOURHOOD - ${w.galaxyLy ?? 20} LY` : "GALAXY MAP";
     drawText(ctx, title, VW / 2 - textWidth(title) / 2, 6, PAL.ui);
+    if (knowsSingersBerth(w.player)) {
+      ctx.fillStyle = "#152d38"; ctx.fillRect(8, 16, 152, 12);
+      drawText(ctx, w.player.singersCourse ? "R: COURSE TO SINGERS' BERTH" : "R: PLOT SINGERS' BERTH", 14, 20, PAL.ui);
+    }
     if (this.pilots) drawText(ctx, `${this.pilots} PILOT${this.pilots === 1 ? "" : "S"} FLYING NOW`, VW / 2 - textWidth(`${this.pilots} PILOTS FLYING NOW`) / 2, 15, PAL.info);
 
     ctx.strokeStyle = PAL.uiBorder;
@@ -162,6 +176,7 @@ export class GalaxyScene implements Scene {
       if (here) { ctx.fillStyle = PAL.info; ctx.fillRect(Math.round(x) + 4, Math.round(y) - 1, 2, 2); drawText(ctx, `${here}`, x + 7, y - 4, PAL.info); }
       if (sys.id === w.player.systemId) { ctx.strokeStyle = PAL.white; ctx.strokeRect(Math.round(x) - 4.5, Math.round(y) - 4.5, 9, 9); }
       if (sys.id === this.selected) { ctx.strokeStyle = PAL.ui; ctx.strokeRect(Math.round(x) - 6.5, Math.round(y) - 6.5, 13, 13); }
+      if (knowsSingersBerth(w.player) && sys.id === w.player.singersHome) drawText(ctx, "SINGERS", x - 14, y - 20, PAL.ui);
     }
     if (this.selected) {
       const sys = w.systems[this.selected];

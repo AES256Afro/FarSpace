@@ -119,6 +119,11 @@ maydays to answer with fuel, and notes tied to the wonders for whoever comes
 next. Multiplayer proper is shelved; everything above is built so it can plug
 in.
 
+The singers now have a berth you can return to after the roll-call. Plot it with
+G then R, follow the course with N, and dock with E. The returning room trades
+survey data for light, then light for fuel, repairs, parts, and relics. Your
+account stays with the save, including visits made without the old token.
+
 ## Development
 
 ```bash
@@ -137,7 +142,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestones 1–393 are live (v0.233.0). See the [roadmap](docs/ROADMAP.md) for what's next.
+Milestones 1–394 are live (v0.234.0). See the [roadmap](docs/ROADMAP.md) for what's next.
 
 ```bash
 npm test         # vitest: world-gen, routing, economy, law, missions, save migrations

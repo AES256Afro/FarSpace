@@ -2,6 +2,7 @@
 // Every function takes the scene as explicit state so this file has no `this`.
 
 import type { Game } from "../../game";
+import { singersBerth } from "../../core/singers";
 import type { FlightScene } from "./index";
 import type { Npc, NpcKind, Platform } from "./types";
 import { RNG, hashStr } from "../../core/rng";
@@ -679,6 +680,8 @@ export function updateNpcs(fs: FlightScene, g: Game, dt: number): void {
 // ---------- Platforms ----------
 
 export function inSafeZone(fs: FlightScene, g: Game, x: number, y: number): boolean {
+  const berth = singersBerth(g.world);
+  if (berth && dist(x, y, berth.x, berth.y) < 400) return true;
   if (g.world.systems[g.world.player.systemId].factionId === "vex") return false;
   for (const pf of fs.platforms) {
     if (dist(x, y, pf.x, pf.y) < 350) return true;

@@ -3,6 +3,7 @@ import { FACTIONS } from "../../data/data";
 // Simulation lives in ./ai, rendering in ./render.
 
 import { ask, confirmBox } from "../../core/dialog";
+import { atSingersBerth, singersBerth } from "../../core/singers";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
@@ -654,8 +655,8 @@ export class FlightScene implements Scene {
     const enc: Encounter = { id: "singershome", where: "space", title: "THE SINGERS' HOME", weight: 0,
       text: `Ninety seconds of quiet over ${sys.planets[m.sightPlanetIdx ?? 0]?.name ?? "the world"}, and then the whole sky sings: not one ship but hundreds, rising out of the atmosphere in a spiral, every one of them holding the rising three-note phrase you learned at a gate a long way from here. It's not a greeting. It's a roll-call. They're waiting to see if you know your line.`,
       options: [
-        { label: "SING THE WORDS YOU KNOW, ALL OF THEM", hint: "Every word learned counts; the crew join in; an embassy berth", result: (g2) => { const n = (p.words ?? []).length; (p.flags ??= {}).singersHomeDone = true; (p.codex ??= {})["contact:THE SINGERS"] = 4; for (const f of FACTIONS) adjustRep(g2.world, f.id, 4); for (const c of p.crew) { c.morale = Math.min(100, c.morale + 12); c.loyalty = (c.loyalty ?? 0) + 0.3; } (p.keepsakes ??= []).push("the singers' berth-token: a stone that hums the roll-call"); if (p.keepsakes.length > 8) p.keepsakes.shift(); p.expData = (p.expData ?? 0) + 300; flag(g2, "singershome"); logEntry(g2.world, `The singers' home, ${sys.name}: sang ${n} word${n === 1 ? "" : "s"} back and was given a berth`); return `YOU SING THE ${n || "NO"} WORD${n === 1 ? "" : "S"} YOU HAVE, AND THE CREW COME IN ON THE SECOND ONE, AND THE SPIRAL CLOSES AROUND THE SHIP LIKE A HAND AROUND SOMETHING SMALL AND WARM. A BERTH, THEY SAY, OR SING, OR MEAN. YOURS, WHENEVER. +300 DATA. EVERY FACTION WILL HEAR WHO WAS ASKED.`; } },
-        { label: "HOLD STATION AND LISTEN", hint: "Data, and the codex; the berth waits for another day", result: (g2) => { (p.flags ??= {}).singersHomeDone = true; (p.codex ??= {})["contact:THE SINGERS"] = 4; p.expData = (p.expData ?? 0) + 200; flag(g2, "singershome"); logEntry(g2.world, `The singers' home, ${sys.name}: listened`); return "YOU HOLD STATION AND LISTEN TO THE WHOLE ROLL-CALL, HUNDREDS OF NAMES YOU CAN'T SAY, AND WHEN IT'S DONE THE SPIRAL OPENS AND LETS YOU GO WITH SOMETHING THAT ISN'T A BERTH BUT ISN'T NOTHING. +200 DATA. THE CODEX CALLS IT CONTACT."; } },
+        { label: "SING THE WORDS YOU KNOW, ALL OF THEM", hint: "Every word learned counts; the crew join in; an embassy berth", result: (g2) => { const n = (p.words ?? []).length; (p.flags ??= {}).singersHomeDone = true; (p.codex ??= {})["contact:THE SINGERS"] = 4; for (const f of FACTIONS) adjustRep(g2.world, f.id, 4); for (const c of p.crew) { c.morale = Math.min(100, c.morale + 12); c.loyalty = (c.loyalty ?? 0) + 0.3; } (p.keepsakes ??= []).push("the singers' berth-token: a stone that hums the roll-call"); if (p.keepsakes.length > 8) p.keepsakes.shift(); p.expData = (p.expData ?? 0) + 300; flag(g2, "singershome"); logEntry(g2.world, `The singers' home, ${sys.name}: sang ${n} word${n === 1 ? "" : "s"} back and was given a berth`); return `YOU SING THE ${n || "NO"} WORD${n === 1 ? "" : "S"} YOU HAVE, AND THE CREW COME IN ON THE SECOND ONE, AND THE SPIRAL CLOSES AROUND THE SHIP LIKE A HAND AROUND SOMETHING SMALL AND WARM. A BERTH, THEY SAY, OR SING, OR MEAN. YOURS, WHENEVER. +300 DATA. EVERY FACTION WILL HEAR WHO WAS ASKED. G, THEN R: PLOT YOUR BERTH.`; } },
+        { label: "HOLD STATION AND LISTEN", hint: "Data, the codex, and a quiet invitation to visit", result: (g2) => { (p.flags ??= {}).singersHomeDone = true; (p.codex ??= {})["contact:THE SINGERS"] = 4; p.expData = (p.expData ?? 0) + 200; flag(g2, "singershome"); logEntry(g2.world, `The singers' home, ${sys.name}: listened`); return "YOU HOLD STATION AND LISTEN TO THE WHOLE ROLL-CALL, HUNDREDS OF NAMES YOU CAN'T SAY, AND WHEN IT'S DONE THE SPIRAL OPENS AND LETS YOU GO WITH A SMALL LIGHT ON YOUR CHART. +200 DATA. THE CODEX CALLS IT CONTACT. G, THEN R: VISIT THE BERTH WHEN YOU ARE READY."; } },
       ] };
     (g.scenes["encounter"] as EncounterScene).open(g, enc, "flight", true);
   }
@@ -1338,6 +1339,8 @@ export class FlightScene implements Scene {
   massLocked(g: Game): boolean {
     const p = g.world.player;
     const sys = g.world.systems[p.systemId];
+    const berth = singersBerth(g.world);
+    if (berth && dist(p.x, p.y, berth.x, berth.y) < 300) return true;
     for (const st of sys.stations) if (dist(p.x, p.y, Math.cos(st.angle) * st.orbit, Math.sin(st.angle) * st.orbit) < 260) return true;
     for (const pl of sys.planets) if (dist(p.x, p.y, Math.cos(pl.angle) * pl.orbit, Math.sin(pl.angle) * pl.orbit) < pl.radius + 200) return true;
     if (Math.hypot(p.x, p.y) < sys.sunRadius + 400) return true;
@@ -1360,6 +1363,8 @@ export class FlightScene implements Scene {
   apTarget(g: Game): { x: number; y: number; label: string } | null {
     const p = g.world.player;
     const sys = g.world.systems[p.systemId];
+    const berth = singersBerth(g.world);
+    if (berth && p.singersCourse && (!p.navTarget || p.navTarget === p.systemId)) return { ...berth, label: "SINGERS' BERTH" };
     if (p.navTarget && p.navTarget !== p.systemId) {
       const route = navRoute(g.world, p.systemId, p.navTarget);
       const next = route && route[1];
@@ -1488,6 +1493,11 @@ export class FlightScene implements Scene {
   tryInteract(g: Game): void {
     const p = g.world.player;
     const sys = g.world.systems[p.systemId];
+    if (atSingersBerth(g.world)) {
+      if (Math.hypot(p.vx, p.vy) > 45) { g.toast("SINGERS' BERTH: BRAKE BELOW 45 TO DOCK."); return; }
+      this.autopilot = false; this.cruise = false;
+      g.setScene("singers"); return;
+    }
     // a ship that needs a hand
     const needy = this.npcs.find((n) => n.kind === "trader" && n.hull > 0 && dist(p.x, p.y, n.x, n.y) < 80 && (n.disabled || n.casualties || n.hull < n.hullMax * 0.5));
     if (needy && !this.repairJob) { this.offerHelp(g, needy); return; }

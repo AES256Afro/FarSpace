@@ -802,6 +802,19 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   The orbit ends in a roll-call of hundreds of ships. Sing every word you've
   learned (a berth-token, rep with every faction, three hundred data) or
   hold station and listen (two hundred data, contact 4).
+- After either response, the singers' berth appears on the home system's
+  map and flight markers. Open G and press R, or click the berth route
+  button, to plot a return. N follows the route through the gates and flies
+  to the berth on the final leg. Brake below 45 and press E within 160.
+  Choosing a normal course with N on the galaxy map cancels the berth route.
+- The returning room accepts 100 unspent exploration data for 5 light.
+  Fuel costs 1 light per 5 units, up to 25 per trade; hull work costs 3 light
+  per 10 points, up to 20 per trade. Partial service rounds the price up to
+  a whole light. Two parts cost 4 light; a singing relic costs 30 light.
+  Full tanks, repaired hulls, and insufficient cargo space cannot consume
+  light. Arrows or the wheel select; Enter or a click trades; Escape leaves.
+  The balance and contributed data persist. Existing captains who completed
+  the roll-call can enter without carrying the keepsake token.
 - The singers and the quiet ones teach a word with each contact. The wall of
   record lists them, the chronicle keeps them, and the ship sings the first
   one to the gate.
