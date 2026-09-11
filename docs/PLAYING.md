@@ -997,6 +997,9 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   registry too, FS and four digits. Control reads both out on the way in, the
   chronicle opens with them, the harbour view shows them, and the passing
   haulers get nervous around a commodore.
+- At commander and up, a naval station's shipyard has a requisition line
+  once a week: hull, systems and wear to new, for nothing, courtesy of the
+  service. Don't make a habit of it. A deed the first time.
 - Once you hold a rank (lieutenant and up), military stations post patrol
   orders on the board: hold station in a system for a minute and a half or
   more, off cruise, and report back to the watch that sent you. The HUD

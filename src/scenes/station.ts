@@ -984,6 +984,13 @@ export class StationScene implements Scene {
       g.toast(afford < hullNeed ? "PARTIAL REPAIR" : "HULL RESTORED");
     } });
     const sysDamaged = p.systems.filter((s) => s.health < 100);
+    { const rk = commandRank(p); const reqKey = `requisition:${weekKey()}`; if (st.military && (rk === "COMMANDER" || rk === "CAPTAIN" || rk === "COMMODORE" || rk === "ADMIRAL") && !(p.flags ?? {})[reqKey]) {
+      opts.push({ label: `REQUISITION: FULL SERVICE ON THE WATCH (${rk}, ONCE A WEEK)`, sub: "0CR", action: () => {
+        (p.flags ??= {})[reqKey] = true; p.hull = p.hullMax; p.breaches = []; p.fires = []; serviceHull(p, st.id, g.world.time, 0); for (const s of p.systems) s.health = 100; flag(g, "requisition");
+        logEntry(g.world, `Requisitioned a full service at ${st.name} on the watch's account`);
+        g.toast(`THE WATCH SIGNS FOR IT. HULL, SYSTEMS AND WEAR TO NEW. "COURTESY OF THE SERVICE, ${rk}. DON'T MAKE A HABIT OF IT."`); sfx.repair();
+      } });
+    } }
     if ((p.wear ?? 0) >= WEAR_SERVICE_FROM) {
       const price = servicePrice(p, (patronHere ? 0.7 : 1) * voteMods(g.world, st.factionId).yard * hr.mul);
       opts.push({ label: `YARD SERVICE (WEAR ${Math.round(p.wear ?? 0)}%)${patronHere ? " - PATRON RATE" : hrTag}`, sub: `${price}CR`, action: () => {

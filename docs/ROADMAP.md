@@ -1112,6 +1112,14 @@ Time passes for the people on the ship, and for the ship.
 - [x] Research stations post the strange readings first, at a better rate;
       a captain's chair for the bridge
 
+## Milestone 187 — Requisition ✅ (Sep 2026)
+- [x] At commander and up, naval stations sign for a full service once a
+      week; Number One's conn goes in the supplemental log
+
+## Milestone 187 — Requisition ✅ (Sep 2026)
+- [x] At commander and up, naval stations sign for a full service once a
+      week; Number One's conn goes in the supplemental log
+
 ## Later: Trek / Expanse / Orville
 
 - A second story arc per faction (first contact proper: the singers' home)

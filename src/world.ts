@@ -584,6 +584,7 @@ export function legSummary(w: World): string | null {
   const hours = Math.max(0, (w.time - l.t0) / 3600);
   const mood = p.crew.length ? Math.round(p.crew.reduce((a, c) => a + c.morale, 0) / p.crew.length) : 0;
   const close = !p.crew.length ? "Alone, and fine with it." : mood >= 70 ? "Crew in good heart." : mood >= 45 ? "Crew tired, and say so." : "Crew worn thin; a meal and a port would help.";
+  const fo = firstOfficer(p); if (fo && l.jumps >= 2) parts.push(`${fo.name.split(" ")[0]} had the conn for part of it`);
   const head = `Supplemental, stardate ${stardate(w)}, ${hours >= 1 ? `${hours.toFixed(1)}h` : `${Math.round(hours * 60)}m`} since the clamp: ${parts.join(", ")}.`;
   return (head + " " + close).length <= 118 ? head + " " + close : head.slice(0, 118);
 }
