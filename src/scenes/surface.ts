@@ -15,7 +15,7 @@ import * as wire from "../core/wire";
 import { flag } from "../core/achievements";
 import { gainMaterials } from "../core/materials";
 import { GW, GH, GT, WATER, PLAIN, HILLS, MOUNTAIN, HAZARD, SAND, BIOMES, genGround, groundKey, passable, GroundMap, GroundNode } from "../ground";
-import { adjustRep, addCargo, groundProgress, GroundState, HOMESTEAD_PRICE, homesteadYield, settleHomestead } from "../world";
+import { adjustRep, addCargo, groundProgress, GroundState, HOMESTEAD_PRICE, homesteadYield, settleHomestead, noteLeg } from "../world";
 import { commodity } from "../data/data";
 import { engGrade } from "../data/engineering";
 import { faction } from "../data/data";
@@ -141,7 +141,7 @@ export class SurfaceScene implements Scene {
       if (this.encounterTimer <= 0) {
         this.encounterTimer = 75 + Math.random() * 60;
         const enc = pickEncounter(g, "ground", new RNG((g.world.seed ^ Math.floor(g.world.time)) >>> 0));
-        if (enc) { sfx.rover(false); this.vx = 0; this.vy = 0; (g.scenes["encounter"] as EncounterScene).open(g, enc, "surface"); return; }
+        if (enc) { sfx.rover(false); this.vx = 0; this.vy = 0; noteLeg(g.world.player, "cards", g.world.time); (g.scenes["encounter"] as EncounterScene).open(g, enc, "surface"); return; }
       }
     }
     music.setMood(this.storm > 0 ? "storm" : this.biome === 1 ? "desert" : this.biome === 5 ? "ice" : this.biome === 4 ? "volcanic" : "ground", 0);

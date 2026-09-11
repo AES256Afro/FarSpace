@@ -5,7 +5,7 @@ import { ask, confirmBox } from "../../core/dialog";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra, raceCourse, racePar, racePrize, recordRace, beatHolder, captainNickname, leaveWreck, addWireWrecks, enterRegatta, regattaProgress, hasSpecialty, maydayAnswered, watchIndex, onWatch, raceHolder, askPassengerRequest, takeJuice, alertMods, AlertLevel, shipVoiceName } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra, raceCourse, racePar, racePrize, recordRace, beatHolder, captainNickname, leaveWreck, addWireWrecks, enterRegatta, regattaProgress, hasSpecialty, maydayAnswered, watchIndex, onWatch, raceHolder, askPassengerRequest, takeJuice, alertMods, AlertLevel, shipVoiceName, noteLeg } from "../../world";
 import { COMMODITIES, commodity } from "../../data/data";
 import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
@@ -137,7 +137,7 @@ export class FlightScene implements Scene {
       { label: "HANDBOOK", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("almanac"); } },
       { label: "THE CHRONICLE", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("chronicle"); } },
       { label: "THE ROSTER", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("roster"); } },
-      ...((g.world.player.juice ?? 0) > 0 && !this.hardBurn && !this.docking ? [{ label: `HARD BURN (JUICE X${g.world.player.juice})`, act: () => { this.paused = false; const l = takeJuice(g.world.player); if (l) { this.hardBurn = true; g.toast(l); sfx.alarm(); flag(g, "juiced"); logEntry(g.world, "Hard burn on the juice"); } } }] : []),
+      ...((g.world.player.juice ?? 0) > 0 && !this.hardBurn && !this.docking ? [{ label: `HARD BURN (JUICE X${g.world.player.juice})`, act: () => { this.paused = false; const l = takeJuice(g.world.player); if (l) { this.hardBurn = true; noteLeg(g.world.player, "burns", g.world.time); g.toast(l); sfx.alarm(); flag(g, "juiced"); logEntry(g.world, "Hard burn on the juice"); } } }] : []),
       ...(() => {
         const p = g.world.player; const sys = g.world.systems[p.systemId];
         const near = g.world.realGalaxy && wire.getCallsign() ? wondersIn(g.world, sys.id).find((wd) => dist(p.x, p.y, wd.x, wd.y) <= WONDER_RANGE) : undefined;
@@ -226,7 +226,7 @@ export class FlightScene implements Scene {
     if (g.input.wasPressed("Tab")) this.mapOpen = !this.mapOpen;
     if (g.input.wasPressed("g")) { g.setScene("galaxy"); return; }
     if (g.input.wasPressed("i")) { g.setScene("interior"); return; }
-    if (g.input.wasPressed("y") && !this.docking) { this.alert = ((this.alert + 1) % 3) as AlertLevel; this.alertT = 0; if (this.alert === 2) { sfx.alarm(); const gun = p.crew.find((c) => c.role === "gunner" && !c.sick) ?? p.crew.find((c) => !c.sick); this.comms.push({ from: gun ? gun.name.split(" ")[0].toUpperCase() : shipVoiceName(p), text: gun ? "RED ALERT. SHIELDS UP, STATIONS. SOMEBODY GET THE CAT OFF THE CONSOLE." : "RED ALERT. I'VE PUT EVERYTHING INTO THE SHIELDS. I HOPE YOU KNOW SOMETHING I DON'T.", life: 6, color: PAL.danger }); flag(g, "redalert"); } else if (this.alert === 1) { sfx.blip(); this.comms.push({ from: shipVoiceName(p), text: "YELLOW ALERT. SHIELDS READY. THE CREW LOOK UP FROM THEIR CARDS.", life: 5, color: PAL.warn }); } else { sfx.select(); this.comms.push({ from: shipVoiceName(p), text: "STAND DOWN. CONDITION GREEN. THE CARDS COME BACK OUT.", life: 5, color: PAL.good }); } }
+    if (g.input.wasPressed("y") && !this.docking) { this.alert = ((this.alert + 1) % 3) as AlertLevel; this.alertT = 0; if (this.alert === 2) { sfx.alarm(); noteLeg(p, "alerts", g.world.time); const gun = p.crew.find((c) => c.role === "gunner" && !c.sick) ?? p.crew.find((c) => !c.sick); this.comms.push({ from: gun ? gun.name.split(" ")[0].toUpperCase() : shipVoiceName(p), text: gun ? "RED ALERT. SHIELDS UP, STATIONS. SOMEBODY GET THE CAT OFF THE CONSOLE." : "RED ALERT. I'VE PUT EVERYTHING INTO THE SHIELDS. I HOPE YOU KNOW SOMETHING I DON'T.", life: 6, color: PAL.danger }); flag(g, "redalert"); } else if (this.alert === 1) { sfx.blip(); this.comms.push({ from: shipVoiceName(p), text: "YELLOW ALERT. SHIELDS READY. THE CREW LOOK UP FROM THEIR CARDS.", life: 5, color: PAL.warn }); } else { sfx.select(); this.comms.push({ from: shipVoiceName(p), text: "STAND DOWN. CONDITION GREEN. THE CARDS COME BACK OUT.", life: 5, color: PAL.good }); } }
     if (g.input.wasPressed("F5")) g.save();
     if (g.input.wasPressed("F9")) g.load();
     if (g.input.wasPressed("f")) toggleFullscreen(g.canvas);
@@ -1179,7 +1179,7 @@ export class FlightScene implements Scene {
     const rng = new RNG((g.world.seed ^ Math.floor(g.world.time)) >>> 0);
     const enc = pickEncounter(g, "space", rng);
     if (!enc) return;
-    sfx.thrust(false);
+    sfx.thrust(false); noteLeg(p, "cards", g.world.time);
     (g.scenes["encounter"] as EncounterScene).open(g, enc, "flight");
   }
   // the campaign's finale: a warship with no faction and one purpose
@@ -1472,7 +1472,7 @@ export class FlightScene implements Scene {
         this.scanTimer = 2.5;
       }
     }
-    p.fuel -= cost; this.hardBurn = false;
+    p.fuel -= cost; this.hardBurn = false; noteLeg(p, "jumps", g.world.time);
     p.jumpStreak = (p.jumpStreak ?? 0) + 1;
     jumpWear(p);
     { const up = crewXp(p, "pilot"); if (up) g.toast(up); }

@@ -863,6 +863,10 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   officer: the longest-serving crew member, once two are aboard and they've
   three dockings. Number One is marked on the roster, and the corridors know
   it. The ship, for its part, has decided it's Number One until then.
+- Every clamp writes a supplemental entry in the captain's voice: the hours
+  since the last dock, the jumps, whether the hull took fire, red alerts, a
+  hard burn, the cards on the lane, the rescues, and how the crew are holding
+  up. L on the record tab reads them back; the chronicle carries the last.
 
 ## The chronicle room
 

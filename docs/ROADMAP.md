@@ -996,4 +996,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] An envoy aboard waves their seal at customs and nobody opens the hold;
       the klaxon keeps going at red
 
+## Milestone 160 — Supplemental ✅ (Sep 2026)
+- [x] At every clamp the captain's log gets a supplemental entry tallying
+      the leg: jumps, fire taken, alerts, burns, cards, rescues, the crew's mood
+
 ## Later

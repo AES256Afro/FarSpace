@@ -331,6 +331,7 @@ export interface PlayerState {
   catAway?: string | null;           // station id where the cat got left behind; she turns up again
   juice?: number;                    // doses of burn juice from a clinic: one hard burn each
   voiceName?: string;                // what the ship asked to be called; its lines come from that name
+  leg?: LegLog;                      // what happened since the last clamp, for the supplemental log
   numberOne?: string;                // a first officer chosen at review, by name; otherwise the longest-serving
   focus?: FocusKind | null;          // the senior staff's focus for this leg, set at the briefing, cleared at the clamp
   briefed?: boolean;                 // the briefing has been held this leg
@@ -558,6 +559,26 @@ export function feuds(p: PlayerState): [CrewMember, CrewMember][] {
 }
 
 // ---------- The chronicle: a captain's career as text ----------
+// The supplemental log: the leg's tally, written in the captain's voice at the next clamp.
+export interface LegLog { jumps: number; fights: number; cards: number; alerts: number; burns: number; rescues0: number; t0: number }
+export function newLeg(p: PlayerState, t: number): LegLog { return (p.leg = { jumps: 0, fights: 0, cards: 0, alerts: 0, burns: 0, rescues0: p.rescues ?? 0, t0: t }); }
+export function noteLeg(p: PlayerState, key: "jumps" | "fights" | "cards" | "alerts" | "burns", t = 0): void { (p.leg ??= newLeg(p, t))[key]++; }
+export function legSummary(w: World): string | null {
+  const p = w.player; const l = p.leg; if (!l) return null;
+  const rescues = (p.rescues ?? 0) - l.rescues0;
+  if (!l.jumps && !l.fights && !l.cards && !l.alerts && !l.burns && !rescues) return null;
+  const parts: string[] = [];
+  if (l.jumps) parts.push(`${l.jumps} jump${l.jumps > 1 ? "s" : ""}`);
+  if (l.fights) parts.push(l.fights > 3 ? "the hull took fire more than once" : "the hull took fire");
+  if (l.alerts) parts.push(`red alert ${l.alerts > 1 ? l.alerts + " times" : "once"}`);
+  if (l.burns) parts.push("a hard burn on the juice");
+  if (l.cards) parts.push(`${l.cards} thing${l.cards > 1 ? "s" : ""} on the lane worth writing down`);
+  if (rescues) parts.push(`${rescues} rescue${rescues > 1 ? "s" : ""}`);
+  const hours = Math.max(0, (w.time - l.t0) / 3600);
+  const mood = p.crew.length ? Math.round(p.crew.reduce((a, c) => a + c.morale, 0) / p.crew.length) : 0;
+  const close = !p.crew.length ? "Alone on the bridge, and fine with it." : mood >= 70 ? "The crew are in good heart." : mood >= 45 ? "The crew are tired and say so." : "The crew are worn thin. A meal and a port would help.";
+  return `Captain's log, supplemental, stardate ${stardate(w)}. ${hours >= 1 ? `${hours.toFixed(1)} hours` : `${Math.round(hours * 60)} minutes`} since the last clamp: ${parts.join(", ")}. ${close}`;
+}
 // A stardate for the log: hours under way, to a tenth, on a base that looks the part.
 export function stardate(w: World): string { return (41000 + w.time / 360).toFixed(1); }
 // Number One: the longest-serving crew member, once there are two aboard and they have three dockings.
