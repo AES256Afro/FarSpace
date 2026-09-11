@@ -552,7 +552,7 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   wave you over in the evening or at night, and night control asks you to keep
   it quiet on the way in. Every station's clock is different, so the next port
   over may be on a cheaper shift.
-- H on the RECORD tab is the harbour view: the clock and the yard's rate, who
+- O on the RECORD tab is the harbour view (H is the music key): the clock and the yard's rate, who
   you know in the bays, lost property and keepsakes aboard, open requests from
   the lounge, and everything the tannoy would page you about, without walking
   the deck.

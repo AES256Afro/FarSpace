@@ -647,7 +647,7 @@ export class StationScene implements Scene {
         if (inp.wasPressed("b")) { this.recordView = this.recordView === "ledger" ? "achievements" : "ledger"; this.cursor = 0; sfx.blip(); }
         if (inp.wasPressed("p")) { this.recordView = this.recordView === "guestbook" ? "achievements" : "guestbook"; this.cursor = 0; sfx.blip(); }
         if (inp.wasPressed("w")) { this.recordView = this.recordView === "week" ? "achievements" : "week"; this.cursor = 0; sfx.blip(); }
-        if (inp.wasPressed("h")) { this.recordView = this.recordView === "harbour" ? "achievements" : "harbour"; this.cursor = 0; sfx.blip(); }
+        if (inp.wasPressed("o")) { this.recordView = this.recordView === "harbour" ? "achievements" : "harbour"; this.cursor = 0; sfx.blip(); }
         if (inp.wasPressed("c")) { g.settingsReturn = "station"; g.setScene("chronicle"); return; }
         if (inp.wasPressed("x")) {
           try {
@@ -1834,7 +1834,7 @@ export class StationScene implements Scene {
   drawHarbour(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
     const w = g.world; const p = w.player; const st = this.station;
     const t = stationHour(st); const hr = hoursRate(st);
-    drawText(ctx, `${st.name.toUpperCase()} HARBOUR - H FOR THE SERVICE RECORD`, 8, top, PAL.info);
+    drawText(ctx, `${st.name.toUpperCase()} HARBOUR - O FOR THE SERVICE RECORD`, 8, top, PAL.info);
     let y = top + 12;
     drawText(ctx, "THE CLOCK", 8, y, PAL.gold); y += 9;
     drawText(ctx, `${clockText(t)} STATION TIME, ${t.label}. YARD: ${hr.label || "STANDARD RATE"}${hr.mul !== 1 ? ` (${hr.mul > 1 ? "+" : ""}${Math.round((hr.mul - 1) * 100)}%)` : ""}. THE LOUNGE IS ${hr.lounge >= 0.75 ? "FULL" : hr.lounge <= 0.35 ? "QUIET" : "BUSY ENOUGH"}.`, 8, y, PAL.grey); y += 9;
@@ -1842,7 +1842,8 @@ export class StationScene implements Scene {
     drawText(ctx, "IN THE BAYS", 8, y, PAL.gold); y += 9;
     const caps = berthedCaptains(w, st.id);
     drawText(ctx, caps.length ? caps.map((c) => `${c.name.toUpperCase()} OFF THE ${c.ship.toUpperCase()}${isRival(c) ? " (RIVAL)" : isFriend(c) ? " (FRIEND)" : ""}`).join("; ").slice(0, 104) : "NOBODY YOU KNOW IS BERTHED THIS WEEK.", 8, y, PAL.grey); y += 9;
-    { const parked = (p.fleet ?? []).filter((f) => f.stationId === st.id); drawText(ctx, `${(p.shipName ?? hull(p.hullId).name).toUpperCase()} IN BAY 4${parked.length ? `; YOURS ACROSS THE DECK: ${parked.map((f) => (f.name ?? hull(f.hullId).name).toUpperCase()).join(", ")}` : ""}. THE DOCK-HAND: ${dockhandLines(w, st, new RNG(hashStr(`dh:${st.id}:${weekKey()}`)))[0].toUpperCase()}`.slice(0, 104), 8, y, PAL.grey); y += 9; }
+    { const parked = (p.fleet ?? []).filter((f) => f.stationId === st.id); drawText(ctx, `${(p.shipName ?? hull(p.hullId).name).toUpperCase()} IN BAY 4${parked.length ? `; YOURS ACROSS THE DECK: ${parked.map((f) => (f.name ?? hull(f.hullId).name).toUpperCase()).join(", ")}` : ""}. `.slice(0, 104), 8, y, PAL.grey); y += 9; }
+    drawText(ctx, `THE DOCK-HAND: ${dockhandLines(w, st, new RNG(hashStr(`dh:${st.id}:${weekKey()}`)))[0].toUpperCase()}`.slice(0, 104), 8, y, PAL.grey); y += 9;
     y += 3;
     drawText(ctx, "ON YOUR SHIP", 8, y, PAL.gold); y += 9;
     const lost = p.lostProperty ?? [];
@@ -1914,7 +1915,7 @@ export class StationScene implements Scene {
     const p = g.world.player;
     const w = g.world;
     const have = new Set(p.achievements ?? []);
-    drawText(ctx, `SERVICE RECORD${w.hardcore ? " - HARDCORE" : ""} - L LOG - B LEDGER - P GUESTBOOK - W WEEK - H HARBOUR - C CHRONICLE - X EXPORT`, 8, top, PAL.info);
+    drawText(ctx, `SERVICE RECORD${w.hardcore ? " - HARDCORE" : ""} - L LOG - B LEDGER - P GUESTBOOK - W WEEK - O HARBOUR - C CHRONICLE - X EXPORT`, 8, top, PAL.info);
     const stats = [
       `KILLS ${p.kills}`, `DISCOVERIES ${p.discoveries}`, `ARCS ${Object.values(p.arcs).reduce((a, b) => a + b, 0)}/15`,
       `CREDITS ${p.credits}`, `CREW ${p.crew.length}`, `HULL ${hull(p.hullId).name.toUpperCase()}`,

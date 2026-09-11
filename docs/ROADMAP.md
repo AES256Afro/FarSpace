@@ -904,7 +904,7 @@ Time passes for the people on the ship, and for the ship.
       neighbours, lost property, requests, the galley; the ship has lines too
 
 ## Milestone 137 — The Harbour View ✅ (Sep 2026)
-- [x] H on RECORD: the clock and rate, who's in the bays, lost property and
+- [x] O on RECORD: the clock and rate, who's in the bays, lost property and
       keepsakes, open requests, and what the tannoy would page you about
 
 ## Milestone 138 — Requests on the HUD ✅ (Sep 2026)
