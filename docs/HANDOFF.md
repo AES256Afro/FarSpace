@@ -30,8 +30,12 @@ map navigation and boarding work, not those entire milestones.
   A production-build wreck walk restored power, evacuated a survivor, recovered
   fuel, both crates and a recorder, and sealed both breaches. Progress survived
   a JSON save round trip. No real player saves or identity settings were written.
+- Release commit/tag: `e87a7da543d88c6b12c3f54d06105a0e724eff41`, `v0.258.0`.
+  CI `34656222577` and container workflow `34656222168` passed. The public
+  title displays v0.258.0; the live JS and CSS hashes match the tested build.
 - Current JavaScript: `index-Du38lKfO.js`. CSS: `index-DLwGHPCy.css`.
   Release deployment evidence is recorded in the September 11 work log.
+  Dev5199 was restarted for v0.258.0. Temporary fixtures are closed.
 - Bigbox remains a separate installation. This task does not update its running
   container. The FarSpace release manifest targets 0.258.0.
 
