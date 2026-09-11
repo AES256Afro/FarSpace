@@ -363,6 +363,15 @@ export const ENCOUNTERS: Encounter[] = [
     ],
   },
   {
+    id: "thebet", where: "space", weight: 3, title: "THE POOL", when: (g) => p(g).crew.length >= 2,
+    text: "You come onto the bridge and everyone goes quiet in the specific way of people who were talking about you. There is a jar on the console with credits in it and a list taped to the jar. The list is headed 'WHAT THE SKIPPER DOES NEXT'. Your name is not on it. Your options are.",
+    options: [
+      { label: "TAKE THE JAR", hint: "+60cr; they'll remember", result: (g) => { p(g).credits += 60; for (const c of p(g).crew) c.morale = Math.max(0, c.morale - 4); return "YOU TAKE THE JAR. THERE IS SIXTY CREDITS IN IT AND A BUTTON. 'THAT'S NOT HOW THE POOL WORKS,' SOMEBODY SAYS, VERY QUIETLY, TO NOBODY. +60CR. MORALE DOWN. THE BUTTON IS YOURS NOW TOO."; } },
+      { label: "LET IT RIDE", hint: "Morale up; you'll never know who won", result: (g) => { for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 4); return "YOU LOOK AT THE LIST, LOOK AT THEM, AND LEAVE THE JAR WHERE IT IS. A WEEK LATER SOMEBODY IS MYSTERIOUSLY RICHER AND NOBODY WILL SAY WHO. MORALE UP. THE LIST IS GONE FROM THE JAR AND BACK, WITH A NEW HEADING."; } },
+      { label: "DOUBLE IT AND PICK A LINE", hint: "You put in sixty; half the time you call it", result: (g, rng) => { if (rng.chance(0.5)) { p(g).credits += 60; for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 8); return "YOU PUT SIXTY IN AND PICK THE LINE THAT SAYS 'TAKES THE JAR'. THEN YOU DON'T. THE LOGIC IS ARGUED ABOUT FOR A DAY AND EVERYONE AGREES YOU WON. +60CR, MORALE UP, A LOT."; } p(g).credits = Math.max(0, p(g).credits - 60); for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 6); return "YOU PUT SIXTY IN AND PICK A LINE. YOU ARE WRONG ABOUT YOURSELF, WHICH THE CREW FIND ENORMOUSLY REASSURING. -60CR. MORALE UP ANYWAY."; } },
+    ],
+  },
+  {
     id: "loop", where: "space", weight: 2, title: "THE SAME MINUTE, AGAIN", when: (g) => !p(g).flags?.loopDone,
     text: "The clock on the console reads a time it read a moment ago. The coffee is full again. Somebody on the band says the thing they just said, word for word, and then, seeing your face, says 'WHAT?' the same way. You have been here before. You will be here again unless something changes.",
     options: [

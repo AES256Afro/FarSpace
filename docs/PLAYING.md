@@ -900,6 +900,12 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   lives; otherwise two hulls come out from behind the hulk already talking),
   scan it first with a gunner or a discovery scanner, or fly on and take the
   mark.
+- The pool: a jar on the console with credits in it and a list taped to the
+  jar headed "what the skipper does next". Take the jar (sixty credits and a
+  button; morale down), let it ride (morale up; someone is mysteriously
+  richer a week later), or double it and pick a line (half the time you call
+  it; the other half you're wrong about yourself, which the crew find
+  enormously reassuring).
 - A visitor on the bridge: somebody in the other chair who was not in the
   other chair, dressed for a better party, with a small game. Play it (a
   riddle about a door; credits from nowhere, fuel to nowhere, or the cat
