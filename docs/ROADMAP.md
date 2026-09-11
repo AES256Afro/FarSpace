@@ -1984,6 +1984,21 @@ Time passes for the people on the ship, and for the ship.
 - [x] Build shared static container assets with native Node, avoiding the
       QEMU dependency-install crash while publishing both target architectures.
 
+## Milestone 398: A Chair for the Rock (Sep 2026)
+- [x] Enter a visible council room from a belt promenade, listen as a visitor,
+      or take a freeman's chair when belt standing is at least three.
+- [x] Rotate three agendas each Monday UTC. Record one vote per week across
+      chair changes, show standing effects, and send the actual minutes.
+- [x] Carry a chosen resolution to a reachable civil harbour office, request
+      a written response or joint meeting, and bring its reply back in person.
+- [x] Pay expenses once on reporting. Keep journeys through saves and weekly
+      changes without a deadline or cabin requirement; allow papers to be
+      returned unfinished and replies reported after standing falls.
+- [x] Restore the exact station course from the galaxy map or Missions tab.
+      Display the objective in flight and add original council dialogue.
+- [x] Keep encounter keyboard selection independent of a stationary pointer.
+      Correct the promenade News kiosk's services tab.
+
 ## Later: Trek / Expanse / Orville (the fourth sitting)
 
 The third sitting shipped everything on the last list (M330–M386): the
@@ -1993,8 +2008,6 @@ the roster, a command of their own. Next:
 
 - The service proper: a naval career ladder beside the rank (postings,
   a cutter of your own on loan, orders that conflict with a fare)
-- The belt's council as a place: a seat you sit in, votes every week, a
-  rock that asks you to speak for it to the inners
 - The ship's voice in the sim rig: a program it wrote about you
 
 The office's retirement and files, the wedding keepsake, the child named
@@ -2003,3 +2016,5 @@ M360-M392. Visible ground teams are covered by M393.
 The singers' dockable home, exchange, and homeward passenger are covered by
 M394-M395.
 An old hand's final journey, deck farewell, and letter are covered by M397.
+
+The council room, weekly agendas and representation journey are covered by M398.

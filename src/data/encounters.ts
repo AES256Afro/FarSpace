@@ -553,7 +553,7 @@ export const ENCOUNTERS: Encounter[] = [
     ],
   },
   {
-    id: "council", where: "space", weight: 3, title: "THE COUNCIL ASKS", when: (g) => !!p(g).flags?.freeman && sys(g).stations.some((st) => isBeltStation(st)),
+    id: "council", where: "space", weight: 3, title: "THE COUNCIL ASKS", when: (g) => !!p(g).flags?.freeman && !p(g).flags?.councilVote && !p(g).council && sys(g).stations.some((st) => isBeltStation(st)),
     text: "A tight-beam from the rock, council seal on it, which you've never seen used for anything but tariffs. 'FREEMAN. THE INNERS WANT THE WATER TARIFF DROPPED FOR THEIR HAULERS OR THEY PULL THE CLINIC CONTRACT. THREE ROCKS SAY HOLD. TWO SAY FOLD. YOU'RE THE ONE WHO FLIES BOTH SIDES. WHICH IS IT?'",
     options: [
       { label: "HOLD THE TARIFF", hint: "Belt standing up; rep down with the system's faction", result: (g) => { p(g).beltStanding = (p(g).beltStanding ?? 0) + 4; adjustRep(g.world, sys(g).factionId, -3); logEntry(g.world, "The council asked; told them to hold the water tariff"); (p(g).flags ??= {}).councilVote = true; (p(g).codex ??= {})["contact:THE ROCK'S COUNCIL"] = ((p(g).codex ?? {})["contact:THE ROCK'S COUNCIL"] ?? 0) + 1; (g.world.mailQueue ??= []).push({ dueT: g.world.time + 800, from: "the rock's council, the minutes", text: "Enclosed: the minutes. Your name is in them, and the word you gave, and the vote, three to two. Rocks keep minutes because rocks forget nothing and want it in writing anyway. The clinic contract is on page four. Don't read page four." }); return "'HOLD, THEN.' THE SEAL GOES DARK. THE ROCK HOLDS, THE INNERS SHOUT, THE CLINIC CONTRACT STAYS BECAUSE IT WAS ALWAYS GOING TO. THE BELT WRITES YOUR NAME IN THE MINUTES. THE INNERS WRITE IT SOMEWHERE ELSE."; } },

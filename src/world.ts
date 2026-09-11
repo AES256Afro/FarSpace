@@ -1,3 +1,4 @@
+import type { CouncilState } from "./core/council";
 // World model + procedural galaxy generation + world simulation rules.
 // Pure data and pure functions — scenes render it. No DOM here (tests run in node).
 
@@ -348,6 +349,7 @@ export interface PlayerState {
   voiceName?: string;                // what the ship asked to be called; its lines come from that name
   leg?: LegLog;                      // what happened since the last clamp, for the supplemental log
   envoys?: number;                   // treaties landed clean
+  council?: CouncilState;
   beltStanding?: number;             // what the rocks owe you: hoppers helped, spins restarted, registers signed, runs made
   patients?: number;                 // patients landed in time
   numberOne?: string;                // a first officer chosen at review, by name; otherwise the longest-serving

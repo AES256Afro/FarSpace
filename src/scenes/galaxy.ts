@@ -9,6 +9,7 @@ import { faction, commodity } from "../data/data";
 import { dist } from "../core/mathx";
 import { navRoute, routeFuel, jumpFuelCost, repLabel, permitDenied, syndicateAt, findStation, galaxyEventAt } from "../world";
 import { sfx } from "../core/sfx";
+import { plotCouncilMandate } from "../core/council";
 import { knowsSingersBerth } from "../core/singers";
 import type { FlightScene } from "./flight/index";
 import * as wire from "../core/wire";
@@ -35,8 +36,13 @@ export class GalaxyScene implements Scene {
     const inp = g.input;
     if (inp.wasPressed("Escape") || inp.wasPressed("g")) { (g.scenes.flight as FlightScene).resumeNext = true; g.setScene("flight"); return; }
     if (inp.wasPressed("F5")) g.save();
-    if (inp.wasPressed("F9")) g.load();
+    if (inp.wasPressed("F9")) { g.load(); return; }
     const p = g.world.player;
+    if (p.council?.mandate && (inp.wasPressed("c") || (inp.mousePressed && inp.mouseX >= 8 && inp.mouseX < 160 && inp.mouseY >= 30 && inp.mouseY < 42))) {
+      if (plotCouncilMandate(g.world)) { this.selected = p.navTarget!; g.toast("COUNCIL COURSE SET. ESC TO FLIGHT, N FOR AUTOPILOT."); g.autosave(); }
+      else g.toast("THE ROUTE IS CLOSED. THE COUNCIL PAPERS CAN WAIT.");
+      return;
+    }
     if (knowsSingersBerth(p) && (inp.wasPressed("r") || (inp.mousePressed && inp.mouseX >= 8 && inp.mouseX < 160 && inp.mouseY >= 16 && inp.mouseY < 28))) {
       this.selected = p.singersHome!; p.navTarget = p.singersHome!; p.singersCourse = true; delete p.navStationId;
       g.toast("COURSE: SINGERS' BERTH. ESC TO FLIGHT, N FOR AUTOPILOT.");
@@ -90,6 +96,10 @@ export class GalaxyScene implements Scene {
     if (knowsSingersBerth(w.player)) {
       ctx.fillStyle = "#152d38"; ctx.fillRect(8, 16, 152, 12);
       drawText(ctx, w.player.singersCourse ? "R: COURSE TO SINGERS' BERTH" : "R: PLOT SINGERS' BERTH", 14, 20, PAL.ui);
+    }
+    if (w.player.council?.mandate) {
+      ctx.fillStyle = "#352c1b"; ctx.fillRect(8, 30, 152, 12);
+      drawText(ctx, "C: PLOT COUNCIL JOURNEY", 14, 34, PAL.gold);
     }
     if (this.pilots) drawText(ctx, `${this.pilots} PILOT${this.pilots === 1 ? "" : "S"} FLYING NOW`, VW / 2 - textWidth(`${this.pilots} PILOTS FLYING NOW`) / 2, 15, PAL.info);
 

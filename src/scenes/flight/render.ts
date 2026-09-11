@@ -1,6 +1,7 @@
 // Rendering for the flight scene: world, HUD, radar markers, system map.
 
 import type { Game } from "../../game";
+import { councilObjective } from "../../core/council";
 import { systemLabel } from "../../world";
 import { VW, VH } from "../../game";
 import type { FlightScene } from "./index";
@@ -662,6 +663,8 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
     const so = storyObjective(g.world);
     if (so && (p.tutorial ?? -1) < 0) { const line = `* ${so}`.slice(0, 80); drawText(ctx, line, VW - textWidth(line) - 4, my, PAL.info); my += 8; }
   }
+  const council = councilObjective(g.world);
+  if (council) { const line = `${council} (G/C: PLOT)`.slice(0, 90); drawText(ctx, line, VW - textWidth(line) - 4, my, PAL.gold); my += 8; }
   for (const m of active.slice(0, 3)) {
     const prog = m.kind === "patrol" || m.kind === "observe" ? ` ${Math.min(m.patrolNeed ?? 90, Math.floor(m.patrolT ?? 0))}/${m.patrolNeed ?? 90}S${m.observeBlown ? " (SEEN)" : ""}` : m.kind === "emergency" && m.byT !== undefined ? (g.world.time > m.byT ? " - LATE, HALF PAY" : ` - ${Math.ceil((m.byT - g.world.time) / 60)}M LEFT`) : m.kind === "bounty" ? ` ${m.kills}/${m.killsNeeded}` : m.kind === "ground" ? ` ${m.groundDone ?? 0}/${m.groundNeed ?? 1}` : m.shipTotal ? ` ${(m.shipDone ?? 0) + 1}/${m.shipTotal}` : "";
     // a fare's open request rides on the line: what they want, and whether it's still on

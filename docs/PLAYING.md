@@ -1732,3 +1732,30 @@ Mouse aims the turret; left-click fires, right-click mines. R fires a homing
 torpedo. Named corsair captains carry a 400 CR bounty. Damaged systems are
 repaired on your own deck (I) with spare parts. Hardcore mode (Settings) makes
 destruction erase the save.
+
+
+## The rock's council
+
+- Mining and refinery promenades have a council room on the upper deck,
+  between the market and harbourmaster. Walk beside it and press E. Visitors
+  can listen. A freeman with at least three belt standing can take the chair.
+- Read the weekly agenda from the chair. Water, rescue dispatch, and filter
+  certification rotate each Monday UTC. Each option shows its belt and
+  faction standing changes. The vote records the rock's request to the inner
+  office; it does not change the faction-wide News vote.
+- You get one council vote per UTC week, including after moving your seat
+  to another rock. The last twelve ballots remain in the minutes. A letter
+  with the chosen resolution arrives later. Missed sittings carry no penalty.
+- After voting, **Speak for the rock** accepts an optional journey. Take the
+  request to the named civil port, press P to walk its deck, and speak to its
+  harbourmaster with E. Read the resolution or ask for a meeting at the rock.
+- Bring the written reply back to the sending council room. Read it back to
+  receive 300 credits in expenses and one belt standing, once. There is no
+  deadline and the papers use no cargo space or passenger cabin. An older
+  journey stays with you even when the next weekly agenda arrives.
+- G then C restores the exact destination, with a clickable map control.
+  C on the Missions tab also plots it. N in flight follows the route. The
+  return course is set when the inner office hands you its reply.
+- You can return the papers unfinished at the sending council, with no
+  payment or penalty. Losing standing does not prevent reporting a reply or
+  handing the papers back. Finish that journey before moving your council seat.

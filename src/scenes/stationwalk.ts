@@ -17,6 +17,7 @@ import { wrap } from "./encounter";
 import { faction, genPersonName } from "../data/data";
 import { StationScene } from "./station";
 import type { CrewMember } from "../data/crew";
+import { councilAt, councilAudience, councilAudienceAt } from "../core/council";
 import { finishLastLeg, lastLegAtPort } from "../core/lastleg";
 import { concourseGossip } from "../data/gossip";
 import { stationHour, clockText, tannoyLines } from "../data/tannoy";
@@ -32,7 +33,7 @@ const T = 10;
 const DECK = [
   "########################################",
   "#~~~~#............................#~~~~#",
-  "#....#..M...........O...........Y.#....#",
+  "#....#..M.....C.....O...........Y.#....#",
   "#....D............................D...A#",
   "#....#............................#....#",
   "######..........########..........######",
@@ -54,10 +55,11 @@ const KIOSKS: Kiosk[] = [
   { ch: "Y", label: "SHIPYARD DESK", tab: 1 },
   { ch: "B", label: "MISSION BOARD", tab: 3 },
   { ch: "R", label: "THE LOUNGE BAR", tab: 4 },
-  { ch: "N", label: "GALNET TERMINAL", tab: 6 },
+  { ch: "N", label: "GALNET TERMINAL", tab: 9 },
   { ch: "A", label: "AIRLOCK - YOUR SHIP", tab: null },
   { ch: "H", label: "STATION CLINIC", tab: -1 },
   { ch: "O", label: "HARBOURMASTER", tab: -2 },
+  { ch: "C", label: "THE ROCK'S COUNCIL", tab: -3 },
 ];
 
 interface WalkerNpc {
@@ -233,6 +235,22 @@ export class StationWalkScene implements Scene {
     }
   }
 
+  councilAudience(g: Game): void {
+    const m = g.world.player.council?.mandate;
+    if (!m || !councilAudienceAt(g.world, this.station.id)) return;
+    const home = findStation(g.world, m.fromStationId)?.st.name ?? "the sending rock";
+    const enc: Encounter = { id: "council-audience", where: "space", weight: 0,
+      title: "A CHAIR AT THE INNER OFFICE",
+      text: `${home}'s council sent you with a request: ${m.resolution} The harbourmaster pulls a chair from behind the desk. 'You came all this way to say it in person. Let us put the reply in writing.'`,
+      options: [
+        { label: "READ THE ROCK'S RESOLUTION", hint: "Take their written response home", result: (g2: Game) => { const line = councilAudience(g2.world, m, false); g2.autosave(); return line; } },
+        { label: "ASK THEM TO MEET AT THE ROCK", hint: "Bring back an offer of a joint meeting", result: (g2: Game) => { const line = councilAudience(g2.world, m, true); g2.autosave(); return line; } },
+        { label: "NOT YET. KEEP THE PAPERS", result: () => "THE CHAIR WILL BE HERE WHEN YOU ARE READY TO SPEAK." },
+      ],
+    };
+    (g.scenes.encounter as EncounterScene).open(g, enc, "stationwalk", true);
+  }
+
   // The harbourmaster's office: who's in, who's due, your berth log, your charters, the rival if any
   harbourmaster(g: Game): void {
     const w = g.world; const p = w.player;
@@ -269,14 +287,15 @@ export class StationWalkScene implements Scene {
     for (let tries = 0; tries < 100; tries++) {
       const tx = rng.int(1, DECK[0].length - 2);
       const ty = rng.int(1, DECK.length - 2);
-      if (DECK[ty][tx] === ".") return { x: tx * T + T / 2, y: ty * T + T / 2 };
+      if (this.tileAt(tx, ty) === ".") return { x: tx * T + T / 2, y: ty * T + T / 2 };
     }
     return { x: 5 * T, y: 3 * T };
   }
 
   tileAt(tx: number, ty: number): string {
     if (ty < 0 || ty >= DECK.length || tx < 0 || tx >= DECK[0].length) return "#";
-    return DECK[ty][tx];
+    const ch = DECK[ty][tx];
+    return ch === "C" && (!this.station || !isBeltStation(this.station) || this.station.military) ? "." : ch;
   }
 
   solid(tx: number, ty: number): boolean {
@@ -387,7 +406,8 @@ export class StationWalkScene implements Scene {
       if (who) { if (!who.line) who.line = `${who.name.toUpperCase()}: ${concourseGossip(g.world, this.station, new RNG((Math.random() * 1e9) >>> 0))[0]}`; this.msg = who.line; this.msgTimer = 6; who.pause = Math.max(who.pause, 4); }
     }
     if (near && inp.wasPressed("e")) {
-      if (near.def.tab === -2) { this.harbourmaster(g); return; }
+      if (near.def.tab === -3) { if (councilAt(g.world, this.station.id)) g.setScene("council"); return; }
+      if (near.def.tab === -2) { if (councilAudienceAt(g.world, this.station.id)) this.councilAudience(g); else this.harbourmaster(g); return; }
       if (near.def.tab === -1) {
         // the clinic: sick crew back on their feet for a fee, and the juice for a hard burn
         const p = g.world.player;
@@ -413,10 +433,9 @@ export class StationWalkScene implements Scene {
         return;
       }
       const st = g.scenes["station"] as StationScene;
-      st.enter(g);
+      g.setScene("station");
       st.tab = near.def.tab;
       st.returnTo = "stationwalk";
-      g.scene = st;
       return;
     }
 
@@ -428,7 +447,7 @@ export class StationWalkScene implements Scene {
     let bestD = 18;
     for (let ty = 0; ty < DECK.length; ty++) {
       for (let tx = 0; tx < DECK[0].length; tx++) {
-        const def = KIOSKS.find((k) => k.ch === DECK[ty][tx]);
+        const def = KIOSKS.find((k) => k.ch === this.tileAt(tx, ty));
         if (!def) continue;
         const d = dist(this.px, this.py, tx * T + T / 2, ty * T + T / 2);
         if (d < bestD) { bestD = d; best = { def, tx, ty }; }
@@ -446,7 +465,7 @@ export class StationWalkScene implements Scene {
 
     for (let ty = 0; ty < DECK.length; ty++) {
       for (let tx = 0; tx < DECK[0].length; tx++) {
-        const ch = DECK[ty][tx];
+        const ch = this.tileAt(tx, ty);
         const x = ox + tx * T, y = oy + ty * T;
         if (ch === "#") {
           ctx.fillStyle = "#232a3d";
@@ -595,6 +614,7 @@ export class StationWalkScene implements Scene {
       drawText(ctx, "ARMED GUARDS WATCH THE DECK", VW - textWidth("ARMED GUARDS WATCH THE DECK") - 6, 15, PAL.danger);
     }
 
+    if (councilAt(g.world, this.station.id)) drawText(ctx, "COUNCIL: UPPER DECK, BETWEEN MARKET AND HARBOURMASTER", 40, 54, PAL.gold);
     if (this.msg) {
       if (textWidth(this.msg) <= VW - 16) drawText(ctx, this.msg, VW / 2 - textWidth(this.msg) / 2, VH - 12, PAL.ui);
       else {

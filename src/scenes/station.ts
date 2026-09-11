@@ -10,6 +10,7 @@ import { clamp } from "../core/mathx";
 import { commodity, faction } from "../data/data";
 import { HULLS, hull } from "../data/hulls";
 import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS, roleLabel } from "../data/crew";
+import { councilAudienceAt, councilObjective, plotCouncilMandate } from "../core/council";
 import { beginLastLeg, lastLegAtPort, lastLegDestination } from "../core/lastleg";
 import type { LettersScene } from "./letters";
 import {
@@ -62,6 +63,7 @@ export class StationScene implements Scene {
     const found = findStation(g.world, g.world.player.dockedAt!);
     if (!found) { g.setScene("flight"); return; }
     this.station = found.st;
+    if (councilAudienceAt(g.world, this.station.id)) g.showHint(`council-office:${this.station.id}`, "THE COUNCIL'S INNER OFFICE. P WALKS THE DECK; E AT THE HARBOURMASTER PRESENTS THE REQUEST.");
     this.tab = 0;
     this.cursor = 0;
     this.returnTo = "flight";
@@ -437,7 +439,7 @@ export class StationScene implements Scene {
           const target = best ? Object.values(g.world.systems).find((s2) => s2.name === best.system) : null;
           if (!best || !target) g.toast("NO OTHER MARKET SEEN FOR THAT YET");
           else if (target.id === p.systemId) g.toast(`${best.station.toUpperCase()} IS IN THIS SYSTEM - JUST FLY THERE`);
-          else { p.navTarget = target.id; g.toast(`COURSE PLOTTED FOR ${best.station.toUpperCase()}, ${best.system.toUpperCase()}: ${commodity(id).name.toUpperCase()} SELLS FOR ${best.price}CR THERE`); sfx.select(); }
+          else { p.navTarget = target.id; p.singersCourse = false; delete p.navStationId; g.toast(`COURSE PLOTTED FOR ${best.station.toUpperCase()}, ${best.system.toUpperCase()}: ${commodity(id).name.toUpperCase()} SELLS FOR ${best.price}CR THERE`); sfx.select(); }
         }
         if (inp.wasPressed("i")) { const n = inp.isDown("Shift") ? 10 : 1; const line = buyStake(g.world, st, n); g.toast(line); if (line.includes("HELD")) { sfx.select(); if (totalShares(p) >= 25) flag(g, "shareholder"); } }
         // Enter and click sell what you hold; they buy only when your hold is empty of it. B and S stay explicit.
@@ -553,6 +555,7 @@ export class StationScene implements Scene {
         break;
       }
       case "MISSIONS": {
+        if (inp.wasPressed("c") && p.council?.mandate) { g.toast(plotCouncilMandate(g.world) ? "COUNCIL COURSE SET. N IN FLIGHT FOLLOWS THE ROUTE." : "THE COUNCIL ROUTE IS CLOSED. THE PAPERS CAN WAIT."); g.autosave(); return; }
         if (Date.now() - this.goalFetched > 60_000) { this.goalFetched = Date.now(); this.flushGoal(); void wire.fetchGoal(this.goal.id).then((st) => { if (st) this.goalState = st; }); }
         const avail = this.boardMissions.filter((m) => !m.accepted);
         const deliverable = p.missions.filter((m) => missionDeliverable(g.world, m, st));
@@ -1455,6 +1458,8 @@ export class StationScene implements Scene {
       const so = storyObjective(g.world);
       if (so && (p.tutorial ?? -1) < 0) { drawText(ctx, `${so.startsWith("THE KEEPER") ? "" : (p.story ?? 0) < 7 ? "THE SIGNAL - " : "THE MISSING CONVOY - "}${so}`.slice(0, 100), 8, y, PAL.info); y += 10; }
       { const ro = regattaObjective(g.world); if (ro) { drawText(ctx, ro.slice(0, 100), 8, y, PAL.gold); y += 10; } }
+      const co = councilObjective(g.world);
+      if (co) { drawText(ctx, `${co} - C: PLOT`.slice(0, 112), 8, y, PAL.gold); y += 10; }
       const cr = g.world.crisis;
       if (cr && cr.delivered < cr.need && g.world.time < cr.until) { const f = findStation(g.world, cr.stationId); drawText(ctx, `CRISIS: ${(f?.st.name ?? "?").toUpperCase()}, ${(f?.sys.name ?? "?").toUpperCase()} NEEDS ${cr.need - cr.delivered} ${commodity(cr.commodityId).name.toUpperCase()} - ${Math.max(0, Math.round((cr.until - g.world.time) / 60))}M LEFT, PAYS x${CRISIS_PREMIUM}`.slice(0, 104), 8, y, PAL.danger); y += 10; }
     }

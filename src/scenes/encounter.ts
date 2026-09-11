@@ -30,8 +30,11 @@ export class EncounterScene implements Scene {
   outcome: string | null = null;
   rowBoxes: [number, number][] = [];
 
+  lastPointerX = -1;
+  lastPointerY = -1;
   story = false;
   open(g: Game, enc: Encounter, returnTo: string, story = false): void {
+    this.lastPointerX = g.input.mouseX; this.lastPointerY = g.input.mouseY;
     this.enc = enc; this.returnTo = returnTo; this.cursor = 0; this.outcome = null; this.story = story;
     const p = g.world.player;
     if (!story) { p.encounters ??= {}; p.encounters[enc.id] = (p.encounters[enc.id] ?? 0) + 1; }
@@ -57,7 +60,9 @@ export class EncounterScene implements Scene {
     if (inp.wasPressed("ArrowUp")) { this.cursor = (this.cursor + opts.length - 1) % opts.length; sfx.blip(); }
     if (inp.wasPressed("ArrowDown")) { this.cursor = (this.cursor + 1) % opts.length; sfx.blip(); }
     const row = this.rowBoxes.findIndex(([y0, y1]) => inp.mouseY >= y0 && inp.mouseY <= y1);
-    if (row >= 0 && inp.mouseX > 40 && inp.mouseX < VW - 40) this.cursor = row;
+    const moved = inp.mouseX !== this.lastPointerX || inp.mouseY !== this.lastPointerY;
+    this.lastPointerX = inp.mouseX; this.lastPointerY = inp.mouseY;
+    if (row >= 0 && inp.mouseX > 40 && inp.mouseX < VW - 40 && (moved || inp.mousePressed)) this.cursor = row;
     if (inp.wasPressed("Enter") || (inp.mousePressed && row >= 0)) {
       const o = opts[this.cursor];
       if (!o) return;
