@@ -2,22 +2,22 @@
 
 ## Current checkpoint
 
-- Release: **v0.253.0**, milestones through **M413**.
-- Release commit: `8f809536f9d4ab24253cee9eb4594169a845cb2d` on `main`.
+- Release: **v0.254.0**, milestones through **M414**.
+- Release commit: `c2cf48be65bc2206e93bca783cdff44d8400cb08` on `main`.
 - Repository: `https://github.com/AES256Afro/FarSpace`.
 - Local workspace: `/Users/chris/Projects/FarSpace`.
-- Tests: **385 passing**. M413 adds seven regressions to the six-hour checkpoint.
-- TypeScript and production build passed. Bundle: `index-Bk73yNWT.js`,
-  1218.20 kB raw / 430.84 kB gzip. The existing Vite bundle-size notice remains.
-- Hosted CI `34634759782` passed, including the actual Cloudflare deploy step.
-  Container workflow `34634761091` passed for v0.253.0.
+- Tests: **394 passing**. M414 adds nine direction regressions.
+- TypeScript and production build passed. Bundle: `index-COueUCNG.js`,
+  1223.13 kB raw / 432.89 kB gzip. The existing Vite bundle-size notice remains.
+- Hosted CI `34636708007` passed, including the actual Cloudflare deploy step.
+  Container workflow `34636707994` passed for v0.254.0.
 - Live site: <https://farspace.fsociety.work>. Production matches the tested
   local build, SHA-256
-  `6185b087c51aa88d62d89549a085958d7919dc1e7700a581c9afde057b399c9e`.
+  `8eb547a9a3eb37373f69606cb224953a01fa0c7d78be715cb2bc80f1d77b6bdf`.
   `/api/health` returned `{"ok":true}`.
-- BoxPilot catalog: **0.253.0**, PR257 merged as
-  `dc6dbf4382d33e660413c7b6bb0cd6792eb04673`; validate and tags-resolve passed.
-  Remote main's manifest names the exact 0.253.0 image. Catalog publication
+- BoxPilot catalog: **0.254.0**, PR258 merged as
+  `fb09e210e33d1b613586477772635995fc9e9de1`; validate and tags-resolve passed.
+  Remote main's manifest names the exact 0.254.0 image. Catalog publication
   is separate from installation on Bigbox; this session did not restart or
   redeploy that server.
 - Save schema remains **14**. New state is optional and has migration and
@@ -26,8 +26,8 @@
 The authorized work window was 12:34:39 to 18:34:39 UTC on September 11
 (07:34:39 to 13:34:39 CDT). The continuation automation is
 `farspace-six-hour-development`, attached to task
-`01a08fcd-5c4c-7161-85da-481557fa6a42`. It is paused. The later user report
-about station scrolling authorized the M413 follow-up only.
+`01a08fcd-5c4c-7161-85da-481557fa6a42`. It is paused. M413 (station scrolling)
+and M414 (ship appearance and heading) are separate user-requested follow-ups.
 
 The detailed release and native-test evidence is in
 [the September 11 work log](WORKLOG-2026-09-11.md). Earlier handoff content is
@@ -108,7 +108,33 @@ clicks. The native production preview reached all 37 shipyard entries and all
 26 market goods, bought the final shield upgrade, and sold only the selected
 Thal Root. No console errors. This follow-up adds no save state.
 
+## M414 follow-up: ships and heading
+
+Each of the eight hulls now has a defined profile, forward canopy and rear
+engine bank, with class-appropriate plates and paint. The design generator
+is shared by player, other pilots, NPC classes and shipyard previews.
+
+A solid white chevron marks the nose, independent of turret aim. A hollow
+amber diamond marks actual drift; below 2 m/s it is hidden. HUD bearings use
+screen-up as north and clockwise degrees. Heading remains visible at minimum
+zoom, and the system-map player arrow is oriented too. Forward and retro
+exhaust are tied to actual burns in FlightScene; no handling values changed.
+
+All eight hulls were inspected at detail and flight scales. The exact release
+preview covered perpendicular and opposite drift, minimum zoom, a carrier at
+maximum zoom, native wheel/map/pointer actions, and held-control fixtures for
+turning, thrust, retros and braking. The held-key checks used temporary input
+state with normal animation frames, since the browser tool's key press does
+not remain down across an update. Physical held-key feel, touch and gamepad
+were not tested. No console errors or persistent test saves.
+
 ## State boundaries to preserve
+
+- Ship profiles live in `src/gfx/shipdesign.ts`; `genShip` must receive the hull
+  id in every preview and flight path. The nose is +x before rotation.
+  `flightDirections` reads hull angle and velocity separately. Keep screen
+  marker sizes legible at zoom 0.25 and independent of turret aim.
+  Burn state is transient and must reset before flight's early return paths.
 
 - `FlightScene.enter` and `resetPopulation` own world/system population state.
   `doJump` has a direct entry path and must follow the same rules. Temporary
@@ -168,7 +194,7 @@ and a Bigbox installation are separate claims.
 ## Local runtime and next work
 
 The dev server was restarted at <http://127.0.0.1:5199> so its version define
-reads 0.253.0. The separate production-build preview on port 5198 was stopped.
+reads 0.254.0. The separate production-build preview on port 5198 was stopped.
 All temporary browser tabs are closed. No test saves or linked cloud codes
 were created. The next substantive task should start with a native playtest
 and a specific user priority or confirmed defect, rather than replaying the
