@@ -956,4 +956,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Y cycles green, yellow and red alert in flight: faster shields, guns
       +10% on red, a morale drain, a banner, and the crew calling it
 
+## Milestone 150 — Passing Hails ✅ (Sep 2026)
+- [x] The unnamed traffic hails as it passes: patrols formal, haulers belt or
+      business, liners smug, and everybody has a word about the cat
+
 ## Later

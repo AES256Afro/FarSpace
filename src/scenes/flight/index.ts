@@ -28,6 +28,7 @@ import { pickChatter } from "../../core/chatter";
 import { spawnGhost, spawnMayday } from "./ai";
 import { voteMods } from "../../data/votes";
 import { passengerChatter, crewChatter } from "../../data/chatter";
+import { passingHail } from "../../data/hails";
 import { pickShipLine } from "../../core/shipvoice";
 import { keeperScan, KEEPER_OWNER } from "../../core/keeper";
 import { isOccasion } from "../../data/occasions";
@@ -636,6 +637,7 @@ export class FlightScene implements Scene {
   hardBurn = false;
   bridgeT = 40;
   alert: AlertLevel = 0; alertT = 0;
+  hailT = 25;
   dockAt(g: Game, st: StationDef): boolean {
     this.hardBurn = false; this.alert = 0;
     const p = g.world.player;
@@ -1066,6 +1068,9 @@ export class FlightScene implements Scene {
         : cap.helped > 0 ? "THAT YOU? I HAVEN'T FORGOTTEN." : cap.met > 3 ? "WE KEEP CROSSING PATHS. SMALL GALAXY." : "CLEAR SKIES, STRANGER.";
       this.comms.push({ from: `${cap.name.toUpperCase()}, ${cap.ship.toUpperCase()}`, text: line, life: 7, color: isRival(cap) ? PAL.danger : isFriend(cap) ? PAL.gold : PAL.info });
     }
+    // the unnamed traffic hails too, now and then, with manners and opinions
+    this.hailT -= dt;
+    if (this.hailT <= 0) { this.hailT = 50 + Math.random() * 60; if (this.comms.length < 2 && !this.docking) { const near = this.npcs.find((n) => (n.kind === "trader" || n.kind === "patrol") && !n.name && !n.hailed && n.hull > 0 && dist(p.x, p.y, n.x, n.y) < 420); if (near) { near.hailed = true; const h = passingHail(g.world, near, this.alert, new RNG((Math.random() * 1e9) >>> 0)); if (h) this.comms.push({ from: h.from, text: h.text, life: 8, color: near.kind === "patrol" ? PAL.info : PAL.grey }); } } }
     // the wonders have voices: a pulsar ticks, the cathedral hums
     this.wonderSfx -= dt;
     if (this.wonderSfx <= 0) {

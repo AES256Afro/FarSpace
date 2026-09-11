@@ -24,6 +24,7 @@ import { crewChatter, soloChatter, passengerChatter } from "../src/data/chatter"
 import { arcFor, CREW_ARCS, arcObjective } from "../src/core/crewarcs";
 import { concourseGossip } from "../src/data/gossip";
 import { stationHour, tannoyLines, hoursRate } from "../src/data/tannoy";
+import { passingHail } from "../src/data/hails";
 import { dockhandLines, dockhandFavour, DOCKHAND_REGULAR_AT } from "../src/data/dockhand";
 import { weeklyIssue, castVote, voteResult, voteMods, myVote } from "../src/data/votes";
 import { STORY, storyObjective, CONVOY, convoyObjective } from "../src/core/story";
@@ -773,6 +774,14 @@ describe("station hours and the tannoy", () => {
     expect(stationHour(sts[0], at)).toEqual(stationHour(sts[0], at));
     for (const st of sts.slice(0, 5)) { const lines = tannoyLines(w, st, new RNG(1), at); expect(lines.length).toBeGreaterThan(5); for (const l of lines) expect(l.length).toBeLessThanOrEqual(130); }
     w.player.postRuns = 10; expect(tannoyLines(w, sts[0], new RNG(2), at).some((l) => l.includes("THE POSTMAN"))).toBe(true);
+  });
+  it("passing hails have manners: patrols are formal, haulers belt or business, liners smug", () => {
+    const w = generateWorld(46, { realGalaxy: true }); const p = w.player; p.cat = { name: "Biscuit", since: 0 } as any;
+    const mk = (kind: "trader" | "patrol") => ({ kind, x: 100, y: 200, hull: 10 } as any);
+    const seen = new Set<string>();
+    for (let i = 0; i < 40; i++) { const h = passingHail(w, mk(i % 2 ? "patrol" : "trader"), i % 5 === 0 ? 2 : 0, new RNG(i)); expect(h).not.toBeNull(); seen.add(h!.from.split(" ")[0]); expect(h!.text.length).toBeLessThanOrEqual(150); }
+    expect(seen.has("PATROL")).toBe(true); expect(seen.has("HAULER")).toBe(true);
+    expect([...Array(40).keys()].some((i) => passingHail(w, mk("trader"), 0, new RNG(i))!.text.includes("CAT"))).toBe(true);
   });
   it("alert status: yellow readies the shields, red readies everything and costs morale", () => {
     expect(alertMods(0)).toEqual({ shield: 1, dmg: 1, morale: 0 });

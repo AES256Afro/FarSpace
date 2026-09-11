@@ -719,6 +719,11 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - In flight, two of the watch trade a line on the band now and then when the
   channel is quiet: the same talk you'd hear in the corridors, with the
   bridge's own rules about singing before the second coffee.
+- The unnamed traffic hails as it passes, once each: patrols formal and
+  welcoming, haulers belt (water, filters, mind the spin) or business (you're
+  on my lane, it's fine, I'll go around), liners smug about tea in the forward
+  lounge. Everybody has a word about the cat on the comms panel. Sit at red
+  alert with nothing around and they'll ask why.
 - Crew now walk the deck properly, door to door, instead of stopping at the
   first wall.
 - Mess call: every so often the crew gather at the galley for a while. Stand
