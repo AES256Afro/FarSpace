@@ -1169,6 +1169,10 @@ Time passes for the people on the ship, and for the ship.
 - [x] A handbook section for everything the bridge learned this block, and
       two more lines under life aboard
 
+## Milestone 201 — Letters From the Braid and the Belt ✅ (Sep 2026)
+- [x] The rock's council writes when the belt makes you a freeman (water
+      money and a tab); the inspectorate writes after a good ship (two spares)
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

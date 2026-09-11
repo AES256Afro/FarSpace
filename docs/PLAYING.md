@@ -752,6 +752,10 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- When the belt makes you a freeman, the rock's council writes: they don't
+  write to inners, there's water money in it, and a tab at every bar with a
+  spin. Pass an inspection and the inspectorate writes too, with two spares
+  on the service's account.
 - Boards near the belt post the rock's needs in the rock's words: water runs,
   ration runs, clinic runs, filter runs, and nobody there forgets who brought
   it. Now and then a rock loses its spin as you clamp on (the floor stops
