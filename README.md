@@ -39,48 +39,70 @@ grouped; the long version is the [player's guide](docs/PLAYING.md) and the
 
 **Flying and docking.** Seven hulls, a cruise drive with mass lock, fuel-range
 course plotting and an autopilot, fuel scooping with a heat model, docking as a
-glide into a cleared bay with control on the band, a launch on the way out, a
-pause menu, a comms log, gamepad and touch, and a real "Sol Neighbourhood"
-galaxy of nearby stars (20 or 50 light-years) or a procedural one.
+glide into a cleared bay with control on the band (and a hold short of the bay
+behind traffic), a launch on the way out, a pause menu, a comms log, gamepad and
+touch, and a real "Sol Neighbourhood" galaxy of nearby stars (20 or 50
+light-years) or a procedural one. The ring race: six rings round any civil
+station against the clock, course records local and on the wire, and a
+three-course regatta with a title at the end. Convoys of slow haulers that form
+on your stern and pay at the gate.
 
 **Trade and industry.** A dynamic economy with shocks, strikes, crises and
 faction wars; market memory with best-known-sell and best-run hints; fourteen
 rare goods; black markets and customs stings; bulk trading; twelve ship
 modules; core asteroids, seismic charges, materials and an engineer bay;
-charter haulers that run your best routes while you fly; a ledger of where the
-money came from and went; beacons, fuel depots and waystations of your own in
-dead systems, with tolls, a bar, a bunk and the regulars dropping in.
+charter haulers that run your best routes while you fly, or your own parked
+hulls put to work; a liner to wherever your other ship is; stakes in stations
+that pay a dividend every docking; a ledger of where the money came from and
+went; beacons, fuel depots and waystations of your own in dead systems, with
+tolls, a bar, a bunk and the regulars dropping in; the post, and picture jobs
+done with a postcard in the right place.
 
-**People.** Crew with homes, traits, skills that grow from work, illnesses,
-shore leave, lists, letters, friendships and feuds, personal three-beat
-stories, and retirement after a full tour. Passengers with moods and demands,
-notables whose journeys matter, a ship's cat, a dozen regular captains who
-remember being helped and become friends (or one who took against you), and a
-crew who walk the deck, eat, sleep, argue and sing.
+**People.** Crew with homes, traits, skills that grow from work, a specialty at
+the top of their trade, illnesses, shore leave, lists, letters, friendships and
+feuds, two personal stories per role, and retirement after a full tour. A
+roster, watches, corridor talk, mess call, cards after watch, and the band on
+the comms array. Passengers with moods and demands who walk the deck and
+question the crew, a guestbook they sign on the way out and come back through,
+notables whose journeys matter, a ship's cat who sometimes slips out on the
+promenade, a dozen regular captains who remember being helped and become
+friends (with favours to carry) or one who took against you, and a name the
+lanes give you for what you do most.
 
-**Places.** Walkable ship interiors with a wall of record, furnishings,
-crates in the hold and luggage by the seat; station promenades dressed for
-their trade with a lounge, a clinic, a harbourmaster and crowds that match the
-day; outposts that grow into towns and cities on your trade, with projects you
-fund; worlds to orbit and drive, wonders to find by rumour and see with your
-own eyes, and the Ark to board.
+**Places.** Walkable ship interiors with a wall of record, a viewport to look
+out of, furnishings, crates in the hold and luggage by the seat; station
+promenades with their own clock and night shift, a tannoy, a lounge, a clinic,
+a harbourmaster, gossiping crowds that match the day, and your ship in the bay;
+outposts that grow into towns and cities on your trade, with projects you fund;
+worlds to orbit and drive, twelve kinds of wonder to find by rumour and see with
+your own eyes, and the Ark to board.
 
 **Stories.** Three campaigns (The Signal, The Missing Convoy, The Keeper),
-thirty-nine encounter cards, ten GalNet serials that develop over dockings and
-end in something you can act on, faction envoys, four AI syndicates with
-convoys, feuds and wars, a weekly calendar of occasions shared by everyone,
-and a line of history for every system and world.
+thirty-nine encounter cards including weddings, a birth and a passing aboard,
+ten GalNet serials that develop over dockings and end in something you can act
+on, faction envoys, four AI syndicates with convoys, feuds and wars, a weekly
+calendar of occasions shared by everyone, and a line of history for every
+system and world.
+
+**Politics.** A weekly question from every faction, decided by standing-
+weighted votes and felt on the lanes until Monday; one contested seam system a
+week where deliveries, votes, stakes and rally runs push, and Monday can flip
+the system, stations and all; and a page on the record that shows the week.
 
 **Keeping.** Postcards on F7, a chronicle you can read in-game or export,
 achievements and four career ladders to ELITE, a home port, museums that take
-your relics with your name, and a line of captains: retire at the wall of
-record and the galaxy carries on under whoever takes the chair.
+your relics with your name, wrecks that stay where your ships fell, and a line
+of captains: retire at the wall of record and the galaxy carries on under
+whoever takes the chair.
 
 **Sharing.** Cloud saves by code, the Fleet Wire with leaderboards, presence
 and a text channel with pilots in the same system, squadrons with bases,
 pacts and rivalries, first-discovery tags and first wonder sightings shared
-across all players, and lights other pilots have planted showing on your chart.
-Multiplayer proper is shelved; everything above is built so it can plug in.
+across all players, lights other pilots have planted on your chart, their
+ships passing through where they posted, their wrecks to salvage, their
+maydays to answer with fuel, and notes tied to the wonders for whoever comes
+next. Multiplayer proper is shelved; everything above is built so it can plug
+in.
 
 ## Development
 
@@ -100,7 +122,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestones 1–93 are live (v0.93.0). See the [roadmap](docs/ROADMAP.md) for what's next.
+Milestones 1–94 are live (v0.94.0). See the [roadmap](docs/ROADMAP.md) for what's next.
 
 ```bash
 npm test         # vitest: world-gen, routing, economy, law, missions, save migrations

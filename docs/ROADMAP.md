@@ -738,4 +738,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] The Loom, the Clock and the Choir: three new wonder kinds with their own
       looks and sounds
 
+## Milestone 94 — Docs Refresh ✅ (Sep 2026)
+- [x] README feature summary regrouped with a Politics section and every
+      system from milestones 56–93
+
 ## Later

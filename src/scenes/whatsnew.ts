@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.94 - DOCS", [
+    "THE README AND THE PLAYER'S GUIDE COVER EVERYTHING FROM THE ROSTER TO THE BORDER.",
+  ]],
   ["0.93 - MORE WONDERS", [
     "THE LOOM, THE CLOCK AND THE CHOIR: THREE NEW KINDS OF VAST THING FOR NEW GALAXIES, WITH THEIR OWN LOOKS AND SOUNDS.",
   ]],
