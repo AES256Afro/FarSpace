@@ -357,6 +357,7 @@ export interface PlayerState {
   named?: number;                    // finds the captain named for the survey
   hullsCommissioned?: number;        // hulls taken at a yard under this captain
   ribbons?: number;                  // ribbons pinned on at receptions
+  systemNicks?: Record<string, string>; // what the engineer calls the reactor; the HUD uses it
   motto?: string;                    // the line on the dedication plaque by the airlock
   prisoners?: number;                // prisoners delivered to a brig
   evacuated?: number;                // people carried out of a bad week
@@ -659,6 +660,13 @@ export function dedication(w: World): string {
   const p = w.player; const name = (p.shipName ?? hull(p.hullId).name).toUpperCase();
   return `${name} - ${registry(w)} - COMMISSIONED SD ${(41000 + (p.commissionedAt ?? 0) / 360).toFixed(1)}${p.motto ? ` - "${p.motto.toUpperCase()}"` : ""}`;
 }
+// What the crew call a system: the engineer's name for it if there is one, else the yard's.
+export function systemLabel(p: PlayerState, s: ShipSystem): string { const n = (p.systemNicks ?? {})[s.id]; return n ? `${n.toUpperCase()} (${s.name.toUpperCase()})` : s.name.toUpperCase(); }
+export const SYSTEM_NICKS: Record<string, string[]> = {
+  reactor: ["Doris", "The Old Girl", "Big Red", "Mother"], engines: ["The Twins", "Bess", "Thunder", "The Mules"], shields: ["The Umbrella", "Nan", "Wall"],
+  weapons: ["The Argument", "Persuasion", "Left and Right"], sensors: ["The Nose", "Owl", "Gladys"], comms: ["The Gossip", "Parrot", "Mouth"],
+  life: ["Lungs", "The Garden", "Breath"], cargo: ["The Belly", "Hold Your Horses", "Pockets"],
+};
 export function registry(w: World): string { return `FS-${1000 + hashStr(`reg:${w.seed}:${w.player.hullId}:${w.player.shipName ?? ""}`) % 9000}`; }
 // A stardate for the log: hours under way, to a tenth, on a base that looks the part.
 export function stardate(w: World): string { return (41000 + w.time / 360).toFixed(1); }
@@ -1254,7 +1262,7 @@ export function briefingReports(w: World): string[] {
   const by = (role: CrewRole) => p.crew.find((c) => c.role === role && !c.sick);
   const eng = by("engineer"); const med = by("medic"); const pil = by("pilot"); const gun = by("gunner");
   const worst = [...p.systems].sort((a, b) => a.health - b.health)[0];
-  out.push(eng ? `${eng.name.split(" ")[0].toUpperCase()} (ENGINES): WEAR AT ${Math.round(p.wear ?? 0)}%${worst && worst.health < 70 ? `, ${worst.name.toUpperCase()} AT ${Math.round(worst.health)}%` : ", ALL SYSTEMS GREEN"}. ${(p.wear ?? 0) > 60 ? "SHE NEEDS A YARD, CAPTAIN." : "SHE'LL HOLD."}` : `NO ENGINEER ABOARD. WEAR AT ${Math.round(p.wear ?? 0)}%.`);
+  out.push(eng ? `${eng.name.split(" ")[0].toUpperCase()} (ENGINES): WEAR AT ${Math.round(p.wear ?? 0)}%${worst && worst.health < 70 ? `, ${systemLabel(p, worst)} AT ${Math.round(worst.health)}%` : ", ALL SYSTEMS GREEN"}. ${(p.wear ?? 0) > 60 ? "SHE NEEDS A YARD, CAPTAIN." : "SHE'LL HOLD."}` : `NO ENGINEER ABOARD. WEAR AT ${Math.round(p.wear ?? 0)}%.`);
   const sick = p.crew.filter((c) => c.sick).length; const morale = p.crew.length ? Math.round(p.crew.reduce((a, c) => a + c.morale, 0) / p.crew.length) : 0;
   out.push(med ? `${med.name.split(" ")[0].toUpperCase()} (SICKBAY): ${sick ? `${sick} ON THE COTS` : "NOBODY ON THE COTS"}, MORALE ${morale}. ${morale < 50 ? "THEY NEED A WIN, OR A MEAL." : "THEY'RE ALL RIGHT."}` : `NO MEDIC ABOARD. ${sick ? `${sick} SICK.` : "NOBODY SICK."} MORALE ${morale}.`);
   out.push(pil ? `${pil.name.split(" ")[0].toUpperCase()} (HELM): FUEL ${Math.round(p.fuel)}/${p.fuelMax}${p.navTarget ? `, COURSE FOR ${w.systems[p.navTarget]?.name.toUpperCase() ?? "?"}` : ", NO COURSE PLOTTED"}. ${p.fuel < p.fuelMax * 0.3 ? "WE'RE THIN ON FUEL." : "WE'RE GOOD FOR THE LEG."}` : `NO PILOT ABOARD. FUEL ${Math.round(p.fuel)}/${p.fuelMax}.`);

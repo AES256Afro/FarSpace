@@ -7,6 +7,7 @@ import { hull } from "./hulls";
 import { RNG } from "../core/rng";
 import { addMaterials } from "./engineering";
 import { commodity, FACTIONS } from "./data";
+import { SYSTEM_NICKS } from "../world";
 import { officeWrites, findStation as findStationW, isBeltStation, berthsUsed as berthsUsedW, hasSpecialty as hasSpecialtyW, syndicateAt as syndicateAtW } from "../world";
 const facNameW2 = (id: string): string => FACTIONS.find((f) => f.id === id)?.name ?? id;
 
@@ -400,6 +401,23 @@ export const ENCOUNTERS: Encounter[] = [
       { label: "ALL HANDS TO THE VENTS", hint: "Morale up; an hour lost; the envoy is grateful", result: (g) => { const env = passengersAboard(p(g)).find((m) => m.passengerKind === "envoy"); if (env) env.mood = Math.min(100, (env.mood ?? 60) + 15); for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 4); g.world.time += 600; logEntry(g.world, "All hands to the vents for an envoy's escaped companion"); return "AN HOUR OF THE WHOLE CREW ON THEIR KNEES AT DUCT GRILLES MAKING NOISES. IT COMES OUT FOR THE ENGINEER, FOR SOME REASON. THE ENVOY WEEPS. MORALE UP, THEIRS AND EVERYBODY'S."; } },
       { label: "LET THE CAT HANDLE IT", hint: "The cat finds it in a minute; the cat is unbearable after", requires: (g) => !!p(g).cat && !p(g).catAway, result: (g) => { const env = passengersAboard(p(g)).find((m) => m.passengerKind === "envoy"); if (env) env.mood = Math.min(100, (env.mood ?? 60) + 10); logEntry(g.world, `${p(g).cat!.name} found an envoy's escaped companion in the vents`); return `${p(g).cat!.name.toUpperCase()} GOES INTO DUCT FOUR AND COMES OUT OF DUCT ONE WITH THE THING WALKING BEHIND, CHASTENED. NOBODY KNOWS WHAT WAS SAID. THE ENVOY IS GRATEFUL. THE CAT IS INSUFFERABLE FOR A WEEK.`; } },
       { label: "SEAL THE VENTS AND WAIT", hint: "The envoy's mood falls; it comes out at the gate, eventually", result: (g) => { const env = passengersAboard(p(g)).find((m) => m.passengerKind === "envoy"); if (env) env.mood = Math.max(0, (env.mood ?? 60) - 15); return "IT COMES OUT AT THE GATE, THIN AND FURIOUS, AND SO IS THE ENVOY. THE TREATY, IF THERE IS ONE, WILL BE COLDER FOR IT."; } },
+    ],
+  },
+  {
+    id: "nicknames", where: "space", weight: 3, title: "WHAT THE ENGINEER CALLS IT", when: (g) => p(g).crew.some((c) => c.role === "engineer" && !c.sick) && Object.keys(p(g).systemNicks ?? {}).length < 3,
+    text: "The engineer comes onto the bridge wiping their hands and says 'Doris is running hot again' and everybody nods, and you realise you're the only one who doesn't know who Doris is. Doris, it turns out, is the reactor. The engineer has names for all of it. The engineer would like them on the board.",
+    options: [
+      { label: "PUT THE NAMES ON THE BOARD", hint: "The HUD calls the systems what the crew do; the engineer's loyalty up", result: (g, rng) => { const eng = p(g).crew.find((c) => c.role === "engineer" && !c.sick); const nicks = (p(g).systemNicks ??= {}); const picked: string[] = []; for (const s of p(g).systems) { if (nicks[s.id]) continue; const pool = SYSTEM_NICKS[s.id]; if (!pool) continue; nicks[s.id] = rng.pick(pool); picked.push(`${nicks[s.id].toUpperCase()} (${s.name.toUpperCase()})`); if (picked.length >= 3) break; } if (eng) eng.loyalty = (eng.loyalty ?? 0) + 0.3; (p(g).flags ??= {}).nicknames = true; logEntry(g.world, `Put the engineer's names for the systems on the board: ${picked.join(", ").toLowerCase()}`); return picked.length ? `${picked.join(", ")}. THE BOARD SAYS SO NOW. THE ENGINEER GOES BELOW LOOKING LIKE SOMEBODY WHO'S BEEN INTRODUCED PROPERLY AT LAST.` : "EVERYTHING ALREADY HAS A NAME. THE ENGINEER IS PLEASED ABOUT THAT, AND SUSPICIOUS."; } },
+      { label: "THE YARD'S NAMES ARE FINE", hint: "Nothing changes; Doris is still Doris below decks", result: (g) => { const eng = p(g).crew.find((c) => c.role === "engineer"); if (eng) eng.morale = Math.max(0, eng.morale - 2); return "'FINE.' THE ENGINEER GOES BELOW. THROUGH THE DECK PLATES, LATER, YOU HEAR THEM APOLOGISING TO DORIS."; } },
+    ],
+  },
+  {
+    id: "bottle", where: "space", weight: 2, title: "A MESSAGE IN A BOTTLE", when: (g) => !p(g).flags?.bottle,
+    text: "An old beacon, older than the gate, tumbling in a slow orbit nobody's charted: a survey pod with its power long gone and a recorder wired to a solar cell, still going. A voice on it, a captain's, reading a log for nobody. 'IF YOU'RE HEARING THIS, YOU CAME THE LONG WAY. GOOD. THE SHORT WAY'S A LIE. HERE'S WHAT I KNOW.'",
+    options: [
+      { label: "LISTEN TO THE WHOLE THING", hint: "Data +60; a keepsake; a line in the log from somebody else's", result: (g, rng) => { (p(g).flags ??= {}).bottle = true; p(g).expData = (p(g).expData ?? 0) + 60; const line = rng.pick(["'Water first. Everything else is a luxury with a good excuse.'", "'Name the ship something you can say in a hurry.'", "'The crew will forgive a bad call. They won't forgive being lied to about it.'", "'Answer hails. Somebody answered mine, once. It's why there's a log.'"]); (p(g).keepsakes ??= []).push("an old captain's recorder, still going on a solar cell"); if (p(g).keepsakes!.length > 8) p(g).keepsakes!.shift(); logEntry(g.world, `Found an old captain's log in a bottle; it said ${line.toLowerCase()}`); return `YOU LISTEN TO ALL OF IT, TWO HOURS OF A STRANGER'S CAREER, AND THE LAST LINE IS ${line.toUpperCase()} THE CREW HEAR IT ON THE BAND. +60 DATA. THE RECORDER COMES ABOARD, STILL GOING.`; } },
+      { label: "ADD YOUR OWN ENTRY AND LEAVE IT", hint: "Somebody else will come the long way; rep with the survey", result: (g) => { (p(g).flags ??= {}).bottle = true; adjustRep(g.world, sys(g).factionId, 2); p(g).expData = (p(g).expData ?? 0) + 20; logEntry(g.world, "Found an old captain's log in a bottle; added an entry and left it"); return "YOU RECORD TWO MINUTES FOR WHOEVER'S NEXT, WITHOUT REHEARSING, AND LEAVE THE BEACON ON ITS ORBIT. THE SURVEY LOGS THE POSITION UNDER YOUR NAME. +20 DATA."; } },
+      { label: "LOG IT AND MOVE ON", result: (g) => { (p(g).flags ??= {}).bottle = true; p(g).expData = (p(g).expData ?? 0) + 10; return "YOU TAG THE BEACON AND FLY ON. THE VOICE KEEPS READING BEHIND YOU TO NOBODY, WHICH IT'S GOOD AT. +10 DATA."; } },
     ],
   },
   {

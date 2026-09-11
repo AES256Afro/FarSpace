@@ -1420,6 +1420,18 @@ Time passes for the people on the ship, and for the ship.
 - [x] Once the ship has a name or a roster line, the chronicle carries a
       paragraph from it: wear, hails, the one it remembers, the plaque
 
+## Milestone 258 — Doris ✅ (Sep 2026)
+- [x] The engineer has names for the systems; put them on the board and the
+      HUD warnings and the briefing use them (BIG RED (REACTOR CORE) 40%)
+
+## Milestone 259 — A Message in a Bottle ✅ (Sep 2026)
+- [x] An old captain's recorder on a dead survey pod: listen to all of it
+      (data, a keepsake, a line), add your own entry and leave it, or log it
+
+## Milestone 260 — The Handbook Catches Up ✅ (Sep 2026)
+- [x] Handbook lines for naming finds, the counsellor, wakes, talent night,
+      commissioning, the anniversary and ribbons
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

@@ -1,6 +1,7 @@
 // Rendering for the flight scene: world, HUD, radar markers, system map.
 
 import type { Game } from "../../game";
+import { systemLabel } from "../../world";
 import { VW, VH } from "../../game";
 import type { FlightScene } from "./index";
 import { drawText, textWidth } from "../../gfx/font";
@@ -568,7 +569,7 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
   let wy = 4;
   for (const s of p.systems) {
     if (s.health < 50) {
-      drawText(ctx, `! ${s.name.toUpperCase()} ${Math.round(s.health)}%`, 4, wy, s.health < 25 ? PAL.danger : PAL.warn);
+      drawText(ctx, `! ${systemLabel(p, s)} ${Math.round(s.health)}%`, 4, wy, s.health < 25 ? PAL.danger : PAL.warn);
       wy += 8;
     }
   }

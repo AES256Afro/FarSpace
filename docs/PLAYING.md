@@ -752,6 +752,11 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- The engineer has names for the systems. Put them on the board and the HUD
+  warnings and the briefing use them: BIG RED (REACTOR CORE) 40%.
+- A message in a bottle: an old captain's recorder on a dead survey pod.
+  Listen to all of it (data, a keepsake, their last line in your log), add
+  your own entry and leave it for whoever's next, or log it and move on.
 - When a reception speech lands, the harbourmaster pins a faction ribbon on
   your jacket, crooked. It stays aboard as a keepsake; three is a deed.
 - With a Number One aboard, the parley card carries their word at your
