@@ -3,6 +3,21 @@
 A short guide by career. Every key is also listed on the title screen under
 CONTROLS, and WHAT'S NEW lists recent changes.
 
+## Contents
+
+The guide grew a section per milestone; this is where to look.
+
+- **Getting started:** [First hour](#first-hour) · [The handbook, the voice, the greenhouse](#the-handbook-the-voice-the-greenhouse) · [The lanes setting](#the-lanes-setting) · [Music and slots](#music-and-slots) · [Comfort](#comfort)
+- **Flying:** [Docking and launching](#docking-and-launching) · [Holding short](#holding-short) · [Traffic control](#traffic-control) · [The ring race](#the-ring-race) · [The regatta](#the-regatta) · [The convoy](#the-convoy) · [Hum](#hum) · [Calls and courses](#calls-and-courses)
+- **Trading and industry:** [Trader](#trader) · [Miner](#miner) · [Charters](#charters) · [Fleet at work](#fleet-at-work) · [Scrapping a hull](#scrapping-a-hull) · [Passage on a liner](#passage-on-a-liner) · [Stakes](#stakes) · [The post](#the-post) · [Pictures wanted](#pictures-wanted) · [The waystation](#the-waystation) · [The ledger](#the-ledger) · [Settlements](#settlements) · [Settlements grow](#settlements-grow) · [Town projects](#town-projects)
+- **People aboard:** [Shipmates](#shipmates) · [Crew arcs](#crew-arcs) · [Second stories](#second-stories) · [A trade of their own](#a-trade-of-their-own) · [The roster](#the-roster) · [Watches and passengers](#watches-and-passengers) · [Corridor talk](#corridor-talk) · [Cards after watch](#cards-after-watch) · [The band](#the-band) · [The viewport and the bays](#the-viewport-and-the-bays) · [Rites of passage](#rites-of-passage) · [The guestbook](#the-guestbook) · [Family](#family) · [Lost and found](#lost-and-found) · [Company](#company) · [Belonging](#belonging) · [Small kindnesses](#small-kindnesses) · [Keepsakes](#keepsakes)
+- **Places:** [Explorer](#explorer) · [Wonders](#wonders) · [More wonders](#more-wonders) · [Station hours and the tannoy](#station-hours-and-the-tannoy) · [Concourse gossip](#concourse-gossip) · [Ports remember you](#ports-remember-you) · [Places with detail](#places-with-detail) · [Lore](#lore) · [Regulars](#regulars) · [Contacts](#contacts) · [Rivals and the harbourmaster](#rivals-and-the-harbourmaster) · [Favours](#favours) · [Faces](#faces)
+- **Stories and encounters:** [The Signal and encounters](#the-signal-and-encounters) · [The Keeper](#the-keeper) · [Helping ships](#helping-ships) · [More encounters](#more-encounters) · [Four more cards](#four-more-cards) · [Quiet moments](#quiet-moments) · [Rhythms](#rhythms) · [Loose ends](#loose-ends)
+- **Politics:** [The week's vote](#the-weeks-vote) · [The border](#the-border) · [The week](#the-week) · [A name on the lanes](#a-name-on-the-lanes)
+- **Sharing:** [Squadron](#squadron) · [The shared sky and the log](#the-shared-sky-and-the-log) · [Ghosts on the lanes](#ghosts-on-the-lanes) · [What the void keeps](#what-the-void-keeps) · [Maydays on the wire](#maydays-on-the-wire) · [Notes at the wonders](#notes-at-the-wonders) · [Other keepers](#other-keepers)
+- **Keeping:** [The chronicle room](#the-chronicle-room) · [The chronicle's week](#the-chronicles-week) · [Writing back](#writing-back)
+- **More:** [GalNet serials](#galnet-serials) · [Life on the deck](#life-on-the-deck) · [Legacy](#legacy) · [Squadron treaties](#squadron-treaties) · [The lighthouse](#the-lighthouse) · [The liner trade](#the-liner-trade) · [A life aboard](#a-life-aboard) · [Politics and the second campaign](#politics-and-the-second-campaign) · [A living galaxy](#a-living-galaxy) · [Syndicates and trade routes](#syndicates-and-trade-routes) · [Combat, when it finds you](#combat-when-it-finds-you)
+
 ## First hour
 
 Flight School (the card at the top of the screen, K dismisses it) walks you

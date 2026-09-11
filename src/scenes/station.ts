@@ -75,7 +75,7 @@ export class StationScene implements Scene {
     refreshPrices(this.station);
     void wire.fetchSquadronData();
     if (p.ious?.length) { for (const iou of p.ious) { p.credits += iou.credits; g.toast(iou.text); } p.ious = []; sfx.pickup(); }
-    { const bl = resolveBorder(g.world); if (bl) { g.toast(bl); sfx.select(); } }
+    { const bl = resolveBorder(g.world); if (bl) { g.toast(bl); sfx.select(); const last = (g.world.borderLog ?? []).slice(-1)[0]; if (last && last.yours > 0) void wire.post("politics", `${last.flipped ? "helped flip" : "helped hold"} ${g.world.systems[last.systemId]?.name ?? "a system"} on the border (push ${last.yours})`, g.world.systems[p.systemId].name); } }
     if (p.cat && p.catAway && p.catAway !== this.station.id && Math.random() < 0.3) { const from = findStation(g.world, p.catAway)?.st.name ?? "somewhere"; p.catAway = null; g.toast(`A HAULER OUT OF ${from.toUpperCase()} HANDS OVER A CRATE WITH AIR HOLES. ${p.cat.name.toUpperCase()} IS NOT SPEAKING TO YOU.`); logEntry(g.world, `${p.cat.name} came home in a crate from ${from}`); sfx.purr(); }
     { const d = collectStake(g.world, this.station); if (d) { g.toast(`DIVIDEND ON YOUR ${p.stakes?.[this.station.id]} SHARES IN ${this.station.name.toUpperCase()}: +${d}CR`); sfx.pickup(); } }
 

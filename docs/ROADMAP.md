@@ -798,4 +798,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Record holders write when beaten; race day pays half again; tourists
       love a postcard of their sight
 
+## Milestone 110 — Guide Contents ✅ (Sep 2026)
+- [x] A grouped contents block at the top of the player's guide; border
+      results with your push go to the wire
+
 ## Later
