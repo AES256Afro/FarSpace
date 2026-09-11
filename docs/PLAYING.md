@@ -229,6 +229,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Four more cards
+
+- An old probe still transmitting to a dead star; a procession of lantern
+  ships you can fall in behind or join with your own lights; a liner with its
+  galley out and thirty faces at the windows; and a survey crew's cairn on a
+  ridge, with a plate you can add your ship's name to.
+
 ## More wonders
 
 - Three more kinds of vast thing for new galaxies: the Loom, filaments of gas

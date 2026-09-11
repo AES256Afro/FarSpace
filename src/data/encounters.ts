@@ -2,7 +2,7 @@
 // applies real effects and returns the line the player reads afterwards.
 
 import type { Game } from "../game";
-import { addCargo, removeCargo, adjustRep, hasIllegalCargo, cargoUsed, genCrewCandidate, adjustSynRep, passengersAboard, berthsUsed, adoptCat, CAT_NAMES, shiftBond, logSight, crewXp, bond, logEntry } from "../world";
+import { addCargo, removeCargo, adjustRep, hasIllegalCargo, cargoUsed, genCrewCandidate, adjustSynRep, passengersAboard, berthsUsed, adoptCat, CAT_NAMES, shiftBond, logSight, crewXp, bond, logEntry, passengerCap } from "../world";
 import { hull } from "./hulls";
 import { RNG } from "../core/rng";
 import { addMaterials } from "./engineering";
@@ -380,6 +380,41 @@ export const ENCOUNTERS: Encounter[] = [
     options: [
       { label: "OF COURSE", result: (g) => { const cr = p(g).crew; const a = cr.find((x) => cr.some((y) => x !== y && bond(x, y) >= 3)); const b = a ? cr.find((y) => y !== a && bond(a, y) >= 3) : undefined; if (!a || !b) return "THE MOMENT PASSES."; for (const c of cr) c.morale = Math.min(100, c.morale + 10); a.loyalty = (a.loyalty ?? 0) + 1; b.loyalty = (b.loyalty ?? 0) + 1; (p(g).flags ??= {}).crewWed = true; logEntry(g.world, `Married ${a.name} and ${b.name} in the galley`); return `THE GALLEY, A TABLECLOTH, THE CAT ON THE TABLE. ${a.name.toUpperCase()} AND ${b.name.toUpperCase()}. THE WHOLE SHIP IS LATE FOR ITS WATCH AND NOBODY MINDS.`; } },
       { label: "WAIT FOR A PORT AND DO IT RIGHT", result: (g) => { const cr = p(g).crew; for (const c of cr) if (cr.some((y) => y !== c && bond(c, y) >= 3)) c.morale = Math.max(0, c.morale - 4); return "THEY SAY THAT'S FAIR. THEY DON'T LOOK LIKE IT'S FAIR."; } },
+    ],
+  },
+  {
+    id: "oldprobe", where: "space", weight: 2, title: "AN OLD PROBE",
+    text: "A probe older than the gates, tumbling end over end, its antenna still pointed at a star that isn't there any more. It's transmitting. It has been transmitting for two hundred years, to nobody.",
+    options: [
+      { label: "RECORD THE TRANSMISSION", result: (g) => { p(g).expData = (p(g).expData ?? 0) + 90; (p(g).codex ??= {})["signal:THE OLD PROBE"] = 1; return "TWO HOURS OF SLOW NUMBERS AND, AT THE END, A VOICE: 'WE MADE IT. TELL THEM WE MADE IT.' +90 DATA. IT'S IN THE CODEX."; } },
+      { label: "BRING IT ABOARD", requires: (g) => cargoUsed(p(g)) + 1 <= p(g).cargoMax, result: (g, rng) => { if (rng.chance(0.5)) { addCargo(p(g), "relics", 1); return "THE HULL COMES APART IN THE HOLD LIKE OLD PAPER. WHAT'S LEFT IS A RELIC, AND A RELIC IS WORTH SOMETHING TO SOMEBODY."; } return `IT DISINTEGRATES IN THE AIRLOCK. ${mats(g, { copper: 2, iron: 1 })} FROM THE FRAME. THE VOICE STOPS.`; } },
+      { label: "LET IT KEEP TALKING", result: (g) => { for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 2); return "YOU LEAVE IT POINTED AT ITS DEAD STAR, STILL SAYING WHAT IT WAS BUILT TO SAY. THE CREW ARE QUIET FOR A WHILE."; } },
+    ],
+  },
+  {
+    id: "lanterns", where: "space", weight: 2, title: "THE LANTERN SHIPS",
+    text: "A procession: twenty small craft in a slow line, every hull strung with lights, every band playing the same slow tune. A wedding, or a funeral, or something the lanes do that you never learned the name of.",
+    options: [
+      { label: "FALL IN AT THE BACK", result: (g) => { for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 5); for (const m of passengersAboard(p(g))) m.mood = Math.min(100, (m.mood ?? 60) + 10); const s = logSight(p(g), "festival", `the lantern ships over ${sys(g).name}`, p(g).systemId); return `YOU DIM THE HUD AND FOLLOW THE LIGHTS FOR TWENTY MINUTES.${s ? " YOUR PASSENGERS TALK ABOUT IT FOR THE REST OF THE TRIP." : ""} NOBODY ASKS WHAT IT'S FOR. MORALE UP.`; } },
+      { label: "STRING UP YOUR OWN LIGHTS", requires: (g) => (p(g).cargo.parts ?? 0) >= 1, result: (g) => { removeCargo(p(g), "parts", 1); adjustRep(g.world, sys(g).factionId, 4); for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 8); return "THE ENGINEER RIGS THE RUNNING LIGHTS INTO SOMETHING THAT ISN'T REGULATION. THE LEAD SHIP FLASHES BACK. YOU'RE IN THE PROCESSION NOW. STANDING UP."; } },
+      { label: "GIVE THEM ROOM", result: () => "THE LINE OF LIGHTS SLIDES PAST AND OVER THE HORIZON OF THE NEAREST WORLD. THE TUNE STAYS ON THE BAND A LONG TIME." },
+    ],
+  },
+  {
+    id: "liner", where: "space", weight: 2, title: "THE LINER",
+    text: "A passenger liner, drives cold, thirty faces at the viewports. 'Galley's out. We're fine for air, not for tempers. Anything you can spare, the company will pay. The company will pay slowly.'",
+    options: [
+      { label: "PASS OVER FOOD", requires: (g) => (p(g).cargo.food ?? 0) >= 3, result: (g, rng) => { removeCargo(p(g), "food", 3); const c = rng.int(120, 260); (p(g).ious ??= []).push({ credits: c, text: `THE LINER COMPANY PAYS UP FOR THE FOOD: +${c}CR` }); adjustRep(g.world, sys(g).factionId, 3); return "THREE CRATES ACROSS ON A LINE. THIRTY PEOPLE WAVE FROM THE WINDOWS. THE COMPANY WILL PAY AT YOUR NEXT DOCK, THEY SAY. STANDING UP NOW."; } },
+      { label: "TAKE A FEW ABOARD", requires: (g) => passengersAboard(p(g)).length < passengerCap(p(g)) && !p(g).evacuees, result: (g) => { p(g).evacuees = { n: 3, from: "a stranded liner" }; return "THREE OF THE HUNGRIEST COME ACROSS WITH A SUITCASE EACH. THEY'LL PAY OUT AT YOUR NEXT DOCK, AND EAT EVERYTHING IN THE GALLEY BEFORE THEN."; } },
+      { label: "CALL IT IN AND MOVE ON", result: (g) => { p(g).expData = (p(g).expData ?? 0) + 10; return "YOU PUT IT ON THE BAND. SOMEBODY WITH A BIGGER HOLD WILL COME. THE FACES AT THE WINDOWS WATCH YOU GO. +10 DATA."; } },
+    ],
+  },
+  {
+    id: "cairn", where: "ground", weight: 2, title: "THE CAIRN",
+    text: "A pile of stones on a ridge, too neat to be chance, a rover's wheel set on top. Names scratched into a plate: a survey crew, a date, a line that says 'WE WALKED OUT'. Not all of them did.",
+    options: [
+      { label: "ADD A STONE", result: (g) => { for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 3); p(g).expData = (p(g).expData ?? 0) + 40; logEntry(g.world, "Added a stone to a survey crew's cairn"); return "YOU ADD A STONE AND YOUR SHIP'S NAME TO THE PLATE. THE CREW STAND A MINUTE WITH THEIR HELMETS OFF THE DUST. +40 DATA."; } },
+      { label: "READ THE PLATE AND GO", result: (g) => { p(g).expData = (p(g).expData ?? 0) + 20; return "SIX NAMES. FOUR WALKED OUT. YOU LOG THE POSITION SO THE NEXT CREW KNOWS WHERE THE RIDGE IS. +20 DATA."; } },
     ],
   },
 ];

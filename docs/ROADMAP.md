@@ -746,4 +746,7 @@ Time passes for the people on the ship, and for the ship.
 - [x] A batch of new gossip, tannoy, crew, passenger and ship's-voice lines
       about everything the ship does now
 
+## Milestone 96 — Encounters Batch 3 ✅ (Sep 2026)
+- [x] An old probe, the lantern ships, a stranded liner, a survey crew's cairn
+
 ## Later
