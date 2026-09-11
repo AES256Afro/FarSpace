@@ -260,7 +260,9 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 
 - Beat a course record and the holder writes: a rival to warn you off, a
   friend with the first round on them. On the lanes occasion the marshal pays
-  half again for a race. Tourists who've just seen their sight want a copy of
+  half again for a race.
+- The regatta's grand course is eight rings, wide. The convoy lead talks on
+  the way to the gate: steady, or easing off, or wondering where you went. Tourists who've just seen their sight want a copy of
   the postcard you take there, and their mood shows it.
 
 ## Writing back

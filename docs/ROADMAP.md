@@ -814,4 +814,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Remote stake dividends at a quarter rate on any docking; the guestbook
       readable aboard at the passenger seat
 
+## Milestone 114 — The Grand Course ✅ (Sep 2026)
+- [x] The regatta's third course is eight wide rings; the convoy lead talks
+      on the way to the gate
+
 ## Later
