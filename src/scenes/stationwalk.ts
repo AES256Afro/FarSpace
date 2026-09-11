@@ -17,6 +17,7 @@ import { faction, genPersonName } from "../data/data";
 import { StationScene } from "./station";
 import { concourseGossip } from "../data/gossip";
 import { stationHour, clockText, tannoyLines } from "../data/tannoy";
+import { dockhandLines, dockhandFavour } from "../data/dockhand";
 import { voteMods, myVote } from "../data/votes";
 import { hull, HULLS } from "../data/hulls";
 import * as spriteMod from "../gfx/sprites";
@@ -101,6 +102,8 @@ export class StationWalkScene implements Scene {
         pause: rng.range(0, 3),
       });
     }
+    // the dock-hand, by your clamp, with an opinion about the hull
+    { const dx = 36 * T + 4, dy = 4 * T + 4; this.npcs.push({ x: dx, y: dy, tx: dx, ty: dy, name: genPersonName(new RNG(hashStr(`dockhand:${this.station.id}`))), skin: "#c78a5a", suit: "#c7a54a", pause: 1e9, tag: "DOCK-HAND", line: `DOCK-HAND: ${new RNG((Math.random() * 1e9) >>> 0).pick(dockhandLines(g.world, this.station, rng))}` }); }
     // your own people, out on the deck: crew on shore leave here, and shipmates who retired here
     const p = g.world.player;
     for (const sl of (p.shoreCrew ?? []).filter((x) => x.stationId === this.station.id)) {
@@ -296,6 +299,8 @@ export class StationWalkScene implements Scene {
         if (c && !(g.world.player.flags ?? {})[key]) { (g.world.player.flags ??= {})[key] = true; c.morale = Math.min(100, c.morale + 12); c.loyalty = (c.loyalty ?? 0) + 0.5; addCargo(g.world.player, "food", 1); flag(g, "family"); g.toast(`${c.name.toUpperCase()} IS GLAD YOU STOPPED. +1 PROVISIONS FOR THE GALLEY, MORALE UP`); sfx.pickup(); logEntry(g.world, `Met ${c.name}'s ${fam.name.split("'s ")[1] ?? "family"} at ${this.station.name}`); }
         return;
       }
+      const dh = this.npcs.find((n) => n.tag === "DOCK-HAND" && dist(this.px, this.py, n.x, n.y) < 16);
+      if (dh) { this.msg = dh.line!; this.msgTimer = 6; const f = dockhandFavour(g.world, this.station, new RNG((Math.random() * 1e9) >>> 0)); if (f) { g.toast(f); sfx.repair(); } else sfx.select(); return; }
       const cap = this.npcs.find((n) => (n.tag === "FRIEND" || n.tag === "RIVAL" || n.tag === "CAPTAIN") && dist(this.px, this.py, n.x, n.y) < 16);
       if (cap) {
         const c = (g.world.captains ?? []).find((x) => x.name === cap.name);

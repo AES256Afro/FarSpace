@@ -24,6 +24,7 @@ import { crewChatter, soloChatter, passengerChatter } from "../src/data/chatter"
 import { arcFor, CREW_ARCS, arcObjective } from "../src/core/crewarcs";
 import { concourseGossip } from "../src/data/gossip";
 import { stationHour, tannoyLines, hoursRate } from "../src/data/tannoy";
+import { dockhandLines, dockhandFavour, DOCKHAND_REGULAR_AT } from "../src/data/dockhand";
 import { weeklyIssue, castVote, voteResult, voteMods, myVote } from "../src/data/votes";
 import { STORY, storyObjective, CONVOY, convoyObjective } from "../src/core/story";
 import { homesteadYield, settleHomestead, HOMESTEAD_CAP, tickCrisis, crisisAt, tickGalaxyEvents, galaxyEventAt, rescuePoints, logEntry, embargoed, hasCharter } from "../src/world";
@@ -772,6 +773,21 @@ describe("station hours and the tannoy", () => {
     expect(stationHour(sts[0], at)).toEqual(stationHour(sts[0], at));
     for (const st of sts.slice(0, 5)) { const lines = tannoyLines(w, st, new RNG(1), at); expect(lines.length).toBeGreaterThan(5); for (const l of lines) expect(l.length).toBeLessThanOrEqual(130); }
     w.player.postRuns = 10; expect(tannoyLines(w, sts[0], new RNG(2), at).some((l) => l.includes("THE POSTMAN"))).toBe(true);
+  });
+  it("the dock-hand reads the hull and does a regular a small favour once a week", () => {
+    const w = generateWorld(33, { realGalaxy: true });
+    const st = Object.values(w.systems).flatMap((s) => s.stations)[0]; const p = w.player;
+    p.hull = 1; p.fuel = 0; p.wear = 50; p.cat = { name: "Biscuit", since: 0 } as any;
+    const lines = dockhandLines(w, st, new RNG(1));
+    for (const key of ["What did you hit", "rattles", "fumes", "Biscuit", "New face"]) expect(lines.some((l) => l.includes(key))).toBe(true);
+    for (const l of lines) expect(l.length).toBeLessThanOrEqual(120);
+    expect(dockhandFavour(w, st, new RNG(1))).toBeNull();
+    p.dockings = { ...(p.dockings ?? {}), [st.id]: DOCKHAND_REGULAR_AT };
+    expect(dockhandLines(w, st, new RNG(1)).some((l) => l.includes("Back again"))).toBe(true);
+    const before = { hull: p.hull, fuel: p.fuel, wear: p.wear };
+    const f = dockhandFavour(w, st, new RNG(2)); expect(f).toContain("ON THE HOUSE");
+    expect(p.hull > before.hull || p.fuel > before.fuel || (p.wear ?? 0) < before.wear).toBe(true);
+    expect(dockhandFavour(w, st, new RNG(3))).toBeNull();
   });
   it("station hours set the yard rate: a night rate, a keen early shift, and a fuller lounge after dark", () => {
     const w = generateWorld(29, { realGalaxy: true });

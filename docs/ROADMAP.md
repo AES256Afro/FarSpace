@@ -870,4 +870,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Night rate and early shift at the yard, a fuller lounge after dark,
       night control on the way in
 
+## Milestone 129 — The Dock-hand ✅ (Sep 2026)
+- [x] A dock-hand by your bay reads the hull aloud; regulars get a small job
+      on the house once a week
+
 ## Later
