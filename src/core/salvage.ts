@@ -34,6 +34,8 @@ export function prepareSalvage(wreck: WreckDef, seed: number): WreckSalvage {
 }
 
 export function wreckAvailable(wreck: WreckDef): boolean {
+  if (wreck.recovery?.status === "delivered") return false;
+  if (wreck.recovery?.status === "adrift" || wreck.recovery?.status === "towing") return true;
   return !wreck.looted || !!wreck.salvage?.parts.some(p => p.remaining > 0);
 }
 
@@ -51,6 +53,8 @@ export function shareSalvage(wreck: WreckDef, seed: number, all = false): void {
 }
 
 export function salvageReason(wreck: WreckDef, part: SalvagePart, p: PlayerState): string | null {
+  if (wreck.recovery?.status === "towing") return "DETACH THE TOW LINE BEFORE CUTTING.";
+  if (wreck.recovery?.status === "delivered") return "THIS HULL HAS ALREADY BEEN RECOVERED.";
   if (!wreck.salvage?.parts.includes(part) || wreck.id.startsWith("ark-")) return "THIS HULL CANNOT BE CUT.";
   if (part.remaining <= 0) return "THIS SECTION IS STRIPPED.";
   if (wreck.boarding?.survivor && !wreck.boarding.rescued) return "SURVIVOR ABOARD. BOARD AND EVACUATE BEFORE CUTTING.";
@@ -68,6 +72,7 @@ export function cutSalvage(wreck: WreckDef, seed: number, part: SalvagePart, p: 
   const engineer = p.crew.some(c => c.role === "engineer" && !c.sick);
   const seconds = engineer ? CUT_SECONDS * 0.7 : CUT_SECONDS;
   const work = Math.min(1 - part.progress, Math.min(dt, 0.25) / seconds, p.fuel / CUT_FUEL);
+  if (work > 0 && wreck.recovery) wreck.recovery.status = "dismantled";
   part.progress += work;
   p.fuel = Math.max(0, p.fuel - work * CUT_FUEL);
   if (part.progress < 1 - 1e-9) return { recovered: false, reason: p.fuel <= 0 ? "NO CUTTER FUEL. WORK SAVED." : null };

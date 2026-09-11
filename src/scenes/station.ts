@@ -1,4 +1,5 @@
 import type { ReaderScene } from "./reader";
+import { deliverRecovery, hullSalePrice } from "../core/shiprecovery";
 import { recordOffence, closeLawCases } from "../core/law";
 import { loanHullChangeReason, loanReturnReason, loanSummary, plotLoanDepot, returnServiceCutter } from "../core/serviceloan";
 import { beginDockVisit, currentDockVisit, type DockVisit } from "../core/docking";
@@ -78,6 +79,7 @@ export class StationScene implements Scene {
     }
     this.visitWorld = g.world; this.visit = visit;
     this.station = found.st;
+    { const recovered = deliverRecovery(g.world, this.station.id); if (recovered) { g.toast(`HULL RECOVERED. SHIPS TAB: KEEP IT OR X TO SELL FOR ${hullSalePrice(recovered)}CR.`); g.autosave(); } }
     if (serviceAudienceAt(g.world, this.station.id)) g.showHint(`service-office:${this.station.id}`, "SERVICE LIAISON: P WALKS THE DECK; E AT THE HARBOURMASTER COLLECTS THE ACCOUNT.");
     if (this.station.military && this.station.factionId !== "vex") g.showHint("service-office", "SERVICE CAREERS: P WALKS THE DECK. THE SERVICE OFFICE IS BETWEEN MARKET AND HARBOURMASTER.");
     if (councilAudienceAt(g.world, this.station.id)) g.showHint(`council-office:${this.station.id}`, "THE COUNCIL'S INNER OFFICE. P WALKS THE DECK; E AT THE HARBOURMASTER PRESENTS THE REQUEST.");
@@ -945,12 +947,12 @@ export class StationScene implements Scene {
     if (!ship) return;
     const p = g.world.player; const h = hull(ship.hullId);
     if (!p.fleet?.includes(ship) || ship.stationId !== this.station.id || ship.hullId === SERVICE_CUTTER.id) { g.toast("THAT OWNED HULL IS NOT PARKED HERE"); return; }
-    const price = Math.max(150, Math.round(Math.max(h.price, 900) * 0.45 * Math.max(0.5, ship.hull / h.hullMax)));
-    if (!confirmBox(`Scrap the ${ship.name ?? h.name} here for ${price}cr? The yard breaks her up; there's no getting her back.`)) return;
+    const price = hullSalePrice(ship);
+    if (!confirmBox(`Sell ${ship.name ?? h.name} to this yard for ${price}cr? The ship will leave your fleet.`)) return;
     p.fleet = (p.fleet ?? []).filter((f) => f !== ship);
     p.credits += price; ledger(p, "yard", price);
-    logEntry(g.world, `Scrapped the ${ship.name ?? h.name} at ${this.station.name} for ${price}cr`); flag(g, "scrapped");
-    g.toast(`THE YARD TAKES THE ${(ship.name ?? h.name).toUpperCase()} FOR ${price}CR. THE CREW WATCH FROM THE GALLERY. NOBODY SAYS MUCH.`); sfx.select();
+    logEntry(g.world, `Sold ${ship.name ?? h.name} at ${this.station.name} for ${price}cr`); flag(g, "scrapped");
+    g.toast(`SOLD ${(ship.name ?? h.name).toUpperCase()} FOR ${price}CR.`); sfx.select(); g.autosave();
   }
   // A parked hull of yours goes to work on your best known run from here, with a hired crew
   putToWork(g: Game, ship: StoredShip | undefined): void {
@@ -1492,7 +1494,7 @@ export class StationScene implements Scene {
       const name = row.kind === "market" ? row.hull.name : row.kind === "working" ? row.charter.name : row.ship.name ?? hull(row.ship.hullId).name;
       drawText(ctx, `${row.kind.toUpperCase()}: ${name.toUpperCase()}`.slice(0, 57), 8, y, index === this.cursor ? PAL.white : row.kind === "market" ? PAL.grey : PAL.ui);
       const sub = row.kind === "market" ? row.hull.id === p.hullId ? "CURRENT HULL" : `${Math.max(0, row.hull.price - tradeIn)}CR WITH TRADE-IN`
-        : row.kind === "parked" ? "HERE: ENTER SWAP / W WORK / X SCRAP"
+        : row.kind === "parked" ? "HERE: ENTER SWAP / W WORK / X SELL"
         : row.kind === "remote" ? `${findStation(g.world, row.ship.stationId)?.st.name.toUpperCase() ?? "UNKNOWN PORT"}: L LINER`
         : `${row.charter.trips} TRIPS / TILL ${Math.round(row.charter.till)}CR / R RELEASE`;
       drawText(ctx, sub.slice(0, 57), 8, y + 8, PAL.greyDark);
@@ -1517,7 +1519,7 @@ export class StationScene implements Scene {
         lines.push(...wrap(h.desc.toUpperCase(), 53), "", ...(h.id === p.hullId ? ["THIS HULL IS ALREADY ABOARD."] : [`ENTER: TRADE IN / PAY ${Math.max(0, h.price - tradeIn)}CR`, `K: KEEP OLD HULL / PAY ${h.price}CR`]));
       } else {
         lines.push(`STORED HULL ${Math.round(selected.ship.hull)}/${h.hullMax}`, `TORPEDOES ${selected.ship.torpedoes}`, "");
-        if (selected.kind === "parked") lines.push("ENTER: BOARD THIS HULL", "W: HIRE A CREW FOR WORK", "X: SCRAP THIS HULL");
+        if (selected.kind === "parked") lines.push("ENTER: BOARD THIS HULL", "W: HIRE A CREW FOR WORK", `X: SELL THIS HULL / ${hullSalePrice(selected.ship)}CR`);
         else { const dest = findStation(g.world, selected.ship.stationId); const hops = charterRoute(g.world, this.station.id, selected.ship.stationId).hops;
           lines.push(...wrap(`AT ${dest?.st.name.toUpperCase() ?? "?"}, ${dest?.sys.name.toUpperCase() ?? "?"}`, 53), `ENTER / L: LINER ${hops} JUMPS`, `FARE ${(120 + 140 * hops) * (1 + p.crew.length)}CR FOR YOUR PARTY`);
         }

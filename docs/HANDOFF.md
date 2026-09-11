@@ -1,6 +1,42 @@
 # FarSpace handoff, September 11, 2026
 
-## Current checkpoint: v0.259.0
+## Current checkpoint: v0.260.0
+
+The user requested a chance to disable combat ships and either salvage their
+parts or recover the hull for keeping or selling.
+
+- An eligible ship has a 35 percent chance to survive a finishing player gun
+  hit as a disabled hull; torpedoes have a 10 percent chance. Story targets,
+  escorts, drones, other pilots and ships already disabled retain their rules.
+  Disabling does not grant a kill, bounty progress or a second cargo drop.
+  Attacking civilians or patrols still has law and reputation consequences.
+- The disabled hull persists as a wreck with a generated boarding deck. Board,
+  evacuate the survivor, restore emergency power and seal breaches. Then use
+  Recover the hull in the salvage panel. Cargo can be recovered before towing.
+- Recovery allows one tow, reduces top speed to 55 percent, and blocks cruise
+  and jumps. E at the hull can detach the line. A separation over 420 metres
+  snaps it; the hull remains on the map. Docking brings it into the local fleet
+  once, at 20 percent hull condition. Remaining contents go with it to the yard.
+- The Ships tab supports Enter to board the recovered hull or X to sell it.
+  Offers use 45 percent of the catalogue value, scaled by hull condition with
+  a 20 percent condition floor and a 150 credit minimum. Previously the floor
+  was 50 percent. The displayed quote and sale use the same calculation.
+- Starting an exterior cut requires a second selection to confirm that whole
+  hull recovery will be lost. Only actual paid work commits this choice;
+  a full hold does not. Cutting and recovering cannot pay for the same hull.
+- Save schema 15 preserves the hull, work and tow. Schema 14 voyages migrate
+  without changing existing cargo, fleets or wrecks. Older clients reject
+  schema 15 so they cannot lose recovery ownership during later saves.
+- 536 tests pass, including 26 combat and recovery cases. TypeScript and the
+  production build pass. Browser checks completed a finishing shot, boarding,
+  power restoration, rescue, towing, docking and a single 522 credit sale.
+  The production build also completed recovery through the docking animation.
+  Fixtures used memory storage and disabled online requests. Physical touch
+  and gamepad checks remain unperformed.
+- Release publication and hosted verification are pending. The release
+  manifest targets 0.260.0. Bigbox and the BoxPilot catalog PR are unchanged.
+
+## Previous checkpoint: v0.259.0
 
 The user requested salvage features for wrecks. This release adds finite
 exterior salvage alongside the existing generated boarding interiors.

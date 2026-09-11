@@ -102,6 +102,7 @@ export interface JumpPointDef {
 }
 
 export interface WreckDef {
+  recovery?: import("./core/shiprecovery").HullRecovery;
   salvage?: import("./core/salvage").WreckSalvage;
   boarding?: import("./core/derelicts").WreckBoarding;
   id: string;
@@ -268,6 +269,7 @@ export interface PlayerState {
   lawCases?: string[];
   lawStandDown?: Record<string, boolean>;
   piratePassage?: Record<string, number>;
+  recoveryTow?: import("./core/shiprecovery").RecoveryTow;
   navTarget?: string | null;
   navStationId?: string; // an exact station at the end of the plotted route
   hullId: string;
@@ -2220,7 +2222,7 @@ export function homesteadYield(h: Homestead, now: number): number {
 }
 export function settleHomestead(h: Homestead, now: number): void { h.stock = homesteadYield(h, now); h.lastT = now; }
 
-export interface StoredShip { hullId: string; stationId: string; name?: string; hull: number; torpedoes: number }
+export interface StoredShip { hullId: string; stationId: string; name?: string; hull: number; torpedoes: number; recoveredFrom?: string }
 
 // NPC syndicates: AI squadrons with a home base, partners and rivals. Always
 // labelled (AI) in the UI and never mixed into the human boards.

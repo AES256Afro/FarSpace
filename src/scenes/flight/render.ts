@@ -1,5 +1,6 @@
 import { piratePassageRemaining } from "../../core/piracy";
 import { wreckAvailable } from "../../core/salvage";
+import { recoveryTow } from "../../core/shiprecovery";
 import { serviceObjective } from "../../core/service";
 // Rendering for the flight scene: world, HUD, radar markers, system map.
 
@@ -191,10 +192,13 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
     if (!wreckAvailable(w)) continue;
     const [sx, sy] = toScreen(w.x, w.y);
     if (sx < -40 || sx > VW + 40 || sy < -40 || sy > VH + 40) continue;
-    const s = wreckSpr.width * z;
-    ctx.drawImage(wreckSpr, sx - s / 2, sy - s / 2, s, s);
+    const recoveredHull = w.recovery && w.recovery.status !== "dismantled" ? hull(w.recovery.hullId) : null;
+    const spr = recoveredHull ? g.sprite(`disabled-${recoveredHull.id}`, () => genShip(new RNG(g.world.seed ^ 0x991), recoveredHull.spriteSize, "#667381", PAL.warn, recoveredHull.id)) : wreckSpr;
+    const s = spr.width * z;
+    ctx.save(); ctx.translate(sx, sy); if (recoveredHull) ctx.rotate(w.recovery!.angle);
+    ctx.drawImage(spr, -s / 2, -s / 2, s, s); ctx.restore();
     if (dist(p.x, p.y, w.x, w.y) < 160) {
-      const label = w.looted ? "SALVAGE REMAINS" : "DERELICT";
+      const label = recoveredHull ? "DISABLED HULL" : w.looted ? "SALVAGE REMAINS" : "DERELICT";
       drawText(ctx, label, sx - textWidth(label) / 2, sy - s / 2 - 8, PAL.grey);
       if (dist(p.x, p.y, w.x, w.y) < 60) drawText(ctx, "[E] BOARD / SALVAGE", sx - textWidth("[E] BOARD / SALVAGE") / 2, sy + s / 2 + 3, PAL.gold);
     }
@@ -638,10 +642,11 @@ export function drawHud(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D)
     const t = fs.repairJob.kind === "medic" ? `${fs.repairJob.crewName.toUpperCase()} TREATING CASUALTIES: ${Math.round(Math.min(1, fs.repairJob.progress) * 100)}% - STAY CLOSE` : `${fs.repairJob.crewName.toUpperCase()} ABOARD THE FREIGHTER: ${Math.round(Math.min(1, fs.repairJob.progress) * 100)}% - HOLD THE CORSAIRS OFF`;
     drawText(ctx, t, VW / 2 - textWidth(t) / 2, 50, PAL.good);
   }
-  if (fs.towing) {
-    const z = fs.zoom; const ax = VW / 2, ay = VH / 2 - 11; const bx = ax + (fs.towing.x - p.x) * z, by = ay + (fs.towing.y - p.y) * z;
+  const recoveredTow = recoveryTow(g.world), tow = fs.towing ?? recoveredTow;
+  if (tow) {
+    const z = fs.zoom; const ax = VW / 2, ay = VH / 2 - 11; const bx = ax + (tow.x - p.x) * z, by = ay + (tow.y - p.y) * z;
     ctx.strokeStyle = PAL.warn; ctx.globalAlpha = 0.7; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke(); ctx.globalAlpha = 1;
-    const t = "TOWING - DOCK AT ANY STATION - NO CRUISE, NO JUMPS, KEEP IT UNDER 420M";
+    const t = recoveredTow ? "HULL RECOVERY / DOCK AT A STATION / NO CRUISE OR JUMPS / E AT HULL TO DETACH" : "TOWING - DOCK AT ANY STATION - NO CRUISE, NO JUMPS, KEEP IT UNDER 420M";
     drawText(ctx, t, VW / 2 - textWidth(t) / 2, 50, PAL.warn);
   }
   if (p.evacuees) drawText(ctx, `${p.evacuees.n} SURVIVORS ABOARD - DOCK TO HAND THEM OVER`, 4, 40, PAL.good);

@@ -5,6 +5,7 @@ Baseline: v0.255.0, M415, release 9bef5b4540c4393de3654a710053bf6d0b66fb06.
 The preceding release has 404 passing tests and a verified hosted deployment.
 M416 and M417 are released through v0.257.1 with 473 passing tests and a verified hosted deployment.
 The v0.258.0 follow-up adds map navigation and generated boarding decks. It has 494 passing tests.
+The v0.259.0 and v0.260.0 follow-ups add exterior salvage and combat hull recovery, with 536 passing tests.
 M418-M427 remain planned; reconcile their map and interior scope against this follow-up. The user approved implementation after reviewing
 the three title concepts and choosing random selection between them.
 

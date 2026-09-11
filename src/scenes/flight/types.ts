@@ -12,6 +12,7 @@ export interface Bullet {
 export type NpcKind = "pirate" | "trader" | "patrol" | "fighter" | "drone";
 
 export interface Npc {
+  disabledWreckId?: string;
   repairInterior?: import("../../core/shipdeck").RepairProgress;
   kind: NpcKind;
   x: number; y: number; vx: number; vy: number; angle: number;

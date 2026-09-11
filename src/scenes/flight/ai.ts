@@ -1,5 +1,6 @@
 import { breakPiratePassage } from "../../core/piracy";
 import { recordOffence } from "../../core/law";
+import { disableCombatShip, type CombatWeapon } from "../../core/shiprecovery";
 // NPC / platform / projectile simulation for the flight scene.
 // Every function takes the scene as explicit state so this file has no `this`.
 
@@ -400,7 +401,7 @@ export function updateBullets(fs: FlightScene, g: Game, dt: number): void {
           n.hull -= b.dmg;
           boom(fs, b.x, b.y, 3, PAL.danger);
           if (b.fromPlayer) fs.floaters.push({ x: n.x, y: n.y - 10, text: `${Math.round(b.dmg)}`, life: 0.8, color: PAL.white });
-          if (n.hull <= 0) npcKilled(fs, g, n, b.fromPlayer === true);
+          if (n.hull <= 0) resolveNpcHit(fs, g, n, b.fromPlayer === true, "gun");
           if (b.fromPlayer && n.kind !== "pirate") {
             recordOffence(g.world, 0.15);
             adjustRep(g.world, g.world.systems[p.systemId].factionId, -3);
@@ -438,7 +439,21 @@ export function damagePlayer(fs: FlightScene, g: Game, dmg: number): void {
   }
 }
 
+export function resolveNpcHit(fs: FlightScene, g: Game, n: Npc, byPlayer: boolean, weapon: CombatWeapon): "damaged" | "disabled" | "destroyed" {
+  if (n.disabledWreckId) return "disabled";
+  if (n.hull > 0) return "damaged";
+  const wreck = byPlayer ? disableCombatShip(g.world, n, weapon, Math.random()) : null;
+  if (wreck) {
+    fs.floaters.push({ x: n.x, y: n.y - 16, text: "DISABLED", life: 3, color: PAL.warn });
+    fs.comms.unshift({ from: "SHIP SCAN", text: `${wreck.name.toUpperCase()}: ENGINES OFFLINE. E NEAR THE HULL TO SALVAGE OR RECOVER.`, life: 9, color: PAL.warn });
+    g.toast("SHIP DISABLED. APPROACH AND PRESS E TO SALVAGE OR RECOVER.");
+    return "disabled";
+  }
+  npcKilled(fs, g, n, byPlayer); return "destroyed";
+}
+
 export function npcKilled(fs: FlightScene, g: Game, n: Npc, byPlayer: boolean): void {
+  if (n.disabledWreckId) return;
   const p = g.world.player;
   const facId = g.world.systems[p.systemId].factionId;
   boom(fs, n.x, n.y, 20, PAL.thrust);

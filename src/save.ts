@@ -6,7 +6,7 @@ import { assignRares, assignSyndicates, assignWonders, assignCaptains, assignNot
 import { RNG } from "./core/rng";
 import { HULLS, SERVICE_CUTTER } from "./data/hulls";
 
-export const SAVE_VERSION = 14;
+export const SAVE_VERSION = 15;
 export const SAVE_KEY = "farspace-save";
 export const SLOTS = 3;
 const SLOT_KEY = "farspace-slot";
@@ -152,6 +152,11 @@ MIGRATIONS[13] = (w) => {
     const seed = typeof w.seed === "number" ? w.seed : 1;
     w.notables = assignNotables(w as unknown as { systems: Record<string, SystemDef>; syndicates?: import("./world").Syndicate[] }, new RNG((seed ^ 0x9b1e) >>> 0));
   }
+};
+
+MIGRATIONS[14] = () => {
+  // 14 → 15: recovery ownership is optional for existing voyages. Older clients
+  // must reject new saves so they cannot salvage a hull after it was delivered.
 };
 
 export function migrateSave(raw: unknown): World | null {

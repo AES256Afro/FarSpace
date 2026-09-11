@@ -11,7 +11,7 @@ import { clamp, TAU, angDiff, dist } from "../../core/mathx";
 import { PAL } from "../../gfx/palette";
 import { sfx } from "../../core/sfx";
 import { adjustRep, pushEvent } from "../../world";
-import { boom, npcKilled } from "./ai";
+import { boom, resolveNpcHit } from "./ai";
 import * as wire from "../../core/wire";
 import { flag } from "../../core/achievements";
 
@@ -124,7 +124,7 @@ export function updateTorpedoes(fs: FlightScene, g: Game, dt: number): void {
         boom(fs, t.x, t.y, 18, PAL.thrust);
         fs.floaters.push({ x: n.x, y: n.y - 10, text: "45", life: 1, color: PAL.gold });
         fs.camShake = Math.max(fs.camShake, 3);
-        if (n.hull <= 0) { flag(g, "torpedoKill"); npcKilled(fs, g, n, true); }
+        if (n.hull <= 0) { if (resolveNpcHit(fs, g, n, true, "torpedo") === "destroyed") flag(g, "torpedoKill"); }
         else if (n.kind !== "pirate") { recordOffence(g.world, 0.2); }
         break;
       }

@@ -1,5 +1,6 @@
 import { SystemMap, resolveLocalTarget, type LocalMapTarget } from "../systemmap";
 import { wreckAvailable } from "../../core/salvage";
+import { recoveryTow, updateRecoveryTow, detachRecoveryTow } from "../../core/shiprecovery";
 import type { WreckScene } from "../wreck";
 import { wreckFromSignal } from "../../core/derelicts";
 import { grantPiratePassage, piratePassageRemaining, piratesPeaceful, tickPiratePassage } from "../../core/piracy";
@@ -316,8 +317,9 @@ export class FlightScene implements Scene {
     // cruise: the long-haul drive. Fast, blind, and it drops the moment anything big is near.
     if (g.input.wasPressed("j")) this.toggleCruise(g);
     if (this.cruise && this.massLocked(g)) { this.cruise = false; this.scanMsg = "MASS LOCK - DROPPED FROM CRUISE"; this.scanTimer = 2; sfx.alarm(); }
-    if (this.towing && this.cruise) { this.cruise = false; g.toast("CAN'T CRUISE WITH A TOW LINE"); }
-    const cruiseMul = (this.cruise ? 4.5 : this.towing ? 0.55 : 1) * (this.hardBurn ? 1.4 : 1);
+    const hasTow = this.towing || recoveryTow(g.world);
+    if (hasTow && this.cruise) { this.cruise = false; g.toast("CAN'T CRUISE WITH A TOW LINE"); }
+    const cruiseMul = (this.cruise ? 4.5 : hasTow ? 0.55 : 1) * (this.hardBurn ? 1.4 : 1);
     const ACCEL = h.accel * pilot * tuned * wearThrust(p) * (this.cruise ? 3 : 1) * (this.hardBurn ? 1.3 : 1);
     const ROT = h.rotSpeed * pilot * (this.cruise ? 0.6 : 1);
     const MAXS = h.maxSpeed * tuned * cruiseMul;
@@ -452,6 +454,7 @@ export class FlightScene implements Scene {
     this.updateEncounters(g, dt);
     this.updateRepairJob(g, dt);
     this.updateTow(g, dt);
+    { const line = updateRecoveryTow(g.world, dt); if (line) g.toast(line); }
     this.updateAmbient(g, dt);
     this.updateDrifters(g, dt);
     // other pilots in this system
@@ -884,6 +887,7 @@ export class FlightScene implements Scene {
   }
   updateDocking(g: Game, dt: number): boolean {
     const d = this.docking; if (!d) return false;
+    { const line = updateRecoveryTow(g.world, dt); if (line) g.toast(line); }
     const p = g.world.player;
     if (d.hold && d.hold > 0) {
       // holding short: sit off the bay with the engines idling while control works the traffic
@@ -1059,7 +1063,7 @@ export class FlightScene implements Scene {
       opts.push({ label: "BOARD AND REPAIR IT YOURSELF", hint: "Board their ship, find the damaged systems, and restore them", result: (g2) => { g2.repairTarget = n; setTimeout(() => g2.setScene("repair"), 0); return ""; } });
       if (eng) opts.push({ label: `SEND ${eng.name.toUpperCase()} ACROSS (ENGINEER ${eng.skill})`, hint: g.world.systems[p.systemId].pirateActivity > 0.4 ? "You stand guard; corsairs work this system" : "You stand guard; it's usually quiet out here", result: () => { this.repairJob = { npc: n, crewName: eng.name, progress: 0, need: 45 / (0.6 + 0.4 * eng.skill), wave: 0, kind: "repair" }; return `${eng.name.toUpperCase()} SUITS UP AND CROSSES. KEEP THEM SAFE.`; } });
       else opts.push({ label: "NO ENGINEER ABOARD TO SEND", hint: "Hire one at a station bar", requires: () => false, result: () => "" });
-      opts.push({ label: "TOW THEM TO A STATION", hint: "They follow you; top speed drops; dock anywhere", result: () => { this.towing = n; n.disabled = true; return "TOW LINE ATTACHED. TAKE IT SLOW - THE LINE WON'T SURVIVE A JUMP OR A FIREFIGHT AT SPEED."; } });
+      opts.push({ label: "TOW THEM TO A STATION", hint: "They follow you; top speed drops; dock anywhere", requires: () => !recoveryTow(g.world), result: () => { this.towing = n; n.disabled = true; return "TOW LINE ATTACHED. TAKE IT SLOW - THE LINE WON'T SURVIVE A JUMP OR A FIREFIGHT AT SPEED."; } });
       if (!p.evacuees) opts.push({ label: "TAKE THEIR CREW ABOARD", hint: "Three survivors, paid out at your next dock", result: (g2) => { g2.world.player.evacuees = { n: 3, from: who.toLowerCase() }; this.npcs = this.npcs.filter((x) => x !== n); if (this.sos?.trader === n) this.sos = null; return "THREE OF THEM CROSS IN SUITS AND CRAM INTO THE GALLEY. THE FREIGHTER STAYS DARK BEHIND YOU."; } });
     } else {
       opts.push({ label: "PASS THEM A SPARE PART", hint: "Patches their hull; they remember", requires: (g2) => (g2.world.player.cargo.parts ?? 0) >= 1, result: (g2) => { g2.world.player.cargo.parts!--; if (!g2.world.player.cargo.parts) delete g2.world.player.cargo.parts; n.hull = n.hullMax; this.thankYou(g2, n, 120); const l = helpCaptain(g2.world, n.name, "part", new RNG((g2.world.seed ^ Math.floor(g2.world.time * 53)) >>> 0)); if (l) g2.toast(l); return `THEY TAKE THE PART AND PATCH THE BREACH. '${who}, WE OWE YOU ONE.'`; } });
@@ -1455,6 +1459,7 @@ export class FlightScene implements Scene {
   }
 
   toggleCruise(g: Game): void {
+    if (this.towing || recoveryTow(g.world)) { this.cruise = false; g.toast("DETACH THE TOW LINE BEFORE ENGAGING CRUISE."); return; }
     if (this.cruise) { this.cruise = false; g.toast("CRUISE DISENGAGED"); sfx.select(); { const pil = g.world.player.crew.find((c) => c.role === "pilot" && !c.sick); if (pil && this.comms.length < 3) this.comms.push({ from: pil.name.split(" ")[0].toUpperCase(), text: ["STEADY AS SHE GOES.", "DROPPING OUT. HANDS ON THE STICK.", "OFF CRUISE. THE COFFEE MAY NOW BE UNSTRAPPED."][Math.floor(Math.random() * 3)], life: 4, color: PAL.grey }); } return; }
     if (this.massLocked(g)) { g.toast("MASS LOCKED - GET CLEAR OF STATIONS, WORLDS AND THE STAR"); return; }
     if (g.world.player.fuel < 5) { g.toast("NOT ENOUGH FUEL FOR CRUISE"); return; }
@@ -1525,7 +1530,7 @@ export class FlightScene implements Scene {
       const dvx = Math.cos(toward) * wantSpd - p.vx, dvy = Math.sin(toward) * wantSpd - p.vy;
       this.apAngle = Math.atan2(dvy, dvx);
       this.apThrust = Math.hypot(dvx, dvy) > 12 && Math.abs(angDiff(p.angle, this.apAngle)) < 0.5;
-      if (d > 900 && !this.cruise && !this.massLocked(g) && p.fuel > 5 && Math.abs(angDiff(p.angle, toward)) < 0.3) { this.cruise = true; sfx.jump(); }
+      if (d > 900 && !this.cruise && !this.towing && !recoveryTow(g.world) && !this.massLocked(g) && p.fuel > 5 && Math.abs(angDiff(p.angle, toward)) < 0.3) { this.cruise = true; sfx.jump(); }
       if (d < 700 && this.cruise) this.cruise = false;
     } else {
       // arrival: kill velocity
@@ -1701,6 +1706,7 @@ export class FlightScene implements Scene {
 
   doJump(g: Game, targetId: string, guarded: boolean): void {
     const p = g.world.player;
+    if (recoveryTow(g.world)) { this.autopilot = false; g.toast("DETACH THE RECOVERY TOW BEFORE JUMPING. E AT THE HULL."); return; }
     const cost = this.jumpCost(g, targetId);
     if (p.fuel < cost) { g.toast(`NEED ${cost} FUEL TO JUMP`); return; }
     const denied = permitDenied(g.world, targetId);
@@ -1770,6 +1776,7 @@ export class FlightScene implements Scene {
   }
 
   destroyed(g: Game): void {
+    detachRecoveryTow(g.world);
     const p = g.world.player;
     if (g.world.hardcore) {
       // cold void: no beacon, no second chance
