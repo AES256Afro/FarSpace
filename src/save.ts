@@ -4,7 +4,7 @@
 import type { World, SystemDef } from "./world";
 import { assignRares, assignSyndicates, assignWonders, assignCaptains, assignNotables } from "./world";
 import { RNG } from "./core/rng";
-import { HULLS } from "./data/hulls";
+import { HULLS, SERVICE_CUTTER } from "./data/hulls";
 
 export const SAVE_VERSION = 14;
 export const SAVE_KEY = "farspace-save";
@@ -189,7 +189,7 @@ export function decodeSave(raw: string): SaveRead {
     if (typeof parsed?.version === "number" && parsed.version > SAVE_VERSION)
       return { world: null, error: "This save was made by a newer FarSpace version. Update the game before loading it." };
     const w = migrateSave(parsed), p = w?.player;
-    if (!w || !p || !HULLS.some(h => h.id === p.hullId) || !w.systems?.[p.systemId]) return invalid;
+    if (!w || !p || (![...HULLS, SERVICE_CUTTER].some(h => h.id === p.hullId)) || !w.systems?.[p.systemId]) return invalid;
     if (![w.seed, w.time, w.econTick, w.shockTick, w.warTick, w.missionCounter,
       p.x, p.y, p.vx, p.vy, p.angle, p.credits, p.hull, p.hullMax, p.shield, p.shieldMax,
       p.fuel, p.fuelMax, p.oxygen, p.oxygenMax, p.cargoMax].every(Number.isFinite)) return invalid;

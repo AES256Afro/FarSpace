@@ -4,6 +4,7 @@ import { clearSavedSlot, preserveSlot, readSavePreview, recoveryKeyFor, replaceS
 import { generateWorld } from "../src/world";
 import { Game } from "../src/game";
 import { FlightScene } from "../src/scenes/flight/index";
+import { SERVICE_CUTTER } from "../src/data/hulls";
 
 let data: Map<string, string>, storage: { getItem: ReturnType<typeof vi.fn>; setItem: ReturnType<typeof vi.fn>; removeItem: ReturnType<typeof vi.fn> };
 beforeEach(() => {
@@ -97,6 +98,10 @@ describe("save replacement and recovery", () => {
 });
 
 describe("playable save validation", () => {
+  it("loads an active service-cutter voyage even though the cutter is not sold in shipyards", () => {
+    const w = JSON.parse(raw(417)); w.player.hullId = SERVICE_CUTTER.id;
+    const read = decodeSave(JSON.stringify(w)); expect(read.error).toBeNull(); expect(read.world?.player.hullId).toBe("service-cutter");
+  });
   it("migrates a version-zero save without rewriting its stored bytes", () => {
     const old = JSON.parse(raw(13)); delete old.version; delete old.events; delete old.wars; delete old.econTick;
     for (const key of ["rep", "hullId", "crew", "skills", "storage", "arcs", "hints", "tutorial"]) delete old.player[key];
