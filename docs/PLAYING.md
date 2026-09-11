@@ -722,6 +722,8 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The first time the hull drops under half on a leg, the engineer (or the
   ship, if nobody's aboard) gives a damage report on the band: hull, the
   worst system, breaches, fire, and an opinion about who's getting her hit.
+- Go to red with nothing on the scanner and Number One will ask, on the band,
+  whether there's something they should know.
 - Y in flight cycles the alert. Yellow: shields recharge half again as fast
   and the crew look up from their cards. Red: shields twice as fast, guns
   10% harder, a klaxon, a banner, whoever's at tactical calling stations,
@@ -915,6 +917,11 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   and a price. Pay the three hundred, talk them down at parley odds, or go and
   get them (a red alert and an ambush, and the lifeboat comes free half the
   time). Three lives either way, if it works.
+- The reactor is scramming: when the core is under forty-five percent, the
+  lights go a colour lights aren't supposed to go. The engineer restarts it
+  by hand (core +30, usually; a rough restart costs hull), vent and cold-start
+  (ten fuel, core +18), or ride it out (it usually changes its mind; sometimes
+  it changes the housing instead).
 - A distress call, unverified: the right words in the right order and a
   signal a little too strong. Answer it (real about half the time: four
   lives; otherwise two hulls come out from behind the hulk already talking),

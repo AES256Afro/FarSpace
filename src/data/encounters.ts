@@ -381,6 +381,15 @@ export const ENCOUNTERS: Encounter[] = [
     ],
   },
   {
+    id: "scram", where: "space", weight: 5, title: "THE REACTOR IS SCRAMMING", when: (g) => p(g).systems.some((s) => /reactor/i.test(s.name) && s.health < 45),
+    text: "The lights go amber, then a colour lights aren't supposed to go, and the deck hum drops half an octave. The reactor is scramming: the core has decided it would rather not, and the ship is going to coast until somebody changes its mind. There is a very short list of somebodies.",
+    options: [
+      { label: "THE ENGINEER RESTARTS IT BY HAND", hint: "Core +30; the engineer learns a lot very quickly", requires: (g) => p(g).crew.some((c) => c.role === "engineer" && !c.sick), result: (g, rng) => { const s = p(g).systems.find((x) => /reactor/i.test(x.name))!; const x = crewXp(p(g), "engineer", 3); if (rng.chance(0.8)) { s.health = Math.min(100, s.health + 30); logEntry(g.world, "The reactor scrammed; the engineer restarted it by hand"); return `THE ENGINEER GOES INTO THE HOUSING WITH A TORCH AND COMES OUT TEN MINUTES LATER WITH THE HUM BACK AND NO EYEBROWS. REACTOR +30.${x ? " " + x : ""}`; } s.health = Math.min(100, s.health + 12); p(g).hull = Math.max(1, p(g).hull - 6); return `THE ENGINEER GOES INTO THE HOUSING. SOMETHING IN THERE OBJECTS. THE HUM COMES BACK ROUGH AND THE HOUSING NEEDS A PLATE. REACTOR +12, HULL -6.${x ? " " + x : ""}`; } },
+      { label: "VENT AND COLD-START", hint: "Ten fuel; the core comes back cool", result: (g) => { const s = p(g).systems.find((x) => /reactor/i.test(x.name))!; p(g).fuel = Math.max(0, p(g).fuel - 10); s.health = Math.min(100, s.health + 18); logEntry(g.world, "The reactor scrammed; vented and cold-started"); return "YOU VENT THE CORE AND START IT FROM COLD, WHICH TAKES TEN UNITS OF FUEL YOU'D RATHER HAVE KEPT. THE HUM COMES BACK CLEAN. REACTOR +18, FUEL -10."; } },
+      { label: "RIDE IT OUT", hint: "It restarts itself, usually", result: (g, rng) => { const s = p(g).systems.find((x) => /reactor/i.test(x.name))!; if (rng.chance(0.65)) { s.health = Math.min(100, s.health + 8); return "YOU COAST WITH THE LIGHTS AMBER AND THE CREW VERY QUIET. TWENTY MINUTES LATER THE CORE CHANGES ITS MIND ON ITS OWN. REACTOR +8. NOBODY MENTIONS IT AGAIN."; } for (const c of p(g).crew) c.morale = Math.max(0, c.morale - 5); p(g).hull = Math.max(1, p(g).hull - 10); return "YOU COAST. THE CORE DOES NOT CHANGE ITS MIND; IT CHANGES THE HOUSING INSTEAD, WITH A BANG. HULL -10, MORALE DOWN. THE ENGINEER, IF YOU HAD ONE, WOULD HAVE HAD OPINIONS."; } },
+    ],
+  },
+  {
     id: "loop", where: "space", weight: 2, title: "THE SAME MINUTE, AGAIN", when: (g) => !p(g).flags?.loopDone,
     text: "The clock on the console reads a time it read a moment ago. The coffee is full again. Somebody on the band says the thing they just said, word for word, and then, seeing your face, says 'WHAT?' the same way. You have been here before. You will be here again unless something changes.",
     options: [

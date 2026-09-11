@@ -1124,6 +1124,11 @@ Time passes for the people on the ship, and for the ship.
 - [x] A promotion lifts the whole crew; Number One lays in the course when
       the autopilot engages; a counsellor eases the fares every docking
 
+## Milestone 190 — The Reactor Is Scramming ✅ (Sep 2026)
+- [x] A card when the core is low: the engineer restarts it by hand, vent
+      and cold-start, or ride it out; Number One objects to a red alert with
+      a clear scanner
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
