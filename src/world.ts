@@ -328,6 +328,8 @@ export interface PlayerState {
   vistaViews?: number;               // times you looked out of the viewport
   convoys?: number;                  // convoys walked through a gate
   catAway?: string | null;           // station id where the cat got left behind; she turns up again
+  lostProperty?: LostItem[];         // what fares left in the cabin; hand it in, or keep it
+  keepsakes?: string[];              // small things that stayed aboard: unclaimed lost property
   regatta?: number;                  // the regatta: 0 entered, 1 first course won, 2 second, 3 champion
   regattaCourse?: string[];          // the three stations of your regatta, set when you're entered
   wrecksOfMine?: string[];           // wreck ids of ships you lost; they stay where they fell
@@ -889,6 +891,34 @@ export function settlePassengers(p: PlayerState): string[] {
   }
   settleRequests(p, out);
   return out;
+}
+// Lost property: fares leave things in the cabin. The harbour office where they got off takes it back
+// for a small reward; after four dockings unclaimed, it's the ship's.
+export interface LostItem { name: string; owner: string; stationId: string; t: number; docks: number }
+export const LOST_ITEMS = ["a scarf", "a paperback with the ending torn out", "a child's drawing of the ship", "a harmonica", "one glove", "a pocket chess set, mid-game", "a tin of real coffee, half full", "a data slate, locked", "a flower, pressed flat", "a ticket stub from a liner"];
+export const LOST_KEEP_AFTER = 4, LOST_REWARD = 50, LOST_FORWARD = 20;
+export function leaveLostItem(p: PlayerState, m: Mission, stationId: string, t: number, rng: RNG): string | null {
+  if (m.kind !== "passenger" || !rng.chance(0.25) || (p.lostProperty ?? []).length >= 4) return null;
+  const owner = m.passengerName ?? "a passenger";
+  const item = { name: rng.pick(LOST_ITEMS), owner, stationId, t, docks: 0 };
+  (p.lostProperty ??= []).push(item);
+  return `${owner.toUpperCase()} LEFT ${item.name.toUpperCase()} IN THE CABIN. THE HARBOUR OFFICE HERE WOULD TAKE IT.`;
+}
+export function tickLostProperty(p: PlayerState): string[] {
+  const out: string[] = [];
+  for (const it of [...(p.lostProperty ?? [])]) {
+    it.docks++;
+    if (it.docks >= LOST_KEEP_AFTER) { p.lostProperty = (p.lostProperty ?? []).filter((x) => x !== it); (p.keepsakes ??= []).push(`${it.name}, left by ${it.owner}`); if (p.keepsakes.length > 8) p.keepsakes.shift(); out.push(`NOBODY CLAIMED ${it.owner.toUpperCase()}'S ${it.name.toUpperCase().split(",")[0]}. IT'S THE SHIP'S NOW.`); }
+  }
+  return out;
+}
+export function handInLostItem(w: World, it: LostItem, stationId: string): string {
+  const p = w.player;
+  p.lostProperty = (p.lostProperty ?? []).filter((x) => x !== it);
+  const home = it.stationId === stationId;
+  p.credits += home ? LOST_REWARD : LOST_FORWARD;
+  logEntry(w, `Handed in ${it.name} that ${it.owner} left aboard, at ${findStation(w, stationId)?.st.name ?? "a harbour office"}`);
+  return home ? `THE HARBOUR OFFICE HAS ${it.owner.toUpperCase()} ON FILE. THEY'LL GET ${it.name.toUpperCase().split(",")[0]} BACK. +${LOST_REWARD}CR FOR YOUR TROUBLE.` : `THEY'LL FORWARD IT. IT'LL TAKE A WHILE. +${LOST_FORWARD}CR, AND A NOD.`;
 }
 // Passenger requests: somebody in the lounge wants something on this leg. Meet it and they tip at the end.
 export type PaxRequest = "meal" | "quiet" | "view";

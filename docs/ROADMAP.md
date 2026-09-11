@@ -878,4 +878,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Passengers ask for a hot meal, a quiet run or a view; met requests tip
       on top of the fare, missed ones dent the mood
 
+## Milestone 131 — Lost Property ✅ (Sep 2026)
+- [x] Fares leave things in the cabin; hand them in at a harbour office or
+      keep them after four dockings as keepsakes on the wall
+
 ## Later

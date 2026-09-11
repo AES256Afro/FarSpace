@@ -394,6 +394,7 @@ export class InteriorScene implements Scene {
     if (p.hullHistory) lines.push(`THIS HULL WAS ${p.hullHistory.previous.toUpperCase()}'S. THEY LEFT ${p.hullHistory.quirk.toUpperCase()}.`);
     { const nick = captainNickname(g.world); if (nick) lines.push(`THE LANES CALL THIS SHIP'S CAPTAIN ${nick}.`); }
     { const bests = Object.entries(p.raceBest ?? {}).slice(0, 3).map(([id, t]) => `${(findStation(g.world, id)?.st.name ?? "?").toUpperCase()} ${t.toFixed(1)}S`); if (bests.length || p.regatta === 3) lines.push(`${p.regatta === 3 ? "REGATTA CHAMPION. " : ""}${bests.length ? `RING TIMES: ${bests.join(", ")}` : ""}`.trim()); }
+    if (p.keepsakes?.length) lines.push(`KEPT ABOARD: ${p.keepsakes.slice(-4).map((k) => k.toUpperCase()).join("; ")}`.slice(0, 118));
     if (p.lost?.length) lines.push(`LOST WITH THEIR SHIP: ${p.lost.slice(-4).map((l) => `${l.name.toUpperCase()} (${l.role.toUpperCase()}, OFF ${l.where.toUpperCase()})`).join("; ")}`.slice(0, 118));
     if (p.wrecksOfMine?.length) lines.push(`${p.wrecksOfMine.length} SHIP${p.wrecksOfMine.length > 1 ? "S" : ""} OF YOURS STILL OUT THERE, WHERE ${p.wrecksOfMine.length > 1 ? "THEY" : "IT"} FELL.`);
     if (isOccasion("remembrance")) lines.push(`REMEMBRANCE: ${[...(p.lost ?? []).map((l) => l.name), ...(p.alumni ?? []).map((a) => a.name), ...(p.lineage ?? []).map((c) => c.name)].slice(-5).map((n) => n.toUpperCase()).join(", ") || "NO NAMES YET. GIVE IT TIME."}`);
@@ -571,7 +572,8 @@ export class InteriorScene implements Scene {
           return;
         } else if (near.ch === "p" && !this.passengerNear(p)) {
           const book = (p.guestbook ?? []).slice(-4).reverse();
-          this.talk = book.length ? `THE GUESTBOOK: ${book.map((e) => `${e.name.toUpperCase()}: "${e.line.toUpperCase()}"`).join("  ")}`.slice(0, 200) : "THE GUESTBOOK IS OPEN ON THE SEAT, BLANK BUT FOR THE SHIP'S NAME. THE LOUNGE AT ANY STATION HAS PEOPLE WHO'D SIGN IT.";
+          const left = [...(p.lostProperty ?? []).map((it) => `${it.name.toUpperCase().split(",")[0]} (${it.owner.toUpperCase()}'S)`), ...(p.keepsakes ?? []).slice(-2).map((k) => k.toUpperCase().split(",")[0] + " (OURS NOW)")];
+          this.talk = left.length ? `ON THE SEAT: ${left.join(", ")}. ${(p.lostProperty ?? []).length ? "THE HARBOUR OFFICE TAKES LOST PROPERTY." : "THE GUESTBOOK IS UNDERNEATH."}`.slice(0, 200) : book.length ? `THE GUESTBOOK: ${book.map((e) => `${e.name.toUpperCase()}: "${e.line.toUpperCase()}"`).join("  ")}`.slice(0, 200) : "THE GUESTBOOK IS OPEN ON THE SEAT, BLANK BUT FOR THE SHIP'S NAME. THE LOUNGE AT ANY STATION HAS PEOPLE WHO'D SIGN IT.";
           this.talkTimer = 7;
         } else if (near.ch === "H") {
           const n = hull(p.hullId).drones ?? 0;

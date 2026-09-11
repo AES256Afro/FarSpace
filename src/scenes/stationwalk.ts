@@ -8,7 +8,7 @@ import { RNG, hashStr } from "../core/rng";
 import { dist } from "../core/mathx";
 import { sfx } from "../core/sfx";
 import { flag } from "../core/achievements";
-import { StationDef, findStation, isFriend, isRival, rivalOf, galaxyEventAt, dockingsAt, raceHolder, stakeDividend, weekKey, addCargo, logEntry, berthedCaptains, rivalryLine } from "../world";
+import { StationDef, findStation, isFriend, isRival, rivalOf, galaxyEventAt, dockingsAt, raceHolder, stakeDividend, weekKey, addCargo, logEntry, berthedCaptains, rivalryLine, handInLostItem } from "../world";
 import { occasionFor } from "../data/occasions";
 import type { Encounter } from "../data/encounters";
 import type { EncounterScene } from "./encounter";
@@ -209,7 +209,11 @@ export class StationWalkScene implements Scene {
       lines.push(`ON FILE HERE: ${docks} DOCKING${docks === 1 ? "" : "S"}${held ? `; ${held} SHARE${held > 1 ? "S" : ""} (~${stakeDividend(w, st)}CR A DOCKING)` : ""}${landed ? `; ${landed} FARE${landed > 1 ? "S" : ""} LANDED` : ""}${mine ? `; VOTED ${mine.toUpperCase()} THIS WEEK` : ""}`);
       lines.push(st.military ? "NO RING COURSE AT A NAVAL STATION." : `THE RINGS: LOCAL RECORD ${holder.t.toFixed(1)}S (${holder.name.toUpperCase()})${best !== undefined ? `, YOUR BEST ${best.toFixed(1)}S` : ", NO TIME OF YOURS YET"}`);
     }
-    const enc: Encounter = { id: "harbour", where: "space", title: "HARBOURMASTER'S OFFICE", text: lines.join("\n"), weight: 0, options: [{ label: "THANK THEM AND GO", result: () => "" }] };
+    const lost = p.lostProperty ?? [];
+    if (lost.length) lines.push(`LOST PROPERTY ABOARD YOUR SHIP: ${lost.map((it) => `${it.name.toUpperCase().split(",")[0]} (${it.owner.toUpperCase()})`).join("; ")}`.slice(0, 118));
+    const enc: Encounter = { id: "harbour", where: "space", title: "HARBOURMASTER'S OFFICE", text: lines.join("\n"), weight: 0, options: [
+      ...lost.map((it) => ({ label: `HAND IN ${it.name.toUpperCase().split(",")[0]}`, hint: it.stationId === this.station.id ? `${it.owner} got off here; the office has them on file` : `${it.owner} got off elsewhere; it'll be forwarded`, result: (g2: Game) => { sfx.pickup(); return handInLostItem(g2.world, it, this.station.id); } })),
+      { label: "THANK THEM AND GO", result: () => "" }] };
     (g.scenes["encounter"] as EncounterScene).open(g, enc, "stationwalk", true);
   }
 

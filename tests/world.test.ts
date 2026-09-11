@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  weekKey, genCrewCandidate, passengersTookFire, passengersFed, askPassengerRequest, findStation, berthedCaptains, generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
+  weekKey, genCrewCandidate, LOST_KEEP_AFTER, LOST_REWARD, tickLostProperty, handInLostItem, leaveLostItem, passengersTookFire, passengersFed, askPassengerRequest, findStation, berthedCaptains, generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
   missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn, captainByName, helpCaptain, isFriend, friendsAt, tickMail, pickCaptainFor, canUpgradeInfra, upgradeInfra, rivalOf, isRival, rivalTakesFare, rivalBeatsYouTo, askRideAlong, tickRideAlong, setHomePort, isHome, donateRelic, hullHistoryFor, notableById, notableOutcome, canFundProject, fundProject, PROJECTS, settlementNeeds, ledger, ledgerAround, LEDGER_LABELS, catGift, stationBulletin, dockingsAt } from "../src/world";
 import { occasionFor, OCCASIONS } from "../src/data/occasions";
@@ -773,6 +773,18 @@ describe("station hours and the tannoy", () => {
     expect(stationHour(sts[0], at)).toEqual(stationHour(sts[0], at));
     for (const st of sts.slice(0, 5)) { const lines = tannoyLines(w, st, new RNG(1), at); expect(lines.length).toBeGreaterThan(5); for (const l of lines) expect(l.length).toBeLessThanOrEqual(130); }
     w.player.postRuns = 10; expect(tannoyLines(w, sts[0], new RNG(2), at).some((l) => l.includes("THE POSTMAN"))).toBe(true);
+  });
+  it("lost property: fares leave things, the harbour office takes them, unclaimed things become keepsakes", () => {
+    const w = generateWorld(35, { realGalaxy: true }); const p = w.player;
+    const st = Object.values(w.systems).flatMap((s) => s.stations)[0];
+    const m = { id: "f", kind: "passenger", title: "t", desc: "d", fromStationId: "a", targetSystemId: "b", reward: 100, accepted: true, done: false, passengerName: "Rook Adeyemi" } as Mission;
+    let line: string | null = null; for (let i = 0; i < 40 && !line; i++) line = leaveLostItem(p, m, st.id, 10, new RNG(i));
+    expect(line).toContain("ROOK ADEYEMI LEFT"); expect(p.lostProperty!.length).toBe(1);
+    const c0 = p.credits; const it = p.lostProperty![0];
+    expect(handInLostItem(w, it, st.id)).toContain(`+${LOST_REWARD}CR`); expect(p.credits - c0).toBe(LOST_REWARD); expect(p.lostProperty!.length).toBe(0);
+    line = null; for (let i = 0; i < 40 && !line; i++) line = leaveLostItem(p, m, st.id, 10, new RNG(i));
+    for (let d = 0; d < LOST_KEEP_AFTER - 1; d++) expect(tickLostProperty(p)).toEqual([]);
+    expect(tickLostProperty(p)[0]).toContain("IT'S THE SHIP'S NOW"); expect(p.keepsakes!.length).toBe(1); expect(p.lostProperty!.length).toBe(0);
   });
   it("passenger requests: a meal, a quiet run or a view, tipped at the end when met", () => {
     const w = generateWorld(34, { realGalaxy: true }); const p = w.player;
