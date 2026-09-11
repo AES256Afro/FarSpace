@@ -435,7 +435,8 @@ export class FlightScene implements Scene {
     if (this.spawnTimer <= 0) {
       this.spawnTimer = 20 + Math.random() * 25;
       const alive = this.npcs.filter((n) => n.kind === "pirate").length;
-      if (alive < sys.pirateActivity * 6 * voteMods(g.world, sys.factionId).patrol * (hasSpecialty(p, "watchkeeper") ? 0.75 : 1)) spawnPirateNearBelt(this, g);
+      const lanes = settings().lanes ?? "normal";
+      if (alive < sys.pirateActivity * 6 * voteMods(g.world, sys.factionId).patrol * (hasSpecialty(p, "watchkeeper") ? 0.75 : 1) * (lanes === "gentle" ? 0.5 : lanes === "rough" ? 1.5 : 1)) spawnPirateNearBelt(this, g);
       // somebody real was here lately: their ship is on the lanes
       if (g.world.realGalaxy && !this.npcs.some((n) => n.ghost) && Math.random() < 0.35) {
         const me = wire.getCallsign();

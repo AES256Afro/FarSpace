@@ -32,6 +32,7 @@ export class SettingsScene implements Scene {
       { label: "EFFECTS", value: `${bar(s.sfx)} ${Math.round(s.sfx * 100)}%`, act: () => vol("sfx", s.sfx >= 1 ? -10 : 1), adj: (d) => vol("sfx", d) },
       { label: "FULLSCREEN", value: document.fullscreenElement ? "ON" : "OFF", act: () => toggleFullscreen(document.getElementById("game")!) },
       { label: "FLEET PRESENCE", value: s.presence ? "ON - OTHER PILOTS SEE YOUR SHIP" : "OFF - FLY UNSEEN", act: () => saveSettings({ presence: !s.presence }) },
+      { label: "THE LANES", value: (s.lanes ?? "normal") === "gentle" ? "GENTLE - HALF THE CORSAIRS" : (s.lanes ?? "normal") === "rough" ? "ROUGH - HALF AGAIN AS MANY" : "NORMAL", act: () => saveSettings({ lanes: (s.lanes ?? "normal") === "normal" ? "gentle" : (s.lanes ?? "normal") === "gentle" ? "rough" : "normal" }) },
       { label: "COMMS BAND", value: (s.chatter ?? "normal") === "quiet" ? "QUIET - HALF THE CHATTER" : (s.chatter ?? "normal") === "busy" ? "BUSY - TWICE THE CHATTER" : "NORMAL", act: () => saveSettings({ chatter: (s.chatter ?? "normal") === "normal" ? "quiet" : (s.chatter ?? "normal") === "quiet" ? "busy" : "normal" }) },
       { label: "THE SHIP'S VOICE", value: (s.voice ?? true) ? "ON - SHE SPEAKS NOW AND THEN" : "OFF - SHE KEEPS IT TO HERSELF", act: () => saveSettings({ voice: !(s.voice ?? true) }) },
     ];

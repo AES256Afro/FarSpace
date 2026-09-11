@@ -229,6 +229,12 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## The lanes setting
+
+- Settings has THE LANES: gentle (half the corsairs), normal, or rough (half
+  again as many). It stacks with patrol votes and a watchkeeper aboard. The
+  campaigns' set pieces are unchanged.
+
 ## Ports remember you
 
 - The harbourmaster's office on the promenade has you on file: dockings here,

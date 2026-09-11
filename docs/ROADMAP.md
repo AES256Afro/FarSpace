@@ -757,4 +757,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] The harbourmaster's office lists your dockings, stake, fares landed,
       vote and ring times at this station
 
+## Milestone 99 — Gentle Lanes ✅ (Sep 2026)
+- [x] A lanes setting (gentle / normal / rough) for corsair density; a
+      strategy-layer soak test over twelve simulated weeks
+
 ## Later

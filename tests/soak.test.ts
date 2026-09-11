@@ -67,3 +67,42 @@ describe("headless soak", () => {
     void runCharterTrip; void tickInfra; void tickCharters;
   });
 });
+
+import { castVote, voteMods, weeklyIssue } from "../src/data/votes";
+import { borderContest, pushInfluence, resolveBorder, buyStake, collectStake, genMissionsFor, recordRace, raceHolder, beatHolder, enterRegatta, regattaProgress, signGuestbook, leaveWreck, addWireWrecks, crewOwnHull, releaseCharter } from "../src/world";
+
+describe("strategy-layer soak", () => {
+  it("twelve simulated weeks of votes, border contests, stakes, races and fleet keep every number finite", () => {
+    const w = generateWorld(1001, { realGalaxy: true });
+    const p = w.player; p.credits = 200000; p.tutorial = -1;
+    const stations = Object.values(w.systems).flatMap((s) => s.stations).filter((st) => !st.military);
+    const rng = new RNG(11);
+    const start = Date.UTC(2026, 8, 7, 12);
+    for (let week = 0; week < 12; week++) {
+      const now = start + week * 7 * 86400_000;
+      const facs = [...new Set(stations.map((st) => st.factionId))];
+      for (const f of facs) { weeklyIssue(w, f, now); castVote(w, f, rng.chance(0.5), now); voteMods(w, f, now); }
+      const c = borderContest(w, now);
+      if (c) { pushInfluence(w, c.systemId, rng.chance(0.5) ? c.incumbent : c.challenger, rng.int(1, 6), now); }
+      for (let i = 0; i < 4; i++) { const st = rng.pick(stations); buyStake(w, st, 1); collectStake(w, st); const board = genMissionsFor(w, st, rng); expect(board.every((m) => Number.isFinite(m.reward))).toBe(true); }
+      const st = rng.pick(stations);
+      recordRace(p, st.id, 20 + rng.range(0, 20)); raceHolder(w, st); beatHolder(w, st, 5);
+      if (week === 0) enterRegatta(w, st.id);
+      if (p.regattaCourse) regattaProgress(w, p.regattaCourse[Math.min(2, p.regatta ?? 0)], 10, 20, true);
+      signGuestbook(w, { id: `m${week}`, kind: "passenger", title: "", desc: "", fromStationId: st.id, targetSystemId: p.systemId, accepted: true, done: false, tier: 0, reward: 100, passengerName: `Guest ${week}`, passengerKind: "vip", mood: rng.int(10, 100) }, st.name, rng);
+      if (week === 3) { p.systemId = Object.values(w.systems).find((s) => s.stations.includes(st))!.id; leaveWreck(w, 100, 100, { name: "X", role: "pilot" }); addWireWrecks(w, [{ callsign: `OTHER-${week}`, kind: "wreck" }]); }
+      if (week === 5) { const ship = { hullId: "freighter", stationId: st.id, name: "Soak", hull: 90, torpedoes: 0 }; p.fleet = [ship]; const other = stations.find((x) => x !== st)!; const r = crewOwnHull(w, ship, st.id, other.id, "food", rng); if (typeof r === "object") { for (let m = 0; m < 30; m++) { w.time += 60; tickWorld(w, 60); } releaseCharter(p, r); expect(p.fleet.length).toBe(1); } }
+      // Monday settles the week
+      w.borderWeek = w.borderWeek ?? "2026-08-31";
+      resolveBorder(w, now + 7 * 86400_000);
+      for (let m = 0; m < 20; m++) { w.time += 60; tickWorld(w, 60); }
+      expect(Number.isFinite(p.credits)).toBe(true);
+      expect((w.borderLog ?? []).length).toBeLessThanOrEqual(12);
+      expect((p.guestbook ?? []).length).toBeLessThanOrEqual(12);
+      expect(w.news.length).toBeLessThanOrEqual(12);
+      for (const sys of Object.values(w.systems)) for (const st2 of sys.stations) expect(st2.factionId === sys.factionId || sys.factionId === null).toBe(true);
+    }
+    expect(Object.keys(p.votes ?? {}).length).toBeGreaterThan(10);
+    expect(Object.values(p.stakes ?? {}).reduce((a, b) => a + b, 0)).toBe(48);
+  });
+});
