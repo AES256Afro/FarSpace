@@ -315,6 +315,7 @@ export interface PlayerState {
   mayday?: { system: string; t: number } | null; // your own mayday on the wire, until somebody answers it
   racesUnderPar?: number;            // ring races finished under par
   influence?: Record<string, number>; // "<week>:<system>:<faction>" -> your push in this week's border contest
+  lastWeekSeen?: string;             // the week key last announced at a dock
   messes?: number;                   // mess calls you sat down for
   mealsCooked?: number;              // galley meals you cooked
   vistaViews?: number;               // times you looked out of the viewport

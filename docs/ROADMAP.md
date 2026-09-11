@@ -806,4 +806,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Handbook lines for scrapping and writing back; ship's voice on family
       and letters; a header for the block in What's New
 
+## Milestone 112 — The Pacer ✅ (Sep 2026)
+- [x] A record-pace ghost marker during ring races; the new week announced on
+      the first dock
+
 ## Later

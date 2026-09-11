@@ -5,7 +5,7 @@ import { ask, confirmBox } from "../../core/dialog";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra, raceCourse, racePar, racePrize, recordRace, beatHolder, captainNickname, leaveWreck, addWireWrecks, enterRegatta, regattaProgress, hasSpecialty, maydayAnswered, watchIndex, onWatch } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra, raceCourse, racePar, racePrize, recordRace, beatHolder, captainNickname, leaveWreck, addWireWrecks, enterRegatta, regattaProgress, hasSpecialty, maydayAnswered, watchIndex, onWatch, raceHolder } from "../../world";
 import { COMMODITIES, commodity } from "../../data/data";
 import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
@@ -64,7 +64,7 @@ export class FlightScene implements Scene {
   sosTimer = 45;
   sos: Sos | null = null;
   escort: { trader: Npc; missionId: string } | null = null;
-  race: { gates: { x: number; y: number }[]; idx: number; t: number; stationId: string; started: boolean; idle: number; par: number } | null = null;
+  race: { gates: { x: number; y: number }[]; idx: number; t: number; stationId: string; started: boolean; idle: number; par: number; pacerT: number; pacerName: string } | null = null;
   convoy: { ships: Npc[]; reward: number; lost: number } | null = null;
   scanCharge = 0;      // deep-scan charge 0..1 (hold V)
   aim = 0;             // gun/laser direction; equals heading in keyboard mode
@@ -553,7 +553,9 @@ export class FlightScene implements Scene {
     p.racePending = null;
     if (!st) return;
     const gates = raceCourse(st, g.world.seed ^ Math.floor(g.world.time / 600));
-    this.race = { gates, idx: 0, t: 0, stationId: st.id, started: false, idle: 0, par: racePar(gates) };
+    const holder = raceHolder(g.world, st);
+    const best = p.raceBest?.[st.id];
+    this.race = { gates, idx: 0, t: 0, stationId: st.id, started: false, idle: 0, par: racePar(gates), pacerT: best !== undefined && best < holder.t ? best : holder.t, pacerName: best !== undefined && best < holder.t ? "YOUR BEST" : holder.name.toUpperCase() };
     this.comms.push({ from: "MARSHAL", text: `RINGS ARE LIT. RING ONE STARTS YOUR CLOCK. PAR ${this.race.par}S.`, life: 9, color: PAL.gold });
   }
   updateRace(g: Game, dt: number): void {

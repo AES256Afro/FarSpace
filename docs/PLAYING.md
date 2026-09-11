@@ -243,6 +243,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## The pacer and the new week
+
+- In a ring race a hollow diamond runs the course at the record pace, the
+  local holder's or your own best if it's faster, so you can see whether
+  you're up or down as you fly. The first dock of each week announces the
+  week: the faction's question and the contested system.
+
 ## Loose ends
 
 - Beat a course record and the holder writes: a rival to warn you off, a

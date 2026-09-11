@@ -275,6 +275,16 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
     if (dist(p.x, p.y, an.x, an.y) < 60) drawText(ctx, "[E] INVESTIGATE", sx - 30, sy + 6, PAL.gold);
   }
 
+  if (fs.race && fs.race.started && fs.race.pacerT > 0) {
+    // the pacer: the record holder's ghost, at their pace along the course
+    const r = fs.race; const pts = r.gates; let total = 0; const seg: number[] = [];
+    for (let i = 1; i < pts.length; i++) { const d = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y); seg.push(d); total += d; }
+    let along = Math.min(1, r.t / r.pacerT) * total; let px = pts[pts.length - 1].x, py = pts[pts.length - 1].y;
+    for (let i = 0; i < seg.length; i++) { if (along <= seg[i]) { const k = seg[i] ? along / seg[i] : 0; px = pts[i].x + (pts[i + 1].x - pts[i].x) * k; py = pts[i].y + (pts[i + 1].y - pts[i].y) * k; break; } along -= seg[i]; }
+    const [sx, sy] = toScreen(px, py);
+    ctx.strokeStyle = PAL.info; ctx.beginPath(); ctx.moveTo(sx, sy - 5); ctx.lineTo(sx + 5, sy); ctx.lineTo(sx, sy + 5); ctx.lineTo(sx - 5, sy); ctx.closePath(); ctx.stroke();
+    drawText(ctx, r.pacerName, sx - textWidth(r.pacerName) / 2, sy - 14, PAL.info);
+  }
   if (fs.race) {
     fs.race.gates.forEach((gt, i) => {
       const [sx, sy] = toScreen(gt.x, gt.y);
