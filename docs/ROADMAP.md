@@ -779,4 +779,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Calls for help on the galaxy map; N on the market plots a course to the
       best known sell
 
+## Milestone 105 — Small Touches ✅ (Sep 2026)
+- [x] Specialties in the chronicle, the border on the band card, a hardcore
+      loss leaves a wreck light, your name on postcards
+
 ## Later

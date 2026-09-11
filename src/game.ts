@@ -2,7 +2,7 @@
 
 import { Input } from "./core/input";
 import { drawText as drawTextTo } from "./gfx/font";
-import { findStation, photoTaken } from "./world";
+import { findStation, photoTaken, captainNickname } from "./world";
 import { RNG } from "./core/rng";
 import { World, generateWorld, WreckDef } from "./world";
 import { loadSave, writeSave, saveKeyFor, activeSlot } from "./save";
@@ -118,7 +118,8 @@ export class Game {
     const h = Math.floor(this.world.time / 3600), m = Math.floor((this.world.time % 3600) / 60);
     const near = this.sceneName === "flight" ? (this.world.wonders ?? []).find((x) => x.systemId === p.systemId && x.seen && Math.hypot(x.x - p.x, x.y - p.y) < 1400) : null;
     const where = near ? `${near.name.toUpperCase()}, ${sys.name.toUpperCase()}` : this.sceneName === "orbit" ? `ORBIT OF ${(sys.planets[this.orbitPlanetIdx]?.name ?? sys.name).toUpperCase()}` : this.sceneName === "interior" ? `ABOARD ${ship}` : this.sceneName === "station" || this.sceneName === "stationwalk" ? (findStation(this.world, p.dockedAt ?? "")?.st.name ?? sys.name).toUpperCase() : this.sceneName === "surface" ? `GROUNDSIDE, ${sys.name.toUpperCase()}` : sys.name.toUpperCase();
-    return `${where} - ${ship} - ${h}H ${m}M UNDER WAY`;
+    const nick = captainNickname(this.world);
+    return `${where} - ${ship}${nick ? ` (${nick})` : ""} - ${h}H ${m}M UNDER WAY`;
   }
 
   autosave(): void {

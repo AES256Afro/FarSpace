@@ -4,8 +4,8 @@
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond, onWatch, watchIndex, captainNickname } from "../world";
-import { commodity } from "../data/data";
+import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond, onWatch, watchIndex, captainNickname, borderStanding } from "../world";
+import { commodity, faction } from "../data/data";
 import { crewChatter, soloChatter, MESS_LINES, passengerChatter } from "../data/chatter";
 import { RNG } from "../core/rng";
 
@@ -243,6 +243,7 @@ export class InteriorScene implements Scene {
     if (serial) { lines.push(`GALNET SERIAL - ${serial.title}, FROM ${serial.where.toUpperCase()}`); const last = serial.parts[serial.parts.length - 1]; lines.push(last ? `"${last.toUpperCase()}"`.slice(0, 118) : "\"THE FIRST PART IS ON ITS WAY.\""); if (serial.hook) lines.push(`> ${serial.hook.toUpperCase()}`.slice(0, 118)); }
     for (const n of w.news.slice(0, 2)) lines.push(`NEWS: ${n.headline.toUpperCase()}. ${n.body.toUpperCase()}`.slice(0, 118));
     for (const e of this.wireItems.slice(0, 2)) lines.push(`WIRE: ${e.callsign} ${e.text.toUpperCase()} - ${e.system.toUpperCase()} (${wire.ageLabel(e.t)})`.slice(0, 118));
+    { const bs = borderStanding(w); if (bs) lines.push(`THE BORDER: ${w.systems[bs.c.systemId]?.name.toUpperCase() ?? "?"} - ${faction(bs.c.incumbent).name.split(" ")[0].toUpperCase()} ${bs.inc} V ${faction(bs.c.challenger).name.split(" ")[0].toUpperCase()} ${bs.chal}`); }
     if (!lines.length) lines.push("A CARRIER WAVE AND NOTHING ON IT. THE STATIONS ARE QUIET TONIGHT.");
     const key = `band:${p.systemId}`;
     const enc: Encounter = { id: "band", where: "space", title: "THE BAND", text: lines.join("\n"), weight: 0, options: [

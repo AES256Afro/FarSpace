@@ -1474,6 +1474,7 @@ export class FlightScene implements Scene {
       // cold void: no beacon, no second chance
       boom(this, p.x, p.y, 40, PAL.thrust);
       void wire.post("hull", `was lost with all hands in ${g.world.systems[p.systemId].name} (hardcore)`, g.world.systems[p.systemId].name);
+      if (g.world.realGalaxy) void wire.postLight(g.world.systems[p.systemId].name, "wreck", false); // a memorial on the chart for whoever passes
       g.eraseSave();
       g.setScene("title");
       g.toast("SHIP LOST WITH ALL HANDS. THE VOID KEEPS WHAT IT TAKES.");
