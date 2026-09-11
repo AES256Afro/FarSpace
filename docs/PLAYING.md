@@ -814,6 +814,11 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   somebody built, and the outpost's one bar with its one board game.
 - They pay in data, rep, lives saved, morale and stories; a few of them cost
   something, and a couple leave a mark the crew remember.
+- Two more with people in them: the lounge at war (two fares who disagree
+  about everything; seat them apart, hold a captain's dinner, or let them
+  have it out while the crew take bets) and the inner and the belter (two of
+  your own crew, one from a rock where you count the litres; arbitrate, put
+  them on the same watch, or stay out of it and lose the cat to the hold).
 - The singers are an arc. Run the translator on the hull that sings and it
   comes back, asking to be shown the brightest thing in the system: lead it
   to a lit beacon or a wonder, or let the crew sing it the way. Afterwards it

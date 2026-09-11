@@ -976,4 +976,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] V on the roster: a review in the study once a week per crew member;
       commend, counsel, or make them Number One
 
+## Milestone 155 — Lounge Diplomacy ✅ (Sep 2026)
+- [x] Two cards: fares at war in the lounge (seat them apart, a captain's
+      dinner, or let them have it out) and an inner and a belter in the crew
+
 ## Later

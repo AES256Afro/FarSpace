@@ -326,6 +326,24 @@ export const ENCOUNTERS: Encounter[] = [
     ],
   },
   {
+    id: "loungewar", where: "space", weight: 3, title: "THE LOUNGE IS AT WAR", when: (g) => passengersAboard(p(g)).length >= 2,
+    text: "Two of your fares have discovered they disagree about everything: the war, the weather, whose turn it is at the viewport. The lounge has gone quiet in the way a room goes quiet before somebody throws a cup. The crew are taking bets.",
+    options: [
+      { label: "SEAT THEM APART", hint: "One at the viewport, one in the bunk room", result: (g) => { const pax = passengersAboard(p(g)); for (const m of pax.slice(0, 2)) m.mood = Math.min(100, (m.mood ?? 60) + 5); for (const c of p(g).crew) c.morale = Math.max(0, c.morale - 2); return "YOU MOVE ONE TO THE VIEWPORT AND ONE TO THE BUNK ROOM AND STAND IN THE CORRIDOR BETWEEN THEM LIKE A BORDER. PEACE, OF A KIND. MOODS UP. THE CREW LOSE THEIR BETS."; } },
+      { label: "A CAPTAIN'S DINNER (1 PROVISIONS)", hint: "Everybody at one table, you at the head", requires: (g) => (p(g).cargo.food ?? 0) >= 1, result: (g) => { removeCargo(p(g), "food", 1); for (const m of passengersAboard(p(g))) m.mood = Math.min(100, (m.mood ?? 60) + 12); for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 3); logEntry(g.world, "A captain's dinner settled a war in the lounge"); return "ONE TABLE, YOU AT THE HEAD, THE GALLEY'S BEST. BY THE SECOND COURSE THEY'VE FOUND SOMETHING THEY BOTH HATE, WHICH IS YOUR COOKING. MOODS UP ALL ROUND. THE CREW CALL IT DIPLOMACY."; } },
+      { label: "LET THEM HAVE IT OUT", hint: "The crew are entertained", result: (g) => { for (const m of passengersAboard(p(g)).slice(0, 2)) m.mood = Math.max(0, (m.mood ?? 60) - 10); for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 3); return "IT GOES ON FOR AN HOUR. NOBODY THROWS THE CUP. THE CREW HAVE NEVER BEEN SO ENTERTAINED. THE FARES WILL NOT BE TIPPING."; } },
+    ],
+  },
+  {
+    id: "innerbelter", where: "space", weight: 3, title: "THE INNER AND THE BELTER", when: (g) => { const homes = p(g).crew.map((c) => c.home && Object.values(g.world.systems).flatMap((s) => s.stations).find((st) => st.id === c.home)).filter(Boolean) as { type: string }[]; return homes.some((st) => st.type === "mining" || st.type === "refinery") && homes.some((st) => st.type !== "mining" && st.type !== "refinery"); },
+    text: "It starts over the water ration and ends over everything: one of your crew grew up on a rock where you count the litres, one where you don't, and neither can hear the other say it. The galley has taken sides. The cat has left.",
+    options: [
+      { label: "ARBITRATE", hint: "Both of them, the study, the door shut", result: (g) => { const [a, b] = p(g).crew; if (a && b) shiftBond(a, b, 0.6); for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 2); logEntry(g.world, "Sat the inner and the belter down together; they came out speaking"); return "YOU SIT THEM DOWN AND MAKE EACH ONE SAY THE OTHER'S CASE OUT LOUD. IT TAKES AN HOUR AND ONE OF THEM CRIES. THEY COME OUT SPEAKING. THE BOND IS BETTER FOR IT."; } },
+      { label: "PUT THEM ON THE SAME WATCH", hint: "Let the work sort it", result: (g, rng) => { const [a, b] = p(g).crew; if (rng.chance(0.6)) { if (a && b) shiftBond(a, b, 0.4); return "A WEEK OF THE SAME WATCH. BY THE END THEY'VE STOPPED ARGUING ABOUT WATER AND STARTED ARGUING ABOUT THE SKIPPER, TOGETHER. THAT'S A BOND."; } if (a && b) shiftBond(a, b, -0.3); return "A WEEK OF THE SAME WATCH. IT DOES NOT SORT IT. THE SCRUBBER FILTER GOES MISSING TWICE. THE BOND IS WORSE."; } },
+      { label: "STAY OUT OF IT", result: (g) => { for (const c of p(g).crew) c.morale = Math.max(0, c.morale - 3); return "YOU LET IT RUN. IT RUNS. THE GALLEY STAYS DIVIDED FOR A WEEK AND THE CAT EATS IN THE HOLD. MORALE DOWN."; } },
+    ],
+  },
+  {
     id: "quietworld", where: "space", weight: 2, title: "THE QUIET WORLD",
     text: "A settlement on the third moon that has never launched anything is on the radio, crackling and desperate: a fever, a hundred sick, no medicine. They don't know anyone is up here. Nobody is supposed to be.",
     options: [
