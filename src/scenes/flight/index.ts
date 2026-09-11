@@ -292,6 +292,8 @@ export class FlightScene implements Scene {
     }
     if (g.input.isDown("x") && p.fuel > 0) {
       const spd = Math.hypot(p.vx, p.vy);
+      this.flipT -= dt;
+      if (spd > MAXS * 0.8 && this.flipT <= 0) { this.flipT = 120; const pil = p.crew.find((c) => c.role === "pilot" && !c.sick); if (pil && this.comms.length < 3) this.comms.push({ from: pil.name.split(" ")[0].toUpperCase(), text: ["FLIP AND BURN. HOLD ON TO SOMETHING.", "FLIPPING. IF YOU'RE HOLDING COFFEE, YOU WERE.", "HARD DECEL. THE CAT KNOWS. THE CAT'S ALREADY UNDER THE BUNK."][Math.floor(Math.random() * 3)], life: 5, color: PAL.grey }); }
       if (spd > 4) {
         const retroAngle = Math.atan2(-p.vy, -p.vx);
         const d = angDiff(p.angle, retroAngle);
@@ -661,7 +663,7 @@ export class FlightScene implements Scene {
   }
   hardBurn = false;
   bridgeT = 40;
-  alert: AlertLevel = 0; alertT = 0; autoAlertT = 0; klaxonT = 0;
+  alert: AlertLevel = 0; alertT = 0; autoAlertT = 0; klaxonT = 0; flipT = 0;
   hailT = 25;
   dockAt(g: Game, st: StationDef): boolean {
     this.hardBurn = false; this.alert = 0;

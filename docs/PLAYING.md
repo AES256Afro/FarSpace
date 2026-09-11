@@ -917,7 +917,11 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   when cruise engages with a pilot aboard, the helm answers. Aye, captain.
 - Medics can take a third specialty at skill three: ship's counsellor. Red
   alert wears the crew half as fast, and reviews land better (commend +12,
-  counsel costs almost nothing).
+  counsel costs almost nothing). With a counsellor aboard, E beside any crew
+  member under sixty morale sends the two of them into the study for twenty
+  minutes: morale +6, once a leg, and nobody says what was said.
+- Brake hard at better than four-fifths of top speed with a pilot aboard and
+  the helm calls the flip and burn. The cat is already under the bunk.
 - Every clamp writes a supplemental entry in the captain's voice: the hours
   since the last dock, the jumps, whether the hull took fire, red alerts, a
   hard burn, the cards on the lane, the rescues, and how the crew are holding

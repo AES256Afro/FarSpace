@@ -532,6 +532,12 @@ export class InteriorScene implements Scene {
       if (crewNear && crewNear.c.skill >= 3 && !crewNear.c.specialty && !crewNear.c.sick) { this.offerSpecialty(g, crewNear.c); return; }
       if (crewNear) {
         const c = crewNear.c;
+        const couns = p.crew.find((o) => o !== c && o.specialty === "counsellor" && !o.sick);
+        if (couns && !c.sick && c.morale < 60 && !c.counselled) {
+          c.counselled = true; c.morale = Math.min(100, c.morale + 6);
+          this.say(`${couns.name.split(" ")[0].toUpperCase()} TAKES ${c.name.split(" ")[0].toUpperCase()} INTO THE STUDY FOR TWENTY MINUTES. NOBODY SAYS WHAT WAS SAID. MORALE +6.`); sfx.select();
+          return;
+        }
         const pool = c.morale >= 65 ? CREW_LINES[c.role].high : c.morale >= 30 ? CREW_LINES[c.role].mid : CREW_LINES[c.role].low;
         const ask = c.request ? (c.request.kind === "visit" ? " ...and about that stop I asked for." : c.request.kind === "goods" ? " ...and the list is still by the airlock." : " ...and the letter's still in your locker.") : "";
         const friend = p.crew.find((o) => o !== c && bond(c, o) >= 2), foe = p.crew.find((o) => o !== c && bond(c, o) <= -2);

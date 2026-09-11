@@ -15,6 +15,7 @@ export interface CrewMember {
   trait?: string;   // one line of who they are off duty
   docks?: number;   // dockings served aboard this ship
   sick?: { kind: string; until: number } | null; // laid up until world time; no bonus while sick
+  counselled?: boolean; // had a session with the ship's counsellor this leg
   retireAsked?: boolean; // the retirement talk has happened
   xp?: number;      // marks toward the next skill, earned by doing the job
   bonds?: Record<string, number>; // other crew by name: -3 feud .. 3 fast friends

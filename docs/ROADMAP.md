@@ -1041,4 +1041,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] E near a corsair opens a channel: pay the toll, bluff a patrol
       callsign, offer them a way out as an ace, or open fire
 
+## Milestone 171 — Small Voices ✅ (Sep 2026)
+- [x] A counsellor aboard takes a low crew member into the study once a leg;
+      the helm calls the flip and burn; the cat has the conn
+
 ## Later
