@@ -848,4 +848,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] The handbook header lists its sections; the ship has a word on a new
       week
 
+## Milestone 123 — Keepsakes II ✅ (Sep 2026)
+- [x] The chronicle carries the guestbook; the wall of record lists ring
+      times and the regatta title; the roster totals wages
+
 ## Later

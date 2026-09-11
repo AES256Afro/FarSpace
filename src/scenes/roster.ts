@@ -50,7 +50,7 @@ export class RosterScene implements Scene {
       y += 44;
     });
     for (const s of p.shoreCrew ?? []) { drawText(ctx, `${s.member.name.toUpperCase()} - ON LEAVE AT ${(findStation(w, s.stationId)?.st.name ?? "?").toUpperCase()} (${s.docks} DOCKINGS SO FAR)`, 12, y, PAL.gold); y += 10; }
-    drawText(ctx, `CREDITS ${p.credits}   CAT ${p.cat ? p.cat.name.toUpperCase() : "NONE"}   BERTHS ${p.crew.length + (p.shoreCrew ?? []).length}${captainNickname(w) ? `   THE LANES CALL YOU ${captainNickname(w)}` : ""}`, 12, VH - 12, PAL.greyDark);
+    drawText(ctx, `CREDITS ${p.credits}   WAGES ${p.crew.reduce((a, c) => a + c.wage, 0)}CR A DOCKING   CAT ${p.cat ? p.cat.name.toUpperCase() : "NONE"}   BERTHS ${p.crew.length + (p.shoreCrew ?? []).length}${captainNickname(w) ? `   THE LANES CALL YOU ${captainNickname(w)}` : ""}`, 12, VH - 12, PAL.greyDark);
     void textWidth;
   }
 }

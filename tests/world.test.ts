@@ -1038,6 +1038,8 @@ describe("chronicle of the week", () => {
     expect(text).toContain("Holdings:");
     expect(text).toContain("Ring times:");
     expect(text).toContain("The border:");
+    signGuestbook(w, { id: "g", kind: "passenger", title: "", desc: "", fromStationId: st.id, targetSystemId: p.systemId, accepted: true, done: false, tier: 0, reward: 1, passengerName: "Guest", passengerKind: "vip", mood: 80 }, st.name, new RNG(1));
+    expect(chronicleText(w, "TEST")).toContain("Guestbook, last signatures:");
   });
 });
 

@@ -572,6 +572,7 @@ export function chronicleText(w: World, callsign: string | null): string {
     if ((p.postRuns ?? 0) || (p.convoys ?? 0) || (p.races ?? 0)) parts.push(`${p.postRuns ?? 0} mail bags, ${p.convoys ?? 0} convoys walked, ${p.races ?? 0} races run.`);
     if (parts.length) { lines.push(""); lines.push("The week:"); for (const x of parts) lines.push(`  ${x}`); }
   }
+  if ((p.guestbook ?? []).length) { lines.push(""); lines.push("Guestbook, last signatures:"); for (const e of (p.guestbook ?? []).slice(-5).reverse()) lines.push(`  ${e.name} (${e.kind}), ${e.from} to ${e.to}: "${e.line}"`); }
   if (p.crew.length) { lines.push(""); lines.push("Crew aboard:"); for (const c of p.crew) lines.push(`  ${c.name}, ${ROLE_INFO[c.role].label.toLowerCase()}${c.specialty ? ` (${(SPECIALTIES[c.role].find((x) => x.id === c.specialty)?.name ?? c.specialty).toLowerCase()})` : ""}, skill ${c.skill}, ${c.docks ?? 0} dockings${c.trait ? `, ${c.trait}` : ""}.`); }
   if (p.alumni?.length) { lines.push(""); lines.push("Served and went home:"); for (const a of p.alumni) lines.push(`  ${a.name}, ${a.role}, ${a.docks} dockings, at ${findStation(w, a.stationId)?.st.name ?? "a station"}.`); }
   if (p.cat) { lines.push(""); lines.push(`Ship's cat: ${p.cat.name}.`); }
