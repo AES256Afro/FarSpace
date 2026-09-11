@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  weekKey, genCrewCandidate, hasSpecialty, legSummary, noteLeg, newLeg, SIM_PROGRAMS, reviewCrew, reviewDue, nameTheShip, shipVoiceName, receptionHeld, receptionDue, ALERT_NAME, alertMods, beltRate, isBeltStation, FURNISHINGS, runSim, setFocus, briefingReports, patientDeadline, patientOutcome, takeJuice, buyJuice, envoyOutcome, firstOfficer, stardate, cookMeal, LOST_KEEP_AFTER, LOST_REWARD, tickLostProperty, handInLostItem, leaveLostItem, passengersTookFire, passengersFed, askPassengerRequest, findStation, berthedCaptains, generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
+  weekKey, genCrewCandidate, registry, commandRank, hasSpecialty, legSummary, noteLeg, newLeg, SIM_PROGRAMS, reviewCrew, reviewDue, nameTheShip, shipVoiceName, receptionHeld, receptionDue, ALERT_NAME, alertMods, beltRate, isBeltStation, FURNISHINGS, runSim, setFocus, briefingReports, patientDeadline, patientOutcome, takeJuice, buyJuice, envoyOutcome, firstOfficer, stardate, cookMeal, LOST_KEEP_AFTER, LOST_REWARD, tickLostProperty, handInLostItem, leaveLostItem, passengersTookFire, passengersFed, askPassengerRequest, findStation, berthedCaptains, generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
   missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn, captainByName, helpCaptain, isFriend, friendsAt, tickMail, pickCaptainFor, canUpgradeInfra, upgradeInfra, rivalOf, isRival, rivalTakesFare, rivalBeatsYouTo, askRideAlong, tickRideAlong, setHomePort, isHome, donateRelic, hullHistoryFor, notableById, notableOutcome, canFundProject, fundProject, PROJECTS, settlementNeeds, ledger, ledgerAround, LEDGER_LABELS, catGift, stationBulletin, dockingsAt } from "../src/world";
 import { occasionFor, OCCASIONS } from "../src/data/occasions";
@@ -775,6 +775,13 @@ describe("station hours and the tannoy", () => {
     for (const st of sts.slice(0, 5)) { const lines = tannoyLines(w, st, new RNG(1), at); expect(lines.length).toBeGreaterThan(5); for (const l of lines) expect(l.length).toBeLessThanOrEqual(130); }
     w.player.postRuns = 10; expect(tannoyLines(w, sts[0], new RNG(2), at).some((l) => l.includes("THE POSTMAN"))).toBe(true);
   });
+  it("command rank climbs with deeds and the registry is stable", () => {
+    const w = generateWorld(54, { realGalaxy: true }); const p = w.player;
+    expect(commandRank(p)).toBe("SKIPPER"); p.achievements = Array.from({ length: 25 }, (_, i) => `a${i}`); expect(commandRank(p)).toBe("COMMANDER");
+    p.achievements = Array.from({ length: 100 }, (_, i) => `a${i}`); expect(commandRank(p)).toBe("ADMIRAL");
+    const r = registry(w); expect(r).toMatch(/^FS-\d{4}$/); expect(registry(w)).toBe(r);
+    expect(chronicleText(w, null)).toContain(`${r}, admiral commanding`);
+  });
   it("the supplemental log tallies the leg in the captain's voice", () => {
     const w = generateWorld(52, { realGalaxy: true }); const p = w.player; p.crew = [genCrewCandidate(new RNG(1))]; p.crew[0].morale = 80;
     newLeg(p, w.time); expect(legSummary(w)).toBeNull();
@@ -923,7 +930,7 @@ describe("station hours and the tannoy", () => {
     p.crew = [genCrewCandidate(new RNG(1)), genCrewCandidate(new RNG(2))]; p.crew[0].docks = 1; p.crew[1].docks = 2;
     expect(firstOfficer(p)).toBeNull();
     p.crew[1].docks = 5; expect(firstOfficer(p)).toBe(p.crew[1]);
-    expect(chronicleText(w, null)).toContain(`Captain's log, stardate 41010.0. First officer: ${p.crew[1].name}.`);
+    expect(chronicleText(w, null)).toContain("Captain's log, stardate 41010.0. FS-"); expect(chronicleText(w, null)).toContain(`skipper commanding. First officer: ${p.crew[1].name}.`);
   });
   it("the crew and the concourse talk about keepsakes, lost property, the dock-hand and the night rate", () => {
     const w = generateWorld(37, { realGalaxy: true }); const p = w.player;

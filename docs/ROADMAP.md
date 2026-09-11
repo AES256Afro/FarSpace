@@ -1008,4 +1008,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] A ship's counsellor specialty for medics; Number One acknowledges hails
       while the autopilot has the conn; the helm answers when cruise engages
 
+## Milestone 163 — Rank and Registry ✅ (Sep 2026)
+- [x] A command rank from deeds (skipper to admiral) and a registry for the
+      hull; control reads both out, the chronicle and the harbour view carry them
+
 ## Later

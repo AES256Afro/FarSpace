@@ -868,6 +868,12 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   officer: the longest-serving crew member, once two are aboard and they've
   three dockings. Number One is marked on the roster, and the corridors know
   it. The ship, for its part, has decided it's Number One until then.
+- Your deeds add up to a rank on the lanes, nothing to do with any navy:
+  skipper, then lieutenant at ten deeds, commander at twenty-five, captain at
+  forty-five, commodore at seventy, admiral at a hundred. The hull has a
+  registry too, FS and four digits. Control reads both out on the way in, the
+  chronicle opens with them, the harbour view shows them, and the passing
+  haulers get nervous around a commodore.
 - With the autopilot flying and a Number One aboard, they take the conn:
   passing hails get acknowledged in their name, the captain being below. And
   when cruise engages with a pilot aboard, the helm answers. Aye, captain.

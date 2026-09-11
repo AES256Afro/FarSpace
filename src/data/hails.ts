@@ -3,7 +3,7 @@
 
 import type { World } from "../world";
 import type { Npc } from "../scenes/flight/types";
-import { captainNickname, isBeltStation } from "../world";
+import { captainNickname, isBeltStation, commandRank } from "../world";
 import { hull } from "./hulls";
 import { RNG, hashStr } from "../core/rng";
 import { stationHour } from "./tannoy";
@@ -24,6 +24,7 @@ export function passingHail(w: World, n: Npc, alert: number, rng: RNG): { from: 
   if (kind === "patrol") {
     pool.push(`THIS IS ${hailCallsign(n, kind)}. YOUR TRANSPONDER IS IN ORDER, ${ship}. CARRY ON, CAPTAIN. WELCOME TO ${sys.name.toUpperCase()}.`, `${hailCallsign(n, kind)} ON STATION. IF ANYTHING OUT HERE SO MUCH AS SNEEZES, WE'LL HEAR IT. FLY SAFE.`, `${hailCallsign(n, kind)}: ROUTINE SWEEP. NOTHING TO REPORT, WHICH IS HOW WE LIKE IT. GOOD DAY, ${ship}.`);
     if (alert === 2) pool.push(`${hailCallsign(n, kind)}: WE READ YOU AT RED ALERT, ${ship}. IS THERE SOMETHING WE SHOULD KNOW? ... NO? THEN STAND DOWN, CAPTAIN. YOU'RE SCARING THE HAULERS.`);
+    { const rk = commandRank(p); if (rk === "COMMODORE" || rk === "ADMIRAL") pool.push(`${hailCallsign(n, kind)}: ${rk} ABOARD THE ${ship}. WE'LL, UH, HOLD OUR COURSE THEN. CARRY ON, ${rk}.`); }
     if (nick) pool.push(`${hailCallsign(n, kind)}: THAT'S ${nick}, ISN'T IT. THE ONE FROM THE WIRE. WE DON'T SALUTE CIVILIANS. CONSIDER THIS THE EXCEPTION.`);
   } else if (kind === "liner") {
     pool.push(`${hailCallsign(n, kind)}: GOOD ${night ? "EVENING" : "MORNING"}, CAPTAIN. TEA IS BEING SERVED IN THE FORWARD LOUNGE. NOT YOURS. OURS. DO MIND THE WAKE.`, `${hailCallsign(n, kind)}: OUR PASSENGERS ARE WAVING AT YOUR SHIP. THEY THINK IT'S QUAINT. I'VE TOLD THEM IT'S A ${hull(p.hullId).name.toUpperCase()}. THEY STILL THINK IT'S QUAINT.`, `${hailCallsign(n, kind)}: WE ARE ON SCHEDULE. WE ARE ALWAYS ON SCHEDULE. IT IS THE ONLY THING WE HAVE. GOOD DAY.`);

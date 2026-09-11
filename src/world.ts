@@ -581,6 +581,15 @@ export function legSummary(w: World): string | null {
   const head = `Supplemental, stardate ${stardate(w)}, ${hours >= 1 ? `${hours.toFixed(1)}h` : `${Math.round(hours * 60)}m`} since the clamp: ${parts.join(", ")}.`;
   return (head + " " + close).length <= 118 ? head + " " + close : head.slice(0, 118);
 }
+// Command rank, by deeds on the wall: the lanes' own ladder, nothing to do with any navy. And a registry
+// for the hull, so control has something to read out.
+export const COMMAND_RANKS: [number, string][] = [[0, "SKIPPER"], [10, "LIEUTENANT"], [25, "COMMANDER"], [45, "CAPTAIN"], [70, "COMMODORE"], [100, "ADMIRAL"]];
+export function commandRank(p: PlayerState): string {
+  const n = (p.achievements ?? []).length; let r = "SKIPPER";
+  for (const [at, name] of COMMAND_RANKS) if (n >= at) r = name;
+  return r;
+}
+export function registry(w: World): string { return `FS-${1000 + hashStr(`reg:${w.seed}:${w.player.hullId}:${w.player.shipName ?? ""}`) % 9000}`; }
 // A stardate for the log: hours under way, to a tenth, on a base that looks the part.
 export function stardate(w: World): string { return (41000 + w.time / 360).toFixed(1); }
 // Number One: the longest-serving crew member, once there are two aboard and they have three dockings.
@@ -596,7 +605,7 @@ export function chronicleText(w: World, callsign: string | null): string {
   const name = (p.captainName ?? callsign ?? "The Captain");
   const lines: string[] = [];
   lines.push(`FARSPACE CHRONICLE - ${(p.shipName ?? hull(p.hullId).name).toUpperCase()}`);
-  lines.push(`Captain's log, stardate ${stardate(w)}.${firstOfficer(p) ? ` First officer: ${firstOfficer(p)!.name}.` : ""}`);
+  lines.push(`Captain's log, stardate ${stardate(w)}. ${registry(w)}, ${commandRank(p).toLowerCase()} commanding.${firstOfficer(p) ? ` First officer: ${firstOfficer(p)!.name}.` : ""}`);
   const nick = captainNickname(w);
   lines.push(`Captain: ${name}${nick ? `, called ${nick.toLowerCase()} on the lanes` : ""}. ${h}h ${m}m under way. ${p.credits} credits. ${w.realGalaxy ? "The real stars." : "An uncharted galaxy."}${p.homePort ? ` Home port: ${findStation(w, p.homePort)?.st.name ?? "?"}.` : ""}`);
   lines.push("");
