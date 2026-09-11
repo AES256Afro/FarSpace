@@ -358,6 +358,7 @@ export interface PlayerState {
   hullsCommissioned?: number;        // hulls taken at a yard under this captain
   ribbons?: number;                  // ribbons pinned on at receptions
   systemNicks?: Record<string, string>; // what the engineer calls the reactor; the HUD uses it
+  crewPick?: string;                 // the port the crew voted for; docking there first pleases them
   motto?: string;                    // the line on the dedication plaque by the airlock
   prisoners?: number;                // prisoners delivered to a brig
   evacuated?: number;                // people carried out of a bad week

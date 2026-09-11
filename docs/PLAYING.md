@@ -752,6 +752,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- The long ship: a generation ship in a scaffold off a rock takes donations
+  of parts, water, or an hour of your engineer. Belt standing up, a keepsake,
+  and your name on a plate inside that nobody will read for two hundred years.
+- After a treaty is signed the envoy writes with the pen (a keepsake) and a
+  little money.
+- Now and then the crew leave a note on the console: a port in the next
+  system, underlined twice. Dock there next and morale and loyalty go up.
+  Dock anywhere else first and they shrug.
 - Stop and talk to a rock kid on a belt promenade. Their mam writes later,
   with a drawing of the ship that has a dog in it. It stays aboard.
 - When the captain retires, Number One is first in line for the ship.

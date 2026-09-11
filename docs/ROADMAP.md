@@ -1443,6 +1443,20 @@ Time passes for the people on the ship, and for the ship.
 - [x] Newsletter lines for the system names, ribbons, the anniversary, the
       cup, the cadet's column and the undock word
 
+## Milestone 264 — The Long Ship ✅ (Sep 2026)
+- [x] A generation ship in a cradle off a rock takes donations: parts, water,
+      or an hour of the engineer; your name on a plate nobody reads for two
+      centuries (belt standing, a keepsake, XP)
+
+## Milestone 265 — The Envoy's Pen ✅ (Sep 2026)
+- [x] After a treaty is signed the envoy writes: the pen (a keepsake) and a
+      little money
+
+## Milestone 266 — The Crew's Pick ✅ (Sep 2026)
+- [x] A note on the console, signed by everyone: a port underlined twice;
+      dock there next and morale and loyalty go up (the bar does the thing
+      with the eggs)
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

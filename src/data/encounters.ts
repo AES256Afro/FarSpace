@@ -404,6 +404,24 @@ export const ENCOUNTERS: Encounter[] = [
     ],
   },
   {
+    id: "longship", where: "space", weight: 2, title: "THE LONG SHIP", when: (g) => sys(g).stations.some((st) => isBeltStation(st)) && !p(g).flags?.longship,
+    text: "Off the rock's far side, in a cradle of scaffold three kilometres long, a hull that will never dock anywhere: a generation ship, half-plated, being built by people who won't live to see it leave. A tight-beam from the scaffold: 'THE LONG SHIP TAKES DONATIONS. PARTS, WATER, OR AN HOUR OF YOUR ENGINEER. YOUR NAME GOES ON A PLATE INSIDE. NOBODY WILL READ IT FOR TWO HUNDRED YEARS. THAT'S THE POINT.'",
+    options: [
+      { label: "GIVE PARTS (2)", hint: "Belt standing up; your name on a plate nobody reads for two centuries", requires: (g) => (p(g).cargo.parts ?? 0) >= 2, result: (g) => { removeCargo(p(g), "parts", 2); (p(g).flags ??= {}).longship = true; p(g).beltStanding = (p(g).beltStanding ?? 0) + 3; (p(g).keepsakes ??= []).push("a rubbing of your name on the long ship's plate"); if (p(g).keepsakes!.length > 8) p(g).keepsakes!.shift(); logEntry(g.world, "Gave parts to the long ship; a name on a plate inside"); return "TWO CRATES ACROSS ON A LINE, AND A SUITED FIGURE ON THE SCAFFOLD PUNCHES YOUR NAME INTO A PLATE WITH A HAND TOOL WHILE YOU WATCH. IT TAKES TWENTY MINUTES. YOU WATCH ALL OF IT. THE BELT REMEMBERS."; } },
+      { label: "GIVE WATER (3)", hint: "Belt standing up; the tanks are the ship's first cargo", requires: (g) => (p(g).cargo.water ?? 0) >= 3, result: (g) => { removeCargo(p(g), "water", 3); (p(g).flags ??= {}).longship = true; p(g).beltStanding = (p(g).beltStanding ?? 0) + 3; p(g).waterToBelt = (p(g).waterToBelt ?? 0) + 3; logEntry(g.world, "Gave water to the long ship"); return "THREE UNITS INTO A TANK THE SIZE OF A CATHEDRAL, WHERE THEY'LL SIT FOR TWO CENTURIES AND THEN BE SOMEBODY'S FIRST DRINK ON THE OTHER SIDE. THE SCAFFOLD FLASHES ITS LIGHTS. THE BELT REMEMBERS."; } },
+      { label: "AN HOUR OF THE ENGINEER", hint: "The ship waits an hour; the engineer comes back quiet, and better", requires: (g) => p(g).crew.some((c) => c.role === "engineer" && !c.sick), result: (g) => { const eng = p(g).crew.find((c) => c.role === "engineer" && !c.sick)!; g.world.time += 3600; (p(g).flags ??= {}).longship = true; p(g).beltStanding = (p(g).beltStanding ?? 0) + 2; const x = crewXp(p(g), "engineer", 3); eng.loyalty = (eng.loyalty ?? 0) + 0.2; logEntry(g.world, `${eng.name} worked an hour on the long ship`); return `${eng.name.toUpperCase()} GOES ACROSS WITH A TOOL ROLL AND COMES BACK AN HOUR LATER HAVING WELDED A SEAM THAT WILL OUTLIVE EVERYONE ABOARD THIS HULL. THEY DON'T SAY MUCH FOR A WATCH.${x ? " " + x : ""}`; } },
+      { label: "WISH THEM WELL AND FLY ON", result: (g) => { (p(g).flags ??= {}).longship = true; return "YOU FLASH YOUR LIGHTS AT THE SCAFFOLD. THE SCAFFOLD FLASHES BACK. IT'LL BE THERE NEXT TIME, AND THE TIME AFTER, AND THE TIME AFTER THAT, AND THEN ONE DAY IT WON'T."; } },
+    ],
+  },
+  {
+    id: "crewpick", where: "space", weight: 3, title: "THE CREW'S PICK", when: (g) => p(g).crew.length >= 2 && !p(g).crewPick && sys(g).links.length > 0,
+    text: (() => "A folded note on the console in the engineer's handwriting, signed by everyone: a port name, underlined twice. 'WE TOOK A VOTE. YOU DON'T HAVE TO. BUT WE'D LIKE TO. THERE'S A BAR THERE THAT DOES THE THING WITH THE EGGS.'")(),
+    options: [
+      { label: "READ THE NOTE", hint: "Dock there next and the crew are pleased; anywhere else, they shrug", result: (g, rng) => { const link = rng.pick(sys(g).links); const ts = g.world.systems[link]; const st = ts && ts.stations.length ? rng.pick(ts.stations) : null; if (!st) return "THE NOTE NAMES A PORT THAT ISN'T ON THE CHART. THE CREW HAVE BEEN DRINKING."; p(g).crewPick = st.id; return `THE NOTE SAYS ${st.name.toUpperCase()}, ${ts.name.toUpperCase()}. UNDERLINED TWICE. THE CREW ARE WATCHING YOU READ IT AND PRETENDING NOT TO.`; } },
+      { label: "FOLD IT UP UNREAD", hint: "Morale -2; they'll write another", result: (g) => { for (const c of p(g).crew) c.morale = Math.max(0, c.morale - 2); return "YOU FOLD IT AND PUT IT IN A POCKET. THE CREW SEE THAT. THE NOTE WILL BE BACK, LONGER, WITH A DIAGRAM."; } },
+    ],
+  },
+  {
     id: "nicknames", where: "space", weight: 3, title: "WHAT THE ENGINEER CALLS IT", when: (g) => p(g).crew.some((c) => c.role === "engineer" && !c.sick) && Object.keys(p(g).systemNicks ?? {}).length < 3,
     text: "The engineer comes onto the bridge wiping their hands and says 'Doris is running hot again' and everybody nods, and you realise you're the only one who doesn't know who Doris is. Doris, it turns out, is the reactor. The engineer has names for all of it. The engineer would like them on the board.",
     options: [
