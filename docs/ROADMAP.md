@@ -674,4 +674,9 @@ Time passes for the people on the ship, and for the ship.
 - [x] A weekly question per faction on the NEWS tab; standing-weighted votes;
       results change patrols, yard prices and night promenades
 
+## Milestone 78 — Handbook and Small Sounds ✅ (Sep 2026)
+- [x] Controls screen covers stakes, votes, the liner, the guestbook, the
+      race, the roster, the viewport, cards and the band; tannoy chime, mess
+      call blip; shorter vote toast
+
 ## Later

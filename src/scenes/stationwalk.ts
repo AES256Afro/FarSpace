@@ -6,6 +6,7 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 import { RNG, hashStr } from "../core/rng";
 import { dist } from "../core/mathx";
+import { sfx } from "../core/sfx";
 import { StationDef, findStation, isFriend, isRival, rivalOf, galaxyEventAt } from "../world";
 import { occasionFor } from "../data/occasions";
 import type { Encounter } from "../data/encounters";
@@ -140,6 +141,7 @@ export class StationWalkScene implements Scene {
     const rng = new RNG((Math.random() * 1e9) >>> 0);
     this.tannoy = rng.pick(tannoyLines(g.world, this.station, rng));
     this.tannoyT = 7;
+    sfx.select();
   }
   // overheard: two walkers stop near each other and near you, and one of them says something
   tickGossip(g: Game, dt: number): void {

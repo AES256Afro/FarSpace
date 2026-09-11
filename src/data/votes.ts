@@ -41,7 +41,7 @@ export function castVote(w: World, factionId: string, yes: boolean, now = Date.n
   const withHouse = (r.passed && yes) || (!r.passed && !yes);
   adjustRep(w, factionId, withHouse ? 4 : 2);
   logEntry(w, `Voted ${yes ? "for" : "against"} ${issue.title.toLowerCase()} in the ${faction(factionId).name}; it ${r.passed ? "passed" : "failed"}`);
-  return `${issue.title}: ${r.passed ? "PASSED" : "FAILED"}. ${r.passed ? issue.yes : issue.no} ${withHouse ? "YOU VOTED WITH THE HOUSE." : "YOU VOTED AGAINST THE HOUSE; THEY NOTICED YOU TURNED UP."}`.toUpperCase();
+  return `${issue.title}: ${r.passed ? "PASSED" : "FAILED"}. ${withHouse ? "YOU VOTED WITH THE HOUSE. +4 STANDING" : "AGAINST THE HOUSE, BUT YOU TURNED UP. +2 STANDING"}`.toUpperCase();
 }
 // What this week's result does to the lanes of that faction
 export function voteMods(w: World, factionId: string, now = Date.now()): { patrol: number; yard: number; curfew: boolean } {

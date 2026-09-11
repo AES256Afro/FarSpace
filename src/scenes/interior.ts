@@ -184,7 +184,7 @@ export class InteriorScene implements Scene {
     // mess call: every so often the crew eat together; eat with them and they notice
     const slot = Math.floor(g.world.time / 300);
     if (slot !== this.lastMessSlot) {
-      if (this.lastMessSlot >= 0 && p.crew.filter((c) => !c.sick).length >= 2) { this.messUntil = g.world.time + 45; this.messFed = false; g.toast("MESS CALL - THE CREW HEAD FOR THE GALLEY"); }
+      if (this.lastMessSlot >= 0 && p.crew.filter((c) => !c.sick).length >= 2) { this.messUntil = g.world.time + 45; this.messFed = false; g.toast("MESS CALL - THE CREW HEAD FOR THE GALLEY"); sfx.blip(); }
       this.lastMessSlot = slot;
     }
     if (mess && !this.messFed) {
