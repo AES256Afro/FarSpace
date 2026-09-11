@@ -1011,7 +1011,7 @@ export class StationScene implements Scene {
     }
     for (const f of FURNISHINGS) {
       if ((p.furnishings ?? []).includes(f.id)) continue;
-      opts.push({ label: `FOR THE DECK: ${f.name.toUpperCase()}`, sub: `${f.price}CR - ${f.desc.toUpperCase()}`, action: () => {
+      opts.push({ label: `FOR THE DECK: ${f.name.toUpperCase()}`, sub: `${f.price}CR`, action: () => {
         if (p.credits < f.price) return g.toast("NOT ENOUGH CREDITS");
         p.credits -= f.price; (p.furnishings ??= []).push(f.id);
         g.toast(`${f.name.toUpperCase()} CARRIED ABOARD. ${f.desc.toUpperCase()}`); sfx.pickup();
@@ -1271,16 +1271,33 @@ export class StationScene implements Scene {
 
   drawShipyard(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
     const opts = this.shipyardOptions(g);
-    opts.forEach((o, i) => {
-      const y = top + i * 9;
+    // the list is longer than the screen: a window of rows follows the cursor
+    const maxRows = Math.floor((VH - 40 - top) / 9);
+    const off = Math.max(0, Math.min(this.cursor - maxRows + 1, opts.length - maxRows));
+    let longSub = "";
+    opts.slice(off, off + maxRows).forEach((o, j) => {
+      const i = off + j; const y = top + j * 9;
       this.row(ctx, y, i === this.cursor);
       drawText(ctx, o.label, 8, y, PAL.white);
-      drawText(ctx, o.sub, 290 - textWidth(o.sub) - 8, y, PAL.gold);
+      // a sub that would run into the label keeps its first part on the row; the rest goes to the info line when selected
+      let s = o.sub;
+      if (textWidth(o.label) + textWidth(s) > 268) {
+        if (i === this.cursor) longSub = o.sub;
+        s = s.split(" - ")[0];
+        if (textWidth(o.label) + textWidth(s) > 268) s = s.split(", ")[0];
+        if (textWidth(o.label) + textWidth(s) > 268) s = "";
+      }
+      drawText(ctx, s, 290 - textWidth(s) - 8, y, PAL.gold);
     });
+    if (off > 0) drawText(ctx, `^ ${off} MORE`, 200, top - 8, PAL.greyDark);
+    if (off + maxRows < opts.length) drawText(ctx, `v ${opts.length - off - maxRows} MORE`, 200, top + maxRows * 9, PAL.greyDark);
     const p = g.world.player;
     const cur = opts[this.cursor];
     const mod = cur && MODULES.find((m) => cur.label === `FIT ${m.name.toUpperCase()}`);
+    const furn = cur && FURNISHINGS.find((f) => cur.label === `FOR THE DECK: ${f.name.toUpperCase()}`);
     if (mod) drawText(ctx, mod.desc.toUpperCase().slice(0, 100), 8, VH - 32, PAL.info);
+    else if (furn) drawText(ctx, furn.desc.toUpperCase().slice(0, 100), 8, VH - 32, PAL.info);
+    else if (longSub) drawText(ctx, longSub.slice(0, 100), 8, VH - 32, PAL.info);
     let y = top;
     const x = 300;
     drawText(ctx, `SHIP SYSTEMS (${hull(p.hullId).name.toUpperCase()}):`, x, y, PAL.greyDark);
