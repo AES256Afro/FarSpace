@@ -305,6 +305,8 @@ export interface PlayerState {
   postRuns?: number;                 // mail bags delivered
   guestbook?: GuestEntry[];          // the last dozen passengers and what they wrote on the way out
   lost?: { name: string; role: string; where: string; t: number }[]; // crew who didn't make it to the pod
+  regatta?: number;                  // the regatta: 0 entered, 1 first course won, 2 second, 3 champion
+  regattaCourse?: string[];          // the three stations of your regatta, set when you're entered
   wrecksOfMine?: string[];           // wreck ids of ships you lost; they stay where they fell
   donations?: number;                // relics given to museums
   hullHistory?: { previous: string; quirk: string } | null; // who flew this hull before you, and what they left
@@ -988,6 +990,7 @@ export function setHomePort(p: PlayerState, stationId: string): void { p.homePor
 export function captainNickname(w: World): string | null {
   const p = w.player;
   if ((["explorer", "trader", "miner", "rescuer"] as const).every((k) => rankOf(p, k).title === "ELITE")) return "MASTER OF THE LANES";
+  if (p.regatta === 3) return "THE CHAMPION";
   if ((p.rescues ?? 0) >= 5) return "THE LIFEBOAT";
   if ((p.postRuns ?? 0) >= 10) return "THE POSTMAN";
   if ((p.races ?? 0) >= 3 && Object.keys(p.raceBeaten ?? {}).length) return "RING RUNNER";
@@ -1033,6 +1036,44 @@ export function racePar(gates: { x: number; y: number }[]): number {
 export function racePrize(t: number, par: number): number {
   return Math.round(250 + (t <= par ? 200 : 0) + Math.max(0, par - t) * 25);
 }
+// The regatta: three courses, three stations, a title at the end. Entered by finishing any race.
+export function enterRegatta(w: World, firstStationId: string): string | null {
+  const p = w.player;
+  if (p.regatta !== undefined) return null;
+  const first = findStation(w, firstStationId); if (!first) return null;
+  const rng = new RNG(hashStr(`regatta:${w.seed}:${firstStationId}`));
+  const civil = (sys: SystemDef) => sys.stations.filter((st) => !st.military && st.id !== firstStationId);
+  const rival = rivalOf(w);
+  const rivalHome = rival ? findStation(w, rival.homeStationId) : null;
+  const linked = first.sys.links.map((l) => w.systems[l]).filter((s2) => s2 && civil(s2).length);
+  const second = rivalHome && rivalHome.st.id !== firstStationId ? rivalHome.st : linked.length ? rng.pick(civil(rng.pick(linked))) : civil(first.sys)[0];
+  if (!second) return null;
+  const far = Object.values(w.systems).filter((s2) => s2.id !== first.sys.id && civil(s2).some((st) => st.id !== second.id));
+  const third = far.length ? rng.pick(civil(rng.pick(far)).filter((st) => st.id !== second.id)) : null;
+  if (!third) return null;
+  p.regatta = 0; p.regattaCourse = [firstStationId, second.id, third.id];
+  return `THE MARSHAL: 'YOU'VE GOT THE HANDS FOR THE REGATTA. THREE COURSES. FIRST, UNDER PAR HERE AT ${first.st.name.toUpperCase()}.'`;
+}
+export function regattaObjective(w: World): string | null {
+  const p = w.player;
+  if (p.regatta === undefined || !p.regattaCourse) return null;
+  const name = (i: number) => (findStation(w, p.regattaCourse![i])?.st.name ?? "?").toUpperCase();
+  const sysName = (i: number) => (findStation(w, p.regattaCourse![i])?.sys.name ?? "?").toUpperCase();
+  if (p.regatta === 0) return `THE REGATTA 1/3: RUN THE RINGS UNDER PAR AT ${name(0)}, ${sysName(0)}`;
+  if (p.regatta === 1) return `THE REGATTA 2/3: TAKE THE COURSE RECORD AT ${name(1)}, ${sysName(1)}`;
+  if (p.regatta === 2) return `THE REGATTA 3/3: THE GRAND COURSE AT ${name(2)}, ${sysName(2)} - 15% UNDER PAR`;
+  return null;
+}
+export function regattaProgress(w: World, stationId: string, t: number, par: number, beatRecord: boolean): string | null {
+  const p = w.player;
+  if (p.regatta === undefined || !p.regattaCourse) return null;
+  const c = p.regattaCourse;
+  if (p.regatta === 0 && stationId === c[0] && t <= par) { p.regatta = 1; return `THE REGATTA: FIRST COURSE DONE. NEXT, THE RECORD AT ${(findStation(w, c[1])?.st.name ?? "?").toUpperCase()}.`; }
+  if (p.regatta === 1 && stationId === c[1] && beatRecord) { p.regatta = 2; return `THE REGATTA: THE RECORD IS YOURS. ONE COURSE LEFT: ${(findStation(w, c[2])?.st.name ?? "?").toUpperCase()}, FIFTEEN UNDER PAR.`; }
+  if (p.regatta === 2 && stationId === c[2] && t <= par * 0.85) { p.regatta = 3; logEntry(w, "Won the regatta: three courses, three stations, one title"); return "THE REGATTA: CHAMPION. THREE COURSES, THREE STATIONS. THE BARS WILL KNOW THE NAME BEFORE YOU DOCK."; }
+  return null;
+}
+
 // Every course has a local record holder: a named captain with a time a shade over par.
 // Beat it and the bar hears; if the holder is your rival, they hear too.
 export function raceHolder(w: World, st: StationDef): { name: string; t: number; captain: NpcCaptain | null } {

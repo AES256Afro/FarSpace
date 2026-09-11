@@ -15,7 +15,7 @@ import { STARS, starDistance } from "../src/data/stars";
 import { ACHIEVEMENTS } from "../src/data/achievements";
 import { ARCS, dailyContract, dailyKey, rankOf, logSystem, applyHull } from "../src/world";
 import { MODULES } from "../src/data/modules";
-import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook, leaveWreck, addWireWrecks } from "../src/world";
+import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook, leaveWreck, addWireWrecks, enterRegatta, regattaObjective, regattaProgress } from "../src/world";
 import { RARES } from "../src/data/data";
 import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
@@ -802,6 +802,28 @@ describe("what the void keeps", () => {
     const ww = sys.wrecks.find((x) => x.id === "wreck-wire-OTHER-1")!;
     expect(ww.name).toContain("OTHER-1");
     expect(ww.loot.length).toBe(2);
+  });
+});
+
+describe("the regatta", () => {
+  it("three courses, three stations, a title at the end", () => {
+    const w = generateWorld(32, { realGalaxy: true });
+    const p = w.player;
+    const st = Object.values(w.systems).flatMap((s) => s.stations).find((x) => !x.military)!;
+    expect(regattaObjective(w)).toBeNull();
+    expect(enterRegatta(w, st.id)).toContain("REGATTA");
+    expect(enterRegatta(w, st.id)).toBeNull();
+    const c = p.regattaCourse!;
+    expect(new Set(c).size).toBe(3);
+    expect(regattaObjective(w)).toContain("1/3");
+    expect(regattaProgress(w, c[0], 20, 15, false)).toBeNull();
+    expect(regattaProgress(w, c[0], 14, 15, false)).toContain("FIRST COURSE");
+    expect(regattaProgress(w, c[1], 14, 15, false)).toBeNull();
+    expect(regattaProgress(w, c[1], 14, 15, true)).toContain("RECORD IS YOURS");
+    expect(regattaProgress(w, c[2], 14, 15, false)).toBeNull();
+    expect(regattaProgress(w, c[2], 12, 15, false)).toContain("CHAMPION");
+    expect(p.regatta).toBe(3);
+    expect(captainNickname(w)).toBe("THE CHAMPION");
   });
 });
 

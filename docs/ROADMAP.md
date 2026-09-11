@@ -662,4 +662,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Lost ships post a wreck light; other pilots' wrecks appear in your
       systems under their call sign with salvage
 
+## Milestone 75 — The Regatta ✅ (Sep 2026)
+- [x] Three-course racing campaign across three stations with a title,
+      tracked on the MISSIONS board
+
 ## Later

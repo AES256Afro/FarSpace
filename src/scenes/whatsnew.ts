@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.75 - THE REGATTA", [
+    "FINISH A RACE AND YOU'RE ENTERED: THREE COURSES AT THREE STATIONS, THE LAST FIFTEEN UNDER PAR. WIN AND YOU'RE THE CHAMPION.",
+  ]],
   ["0.74 - SALVAGE ON THE WIRE", [
     "IN THE REAL GALAXY, LOST SHIPS GO ON THE WIRE. OTHER PILOTS FIND YOUR WRECK; YOU FIND THEIRS, WITH SALVAGE ABOARD.",
   ]],

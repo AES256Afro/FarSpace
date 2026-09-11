@@ -229,6 +229,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## The regatta
+
+- Finish any ring race and the marshal enters you in the regatta: three
+  courses at three stations. Run under par at the first, take the course
+  record at the second (your rival's home port, if you have one), then the
+  grand course at the third, fifteen percent under par. The MISSIONS board
+  tracks it. Win and the lanes call you THE CHAMPION.
+
 ## What the void keeps
 
 - Lose your ship and it stays lost: the wreck sits where it fell, with half of
