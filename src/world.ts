@@ -3452,6 +3452,8 @@ export function stationBulletin(w: World, st: StationDef, now = Date.now()): str
   const cr = crisisAt(w, st.id);
   if (cr) lines.unshift(`URGENT: ${cr.kind.toUpperCase()} - ${cr.need - cr.delivered} ${COMMODITIES.find((c) => c.id === cr.commodityId)?.name ?? cr.commodityId} still needed. Bring what you have.`);
   const ev = galaxyEventAt(w, findStation(w, st.id)?.sys.id ?? "");
+  if (ev?.kind === "secession" && ev.stationId === st.id) lines.unshift("INDEPENDENT THIS WEEK: the register is by the clamp. Water, rations and medicine pay. The inners are not amused.");
+  if (isBeltStation(st) && w.player.flags?.freeman) lines.unshift("A freeman of the belt is berthed. The yard has its rate ready and the bar has the tab open.");
   if (ev?.stationId === st.id) lines.unshift(ev.kind === "festival" ? "FESTIVAL WEEK: the ring is open all night. Mind the tourists." : "STRIKE: the yard is picketed. Fuel and repairs at double rates until it's settled.");
   return lines;
 }

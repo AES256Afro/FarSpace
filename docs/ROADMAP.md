@@ -1161,6 +1161,10 @@ Time passes for the people on the ship, and for the ship.
 - [x] Envoys and patients have their own lines for each crew role in the
       lounge; the ship has read the standing orders
 
+## Milestone 199 — Word Gets Round ✅ (Sep 2026)
+- [x] The bulletin carries the register and the freemen; the tannoy shows
+      off a ship that passed inspection; the concourse knows a freeman
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
