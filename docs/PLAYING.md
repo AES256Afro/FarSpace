@@ -927,6 +927,12 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   spare part (+35), breathe shallow to the next port (morale down, +10), or
   open a greenhouse module to the deck (+25 and the crew keep walking past
   the hatch).
+- The hold is depressurising (cargo bay under forty-five, with cargo
+  aboard): the engineer seals the seam, or you suit up and lose a crate while
+  you work, or you dump the bay to vacuum and reseal it cold and lose half of
+  everything. The drive is coughing (main engines under forty): the engineer
+  retunes the injectors by ear, or burn it clean on eight fuel, or nurse it
+  to port for wear.
 - A distress call, unverified: the right words in the right order and a
   signal a little too strong. Answer it (real about half the time: four
   lives; otherwise two hulls come out from behind the hulk already talking),

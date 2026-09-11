@@ -1133,6 +1133,10 @@ Time passes for the people on the ship, and for the ship.
 - [x] A card when the air scrubbers are low: swap the filters, breathe
       shallow to port, or open the greenhouse to the deck
 
+## Milestone 192 — Emergencies ✅ (Sep 2026)
+- [x] Two more system cards: the hold depressurising (seal it, suit up, or
+      dump the bay) and the drive coughing (retune, burn it clean, or nurse it)
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

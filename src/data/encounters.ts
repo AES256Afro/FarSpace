@@ -399,6 +399,24 @@ export const ENCOUNTERS: Encounter[] = [
     ],
   },
   {
+    id: "holdleak", where: "space", weight: 5, title: "THE HOLD IS DEPRESSURISING", when: (g) => p(g).systems.some((s) => /cargo/i.test(s.name) && s.health < 45) && cargoUsed(p(g)) > 0,
+    text: "A whistle from aft that isn't the kettle. The cargo bay is losing pressure through a seam that has been meaning to go for weeks, and everything in the hold that isn't strapped down is thinking about the door.",
+    options: [
+      { label: "THE ENGINEER SEALS THE SEAM", hint: "Bay +25; nothing lost", requires: (g) => p(g).crew.some((c) => c.role === "engineer" && !c.sick), result: (g) => { const s = p(g).systems.find((x) => /cargo/i.test(x.name))!; s.health = Math.min(100, s.health + 25); const x = crewXp(p(g), "engineer", 2); return `THE ENGINEER GOES AFT WITH A PATCH KIT AND THE WHISTLE STOPS MID-NOTE. NOTHING LOST. CARGO BAY +25.${x ? " " + x : ""}`; } },
+      { label: "SUIT UP AND DO IT YOURSELF", hint: "Bay +15; a crate goes out the seam while you work", result: (g, rng) => { const s = p(g).systems.find((x) => /cargo/i.test(x.name))!; s.health = Math.min(100, s.health + 15); const ids = Object.keys(p(g).cargo).filter((k) => (p(g).cargo[k] ?? 0) > 0); const id = ids.length ? rng.pick(ids) : null; if (id) removeCargo(p(g), id, 1); return `YOU SUIT UP AND GO AFT. THE SEAM TAKES A PATCH AND${id ? ` ONE CRATE OF ${commodity(id).name.toUpperCase()}, WHICH IS SOMEWHERE BEHIND YOU NOW` : " NOTHING ELSE"}. CARGO BAY +15.`; } },
+      { label: "DUMP THE BAY TO VACUUM AND RESEAL", hint: "Bay +30; everything loose goes", result: (g) => { const s = p(g).systems.find((x) => /cargo/i.test(x.name))!; s.health = Math.min(100, s.health + 30); const ids = Object.keys(p(g).cargo).filter((k) => (p(g).cargo[k] ?? 0) > 0); let lost = 0; for (const id of ids) { const n = Math.ceil((p(g).cargo[id] ?? 0) / 2); removeCargo(p(g), id, n); lost += n; } return `YOU OPEN THE BAY TO VACUUM, LET IT EQUALISE, AND RESEAL IT COLD. IT HOLDS. ${lost ? `${lost} CRATES WENT WITH THE AIR.` : "THE HOLD WAS EMPTY, WHICH HELPS."} CARGO BAY +30.`; } },
+    ],
+  },
+  {
+    id: "drivecough", where: "space", weight: 5, title: "THE DRIVE IS COUGHING", when: (g) => p(g).systems.some((s) => /engine/i.test(s.name) && s.health < 40),
+    text: "The main drive misses a beat, then another, then a run of them like a cough. The engineer, if you have one, has already gone quiet. The cruise indicator is flickering and the gate is a long way off.",
+    options: [
+      { label: "THE ENGINEER RETUNES THE INJECTORS", hint: "Engines +30", requires: (g) => p(g).crew.some((c) => c.role === "engineer" && !c.sick), result: (g) => { const s = p(g).systems.find((x) => /engine/i.test(x.name))!; s.health = Math.min(100, s.health + 30); const x = crewXp(p(g), "engineer", 2); return `THE ENGINEER RETUNES THE INJECTORS BY EAR, WHICH IS NOT HOW THE MANUAL SAYS TO DO IT, AND THE COUGH CLEARS. MAIN ENGINES +30.${x ? " " + x : ""}`; } },
+      { label: "BURN IT CLEAN (8 FUEL)", hint: "Engines +18", requires: (g) => p(g).fuel >= 8, result: (g) => { const s = p(g).systems.find((x) => /engine/i.test(x.name))!; p(g).fuel -= 8; s.health = Math.min(100, s.health + 18); return "YOU RUN THE DRIVE HARD FOR A MINUTE TO CLEAR WHATEVER'S IN IT, WHICH WORKS, AND COSTS EIGHT UNITS OF FUEL. MAIN ENGINES +18."; } },
+      { label: "NURSE IT TO PORT", hint: "Wear +6; it holds", result: (g) => { p(g).wear = (p(g).wear ?? 0) + 6; const s = p(g).systems.find((x) => /engine/i.test(x.name))!; s.health = Math.min(100, s.health + 5); return "YOU KEEP THE THRUST LOW AND THE TURNS GENTLE AND LISTEN TO IT COUGH THE WHOLE WAY. IT HOLDS. THE FRAME REMEMBERS THE STRAIN. WEAR +6."; } },
+    ],
+  },
+  {
     id: "loop", where: "space", weight: 2, title: "THE SAME MINUTE, AGAIN", when: (g) => !p(g).flags?.loopDone,
     text: "The clock on the console reads a time it read a moment ago. The coffee is full again. Somebody on the band says the thing they just said, word for word, and then, seeing your face, says 'WHAT?' the same way. You have been here before. You will be here again unless something changes.",
     options: [
