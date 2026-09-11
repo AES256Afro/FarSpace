@@ -862,4 +862,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] The tannoy pages the docked captain: mail, the cat, waiting family,
       a consignment due here, a leaking hull, an empty tank
 
+## Milestone 127 — Berth Neighbours ✅ (Sep 2026)
+- [x] Captains you know walk the promenade when their ship is in the bays:
+      a word, a spare or a settled round once a week; the rival has words too
+
 ## Later

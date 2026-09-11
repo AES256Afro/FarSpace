@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  weekKey, genCrewCandidate, generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
+  weekKey, genCrewCandidate, findStation, berthedCaptains, generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
   missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn, captainByName, helpCaptain, isFriend, friendsAt, tickMail, pickCaptainFor, canUpgradeInfra, upgradeInfra, rivalOf, isRival, rivalTakesFare, rivalBeatsYouTo, askRideAlong, tickRideAlong, setHomePort, isHome, donateRelic, hullHistoryFor, notableById, notableOutcome, canFundProject, fundProject, PROJECTS, settlementNeeds, ledger, ledgerAround, LEDGER_LABELS, catGift, stationBulletin, dockingsAt } from "../src/world";
 import { occasionFor, OCCASIONS } from "../src/data/occasions";
@@ -772,6 +772,18 @@ describe("station hours and the tannoy", () => {
     expect(stationHour(sts[0], at)).toEqual(stationHour(sts[0], at));
     for (const st of sts.slice(0, 5)) { const lines = tannoyLines(w, st, new RNG(1), at); expect(lines.length).toBeGreaterThan(5); for (const l of lines) expect(l.length).toBeLessThanOrEqual(130); }
     w.player.postRuns = 10; expect(tannoyLines(w, sts[0], new RNG(2), at).some((l) => l.includes("THE POSTMAN"))).toBe(true);
+  });
+  it("berth neighbours: home-port captains you have met, the rival at home, and the tannoy knows", () => {
+    const w = generateWorld(32, { realGalaxy: true });
+    const caps = w.captains ?? []; expect(caps.length).toBeGreaterThan(2);
+    const c = caps.find((x) => x.disposition >= 0)!; const st = findStation(w, c.homeStationId)!.st;
+    expect(berthedCaptains(w, st.id).map((x) => x.id)).not.toContain(c.id);
+    c.met = 1;
+    expect(berthedCaptains(w, st.id).map((x) => x.id)).toContain(c.id);
+    const rv = rivalOf(w)!; expect(berthedCaptains(w, rv.homeStationId).map((x) => x.id)).toContain(rv.id);
+    w.player.dockedAt = st.id;
+    expect(tannoyLines(w, st, new RNG(1)).some((l) => l.includes(c.ship.toUpperCase()) && l.includes("BAY 2"))).toBe(true);
+    expect(berthedCaptains(w, st.id).length).toBeLessThanOrEqual(2);
   });
   it("the tannoy pages the captain about mail, the cat, family and consignments, but only while docked", () => {
     const w = generateWorld(31, { realGalaxy: true });

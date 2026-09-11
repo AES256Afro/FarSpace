@@ -3,7 +3,7 @@
 // a station says: bay calls, lost property, last calls, and the odd kindness.
 
 import type { World, StationDef } from "../world";
-import { crisisAt, galaxyEventAt, findStation, captainNickname, borderContest, weekKey } from "../world";
+import { crisisAt, galaxyEventAt, findStation, captainNickname, borderContest, weekKey, berthedCaptains, isRival } from "../world";
 import { hull } from "./hulls";
 import { commodity, faction } from "./data";
 const facName = (id: string) => faction(id).name;
@@ -56,6 +56,7 @@ export function tannoyLines(w: World, st: StationDef, rng: RNG, now = Date.now()
   if (p.regatta === 3 && p.dockedAt === st.id) pool.push("THE REGATTA CHAMPION IS ON THE STATION. THE MARSHAL ASKS THAT NOBODY MAKE A FUSS. THE MARSHAL IS MAKING A FUSS.");
   const nick = captainNickname(w);
   if (nick) pool.push(`${st.name.toUpperCase()} WISHES ${nick} A SAFE LANE. THAT'S NOT A STANDARD ANNOUNCEMENT. SOMEBODY IN CONTROL LIKES YOU.`);
+  for (const c of berthedCaptains(w, st.id, now)) pool.push(isRival(c) ? `THE ${c.ship.toUpperCase()} IS BERTHED IN BAY 2. CONTROL ASKS THAT NOBODY START ANYTHING ON THE PROMENADE. AGAIN.` : `THE ${c.ship.toUpperCase()} IS BERTHED IN BAY 2. ${c.name.split(" ")[0].toUpperCase()} SENDS REGARDS TO ANYONE WHO KNOWS THEM. THE BAR KNOWS THEM.`);
   const shipName = (p.shipName ?? hull(p.hullId).name).toUpperCase().replace(/^THE /, "");
   if (p.dockedAt === st.id) pool.push(`THE ${shipName} IS BERTHED IN BAY 4. CREW SHORE LEAVE ENDS WHEN THE CAPTAIN SAYS SO.`);
   if ((p.shoreCrew ?? []).some((s) => s.stationId === st.id)) pool.push("WOULD CREW ON SHORE LEAVE PLEASE STOP SLEEPING IN THE OBSERVATION LOUNGE. THERE ARE BUNKS FOR THAT.");

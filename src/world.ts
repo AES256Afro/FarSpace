@@ -1367,6 +1367,12 @@ export function donateRelic(w: World, st: StationDef, by: string): string | null
 // A rival: a regular who took against you (one starts that way). They grab fares,
 // beat you to sights, undercut your routes and talk on the wire. Helping them
 // when they're in trouble is the way back; disposition is one number for both.
+// Berth neighbours: captains you know whose ships are in the bays this week. Home-port captains
+// you have met, the rival whenever they are home, and now and then a friend passing through.
+export function berthedCaptains(w: World, stationId: string, now = Date.now()): NpcCaptain[] {
+  const wk = weekKey(now);
+  return (w.captains ?? []).filter((c) => (c.homeStationId === stationId && (c.met > 0 || isRival(c))) || (isFriend(c) && hashStr(`berth:${c.id}:${stationId}:${wk}`) % 6 === 0)).slice(0, 2);
+}
 export function rivalOf(w: World): NpcCaptain | null {
   const caps = (w.captains ?? []).filter((c) => c.disposition <= -1);
   if (!caps.length) return null;

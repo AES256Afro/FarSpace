@@ -8,7 +8,7 @@ import { RNG, hashStr } from "../core/rng";
 import { dist } from "../core/mathx";
 import { sfx } from "../core/sfx";
 import { flag } from "../core/achievements";
-import { StationDef, findStation, isFriend, isRival, rivalOf, galaxyEventAt, dockingsAt, raceHolder, stakeDividend, weekKey, addCargo, logEntry } from "../world";
+import { StationDef, findStation, isFriend, isRival, rivalOf, galaxyEventAt, dockingsAt, raceHolder, stakeDividend, weekKey, addCargo, logEntry, berthedCaptains, rivalryLine } from "../world";
 import { occasionFor } from "../data/occasions";
 import type { Encounter } from "../data/encounters";
 import type { EncounterScene } from "./encounter";
@@ -18,7 +18,7 @@ import { StationScene } from "./station";
 import { concourseGossip } from "../data/gossip";
 import { stationHour, clockText, tannoyLines } from "../data/tannoy";
 import { voteMods, myVote } from "../data/votes";
-import { hull } from "../data/hulls";
+import { hull, HULLS } from "../data/hulls";
 import * as spriteMod from "../gfx/sprites";
 
 const T = 10;
@@ -116,6 +116,13 @@ export class StationWalkScene implements Scene {
       const key = `family:${this.station.id}:${c.name}:${weekKey()}`;
       this.npcs.push({ x: spot.x, y: spot.y, tx: spot.x, ty: spot.y, name: `${first}'s ${rel}`, skin: "#e8b48c", suit: "#7a5aa5", pause: 4, tag: "FAMILY",
         line: (p.flags ?? {})[key] ? `${first.toUpperCase()}'S ${rel.toUpperCase()}: 'YOU AGAIN. GOOD. BRING THEM HOME SAFE.'` : `${first.toUpperCase()}'S ${rel.toUpperCase()}: 'SO YOU'RE THE CAPTAIN. ${rng.pick(["THEY WRITE ABOUT YOU. MOSTLY GOOD.", "THEY DON'T WRITE ENOUGH. TELL THEM.", "THEY SOUND HAPPY. THAT'S NEW."])} HERE, TAKE THIS FOR THE GALLEY.'` });
+    }
+    // berth neighbours: a captain you know, ship in the bay, walking off the jump
+    for (const c of berthedCaptains(g.world, this.station.id)) {
+      const spot = this.randomFloor(rng);
+      const first = c.name.split(" ")[0];
+      this.npcs.push({ x: spot.x, y: spot.y, tx: spot.x, ty: spot.y, name: c.name, skin: "#d8a070", suit: isRival(c) ? "#8a2a2a" : "#2a6a8a", pause: 3, tag: isRival(c) ? "RIVAL" : isFriend(c) ? "FRIEND" : "CAPTAIN",
+        line: isRival(c) ? `${c.name.toUpperCase()}: '${rivalryLine(g.world, c, rng)}'` : rng.pick([`${c.name.toUpperCase()}: 'Berthed two down from you. The ${c.ship} needs a week in the yard and I need a drink. Come find me.'`, `${c.name.toUpperCase()}: 'Saw your name on the board. ${first}'s rule: never dock hungry. There's a stall by the lift. Go.'`, `${c.name.toUpperCase()}: 'The ${c.ship} came in on fumes. Don't tell control. Tell nobody. Tell the bar, they'll buy me one.'`]) });
     }
     for (const a of (p.alumni ?? []).filter((x) => x.stationId === this.station.id).slice(-2)) {
       const spot = this.randomFloor(rng);
@@ -289,6 +296,18 @@ export class StationWalkScene implements Scene {
         if (c && !(g.world.player.flags ?? {})[key]) { (g.world.player.flags ??= {})[key] = true; c.morale = Math.min(100, c.morale + 12); c.loyalty = (c.loyalty ?? 0) + 0.5; addCargo(g.world.player, "food", 1); flag(g, "family"); g.toast(`${c.name.toUpperCase()} IS GLAD YOU STOPPED. +1 PROVISIONS FOR THE GALLEY, MORALE UP`); sfx.pickup(); logEntry(g.world, `Met ${c.name}'s ${fam.name.split("'s ")[1] ?? "family"} at ${this.station.name}`); }
         return;
       }
+      const cap = this.npcs.find((n) => (n.tag === "FRIEND" || n.tag === "RIVAL" || n.tag === "CAPTAIN") && dist(this.px, this.py, n.x, n.y) < 16);
+      if (cap) {
+        const c = (g.world.captains ?? []).find((x) => x.name === cap.name);
+        this.msg = cap.line!; this.msgTimer = 6; cap.pause = Math.max(cap.pause, 4);
+        const key = `berth:${this.station.id}:${cap.name}:${weekKey()}`;
+        if (c && !(g.world.player.flags ?? {})[key]) {
+          (g.world.player.flags ??= {})[key] = true; c.met++; c.lastSeen = g.world.time;
+          if (isRival(c)) { sfx.select(); logEntry(g.world, `Ran into ${c.name} on the promenade at ${this.station.name}. Words were had`); }
+          else { const gift = Math.random() < 0.5 ? "parts" : "credits"; if (gift === "parts" && addCargo(g.world.player, "parts", 1)) { g.toast(`${c.name.toUpperCase()} HANDS OVER A SPARE FROM THE ${c.ship.toUpperCase()}. +1 SPARE PART. "YOU'LL NEED IT BEFORE I DO."`); } else { g.world.player.credits += 60; g.toast(`${c.name.toUpperCase()} SETTLES AN OLD ROUND. +60CR. "DON'T ARGUE. NEXT ONE'S YOURS."`); } sfx.pickup(); logEntry(g.world, `Met ${c.name} off the ${c.ship} on the promenade at ${this.station.name}`); }
+        }
+        return;
+      }
       const who = this.npcs.find((n) => dist(this.px, this.py, n.x, n.y) < 16);
       if (who) { if (!who.line) who.line = `${who.name.toUpperCase()}: ${concourseGossip(g.world, this.station, new RNG((Math.random() * 1e9) >>> 0))[0]}`; this.msg = who.line; this.msgTimer = 6; who.pause = Math.max(who.pause, 4); }
     }
@@ -416,6 +435,15 @@ export class StationWalkScene implements Scene {
       fit(g.playerShip(), ox + 37 * T, oy + 2.5 * T, 30);
       ctx.fillStyle = "#3a4a6c"; ctx.fillRect(ox + 35 * T + 2, oy + 4 * T + 4, 4 * T - 4, 1); // the clamp rail
       const parked = (p.fleet ?? []).find((f) => f.stationId === this.station.id);
+      const guest = parked ? null : berthedCaptains(g.world, this.station.id)[0];
+      if (guest) {
+        const h = HULLS[hashStr(guest.ship) % HULLS.length];
+        const spr = g.sprite(`hull-preview-${h.id}`, () => spriteMod.genShip(new RNG(g.world.seed ^ 0x51e9 ^ h.id.length), h.spriteSize, h.color, h.accent));
+        fit(spr, ox + 2.5 * T, oy + 2.5 * T, 26);
+        ctx.fillStyle = "#3a4a6c"; ctx.fillRect(ox + T + 2, oy + 4 * T + 4, 4 * T - 4, 1);
+        const nm = guest.ship.toUpperCase().slice(0, 9);
+        drawText(ctx, nm, ox + 2.5 * T - textWidth(nm) / 2, oy + 4 * T + 6, PAL.greyDark);
+      }
       if (parked) {
         const h = hull(parked.hullId);
         const spr = g.sprite(`hull-preview-${h.id}`, () => spriteMod.genShip(new RNG(g.world.seed ^ 0x51e9 ^ h.id.length), h.spriteSize, h.color, h.accent));
@@ -499,7 +527,8 @@ export class StationWalkScene implements Scene {
       }
     }
     if (g.toastTimer > 0) {
-      drawText(ctx, g.toastMsg, VW / 2 - textWidth(g.toastMsg) / 2, VH - 22, PAL.ui);
+      // the toast sits above the message, one line higher when the message wraps to two
+      drawText(ctx, g.toastMsg, VW / 2 - textWidth(g.toastMsg) / 2, this.msg && textWidth(this.msg) > VW - 16 ? VH - 31 : VH - 22, PAL.ui);
     }
   }
 }
