@@ -3,7 +3,7 @@
 // your own reputation all end up in somebody's mouth.
 
 import type { World, StationDef } from "../world";
-import { crisisAt, galaxyEventAt, wondersIn, dockingsAt, friendsAt, rivalOf, isHome, infraAt, findStation, captainNickname, borderContest, berthedCaptains, isRival } from "../world";
+import { crisisAt, galaxyEventAt, wondersIn, dockingsAt, friendsAt, rivalOf, isHome, infraAt, findStation, captainNickname, borderContest, berthedCaptains, isRival, isBeltStation } from "../world";
 import { hoursRate } from "./tannoy";
 import { commodity, faction } from "./data";
 import { RNG } from "../core/rng";
@@ -31,6 +31,14 @@ export function concourseGossip(w: World, st: StationDef, rng: RNG): string[] {
   const ev = galaxyEventAt(w, sys.id);
   if (ev?.kind === "flare") pool.push("'DON'T FLY SUNWARD TODAY. THE FLARE'S COOKING HULLS OUT THERE.'");
   if (ev?.kind === "storm") pool.push("'RADAR'S GONE TO SOUP. THE ION STORM. PILOTS ARE FLYING BY EYE.'");
+  if (p.motto) pool.push(`'SAW A PLAQUE ON A HULL AT THE CLAMP. "${p.motto.toUpperCase().slice(0, 40)}". SOMEBODY MEANT IT.'`);
+  if (p.numberOne) pool.push(`'${p.numberOne.split(" ")[0].toUpperCase()}, THE NUMBER ONE OFF THAT HULL? TURNED DOWN A COMMAND TO STAY. THAT'S A SHIP.'`);
+  if ((p.prisoners ?? 0) > 0) pool.push("'THAT HULL CARRIES PRISONERS FOR THE NAVY. FEEDS THEM, TOO. THE NAVY DOESN'T ASK FOR THAT.'");
+  if ((p.inquiries ?? 0) > 0) pool.push("'STOOD BEFORE A BOARD AND TOLD IT STRAIGHT, THEY SAY. MOST DON'T. THE BOARD REMEMBERS THE ONES WHO DO.'");
+  if (p.flags?.warningshot) pool.push("'PUT ONE ACROSS A CORSAIR'S BOW AND THE CORSAIR WENT HOME. NO SHOTS BACK. THAT'S A GUNNER.'");
+  if (p.flags?.freeman && isBeltStation(st)) pool.push("'THE COUNCIL WROTE THAT ONE'S NAME IN THE MINUTES. AN INNER. I KNOW. I WAS THERE.'");
+  if (p.flags?.captainstable) pool.push("'A FARE TOLD ME THE CAPTAIN SAT THEM AT THE TOP OF THE TABLE. A REFUGEE. TOP OF THE TABLE.'");
+  if (ev?.kind === "drought" && ev.stationId === st.id) pool.push("'TWO LITRES A HEAD. MY KID'S COUNTING THE TANKS AT THE CLAMP. ANY SHIP WITH WATER IS A HERO THIS WEEK.'");
   if (ev?.kind === "secession" && ev.stationId === st.id) pool.push("'INDEPENDENT. FOR A WEEK. THEN THE INNERS SEND A PATROL AND A PRICE LIST, AND WE'RE BACK. BUT IT'S A GOOD WEEK.'");
   if (ev?.kind === "comet") pool.push("'THE COMET'S UP. GO OUT TO THE OBSERVATION DECK, IT'S WORTH IT.'");
   if (w.synWar && w.time < w.synWar.until) pool.push(`'THE ${w.synWar.attacker} AND THE ${w.synWar.defender} ARE AT IT AGAIN. STAY OUT OF THE LANES OUT THERE.'`);

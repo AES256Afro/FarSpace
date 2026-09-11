@@ -1330,6 +1330,18 @@ Time passes for the people on the ship, and for the ship.
 - [x] Freemen see rock-to-rock runs at a freeman's rate (+40%); inners need
       not apply
 
+## Milestone 237 — The New Hand ✅ (Sep 2026)
+- [x] A fresh hire gets sent for a left-handed spanner: let it run (morale,
+      bonds), call it off, or go and help them look (loyalty)
+
+## Milestone 238 — Belt Words ✅ (Sep 2026)
+- [x] A handbook glossary: inners, the well, a rock, the spin, beratna, the
+      ice line, freemen, the minutes, belt rules and manners, the juice
+
+## Milestone 239 — The Promenade Talks ✅ (Sep 2026)
+- [x] Concourse gossip about you: the plaque, Number One, prisoners fed, the
+      board, the warning shot, the minutes, the captain's table, the drought
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

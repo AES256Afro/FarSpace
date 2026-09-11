@@ -403,6 +403,15 @@ export const ENCOUNTERS: Encounter[] = [
     ],
   },
   {
+    id: "newhand", where: "space", weight: 4, title: "THE NEW HAND", when: (g) => p(g).crew.length >= 2 && p(g).crew.some((c) => (c.docks ?? 0) === 0) && !p(g).flags?.newhandDone,
+    text: (() => "The newest crew member has been sent to the aft locker for a left-handed spanner, a bucket of vacuum, and the key to the airlock's other door. They have been gone forty minutes. The rest of the crew are on the bridge with straight faces, which is the hardest part of the joke.")(),
+    options: [
+      { label: "LET IT RUN. EVERYBODY GETS ONE", hint: "Morale up all round; the new hand bonds with the ship", result: (g) => { const nh = p(g).crew.find((c) => (c.docks ?? 0) === 0); (p(g).flags ??= {}).newhandDone = true; for (const c of p(g).crew) c.morale = Math.min(100, c.morale + 4); if (nh) { nh.loyalty = (nh.loyalty ?? 0) + 0.3; for (const c of p(g).crew) if (c !== nh) shiftBond(nh, c, 0.1); } logEntry(g.world, `${nh?.name ?? "The new hand"} went looking for a left-handed spanner`); return `${(nh?.name.split(" ")[0] ?? "THE NEW HAND").toUpperCase()} COMES BACK WITH A BUCKET, A STRAIGHT FACE, AND THE KEY TO THE AIRLOCK'S OTHER DOOR, WHICH THEY HAVE MADE OUT OF A SPOON. THE BRIDGE LOSES IT. MORALE UP. THEY'RE ONE OF THE CREW NOW, THE HARD WAY.`; } },
+      { label: "CALL IT OFF. WE HAVE WORK", hint: "Nothing lost, nothing gained", result: (g) => { (p(g).flags ??= {}).newhandDone = true; return "YOU CALL IT ON THE BAND. THE NEW HAND COMES FORWARD LOOKING RELIEVED AND SLIGHTLY DISAPPOINTED, WHICH IS THE CORRECT AMOUNT OF BOTH."; } },
+      { label: "GO AND HELP THEM LOOK", hint: "The captain in on it; loyalty up, the crew wince", result: (g) => { const nh = p(g).crew.find((c) => (c.docks ?? 0) === 0); (p(g).flags ??= {}).newhandDone = true; if (nh) { nh.loyalty = (nh.loyalty ?? 0) + 0.5; nh.morale = Math.min(100, nh.morale + 8); } for (const c of p(g).crew) if (c !== nh) c.morale = Math.max(0, c.morale - 1); return `YOU GO AFT AND HELP LOOK FOR THE SPANNER FOR TEN STRAIGHT-FACED MINUTES, AND THEN TELL THEM. ${(nh?.name.split(" ")[0] ?? "THE NEW HAND").toUpperCase()} WILL FOLLOW YOU ANYWHERE NOW. THE BRIDGE FEEL SLIGHTLY ROBBED.`; } },
+    ],
+  },
+  {
     id: "council", where: "space", weight: 3, title: "THE COUNCIL ASKS", when: (g) => !!p(g).flags?.freeman && sys(g).stations.some((st) => isBeltStation(st)),
     text: "A tight-beam from the rock, council seal on it, which you've never seen used for anything but tariffs. 'FREEMAN. THE INNERS WANT THE WATER TARIFF DROPPED FOR THEIR HAULERS OR THEY PULL THE CLINIC CONTRACT. THREE ROCKS SAY HOLD. TWO SAY FOLD. YOU'RE THE ONE WHO FLIES BOTH SIDES. WHICH IS IT?'",
     options: [

@@ -752,6 +752,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   (half). At three the belt calls you a freeman: every belt yard is fifteen
   under for you, the tannoy says so when you're in, and it's a deed. The
   harbour view shows the count.
+- A fresh hire with no dockings gets sent for a left-handed spanner. Let it
+  run (morale up, bonds form), call it off, or go aft and help them look (they
+  will follow you anywhere).
+- The handbook has a glossary of belt words.
+- Concourse gossip now includes things about you: the plaque, your Number
+  One, the prisoners you fed, the board you stood before, the warning shot,
+  the council's minutes, who sat at the top of your table.
 - A parley has a new option: one across their bow. A gunner and a record
   help; fail and they open up before the channel's closed.
 - Once the ship has a name or a roster line, the wall of record has THE

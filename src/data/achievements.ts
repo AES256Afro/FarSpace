@@ -145,6 +145,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: "inspection", title: "A GOOD SHIP", desc: "Pass an inspection with three marks of four", check: (w) => !!w.player.flags?.inspection },
   { id: "freeman", title: "FREEMAN OF THE BELT", desc: "Earn a standing of three with the rocks", check: (w) => !!w.player.flags?.freeman },
   { id: "requisition", title: "COURTESY OF THE SERVICE", desc: "Requisition a full service at a naval station", check: (w) => !!w.player.flags?.requisition },
+  { id: "newhand", title: "A LEFT-HANDED SPANNER", desc: "Let the crew welcome a new hand the hard way", check: (w) => !!w.player.flags?.newhandDone },
   { id: "warningshot", title: "ACROSS THE BOW", desc: "Warn a corsair off with one shot", check: (w) => !!w.player.flags?.warningshot },
   { id: "newsletter", title: "THE GALLEY DOOR", desc: "Read the ship's newsletter", check: (w) => !!w.player.flags?.newsletter },
   { id: "councilVote", title: "IN THE MINUTES", desc: "Answer the belt council's question", check: (w) => !!w.player.flags?.councilVote },
