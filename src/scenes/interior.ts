@@ -4,7 +4,7 @@
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond, onWatch, watchIndex, captainNickname, borderStanding } from "../world";
+import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond, onWatch, watchIndex, captainNickname, borderStanding, passengersFed } from "../world";
 import { commodity, faction } from "../data/data";
 import { crewChatter, soloChatter, MESS_LINES, passengerChatter } from "../data/chatter";
 import { RNG } from "../core/rng";
@@ -192,6 +192,7 @@ export class InteriorScene implements Scene {
       const k = nearestTile(this.deck, 0, 0, "K", 1e9);
       if (k && dist(k.tx * T + T / 2, k.ty * T + T / 2, this.px, this.py) < 22) {
         this.messFed = true; p.messes = (p.messes ?? 0) + 1;
+        for (const l of passengersFed(p)) g.toast(l);
         for (const c of p.crew) if (!c.sick) c.morale = Math.min(100, c.morale + 1);
         const i = p.crew.findIndex((c) => !c.sick);
         if (i >= 0) this.bubbles.push({ i, text: rng.pick(MESS_LINES), life: 5 });

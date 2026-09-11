@@ -10,7 +10,7 @@ The guide grew a section per milestone; this is where to look.
 - **Getting started:** [First hour](#first-hour) · [The handbook, the voice, the greenhouse](#the-handbook-the-voice-the-greenhouse) · [The lanes setting](#the-lanes-setting) · [Music and slots](#music-and-slots) · [Comfort](#comfort)
 - **Flying:** [Docking and launching](#docking-and-launching) · [Holding short](#holding-short) · [Traffic control](#traffic-control) · [Combat, when it finds you](#combat-when-it-finds-you) · [The ring race](#the-ring-race) · [The regatta](#the-regatta) · [The convoy](#the-convoy) · [Hum](#hum) · [Calls and courses](#calls-and-courses)
 - **Trading and industry:** [Trader](#trader) · [Miner](#miner) · [Syndicates and trade routes](#syndicates-and-trade-routes) · [Charters](#charters) · [The liner trade](#the-liner-trade) · [Fleet at work](#fleet-at-work) · [Scrapping a hull](#scrapping-a-hull) · [Passage on a liner](#passage-on-a-liner) · [Stakes](#stakes) · [The post](#the-post) · [Pictures wanted](#pictures-wanted) · [The lighthouse](#the-lighthouse) · [The waystation](#the-waystation) · [The ledger](#the-ledger) · [Settlements](#settlements) · [Settlements grow](#settlements-grow) · [Town projects](#town-projects)
-- **People aboard:** [Shipmates](#shipmates) · [Life on the deck](#life-on-the-deck) · [A life aboard](#a-life-aboard) · [Crew arcs](#crew-arcs) · [Second stories](#second-stories) · [A trade of their own](#a-trade-of-their-own) · [The roster](#the-roster) · [Watches and passengers](#watches-and-passengers) · [Corridor talk](#corridor-talk) · [Cards after watch](#cards-after-watch) · [The band](#the-band) · [The viewport and the bays](#the-viewport-and-the-bays) · [Rites of passage](#rites-of-passage) · [The guestbook](#the-guestbook) · [Family](#family) · [Lost and found](#lost-and-found) · [Company](#company) · [Belonging](#belonging) · [Small kindnesses](#small-kindnesses) · [Keepsakes](#keepsakes)
+- **People aboard:** [Shipmates](#shipmates) · [Life on the deck](#life-on-the-deck) · [A life aboard](#a-life-aboard) · [Crew arcs](#crew-arcs) · [Second stories](#second-stories) · [A trade of their own](#a-trade-of-their-own) · [The roster](#the-roster) · [Watches and passengers](#watches-and-passengers) · [Requests from the lounge](#requests-from-the-lounge) · [Corridor talk](#corridor-talk) · [Cards after watch](#cards-after-watch) · [The band](#the-band) · [The viewport and the bays](#the-viewport-and-the-bays) · [Rites of passage](#rites-of-passage) · [The guestbook](#the-guestbook) · [Family](#family) · [Lost and found](#lost-and-found) · [Company](#company) · [Belonging](#belonging) · [Small kindnesses](#small-kindnesses) · [Keepsakes](#keepsakes)
 - **Places:** [Explorer](#explorer) · [A living galaxy](#a-living-galaxy) · [Wonders](#wonders) · [More wonders](#more-wonders) · [Station hours and the tannoy](#station-hours-and-the-tannoy) · [Concourse gossip](#concourse-gossip) · [Ports remember you](#ports-remember-you) · [Places with detail](#places-with-detail) · [Lore](#lore) · [The dock-hand](#the-dock-hand) · [Berth neighbours](#berth-neighbours) · [Regulars](#regulars) · [Contacts](#contacts) · [Rivals and the harbourmaster](#rivals-and-the-harbourmaster) · [Favours](#favours) · [Faces](#faces)
 - **Stories and encounters:** [The Signal and encounters](#the-signal-and-encounters) · [The Keeper](#the-keeper) · [GalNet serials](#galnet-serials) · [Helping ships](#helping-ships) · [More encounters](#more-encounters) · [Four more cards](#four-more-cards) · [Quiet moments](#quiet-moments) · [Rhythms](#rhythms) · [Loose ends](#loose-ends)
 - **Politics:** [Politics and the second campaign](#politics-and-the-second-campaign) · [The week's vote](#the-weeks-vote) · [The border](#the-border) · [The week](#the-week) · [A name on the lanes](#a-name-on-the-lanes)
@@ -612,6 +612,15 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   next door, prices through the roof, a patrol that checked every manifest,
   and, if you've earned it, you. Press E beside anyone in the crowd to hear
   one line straight.
+
+## Requests from the lounge
+
+- Now and then a passenger asks for something on the leg, on comms from the
+  lounge: a hot meal (only if two crew are up to cook one), a quiet run with
+  no holes in the hull, or a view of something worth seeing. Serve the mess
+  while they're aboard, arrive without taking fire, or pass anything the
+  sights log counts, and they say so at the next dock and tip on top of the
+  fare at the end. Miss it and they note it, quietly, and their mood dips.
 
 ## Corridor talk
 

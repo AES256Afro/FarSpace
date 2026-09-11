@@ -164,6 +164,11 @@ export interface Mission {
   notable?: string;         // one of the galaxy's notables is aboard (id)
   sightSystemId?: string;   // a detour: the sight is in this system rather than the destination
   detourAsked?: boolean;
+  request?: PaxRequest;     // what they asked for on the way: a hot meal, a quiet run, a view
+  requestMet?: boolean;
+  requestSettled?: boolean;
+  tookFire?: boolean;       // the hull was hit while they were aboard
+  tip?: number;             // paid on top of the fare at the end
   mood?: number;            // 0..100: how the journey is going for them
   demand?: string | null;   // a commodity they'd like brought aboard
   patience?: number;        // dockings before they start to sour
@@ -882,12 +887,46 @@ export function settlePassengers(p: PlayerState): string[] {
     if (m.docksAboard > (m.patience ?? 4)) { m.mood = Math.max(0, m.mood - 12); out.push(`${name} ASKS, AGAIN, HOW MUCH LONGER.`); }
     if (p.hull < p.hullMax * 0.4) { m.mood = Math.max(0, m.mood - 10); out.push(`${name} HAS SEEN THE HULL READOUT. NOT HAPPY.`); }
   }
+  settleRequests(p, out);
   return out;
+}
+// Passenger requests: somebody in the lounge wants something on this leg. Meet it and they tip at the end.
+export type PaxRequest = "meal" | "quiet" | "view";
+export const PAX_REQUEST_LINES: Record<PaxRequest, string> = {
+  meal: "ANY CHANCE OF A HOT MEAL BEFORE WE ARRIVE? SHIP'S FOOD, I DON'T MIND. JUST HOT.",
+  quiet: "I'D PAY EXTRA FOR A QUIET RUN. NO HOLES IN THE HULL BETWEEN HERE AND THERE.",
+  view: "I HEAR THERE ARE THINGS WORTH SEEING OUT HERE. SHOW ME ONE AND I'LL REMEMBER YOU AT THE END.",
+};
+export function askPassengerRequest(p: PlayerState, rng: RNG): { m: Mission; text: string } | null {
+  const pax = passengersAboard(p).filter((m) => !m.request);
+  if (!pax.length) return null;
+  const m = rng.pick(pax);
+  const kinds: PaxRequest[] = ["quiet", "view"]; if (p.crew.filter((c) => !c.sick).length >= 2) kinds.push("meal");
+  m.request = rng.pick(kinds); m.requestMet = false; m.tip = 40 + Math.round(m.reward * 0.15);
+  return { m, text: PAX_REQUEST_LINES[m.request] };
+}
+export function passengersFed(p: PlayerState): string[] {
+  const out: string[] = [];
+  for (const m of passengersAboard(p)) if (m.request === "meal" && !m.requestMet) { m.requestMet = true; m.mood = Math.min(100, (m.mood ?? 60) + 10); out.push(`${(m.passengerName ?? "YOUR PASSENGER").toUpperCase()} GOT THEIR HOT MEAL. THEY'LL REMEMBER IT.`); }
+  return out;
+}
+export function passengersTookFire(p: PlayerState): void { for (const m of passengersAboard(p)) m.tookFire = true; }
+function settleRequests(p: PlayerState, out: string[]): void {
+  for (const m of passengersAboard(p)) {
+    if (!m.request || m.requestSettled) continue;
+    if (m.request === "quiet") m.requestMet = !m.tookFire;
+    if (m.request === "view") m.requestMet = (m.sights?.length ?? 0) > 0 || !!m.sightSeen;
+    const name = (m.passengerName ?? "YOUR PASSENGER").toUpperCase();
+    m.requestSettled = true;
+    if (m.requestMet) { m.mood = Math.min(100, (m.mood ?? 60) + 15); out.push(`${name} GOT THE ${m.request === "meal" ? "HOT MEAL" : m.request === "quiet" ? "QUIET RUN" : "VIEW"} THEY ASKED FOR. +${m.tip ?? 0}CR TIP AT THE END OF THE FARE.`); }
+    else { m.tip = 0; m.mood = Math.max(0, (m.mood ?? 60) - 6); out.push(`${name} ASKED FOR A ${m.request === "meal" ? "HOT MEAL" : m.request === "quiet" ? "QUIET RUN" : "VIEW"} AND DIDN'T GET ONE. NOTED, QUIETLY.`); }
+  }
 }
 // Sights along the way: tourists pay for what they saw. Their booked sight also completes the fare.
 export function logSight(p: PlayerState, kind: SightKind, label: string, systemId: string, planetIdx?: number): boolean {
   let any = false;
   for (const m of passengersAboard(p)) {
+    if (m.request === "view" && !m.requestMet) { m.requestMet = true; any = true; }
     if (m.passengerKind !== "tourist") continue;
     m.sights ??= [];
     if (!m.sights.includes(label)) { m.sights.push(label); any = true; m.mood = Math.min(100, (m.mood ?? 60) + 8); }
@@ -898,7 +937,7 @@ export function logSight(p: PlayerState, kind: SightKind, label: string, systemI
 export function passengerPay(m: Mission): number {
   const mood = m.mood ?? 60;
   const extra = m.passengerKind === "tourist" ? Math.min(3, Math.max(0, (m.sights?.length ?? 0) - 1)) * 0.15 : 0;
-  return Math.round(m.reward * (0.6 + (mood / 100) * 0.6 + extra));
+  return Math.round(m.reward * (0.6 + (mood / 100) * 0.6 + extra)) + (m.requestMet ? (m.tip ?? 0) : 0);
 }
 
 // ---------- Notables: passengers whose journeys matter ----------

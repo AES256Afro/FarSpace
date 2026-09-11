@@ -1,13 +1,13 @@
 import { describe, it, expect } from "vitest";
 import {
-  weekKey, genCrewCandidate, findStation, berthedCaptains, generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
+  weekKey, genCrewCandidate, passengersTookFire, passengersFed, askPassengerRequest, findStation, berthedCaptains, generateWorld, navRoute, routeFuel, jumpFuelCost, stationPrice, refreshPrices,
   addCargo, removeCargo, cargoUsed, applyHull, lawLevelFor, adjustRep, tickWorld,
   missionDeliverable, genMissionsFor, tickWear, jumpWear, wearThrust, wearFault, servicePrice, serviceHull, crewFallsIll, crewRecover, crewTreat, crewBonus, sendOnLeave, berthsUsed, collectShoreCrew, retireCrew, genFares, passengerCap, passengersAboard, settlePassengers, passengerPay, logSight, canBuildInfra, buildInfra, infraAt, infraTraffic, tickInfra, stockDepot, drawDepot, collectInfra, repairInfra, infraLit, jumpFuelCost, canRetireCaptain, retireCaptain, crewXp, restAtDock, adoptCat, stormBlind, tickBonds, bond, shiftBond, feuds, bondLabel, chronicleText, growSettlement, settlementTierLabel, hireCharter, tickCharters, collectCharters, releaseCharter, refreshPrices, seeWonder, wondersIn, captainByName, helpCaptain, isFriend, friendsAt, tickMail, pickCaptainFor, canUpgradeInfra, upgradeInfra, rivalOf, isRival, rivalTakesFare, rivalBeatsYouTo, askRideAlong, tickRideAlong, setHomePort, isHome, donateRelic, hullHistoryFor, notableById, notableOutcome, canFundProject, fundProject, PROJECTS, settlementNeeds, ledger, ledgerAround, LEDGER_LABELS, catGift, stationBulletin, dockingsAt } from "../src/world";
 import { occasionFor, OCCASIONS } from "../src/data/occasions";
 import { STEPS } from "../src/core/tutorial";
 import { CREW_ARCS, arcObjective } from "../src/core/crewarcs";
 import { KEEPER, keeperReady, startKeeper, keeperObjective, keeperScan, KEEPER_OWNER } from "../src/core/keeper";
-import type { Charter } from "../src/world";
+import type { Charter, Mission } from "../src/world";
 import type { Infra } from "../src/world";
 import { migrateSave, SAVE_VERSION, saveKeyFor, SLOTS } from "../src/save";
 import { RNG } from "../src/core/rng";
@@ -773,6 +773,26 @@ describe("station hours and the tannoy", () => {
     expect(stationHour(sts[0], at)).toEqual(stationHour(sts[0], at));
     for (const st of sts.slice(0, 5)) { const lines = tannoyLines(w, st, new RNG(1), at); expect(lines.length).toBeGreaterThan(5); for (const l of lines) expect(l.length).toBeLessThanOrEqual(130); }
     w.player.postRuns = 10; expect(tannoyLines(w, sts[0], new RNG(2), at).some((l) => l.includes("THE POSTMAN"))).toBe(true);
+  });
+  it("passenger requests: a meal, a quiet run or a view, tipped at the end when met", () => {
+    const w = generateWorld(34, { realGalaxy: true }); const p = w.player;
+    const mk = (id: string): Mission => ({ id, kind: "passenger", title: "t", desc: "d", fromStationId: "a", targetSystemId: "b", reward: 200, accepted: true, done: false, passengerName: "Pax " + id, passengerKind: "tourist" } as Mission);
+    p.crew = [genCrewCandidate(new RNG(1)), genCrewCandidate(new RNG(2))]; for (const c of p.crew) c.sick = undefined;
+    p.missions.push(mk("1"), mk("2"), mk("3"));
+    const asked = new Set<string>();
+    for (let i = 0; i < 3; i++) { const r = askPassengerRequest(p, new RNG(i + 7)); expect(r).not.toBeNull(); asked.add(r!.m.request!); }
+    expect(askPassengerRequest(p, new RNG(1))).toBeNull();
+    const [a, b, c] = passengersAboard(p);
+    a.request = "meal"; b.request = "quiet"; c.request = "view"; for (const m of [a, b, c]) { m.requestMet = false; m.tip = 70; }
+    expect(passengersFed(p).length).toBe(1); expect(a.requestMet).toBe(true);
+    passengersTookFire(p);
+    logSight(p, "comet", "a comet", p.systemId);
+    const lines = settlePassengers(p);
+    expect(lines.some((l) => l.includes("PAX 1") && l.includes("HOT MEAL") && l.includes("+70CR"))).toBe(true);
+    expect(lines.some((l) => l.includes("PAX 2") && l.includes("DIDN'T GET ONE"))).toBe(true);
+    expect(lines.some((l) => l.includes("PAX 3") && l.includes("VIEW") && l.includes("+70CR"))).toBe(true);
+    expect(passengerPay(a)).toBeGreaterThan(passengerPay(b) + 60);
+    expect(settlePassengers(p).some((l) => l.includes("ASKED FOR"))).toBe(false);
   });
   it("the dock-hand reads the hull and does a regular a small favour once a week", () => {
     const w = generateWorld(33, { realGalaxy: true });

@@ -874,4 +874,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] A dock-hand by your bay reads the hull aloud; regulars get a small job
       on the house once a week
 
+## Milestone 130 — Requests from the Lounge ✅ (Sep 2026)
+- [x] Passengers ask for a hot meal, a quiet run or a view; met requests tip
+      on top of the fare, missed ones dent the mood
+
 ## Later
