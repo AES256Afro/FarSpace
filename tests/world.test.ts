@@ -15,7 +15,7 @@ import { STARS, starDistance } from "../src/data/stars";
 import { ACHIEVEMENTS } from "../src/data/achievements";
 import { ARCS, dailyContract, dailyKey, rankOf, logSystem, applyHull } from "../src/world";
 import { MODULES } from "../src/data/modules";
-import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook } from "../src/world";
+import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook, leaveWreck } from "../src/world";
 import { RARES } from "../src/data/data";
 import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
@@ -779,6 +779,22 @@ describe("the guestbook", () => {
     const r = [...Array(30).keys()].flatMap((seed) => genFares(w, st, new RNG(seed))).find((f) => f.returning)!;
     expect(r.title.startsWith("Returning fare")).toBe(true);
     expect(r.desc).toContain("asked for you by name");
+  });
+});
+
+describe("what the void keeps", () => {
+  it("a lost ship leaves a wreck with half the hold, and the lost go on the wall", () => {
+    const w = generateWorld(31, { realGalaxy: true });
+    const p = w.player; const sys = w.systems[p.systemId];
+    p.cargo = { food: 6, parts: 3 }; p.shipName = "Late Supper";
+    const before = sys.wrecks.length;
+    const wd = leaveWreck(w, 120, -40, { name: "Ada Ferro", role: "pilot" });
+    expect(sys.wrecks.length).toBe(before + 1);
+    expect(wd.name).toContain("Late Supper");
+    expect(wd.loot).toEqual([{ id: "food", qty: 3 }, { id: "parts", qty: 1 }]);
+    expect(p.wrecksOfMine).toEqual([wd.id]);
+    expect(p.lost![0].name).toBe("Ada Ferro");
+    expect((p.log ?? []).some((l) => l.text.includes("didn't make it"))).toBe(true);
   });
 });
 

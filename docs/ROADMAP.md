@@ -654,4 +654,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Passengers sign a guestbook on landing; happy ones return as fares by
       name; P on RECORD reads the book
 
+## Milestone 73 — What the Void Keeps ✅ (Sep 2026)
+- [x] A destroyed ship leaves a named wreck with half the hold; lost crew on
+      the wall and at remembrance
+
 ## Later

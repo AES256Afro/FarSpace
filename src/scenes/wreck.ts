@@ -41,6 +41,7 @@ export class WreckScene implements Scene {
     const w = g.wreckTarget;
     if (!w) { g.setScene("flight"); return; }
     this.wreck = w;
+    if ((g.world.player.wrecksOfMine ?? []).includes(w.id)) g.toast("YOU KNOW THIS CORRIDOR. YOU KNOW WHERE THE LIGHTS WERE.");
     this.deck = BASE.map((r) => r);
     const rng = new RNG(hashStr(w.id));
     this.px = 2 * T; this.py = T + 5;

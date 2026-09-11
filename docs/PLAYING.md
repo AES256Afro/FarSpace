@@ -229,6 +229,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## What the void keeps
+
+- Lose your ship and it stays lost: the wreck sits where it fell, with half of
+  what was in the hold, under your ship's name. You can go back for it, and
+  you'll know the corridor. Whoever didn't make it to the pod goes on the wall
+  of record, and is read out on remembrance day.
+
 ## The guestbook
 
 - Every passenger you land signs the guestbook on the way out, with a line

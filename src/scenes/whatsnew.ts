@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.73 - WHAT THE VOID KEEPS", [
+    "LOSE YOUR SHIP AND ITS WRECK STAYS WHERE IT FELL, UNDER ITS NAME, WITH HALF THE HOLD. THE LOST GO ON THE WALL.",
+  ]],
   ["0.72 - THE GUESTBOOK", [
     "PASSENGERS SIGN THE GUESTBOOK ON THE WAY OUT. THE HAPPY ONES COME BACK AND ASK FOR YOU BY NAME. P ON THE RECORD TAB.",
   ]],

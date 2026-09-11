@@ -304,6 +304,8 @@ export interface PlayerState {
   raceBeaten?: Record<string, true>; // stations where you've beaten the local record
   postRuns?: number;                 // mail bags delivered
   guestbook?: GuestEntry[];          // the last dozen passengers and what they wrote on the way out
+  lost?: { name: string; role: string; where: string; t: number }[]; // crew who didn't make it to the pod
+  wrecksOfMine?: string[];           // wreck ids of ships you lost; they stay where they fell
   donations?: number;                // relics given to museums
   hullHistory?: { previous: string; quirk: string } | null; // who flew this hull before you, and what they left
   jumpStreak?: number;               // gates in a row without a dock (a pilot's arc counts them)
@@ -704,6 +706,20 @@ const GUEST_LINES = {
   mid: ["Got there. That's what I paid for.", "Fine. The coffee could be better.", "No complaints that I'll put in writing.", "Bit of a rattle over the belt. Otherwise fine."],
   low: ["Never again.", "I have been on prison barges with better manners.", "Late, cold, and somebody was singing.", "I'll be writing to the harbourmaster."],
 };
+// What the void keeps: when a ship is lost, its wreck stays in the system with what was in the hold,
+// and whoever didn't make it to the pod goes on the wall.
+export function leaveWreck(w: World, x: number, y: number, lostCrew: { name: string; role: string } | null): WreckDef {
+  const p = w.player; const sys = w.systems[p.systemId];
+  const loot = Object.entries(p.cargo).filter(([, q]) => q > 0).map(([id, q]) => ({ id, qty: Math.max(1, Math.floor(q / 2)) })).slice(0, 4);
+  if (!loot.length) loot.push({ id: "parts", qty: 1 });
+  const name = `the ${p.shipName ?? hull(p.hullId).name}, yours`;
+  const wd: WreckDef = { id: `wreck-mine-${Math.floor(w.time)}`, x: Math.round(x), y: Math.round(y), looted: false, loot, hazard: 0.35, name };
+  sys.wrecks.push(wd);
+  (p.wrecksOfMine ??= []).push(wd.id);
+  if (lostCrew) (p.lost ??= []).push({ name: lostCrew.name, role: lostCrew.role, where: sys.name, t: w.time });
+  logEntry(w, `Lost ${name.replace(", yours", "")} off ${sys.name}${lostCrew ? `; ${lostCrew.name} didn't make it to the pod` : ""}. The wreck is still there.`);
+  return wd;
+}
 export function signGuestbook(w: World, m: Mission, stationName: string, rng: RNG): GuestEntry {
   const p = w.player;
   const mood = m.mood ?? 60;

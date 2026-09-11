@@ -379,7 +379,9 @@ export class InteriorScene implements Scene {
     if (p.lineage?.length) lines.push(`CAPTAINS BEFORE YOU: ${p.lineage.slice(-3).map((c) => c.name.toUpperCase()).join(", ")}${p.captainName ? `. NOW: ${p.captainName.toUpperCase()}` : ""}`);
     if (p.hullHistory) lines.push(`THIS HULL WAS ${p.hullHistory.previous.toUpperCase()}'S. THEY LEFT ${p.hullHistory.quirk.toUpperCase()}.`);
     { const nick = captainNickname(g.world); if (nick) lines.push(`THE LANES CALL THIS SHIP'S CAPTAIN ${nick}.`); }
-    if (isOccasion("remembrance")) lines.push(`REMEMBRANCE: ${[...(p.alumni ?? []).map((a) => a.name), ...(p.lineage ?? []).map((c) => c.name)].slice(-5).map((n) => n.toUpperCase()).join(", ") || "NO NAMES YET. GIVE IT TIME."}`);
+    if (p.lost?.length) lines.push(`LOST WITH THEIR SHIP: ${p.lost.slice(-4).map((l) => `${l.name.toUpperCase()} (${l.role.toUpperCase()}, OFF ${l.where.toUpperCase()})`).join("; ")}`.slice(0, 118));
+    if (p.wrecksOfMine?.length) lines.push(`${p.wrecksOfMine.length} SHIP${p.wrecksOfMine.length > 1 ? "S" : ""} OF YOURS STILL OUT THERE, WHERE ${p.wrecksOfMine.length > 1 ? "THEY" : "IT"} FELL.`);
+    if (isOccasion("remembrance")) lines.push(`REMEMBRANCE: ${[...(p.lost ?? []).map((l) => l.name), ...(p.alumni ?? []).map((a) => a.name), ...(p.lineage ?? []).map((c) => c.name)].slice(-5).map((n) => n.toUpperCase()).join(", ") || "NO NAMES YET. GIVE IT TIME."}`);
     const opts: Encounter["options"] = [{ label: "CLOSE", result: () => "" }];
     const why = canRetireCaptain(g.world);
     if (!why) opts.push({ label: "RETIRE THIS CAPTAIN...", hint: "Hand the ship on; the galaxy carries on", result: (g2) => { this.retireMenu(g2); return ""; } });
