@@ -15,7 +15,7 @@ import { STARS, starDistance } from "../src/data/stars";
 import { ACHIEVEMENTS } from "../src/data/achievements";
 import { ARCS, dailyContract, dailyKey, rankOf, logSystem, applyHull } from "../src/world";
 import { MODULES } from "../src/data/modules";
-import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook, leaveWreck, addWireWrecks, enterRegatta, regattaObjective, regattaProgress, buyStake, collectStake, stakePrice, STAKE_CAP } from "../src/world";
+import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook, leaveWreck, addWireWrecks, enterRegatta, regattaObjective, regattaProgress, buyStake, collectStake, stakePrice, STAKE_CAP, hasSpecialty, chooseSpecialty, wearRate } from "../src/world";
 import { RARES } from "../src/data/data";
 import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
@@ -862,6 +862,26 @@ describe("the week's vote", () => {
     const mods = voteMods(w, fac, at);
     expect(mods.patrol > 0 && mods.yard > 0).toBe(true);
     expect(voteMods(w, "vex", at)).toEqual({ patrol: 1, yard: 1, curfew: false });
+  });
+});
+
+describe("a trade of their own", () => {
+  it("only at skill three, once, and it shows in the numbers", () => {
+    const w = generateWorld(35, { realGalaxy: true });
+    const p = w.player; const rng = new RNG(6);
+    const e = { ...genCrewCandidate(rng), role: "engineer" as const, skill: 2 };
+    p.crew = [e];
+    expect(chooseSpecialty(w, e, "framewright")).toBeNull();
+    e.skill = 3;
+    const base = wearRate(p);
+    expect(chooseSpecialty(w, e, "framewright")).toContain("FRAMEWRIGHT");
+    expect(chooseSpecialty(w, e, "coolant")).toBeNull();
+    expect(hasSpecialty(p, "framewright")).toBe(true);
+    expect(wearRate(p)).toBeLessThan(base);
+    e.morale = 10; expect(hasSpecialty(p, "framewright")).toBe(false);
+    const pl = { ...genCrewCandidate(rng), role: "pilot" as const, skill: 3 };
+    p.crew = [pl]; const ids = Object.keys(w.systems); const a = ids[0], b = w.systems[a].links[0];
+    const f0 = jumpFuelCost(w, a, b); chooseSpecialty(w, pl, "gaterunner"); expect(jumpFuelCost(w, a, b)).toBeLessThanOrEqual(f0);
   });
 });
 

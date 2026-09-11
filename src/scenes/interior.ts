@@ -27,11 +27,11 @@ const PASSENGER_LINES: Record<string, { high: string[]; mid: string[]; low: stri
     low: ["The meeting is gone. You realise that.", "I'll be asking for a refund.", "Speed, Captain. It was the whole point."] },
 };
 import { hull, HullDef } from "../data/hulls";
-import { CREW_LINES, ROLE_INFO, roleLabel } from "../data/crew";
+import { CREW_LINES, ROLE_INFO, roleLabel, SPECIALTIES } from "../data/crew";
 import { clamp, dist } from "../core/mathx";
 import { sfx } from "../core/sfx";
 import { music } from "../core/music";
-import { rankOf, rescuePoints, STORY_LEN, findStation, canRetireCaptain, retireCaptain, RETIRE_AFTER, ledger, logEntry } from "../world";
+import { rankOf, rescuePoints, STORY_LEN, findStation, canRetireCaptain, retireCaptain, RETIRE_AFTER, ledger, logEntry, chooseSpecialty } from "../world";
 import * as wire from "../core/wire";
 import { isOccasion } from "../data/occasions";
 import { serialLines } from "../data/serials";
@@ -249,6 +249,17 @@ export class InteriorScene implements Scene {
       { label: "SIT WITH IT A WHILE", result: () => { const first = !(p.flags ?? {})[key]; (p.flags ??= {})[key] = true; if (first) { for (const c of p.crew) c.morale = Math.min(100, c.morale + 2); for (const m of passengersAboard(p)) m.mood = Math.min(100, (m.mood ?? 60) + 2); } return first ? "THE CREW DRIFT IN ONE BY ONE AND STAND IN THE HATCHWAY LISTENING. NOBODY SAYS 'TURN IT UP'. NOBODY HAS TO. MORALE UP." : "YOU'VE HEARD THIS EPISODE. IT'S STILL GOOD."; } },
       { label: "SWITCH IT OFF", result: () => "THE HUM OF THE SHIP COMES BACK. IT WAS THERE ALL ALONG." },
     ] };
+    (g.scenes["encounter"] as EncounterScene).open(g, enc, "interior", true);
+  }
+  // at the top of their trade, they come to you with a choice
+  offerSpecialty(g: Game, c: import("../data/crew").CrewMember): void {
+    const opts = SPECIALTIES[c.role];
+    const enc: Encounter = { id: "specialty", where: "space", title: `${c.name.toUpperCase()} - A TRADE OF THEIR OWN`, weight: 0,
+      text: `${c.name.toUpperCase()} HAS BEEN THE BEST ${ROLE_INFO[c.role].label} YOU'VE HAD FOR A WHILE NOW, AND KNOWS IT. 'I'VE BEEN THINKING ABOUT WHAT I'M FOR, SKIPPER. I COULD GO ONE OF TWO WAYS. YOUR CALL. YOU'RE THE ONE WHO HAS TO LIVE WITH IT.'`,
+      options: [
+        ...opts.map((o) => ({ label: `${o.name} - ${o.desc.toUpperCase()}`, result: () => chooseSpecialty(g.world, c, o.id) ?? "" })),
+        { label: "GIVE ME A DAY TO THINK", result: () => `${c.name.toUpperCase()} NODS. 'THE OFFER STANDS.'` },
+      ] };
     (g.scenes["encounter"] as EncounterScene).open(g, enc, "interior", true);
   }
   // a hand of cards on an upturned crate: matchsticks, or a round of drinks
@@ -510,6 +521,7 @@ export class InteriorScene implements Scene {
       this.cat.pause = 3;
       sfx.purr();
     } else if (inp.wasPressed("e")) {
+      if (crewNear && crewNear.c.skill >= 3 && !crewNear.c.specialty && !crewNear.c.sick) { this.offerSpecialty(g, crewNear.c); return; }
       if (crewNear) {
         const c = crewNear.c;
         const pool = c.morale >= 65 ? CREW_LINES[c.role].high : c.morale >= 30 ? CREW_LINES[c.role].mid : CREW_LINES[c.role].low;

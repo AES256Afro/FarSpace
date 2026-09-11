@@ -11,7 +11,7 @@ import { STARS, starXYZ, starDistance } from "./data/stars";
 import { hull } from "./data/hulls";
 import { moduleDef } from "./data/modules";
 import type { CrewMember, CrewRole } from "./data/crew";
-import { ROLE_INFO, CREW_TRAITS, SICKNESS, LEAVE_DOCKS } from "./data/crew";
+import { ROLE_INFO, CREW_TRAITS, SICKNESS, LEAVE_DOCKS, SPECIALTIES } from "./data/crew";
 import { tickSerial, type SerialState } from "./data/serials";
 import { isOccasion } from "./data/occasions";
 
@@ -467,6 +467,17 @@ export function ledgerAround<T>(p: PlayerState, source: string, fn: () => T): T 
 }
 
 // ---------- Crew learn by doing ----------
+// A specialty aboard counts when its holder is fit for duty
+export function hasSpecialty(p: PlayerState, id: string): boolean {
+  return (p.crew ?? []).some((c) => c.specialty === id && !c.sick && c.morale >= 30);
+}
+export function chooseSpecialty(w: World, c: CrewMember, id: string): string | null {
+  const def = SPECIALTIES[c.role].find((x) => x.id === id);
+  if (!def || c.skill < 3 || c.specialty) return null;
+  c.specialty = id; c.morale = Math.min(100, c.morale + 10); c.loyalty = (c.loyalty ?? 0) + 1;
+  logEntry(w, `${c.name} took a trade of their own: ${def.name.toLowerCase()}`);
+  return `${c.name.toUpperCase()}, ${def.name}. ${def.desc.toUpperCase()}`;
+}
 // A repair, a kill, a jump, a patient: each is a mark toward the next skill.
 export const XP_STEPS = [0, 12, 34];
 export function crewXp(p: PlayerState, role: CrewRole, n = 1): string | null {
@@ -1293,7 +1304,7 @@ export function seeWonder(w: World, wd: Wonder, by: string): { first: boolean; d
 export const WEAR_SERVICE_FROM = 10;
 export function wearRate(p: PlayerState): number {
   const eng = crewBonus(p, "engineer");
-  return 0.012 * Math.max(0.4, 1 - 0.15 * eng);
+  return 0.012 * Math.max(0.4, 1 - 0.15 * eng) * (hasSpecialty(p, "framewright") ? 0.7 : 1);
 }
 export function tickWear(p: PlayerState, dt: number): void {
   p.wear = Math.min(130, (p.wear ?? 0) + wearRate(p) * dt);
@@ -1335,7 +1346,7 @@ export function crewFallsIll(p: PlayerState, c: CrewMember, now: number, rng: RN
   if (!rng.chance(chance)) return null;
   const s = rng.pick(SICKNESS);
   const medic = crewBonus(p, "medic") > 0;
-  c.sick = { kind: s.kind, until: now + s.days * (medic ? 0.5 : 1) };
+  c.sick = { kind: s.kind, until: now + s.days * (hasSpecialty(p, "surgeon") ? 0.25 : medic ? 0.5 : 1) };
   return s.kind;
 }
 export function crewRecover(c: CrewMember, now: number): boolean {
@@ -1739,7 +1750,7 @@ export function genCrewCandidate(rng: RNG): CrewMember {
 export function jumpFuelCost(w: World, fromId: string, toId: string): number {
   const ly = w.systems[fromId]?.ly?.[toId];
   const tuned = (1 - 0.08 * (w.player?.engineering?.fsd ?? 0)) * (hull(w.player?.hullId).fuelEff ?? 1);
-  const beacon = beaconDiscount(w, fromId, toId) * (isOccasion("lanes") ? 0.9 : 1);
+  const beacon = beaconDiscount(w, fromId, toId) * (isOccasion("lanes") ? 0.9 : 1) * (w.player && hasSpecialty(w.player, "gaterunner") ? 0.9 : 1);
   if (ly === undefined) return Math.max(4, Math.round(10 * tuned * beacon));
   return clamp(Math.round((4 + ly * 1.4) * tuned * beacon), 3, 40);
 }

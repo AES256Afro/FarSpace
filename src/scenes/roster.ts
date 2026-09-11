@@ -4,7 +4,7 @@
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { ROLE_INFO, XP_STEPS_LABEL } from "../data/crew";
+import { ROLE_INFO, XP_STEPS_LABEL, SPECIALTIES } from "../data/crew";
 import { bond, bondLabel, findStation, ledger, XP_STEPS, onWatch, captainNickname } from "../world";
 import { arcObjective } from "../core/crewarcs";
 import { sfx } from "../core/sfx";
@@ -38,7 +38,7 @@ export class RosterScene implements Scene {
       const sel = i === this.cursor;
       if (sel) { ctx.fillStyle = "#13203a"; ctx.fillRect(6, y - 3, VW - 12, 40); }
       const home = c.home ? (findStation(w, c.home)?.st.name ?? "?") : "no home port";
-      drawText(ctx, `${c.name.toUpperCase()} - ${ROLE_INFO[c.role].label} ${"*".repeat(c.skill)}${c.sick ? " - LAID UP (" + c.sick.kind.toUpperCase() + ")" : p.crew.length >= 2 ? (onWatch(p, i, w.time) ? " - ON WATCH" : " - OFF WATCH") : ""}`, 12, y, sel ? PAL.white : PAL.ui);
+      drawText(ctx, `${c.name.toUpperCase()} - ${ROLE_INFO[c.role].label} ${"*".repeat(c.skill)}${c.specialty ? " - " + (SPECIALTIES[c.role].find((x) => x.id === c.specialty)?.name ?? "") : c.skill >= 3 ? " - HAS A CHOICE TO MAKE (TALK ABOARD)" : ""}${c.sick ? " - LAID UP (" + c.sick.kind.toUpperCase() + ")" : p.crew.length >= 2 ? (onWatch(p, i, w.time) ? " - ON WATCH" : " - OFF WATCH") : ""}`, 12, y, sel ? PAL.white : PAL.ui);
       drawText(ctx, `MORALE ${Math.round(c.morale)}   LOYALTY ${(c.loyalty ?? 0).toFixed(0)}   WAGE ${c.wage}CR   ${c.docks ?? 0} DOCKINGS   HOME ${home.toUpperCase()}`, 12, y + 9, PAL.grey);
       const xp = c.xp ?? 0, need = c.skill < 3 ? XP_STEPS[c.skill] : 0;
       ctx.fillStyle = PAL.greyDark; ctx.fillRect(300, y + 1, 80, 3); ctx.fillStyle = c.morale >= 65 ? PAL.good : c.morale >= 30 ? PAL.warn : PAL.danger; ctx.fillRect(300, y + 1, Math.round(c.morale * 0.8), 3); drawText(ctx, "MORALE", 384, y - 1, PAL.greyDark);

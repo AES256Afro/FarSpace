@@ -229,6 +229,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## A trade of their own
+
+- A crew member at the top of their trade comes to you, when you next talk
+  aboard, with a choice of two specialties: a coolant whisperer or a
+  framewright, a marksman or a watchkeeper, a gate runner or a helmsman, a
+  field surgeon or a steward. One each, for good. It shows on the roster and
+  in the numbers, as long as they're fit and not miserable.
+
 ## The week's vote
 
 - Every faction puts one question to its captains each week: a patrol levy,

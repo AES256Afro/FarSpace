@@ -6,6 +6,7 @@ export interface CrewMember {
   name: string;
   role: CrewRole;
   skill: number;   // 1..3
+  specialty?: string; // at skill 3 they pick a trade of their own; see SPECIALTIES
   morale: number;  // 0..100
   wage: number;    // credits per docking
   request?: CrewRequest | null; // a personal ask, pending
@@ -43,6 +44,25 @@ export const SICKNESS = [
 ];
 
 export const XP_STEPS_LABEL = "NEXT SKILL";
+// At the top of their trade, crew choose a specialty. One per head; it shows on the roster and in the numbers.
+export const SPECIALTIES: Record<CrewRole, { id: string; name: string; desc: string }[]> = {
+  engineer: [
+    { id: "coolant", name: "COOLANT WHISPERER", desc: "Heat sheds a third faster. Scoop closer, fight longer." },
+    { id: "framewright", name: "FRAMEWRIGHT", desc: "Wear climbs a third slower. Fewer yards, fewer faults." },
+  ],
+  gunner: [
+    { id: "marksman", name: "MARKSMAN", desc: "Fifteen percent more on every shot." },
+    { id: "watchkeeper", name: "WATCHKEEPER", desc: "Corsairs find you less often. A good pair of eyes on the scope." },
+  ],
+  pilot: [
+    { id: "gaterunner", name: "GATE RUNNER", desc: "Every jump costs ten percent less fuel." },
+    { id: "helmsman", name: "HELMSMAN", desc: "Ten percent more thrust and turn, on top of the rest." },
+  ],
+  medic: [
+    { id: "surgeon", name: "FIELD SURGEON", desc: "Illness aboard runs a quarter of its course." },
+    { id: "steward", name: "STEWARD", desc: "Every passenger steps off five points happier." },
+  ],
+};
 export const RETIRE_DOCKS = 30;   // a tour long enough to think about going home
 export const LEAVE_DOCKS = 8;     // dockings they'll wait for you before finding another ship
 

@@ -5,7 +5,7 @@ import { ask, confirmBox } from "../../core/dialog";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra, raceCourse, racePar, racePrize, recordRace, beatHolder, captainNickname, leaveWreck, addWireWrecks, enterRegatta, regattaProgress } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra, raceCourse, racePar, racePrize, recordRace, beatHolder, captainNickname, leaveWreck, addWireWrecks, enterRegatta, regattaProgress, hasSpecialty } from "../../world";
 import { COMMODITIES, commodity } from "../../data/data";
 import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
@@ -228,7 +228,7 @@ export class FlightScene implements Scene {
     const lifeSys = p.systems.find((s) => s.id === "life")!;
     const weaponsSys = p.systems.find((s) => s.id === "weapons")!;
     const engineFactor = 0.3 + 0.7 * (engineSys.health / 100);
-    const pilot = 1 + crewBonus(p, "pilot") * 0.15 + (p.skills?.piloting ?? 0) * 0.02;
+    const pilot = 1 + crewBonus(p, "pilot") * 0.15 + (p.skills?.piloting ?? 0) * 0.02 + (hasSpecialty(p, "helmsman") ? 0.1 : 0);
     const tuned = (hasModule(p, "thrusters") ? 1.15 : 1) * (1 + 0.06 * engGrade(p, "drives"));
     // cruise: the long-haul drive. Fast, blind, and it drops the moment anything big is near.
     if (g.input.wasPressed("j")) this.toggleCruise(g);
@@ -307,7 +307,7 @@ export class FlightScene implements Scene {
     if (firing && this.fireCd <= 0 && weaponsSys.health > 5) {
       this.fireCd = h.fireRate;
       sfx.laser();
-      const dmg = h.weaponDmg * (0.4 + 0.6 * weaponsSys.health / 100) * (1 + crewBonus(p, "gunner") * 0.2);
+      const dmg = h.weaponDmg * (0.4 + 0.6 * weaponsSys.health / 100) * (1 + crewBonus(p, "gunner") * 0.2) * (hasSpecialty(p, "marksman") ? 1.15 : 1);
       const a = this.aim;
       this.bullets.push({
         x: p.x + Math.cos(a) * 12, y: p.y + Math.sin(a) * 12,
@@ -426,7 +426,7 @@ export class FlightScene implements Scene {
     if (this.spawnTimer <= 0) {
       this.spawnTimer = 20 + Math.random() * 25;
       const alive = this.npcs.filter((n) => n.kind === "pirate").length;
-      if (alive < sys.pirateActivity * 6 * voteMods(g.world, sys.factionId).patrol) spawnPirateNearBelt(this, g);
+      if (alive < sys.pirateActivity * 6 * voteMods(g.world, sys.factionId).patrol * (hasSpecialty(p, "watchkeeper") ? 0.75 : 1)) spawnPirateNearBelt(this, g);
       // somebody real was here lately: their ship is on the lanes
       if (g.world.realGalaxy && !this.npcs.some((n) => n.ghost) && Math.random() < 0.35) {
         const me = wire.getCallsign();
@@ -1204,7 +1204,7 @@ export class FlightScene implements Scene {
     } else if (scoopZone && !hasModule(p, "scoop") && !p.hints?.["noscoop"]) {
       g.showHint("noscoop", "TOO CLOSE TO THE STAR - A FUEL SCOOP WOULD TURN THIS INTO FUEL");
     }
-    p.heat = Math.max(0, p.heat - dt * (hasModule(p, "radiators") ? 24 : 12) * (1 + 0.25 * engGrade(p, "vents")));
+    p.heat = Math.max(0, p.heat - dt * (hasModule(p, "radiators") ? 24 : 12) * (1 + 0.25 * engGrade(p, "vents")) * (hasSpecialty(p, "coolant") ? 1.33 : 1));
     if (p.heat > 100) {
       p.heat = Math.min(140, p.heat);
       p.hull -= dt * 5;

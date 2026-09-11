@@ -679,4 +679,8 @@ Time passes for the people on the ship, and for the ship.
       race, the roster, the viewport, cards and the band; tannoy chime, mess
       call blip; shorter vote toast
 
+## Milestone 79 — A Trade of Their Own ✅ (Sep 2026)
+- [x] Crew specialties at skill three, two per role, chosen aboard; effects on
+      heat, wear, damage, corsairs, jump fuel, thrust, illness and passengers
+
 ## Later
