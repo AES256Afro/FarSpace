@@ -1632,6 +1632,16 @@ Time passes for the people on the ship, and for the ship.
 - [x] Chatter about the cat program, the valves, talent night and the bar's
       book
 
+## Milestone 312 — The Belt Tank ✅ (Sep 2026)
+- [x] The harbour view counts water sold to the belt
+
+## Milestone 313 — Who's Aboard ✅ (Sep 2026)
+- [x] The harbour view lists the cadet, a prisoner (guarded or not), Number
+      One and the undock word
+
+## Milestone 314 — The Ship's Voice Page ✅ (Sep 2026)
+- [x] A handbook section for the ship's voice; What's New reads to 0.205
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log
