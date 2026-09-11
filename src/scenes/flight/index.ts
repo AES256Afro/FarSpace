@@ -5,7 +5,7 @@ import { ask, confirmBox } from "../../core/dialog";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
 import { clamp, angDiff, dist } from "../../core/mathx";
-import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra, raceCourse, racePar, racePrize, recordRace, beatHolder, captainNickname, leaveWreck, addWireWrecks, enterRegatta, regattaProgress, hasSpecialty, maydayAnswered, watchIndex, onWatch, raceHolder, askPassengerRequest, takeJuice, alertMods, AlertLevel, shipVoiceName, noteLeg, firstOfficer, strangeReading, findStation } from "../../world";
+import { hasIllegalCargo, adjustRep, lawLevelFor, jumpFuelCost, crewBonus, tickWorld, logSystem, navRoute, permitDenied, addCargo, removeCargo, galaxyEventAt, logEntry, jumpWear, wearThrust, wearFault, logSight, passengersAboard, crewXp, stormBlind, ledger, systemLore, wondersIn, seeWonder, WONDER_RANGE, helpCaptain, captainByName, isFriend, isRival, rivalryLine, rivalBeatsYouTo, RIDE_ALONG_DOCKS, canUpgradeInfra, upgradeInfra, WAYSTATION_CREDITS, WAYSTATION_PARTS, infraAt, canBuildInfra, buildInfra, collectInfra, repairInfra, stockDepot, drawDepot, INFRA_KITS, DEPOT_CAP, Infra, raceCourse, racePar, racePrize, recordRace, beatHolder, captainNickname, leaveWreck, addWireWrecks, enterRegatta, regattaProgress, hasSpecialty, maydayAnswered, watchIndex, onWatch, raceHolder, askPassengerRequest, takeJuice, alertMods, AlertLevel, shipVoiceName, noteLeg, firstOfficer, strangeReading, findStation, parleyChance } from "../../world";
 import { COMMODITIES, commodity } from "../../data/data";
 import { faction as factionDef } from "../../data/data";
 import { hasModule } from "../../data/modules";
@@ -633,6 +633,24 @@ export class FlightScene implements Scene {
   }
 
   // ---------- Interactions ----------
+
+  // parley: pay the toll, bluff, offer a way out, or open fire
+  parley(g: Game, n: Npc): void {
+    const p = g.world.player;
+    const gang = this.npcs.filter((x) => x.kind === "pirate" && x.hull > 0 && !x.fleeing && dist(p.x, p.y, x.x, x.y) < 900);
+    const toll = 120 * gang.length;
+    const scatter = (line: string) => { for (const x of gang) x.fleeing = true; return line; };
+    const odds = parleyChance(p);
+    const enc: Encounter = { id: "parley", where: "space", title: "PARLEY", weight: 0,
+      text: `${gang.length > 1 ? `${gang.length} corsair hulls` : "A corsair hull"} on an intercept, guns warm, and an open channel: '${n.variant === "captain" ? "WELL. LOOK WHO." : "CUT THRUST AND OPEN YOUR HOLD, OR DON'T. WE'RE EASY."}' Behind you the crew have gone quiet. Every corsair on the lane will listen to money; some will listen to a voice.`,
+      options: [
+        { label: `PAY THE TOLL (${toll}CR)`, hint: "They take it and go. This time.", requires: () => p.credits >= toll, result: (g2) => { p.credits -= toll; logEntry(g2.world, `Paid a corsair toll of ${toll}cr`); return scatter(`THE CREDITS GO ACROSS. 'PLEASURE DOING BUSINESS.' THEY PEEL OFF FOR THE BELT. THE CREW DON'T LOOK AT YOU. -${toll}CR.`); } },
+        { label: "BLUFF: THIS IS A PATROL CUTTER", hint: `A gunner, a rank and a reputation help (${Math.round(odds * 100)}%)`, result: (g2, rng) => { if (rng.chance(odds)) { flag(g2, "parley"); logEntry(g2.world, "Bluffed a corsair off with a patrol callsign"); return scatter("YOU READ THEM A PATROL CALLSIGN IN A PATROL VOICE AND LET THE SILENCE DO THE REST. A LONG PAUSE. THEN THE INTERCEPT BREAKS AND THEY RUN FOR THE BELT. THE CREW BREATHE OUT."); } this.alert = 2; this.alertT = 0; sfx.alarm(); return "YOU READ THEM A PATROL CALLSIGN. 'NICE TRY.' THE INTERCEPT TIGHTENS AND THE FIRST SHOT COMES ACROSS THE BOW. RED ALERT."; } },
+        { label: "OFFER THEM A WAY OUT", hint: "Ace of the lanes: they know the name", requires: () => p.kills >= 25, result: (g2, rng) => { if (rng.chance(0.75)) { flag(g2, "parley"); adjustRep(g2.world, g2.world.systems[p.systemId].factionId, 1); logEntry(g2.world, "Talked a corsair down without a shot"); return scatter("YOU TELL THEM WHO YOU ARE AND WHAT HAPPENS NEXT IF THEY STAY. THEY KNOW THE NAME. THE CHANNEL GOES QUIET, THEN: 'NOT TODAY, THEN.' THEY GO. NOBODY DIES. REP UP."); } this.alert = 2; this.alertT = 0; sfx.alarm(); return "YOU TELL THEM WHO YOU ARE. ONE OF THEM LAUGHS. RED ALERT."; } },
+        { label: "OPEN FIRE", hint: "Red alert, and the usual", result: () => { this.alert = 2; this.alertT = 0; sfx.alarm(); return "YOU CLOSE THE CHANNEL AND OPEN THE GUNS. RED ALERT."; } },
+      ] };
+    (g.scenes["encounter"] as EncounterScene).open(g, enc, "flight", true);
+  }
 
   // a trap springs: pirates appear close, already talking
   ambush(g: Game, n: number): void {
@@ -1366,6 +1384,9 @@ export class FlightScene implements Scene {
     // a ship that needs a hand
     const needy = this.npcs.find((n) => n.kind === "trader" && n.hull > 0 && dist(p.x, p.y, n.x, n.y) < 80 && (n.disabled || n.casualties || n.hull < n.hullMax * 0.5));
     if (needy && !this.repairJob) { this.offerHelp(g, needy); return; }
+    // a corsair close enough to talk to
+    const corsair = this.npcs.find((n) => n.kind === "pirate" && n.hull > 0 && !n.fleeing && dist(p.x, p.y, n.x, n.y) < 260);
+    if (corsair) { this.parley(g, corsair); return; }
     for (const st of sys.stations) {
       const sx = Math.cos(st.angle) * st.orbit;
       const sy = Math.sin(st.angle) * st.orbit;

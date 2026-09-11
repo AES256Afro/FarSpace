@@ -1037,4 +1037,8 @@ Time passes for the people on the ship, and for the ship.
       rock's own words; a rock loses its spin now and then and the yard pays
       for an engineer up the spoke
 
+## Milestone 170 — Parley ✅ (Sep 2026)
+- [x] E near a corsair opens a channel: pay the toll, bluff a patrol
+      callsign, offer them a way out as an ace, or open fire
+
 ## Later

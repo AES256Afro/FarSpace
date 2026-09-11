@@ -592,6 +592,14 @@ export function strangeReading(w: World, an: AnomalyDef, rng: RNG): string | nul
   if (an.kind === "echo") { const e = (p.log ?? []).length ? rng.pick(p.log!) : null; p.expData = (p.expData ?? 0) + 50; for (const c of p.crew) c.morale = Math.min(100, c.morale + 3); logEntry(w, `${an.name}: an echo that played the ship's own band back`); return `${an.name.toUpperCase()}: THE BAND PLAYS BACK SOMETHING THIS SHIP SAID ONCE${e ? `: "${e.text.toUpperCase().slice(0, 60)}"` : ""}. THE CREW GO QUIET, THEN LAUGH. +50 DATA, MORALE UP.`; }
   return null;
 }
+// Parley: the odds a corsair buys a bluff or takes a way out. A gunner helps, a rank helps, a reputation helps most.
+export function parleyChance(p: PlayerState): number {
+  let c = 0.35;
+  if (p.crew.some((x) => x.role === "gunner" && !x.sick)) c += 0.2;
+  const rk = commandRank(p); if (rk === "COMMANDER" || rk === "CAPTAIN" || rk === "COMMODORE" || rk === "ADMIRAL") c += 0.15;
+  if (p.kills >= 25) c += 0.2;
+  return Math.min(0.9, c);
+}
 // Command rank, by deeds on the wall: the lanes' own ladder, nothing to do with any navy. And a registry
 // for the hull, so control has something to read out.
 export const COMMAND_RANKS: [number, string][] = [[0, "SKIPPER"], [10, "LIEUTENANT"], [25, "COMMANDER"], [45, "CAPTAIN"], [70, "COMMODORE"], [100, "ADMIRAL"]];
