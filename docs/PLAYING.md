@@ -229,6 +229,14 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## Fleet at work
+
+- A hull parked at a station can earn its keep. On the SHIPS tab, W on a
+  parked ship puts her to work on your best known run from here with a hired
+  crew: a crew's fee instead of a charter price, a hold sized to the hull, and
+  the same three-charter limit. Release her (R) and the hull comes back to
+  you at the run's home station.
+
 ## A trade of their own
 
 - A crew member at the top of their trade comes to you, when you next talk

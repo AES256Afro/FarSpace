@@ -12,7 +12,7 @@ import { ROLE_INFO, CrewMember, RETIRE_DOCKS, LEAVE_DOCKS, roleLabel } from "../
 import {
   StationDef, StoredShip, Mission, genMissionsFor, cargoUsed, addCargo, removeCargo, findStation,
   buyPrice, sellPrice, rareSellPrice, refreshPrices, missionDeliverable, adjustRep, repLabel, missionTier,
-  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, tickAlumniMail, catGift, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, notableOutcome, ledger, ledgerAround, LEDGER_LABELS, dockingsAt, OLD_HAND_AT, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter, RACE_GATES, raceHolder, postDelivered, captainNickname, charterRoute, tickWorld, signGuestbook, regattaObjective, buyStake, collectStake, stakeDividend, stakePrice, totalShares, hasSpecialty } from "../world";
+  crewWages, genCrewCandidate, applyHull, crewRecover, crewTreat, crewFallsIll, collectShoreCrew, retireCrew, sendOnLeave, berthsUsed, servicePrice, serviceHull, WEAR_SERVICE_FROM, crewBonus, genFares, settlePassengers, logSight, passengerPay, passengersAboard, passengerCap, INFRA_KITS, restAtDock, adoptCat, CAT_NAMES, FURNISHINGS, tickBonds, feuds, shiftBond, chronicleText, collectCharters, tickMail, tickAlumniMail, catGift, friendsAt, helpCaptain, rivalTakesFare, askRideAlong, tickRideAlong, RIDE_ALONG_DOCKS, setHomePort, isHome, donateRelic, hullHistoryFor, notableOutcome, ledger, ledgerAround, LEDGER_LABELS, dockingsAt, OLD_HAND_AT, hireCharter, releaseCharter, CHARTER_PRICE, CHARTER_CAP, CHARTER_CUT, pushEvent, ARCS, dailyContract, dailyKey, rankOf, rankValue, RANK_TITLES, communityGoal, blackMarket, syndicateAt, synStanding, synStandingLabel, adjustSynRep, syndicateByTag, baseDemand, ROUTE_PREMIUM, effectiveSynStanding, shiftRelation, synAllies, synRelation, warContribute, backWar, crisisAt, CRISIS_PREMIUM, logEntry, galaxyEventAt, rescuePoints, stationProfile, stationBulletin, embargoed, hasCharter, RACE_GATES, raceHolder, postDelivered, captainNickname, charterRoute, tickWorld, signGuestbook, regattaObjective, buyStake, collectStake, stakeDividend, stakePrice, totalShares, hasSpecialty, crewOwnHull, OWN_HULL_CREW_FEE } from "../world";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { MODULES, hasModule, moduleDef } from "../data/modules";
 import { BLUEPRINTS, MATERIALS, engGrade, nextCost, canAfford, upgrade } from "../data/engineering";
@@ -465,6 +465,7 @@ export class StationScene implements Scene {
         }
         if (inp.wasPressed("k") && this.cursor < HULLS.length) this.buyHull(g, HULLS[this.cursor].id, true);
         if (inp.wasPressed("l")) this.takeTheLiner(g);
+        if (inp.wasPressed("w") && this.cursor >= HULLS.length) this.putToWork(g, stored[this.cursor - HULLS.length]);
         if (inp.wasPressed("r") && (p.haulers ?? []).length) {
           const c = p.haulers![p.haulers!.length - 1];
           if (confirmBox(`Release ${c.name} from the charter? The till (${Math.round(c.till)}cr) pays out now; the crew find other work.`)) { p.credits += Math.round(c.till); releaseCharter(p, c); g.toast(`${c.name.toUpperCase()} RELEASED. THE CREW WAVE FROM THE BAY.`); }
@@ -807,6 +808,20 @@ export class StationScene implements Scene {
   }
 
   // Park the current hull here and take another one out of storage
+  // A parked hull of yours goes to work on your best known run from here, with a hired crew
+  putToWork(g: Game, ship: StoredShip | undefined): void {
+    if (!ship) return;
+    const p = g.world.player; const st = this.station;
+    const best = this.bestRoute(g);
+    const toId = best ? Object.keys(p.marketMemory ?? {}).find((id) => findStation(g.world, id)?.st.name === best.station) : null;
+    if (!best || !toId) { g.toast("NO KNOWN RUN FROM HERE YET - DOCK AT ANOTHER STATION AND COME BACK"); return; }
+    const h = hull(ship.hullId);
+    if (!confirmBox(`Put the ${ship.name ?? h.name} to work on the ${st.name} - ${best.station} run (${commodity(best.id).name})? A crew costs ${OWN_HULL_CREW_FEE}cr; release her on the SHIPS tab (R) to get the hull back.`)) return;
+    const r = crewOwnHull(g.world, ship, st.id, toId, best.id, new RNG((g.world.seed ^ Math.floor(g.world.time * 31)) >>> 0));
+    if (typeof r === "string") { g.toast(r); return; }
+    g.toast(`THE ${r.name.toUpperCase()} SAILS FOR ${best.station.toUpperCase()} WITH A HIRED CREW. FIRST TRIP IN ${Math.round(r.tripSecs / 60)} MINUTES.`); sfx.dock();
+    logEntry(g.world, `Put the ${r.name} to work on the ${st.name} - ${best.station} run`); flag(g, "fleetAtWork");
+  }
   // Passage on a liner to wherever your other ship is parked. This one stays here; the crew come with you.
   takeTheLiner(g: Game): void {
     const p = g.world.player; const w = g.world;
@@ -1268,7 +1283,7 @@ export class StationScene implements Scene {
     });
     let y = top + 12 + HULLS.length * rowH;
     if (stored.length) {
-      drawText(ctx, "PARKED HERE - ENTER TO SWAP:", 8, y, PAL.greyDark); y += 10;
+      drawText(ctx, "PARKED HERE - ENTER TO SWAP - W PUTS HER TO WORK ON YOUR BEST KNOWN RUN:", 8, y, PAL.greyDark); y += 10;
       stored.forEach((f, i) => {
         this.row(ctx, y, this.cursor === HULLS.length + i);
         drawText(ctx, `${(f.name ?? hull(f.hullId).name).toUpperCase()} (${hull(f.hullId).name.toUpperCase()})  HULL ${Math.round(f.hull)}/${hull(f.hullId).hullMax}`, 8, y, PAL.ui);

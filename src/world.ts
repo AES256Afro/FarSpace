@@ -565,7 +565,8 @@ export function restAtDock(w: World, seconds = 600): string[] {
 // You know a good run; a hauler with a crew of three runs it for a cut. Prices
 // move with every trip, corsairs take their share, and the till pays out when
 // you next dock anywhere.
-export interface Charter { id: string; name: string; from: string; to: string; commodityId: string; qty: number; tripSecs: number; lastT: number; trips: number; earned: number; till: number; health: number; raided: number }
+export interface Charter { id: string; name: string; from: string; to: string; commodityId: string; qty: number; tripSecs: number; lastT: number; trips: number; earned: number; till: number; health: number; raided: number; hullId?: string; own?: boolean; shipName?: string }
+export const OWN_HULL_CREW_FEE = 600;
 export const CHARTER_PRICE = 3000;
 export const CHARTER_CAP = 3;
 export const CHARTER_CUT = 0.6; // your share of each trip's margin
@@ -587,6 +588,22 @@ export function hireCharter(w: World, fromId: string, toId: string, commodityId:
   p.credits -= CHARTER_PRICE;
   const { hops } = charterRoute(w, fromId, toId);
   const c: Charter = { id: `ch-${Math.floor(w.time)}-${rng.int(0, 9999)}`, name: charterName(rng), from: fromId, to: toId, commodityId, qty: 10, tripSecs: 180 + hops * 120, lastT: w.time, trips: 0, earned: 0, till: 0, health: 100, raided: 0 };
+  (p.haulers ??= []).push(c);
+  return c;
+}
+// Put one of your own parked hulls to work on a run: a crew's fee instead of a charter price,
+// a hold sized to the hull, and the ship comes back to you when you release it.
+export function crewOwnHull(w: World, ship: StoredShip, fromId: string, toId: string, commodityId: string, rng: RNG): Charter | string {
+  const p = w.player;
+  if ((p.haulers ?? []).length >= CHARTER_CAP) return `THREE CHARTERS IS ALL YOUR LEDGER WILL BEAR`;
+  if (p.credits < OWN_HULL_CREW_FEE) return `A CREW FOR HER COSTS ${OWN_HULL_CREW_FEE}CR UP FRONT`;
+  if (fromId === toId) return "A ROUTE NEEDS TWO ENDS";
+  if (!(p.fleet ?? []).includes(ship)) return "THAT HULL ISN'T HERE";
+  p.credits -= OWN_HULL_CREW_FEE; ledger(p, "charters", -OWN_HULL_CREW_FEE);
+  p.fleet = (p.fleet ?? []).filter((f) => f !== ship);
+  const h = hull(ship.hullId);
+  const { hops } = charterRoute(w, fromId, toId);
+  const c: Charter = { id: `own-${Math.floor(w.time)}-${rng.int(0, 9999)}`, name: ship.name ?? h.name, from: fromId, to: toId, commodityId, qty: Math.max(6, Math.min(24, Math.round(h.cargoMax / 3))), tripSecs: 180 + hops * 120, lastT: w.time, trips: 0, earned: 0, till: 0, health: Math.max(40, Math.round(100 * ship.hull / h.hullMax)), raided: 0, hullId: ship.hullId, own: true, shipName: ship.name };
   (p.haulers ??= []).push(c);
   return c;
 }
@@ -631,7 +648,10 @@ export function collectCharters(p: PlayerState): { total: number; lines: string[
   }
   return { total, lines };
 }
-export function releaseCharter(p: PlayerState, c: Charter): void { p.haulers = (p.haulers ?? []).filter((x) => x !== c); }
+export function releaseCharter(p: PlayerState, c: Charter): void {
+  p.haulers = (p.haulers ?? []).filter((x) => x !== c);
+  if (c.own && c.hullId) { const h = hull(c.hullId); (p.fleet ??= []).push({ hullId: c.hullId, stationId: c.from, name: c.shipName, hull: Math.round(h.hullMax * Math.max(0.3, c.health / 100)), torpedoes: 0 }); }
+}
 
 // ---------- Furnishings: a deck you'd want to live on ----------
 export const FURNISHINGS: { id: string; name: string; price: number; desc: string; tile: string }[] = [

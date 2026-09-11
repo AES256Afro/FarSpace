@@ -5,6 +5,9 @@ import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 
 const NOTES: [string, string[]][] = [
+  ["0.80 - FLEET AT WORK", [
+    "W ON A PARKED HULL PUTS HER TO WORK ON YOUR BEST KNOWN RUN WITH A HIRED CREW. RELEASE HER AND SHE COMES BACK.",
+  ]],
   ["0.79 - A TRADE OF THEIR OWN", [
     "CREW AT THE TOP OF THEIR TRADE PICK A SPECIALTY WHEN YOU TALK ABOARD. ONE EACH, FOR GOOD. IT SHOWS IN THE NUMBERS.",
   ]],

@@ -683,4 +683,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Crew specialties at skill three, two per role, chosen aboard; effects on
       heat, wear, damage, corsairs, jump fuel, thrust, illness and passengers
 
+## Milestone 80 — Fleet at Work ✅ (Sep 2026)
+- [x] W on a parked hull: it runs your best known route as a charter; release
+      returns the hull
+
 ## Later

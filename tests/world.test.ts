@@ -15,7 +15,7 @@ import { STARS, starDistance } from "../src/data/stars";
 import { ACHIEVEMENTS } from "../src/data/achievements";
 import { ARCS, dailyContract, dailyKey, rankOf, logSystem, applyHull } from "../src/world";
 import { MODULES } from "../src/data/modules";
-import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook, leaveWreck, addWireWrecks, enterRegatta, regattaObjective, regattaProgress, buyStake, collectStake, stakePrice, STAKE_CAP, hasSpecialty, chooseSpecialty, wearRate } from "../src/world";
+import { rareSellPrice, findStation, genCrewCandidate, raceCourse, racePar, racePrize, recordRace, RACE_GATES, onWatch, WATCH_LEN, raceHolder, beatHolder, postDelivered, missionDeliverable, captainNickname, signGuestbook, leaveWreck, addWireWrecks, enterRegatta, regattaObjective, regattaProgress, buyStake, collectStake, stakePrice, STAKE_CAP, hasSpecialty, chooseSpecialty, wearRate, crewOwnHull, OWN_HULL_CREW_FEE } from "../src/world";
 import { RARES } from "../src/data/data";
 import { baseContract } from "../src/core/wire";
 import { syndicateAt, baseDemand, tickSyndicates, adjustSynRep, synStanding, shiftRelation, synRelation, synAllies, effectiveSynStanding, warContribute, backWar } from "../src/world";
@@ -882,6 +882,24 @@ describe("a trade of their own", () => {
     const pl = { ...genCrewCandidate(rng), role: "pilot" as const, skill: 3 };
     p.crew = [pl]; const ids = Object.keys(w.systems); const a = ids[0], b = w.systems[a].links[0];
     const f0 = jumpFuelCost(w, a, b); chooseSpecialty(w, pl, "gaterunner"); expect(jumpFuelCost(w, a, b)).toBeLessThanOrEqual(f0);
+  });
+});
+
+describe("fleet at work", () => {
+  it("a parked hull becomes a charter and comes back when released", () => {
+    const w = generateWorld(36, { realGalaxy: true });
+    const p = w.player; p.credits = 5000;
+    const sts = Object.values(w.systems).flatMap((s) => s.stations).filter((x) => !x.military);
+    const ship = { hullId: "freighter", stationId: sts[0].id, name: "Tin Sparrow", hull: 80, torpedoes: 0 };
+    p.fleet = [ship];
+    const r = crewOwnHull(w, ship, sts[0].id, sts[1].id, "food", new RNG(1));
+    expect(typeof r).toBe("object");
+    const c = r as import("../src/world").Charter;
+    expect(c.own).toBe(true); expect(c.name).toBe("Tin Sparrow"); expect(c.qty).toBeGreaterThanOrEqual(6);
+    expect(p.fleet.length).toBe(0); expect(p.credits).toBe(5000 - OWN_HULL_CREW_FEE);
+    expect(crewOwnHull(w, ship, sts[0].id, sts[1].id, "food", new RNG(1))).toContain("ISN'T HERE");
+    releaseCharter(p, c);
+    expect(p.haulers!.length).toBe(0); expect(p.fleet.length).toBe(1); expect(p.fleet[0].name).toBe("Tin Sparrow"); expect(p.fleet[0].stationId).toBe(sts[0].id);
   });
 });
 
