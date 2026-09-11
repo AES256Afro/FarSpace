@@ -724,6 +724,9 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
   worst system, breaches, fire, and an opinion about who's getting her hit.
 - Go to red with nothing on the scanner and Number One will ask, on the band,
   whether there's something they should know.
+- Two standing orders live in settings: whether the ship leaves the clamp at
+  green or at yellow with the shields ready, and whether Number One answers
+  the passing hails while the autopilot has the conn.
 - Y in flight cycles the alert. Yellow: shields recharge half again as fast
   and the crew look up from their cards. Red: shields twice as fast, guns
   10% harder, a klaxon, a banner, whoever's at tactical calling stations,

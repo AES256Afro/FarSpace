@@ -1153,6 +1153,10 @@ Time passes for the people on the ship, and for the ship.
 - [x] The HUD names who has the conn on autopilot, who's at tactical and
       on damage control at red; the helm says steady as she goes
 
+## Milestone 197 — Standing Orders ✅ (Sep 2026)
+- [x] Two standing orders in settings: leave the clamp at green or yellow;
+      Number One answers hails on autopilot, or the captain does
+
 ## Milestone 187 — Requisition ✅ (Sep 2026)
 - [x] At commander and up, naval stations sign for a full service once a
       week; Number One's conn goes in the supplemental log

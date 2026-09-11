@@ -10,6 +10,8 @@ export interface Settings {
   sfx: number;                    // effects volume 0..1
   presence: boolean;              // share position with pilots in the same system
   voice?: boolean;                // the ship speaks on the band (default on)
+  alertOnUndock?: "green" | "yellow"; // standing order: the alert status the ship leaves the clamp at (default green)
+  numberOneHails?: boolean;       // standing order: Number One acknowledges passing hails on autopilot (default on)
   chatter?: "quiet" | "normal" | "busy"; // how busy the comms band is (default normal)
   lanes?: "gentle" | "normal" | "rough"; // how many corsairs the lanes carry (default normal)
   whatsNewSeen?: string;          // the version whose What's New you last opened

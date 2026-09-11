@@ -96,6 +96,7 @@ export class FlightScene implements Scene {
     this.docking = null;
     if (g.world.realGalaxy) { void wire.fetchWire(); void wire.fetchLights().then(() => { if (g.sceneName === "flight") { const here = wire.lightsAt(g.world.systems[g.world.player.systemId].name); const n = addWireWrecks(g.world, here); if (n) this.comms.push({ from: "CHART", text: `${n} WRECK${n > 1 ? "S" : ""} ON THE CHART HERE THAT ANOTHER PILOT LEFT. SALVAGE RIGHTS ARE WHOEVER GETS THERE.`, life: 9, color: PAL.greyDark }); for (const l of here.filter((x) => x.kind === "mayday")) { if (!this.npcs.some((x) => x.mayday && x.name === l.callsign)) { spawnMayday(this, g, l.callsign); this.comms.push({ from: l.callsign, text: `MAYDAY, MAYDAY. THIS IS ${l.callsign}. TANKS ARE DRY. ANYONE WITH TEN UNITS TO SPARE, I'LL OWE YOU ONE.`, life: 12, color: PAL.danger }); } } } }); }
     { const sysNow = g.world.systems[g.world.player.systemId]; if (!this.loreSeen.has(sysNow.id)) { this.loreSeen.add(sysNow.id); this.comms.push({ from: "CHART", text: systemLore(g.world, sysNow).toUpperCase(), life: 9, color: PAL.greyDark }); } }
+    if (g.justUndocked && (settings().alertOnUndock ?? "green") === "yellow") { this.alert = 1; this.alertT = 0; }
     if (g.justUndocked) {
       // launch sequence: out of the bay along your nose, control on the band
       g.justUndocked = false;
@@ -1151,7 +1152,7 @@ export class FlightScene implements Scene {
     }
     // the unnamed traffic hails too, now and then, with manners and opinions
     this.hailT -= dt;
-    if (this.hailT <= 0) { this.hailT = 50 + Math.random() * 60; if (this.comms.length < 2 && !this.docking) { const near = this.npcs.find((n) => (n.kind === "trader" || n.kind === "patrol") && !n.name && !n.hailed && n.hull > 0 && dist(p.x, p.y, n.x, n.y) < 420); if (near) { near.hailed = true; const h = passingHail(g.world, near, this.alert, new RNG((Math.random() * 1e9) >>> 0)); if (h) { this.comms.push({ from: h.from, text: h.text, life: 8, color: near.kind === "patrol" ? PAL.info : PAL.grey }); const fo = firstOfficer(p); if (fo && this.autopilot && !fo.sick) this.comms.push({ from: fo.name.split(" ")[0].toUpperCase(), text: `NUMBER ONE HAS THE CONN. ACKNOWLEDGED, ${h.from}. THE CAPTAIN'S BELOW.`, life: 6, color: PAL.grey }); } } } }
+    if (this.hailT <= 0) { this.hailT = 50 + Math.random() * 60; if (this.comms.length < 2 && !this.docking) { const near = this.npcs.find((n) => (n.kind === "trader" || n.kind === "patrol") && !n.name && !n.hailed && n.hull > 0 && dist(p.x, p.y, n.x, n.y) < 420); if (near) { near.hailed = true; const h = passingHail(g.world, near, this.alert, new RNG((Math.random() * 1e9) >>> 0)); if (h) { this.comms.push({ from: h.from, text: h.text, life: 8, color: near.kind === "patrol" ? PAL.info : PAL.grey }); const fo = firstOfficer(p); if (fo && this.autopilot && !fo.sick && (settings().numberOneHails ?? true)) this.comms.push({ from: fo.name.split(" ")[0].toUpperCase(), text: `NUMBER ONE HAS THE CONN. ACKNOWLEDGED, ${h.from}. THE CAPTAIN'S BELOW.`, life: 6, color: PAL.grey }); } } } }
     // the wonders have voices: a pulsar ticks, the cathedral hums
     this.wonderSfx -= dt;
     if (this.wonderSfx <= 0) {
