@@ -783,4 +783,8 @@ Time passes for the people on the ship, and for the ship.
 - [x] Specialties in the chronicle, the border on the band card, a hardcore
       loss leaves a wreck light, your name on postcards
 
+## Milestone 106 — The Chronicle's Week ✅ (Sep 2026)
+- [x] The chronicle carries the week's votes, border, holdings, times and
+      counts as prose
+
 ## Later

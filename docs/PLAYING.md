@@ -229,6 +229,13 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - The SHIPS tab lists your charters (R releases the last one); the galaxy map
   draws their routes dotted in gold.
 
+## The chronicle's week
+
+- The chronicle (C on RECORD, or exported) now carries a "The week" section:
+  how you voted, the border and your push, the last results, your holdings,
+  your ring times and the regatta, and the running counts of mail bags,
+  convoys and races.
+
 ## Calls and courses
 
 - The galaxy map's foot lists this week's calls: a crisis, maydays on the

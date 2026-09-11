@@ -552,6 +552,22 @@ export function chronicleText(w: World, callsign: string | null): string {
   lines.push(`Ranks: explorer ${rankOf(p, "explorer").title}, trader ${rankOf(p, "trader").title}, miner ${rankOf(p, "miner").title}, rescuer ${rankOf(p, "rescuer").title}.`);
   lines.push(`Rescues ${p.rescues ?? 0}, repairs ${p.repairs ?? 0}, tows ${p.tows ?? 0}, lives ${p.lives ?? 0}, fares ${p.fares ?? 0}, first discoveries ${Object.values(p.firsts ?? {}).filter(Boolean).length}, postcards ${p.postcards ?? 0}.`);
   if (p.lineage?.length) { lines.push(""); lines.push("Captains before:"); for (const c of p.lineage) lines.push(`  ${c.name}, retired at ${findStation(w, c.stationId)?.st.name ?? "a station"} with ${c.credits} credits and ${c.deeds} deeds.`); }
+  {
+    // this week on the lanes: the strategy layer, as prose
+    const wk = weekKey();
+    const votes = Object.entries(p.votes ?? {}).filter(([k]) => k.startsWith(wk + ":")).map(([k, v]) => `${facName(k.split(":")[1])}: ${v}`);
+    const bs = borderStanding(w);
+    const parts: string[] = [];
+    if (votes.length) parts.push(`Voted this week: ${votes.join("; ")}.`);
+    if (bs) parts.push(`The border: ${w.systems[bs.c.systemId]?.name ?? "?"} is contested, ${facName(bs.c.incumbent)} ${bs.inc} to ${facName(bs.c.challenger)} ${bs.chal}${bs.yoursInc || bs.yoursChal ? ` (your push: ${bs.yoursInc ? `+${bs.yoursInc} to hold` : ""}${bs.yoursInc && bs.yoursChal ? ", " : ""}${bs.yoursChal ? `+${bs.yoursChal} to flip` : ""})` : ""}.`);
+    for (const b of (w.borderLog ?? []).slice(-3)) parts.push(`Week of ${b.week}: ${w.systems[b.systemId]?.name ?? "?"} ${b.flipped ? `fell to the ${facName(b.to)}` : `held for the ${facName(b.from)}`}${b.yours ? ` with your push of ${b.yours}` : ""}.`);
+    const holdings = Object.entries(p.stakes ?? {}).map(([id, n]) => `${findStation(w, id)?.st.name ?? "?"} ${n}`);
+    if (holdings.length) parts.push(`Holdings: ${holdings.join(", ")}.`);
+    const bests = Object.entries(p.raceBest ?? {}).slice(0, 4).map(([id, t]) => `${findStation(w, id)?.st.name ?? "?"} ${t.toFixed(1)}s`);
+    if (bests.length) parts.push(`Ring times: ${bests.join(", ")}${p.regatta === 3 ? "; regatta champion" : p.regatta !== undefined ? `; regatta ${p.regatta}/3` : ""}.`);
+    if ((p.postRuns ?? 0) || (p.convoys ?? 0) || (p.races ?? 0)) parts.push(`${p.postRuns ?? 0} mail bags, ${p.convoys ?? 0} convoys walked, ${p.races ?? 0} races run.`);
+    if (parts.length) { lines.push(""); lines.push("The week:"); for (const x of parts) lines.push(`  ${x}`); }
+  }
   if (p.crew.length) { lines.push(""); lines.push("Crew aboard:"); for (const c of p.crew) lines.push(`  ${c.name}, ${ROLE_INFO[c.role].label.toLowerCase()}${c.specialty ? ` (${(SPECIALTIES[c.role].find((x) => x.id === c.specialty)?.name ?? c.specialty).toLowerCase()})` : ""}, skill ${c.skill}, ${c.docks ?? 0} dockings${c.trait ? `, ${c.trait}` : ""}.`); }
   if (p.alumni?.length) { lines.push(""); lines.push("Served and went home:"); for (const a of p.alumni) lines.push(`  ${a.name}, ${a.role}, ${a.docks} dockings, at ${findStation(w, a.stationId)?.st.name ?? "a station"}.`); }
   if (p.cat) { lines.push(""); lines.push(`Ship's cat: ${p.cat.name}.`); }

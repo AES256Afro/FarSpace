@@ -1013,6 +1013,22 @@ describe("more wonders", () => {
   });
 });
 
+describe("chronicle of the week", () => {
+  it("the chronicle carries the week's votes, border, holdings and times", () => {
+    const w = generateWorld(42, { realGalaxy: true });
+    const p = w.player; p.credits = 50000;
+    const st = Object.values(w.systems).flatMap((s) => s.stations).find((x) => !x.military && x.factionId !== "vex")!;
+    castVote(w, st.factionId, true);
+    buyStake(w, st, 2); recordRace(p, st.id, 33.3);
+    const text = chronicleText(w, "TEST");
+    expect(text).toContain("The week:");
+    expect(text).toContain("Voted this week");
+    expect(text).toContain("Holdings:");
+    expect(text).toContain("Ring times:");
+    expect(text).toContain("The border:");
+  });
+});
+
 describe("the signal", () => {
   it("every stage has an objective and its checks pass when the world reaches them", () => {
     const w = generateWorld(22, { realGalaxy: true });
