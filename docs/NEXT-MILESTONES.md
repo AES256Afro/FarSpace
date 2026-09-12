@@ -27,8 +27,9 @@ local fixes in later releases do not complete the entire earlier milestone.
 
 The v0.261.0 release implements M428 through M432 below. All 571 tests pass,
 the production build succeeds, and native browser acceptance is complete.
-Publication verification is pending. Route changes contribute to M419 and
-M420 but do not close those broader milestones.
+CI, container publication and Cloudflare deployment passed. The hosted assets
+match the tested build. Route changes contribute to M419 and M420 but do not
+close those broader milestones.
 
 | Milestone | Deliverable | Dependency | Acceptance |
 | --- | --- | --- | --- |

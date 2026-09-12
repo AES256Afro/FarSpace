@@ -41,9 +41,14 @@ production automation and map travel that starts and stops automatically.
 - M428 through M432 are implemented and locally verified. M418 through M427
   remain open; M433 through M435 cover mining orders, cargo logistics and
   experimental technology. See NEXT-MILESTONES.md for order and acceptance.
-- Publication verification is pending. The final build references
-  index-B0OQn4Xt.js and index-CwZdn5Vi.css. Bigbox and the BoxPilot catalog PR
-  are outside this release's host changes.
+- Published as `f8f82f8ea2b15862fbcd835907e2cd2a7ef36dc8`, tag `v0.261.0`.
+  CI `34666198457` passed, including the actual Cloudflare deployment step.
+  Container run `34666198353` passed. A fresh hosted tab showed v0.261.0
+  with no warnings or errors. Health returned ok and live JS/CSS hashes
+  match the tested build. See the work log for exact asset hashes.
+- Assets: index-B0OQn4Xt.js and index-CwZdn5Vi.css. Dev5199 now runs v0.261.0.
+  Temporary browser fixtures and production preview 5198 are closed. Bigbox
+  and the BoxPilot catalog PR remain unchanged.
 
 ## Previous checkpoint: v0.260.0
 
