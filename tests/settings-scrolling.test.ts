@@ -127,3 +127,8 @@ describe("settings scrolling", () => {
     expect(g.setScene).toHaveBeenCalledWith("flight"); expect(g.settingsReturn).toBe("title");
   });
 });
+
+it("requests the current flight population when returning from Settings", () => {
+  const { scene, g, key } = fixture(); const flight = { resumeNext: false }; g.scenes = { flight } as unknown as Game["scenes"];
+  key("End"); const cursor = scene.cursor, top = scene.top; key("Escape"); expect(flight.resumeNext).toBe(true); expect(g.setScene).toHaveBeenCalledWith("flight"); scene.enter(); expect(scene.cursor).toBe(cursor); expect(scene.top).toBe(top);
+});

@@ -285,6 +285,10 @@ Acceptance:
 
 ### M418: Menus with one set of rules
 
+Implemented and natively accepted in v0.270.0. Release verification is pending.
+746 tests in 48 files pass. MENU-INVENTORY.md records each migrated surface.
+Physical touch and controller acceptance remains M426.
+
 Extract a small selection/viewport model: stable item identity, visible range,
 row geometry, paging, scroll bounds and focus restoration. Keep domain actions
 in each scene. M416 supplies the first consumer; M413/M415 supply regressions

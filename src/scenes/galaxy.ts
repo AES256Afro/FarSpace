@@ -1,3 +1,6 @@
+import { ListView } from "../core/listview";
+import { wrapText } from "../core/text";
+import { ReaderOverlay } from "./reader";
 import { questLocations } from "../core/questlocations";
 import { drawQuestMarker } from "../gfx/questmarkers";
 import { wreckAvailable } from "../core/salvage";
@@ -14,6 +17,9 @@ import type { FlightScene } from "./flight/index";
 import { sfx } from "../core/sfx";
 import * as wire from "../core/wire";
 
+const DETAILS = { x: 8, y: 36, w: 94, h: 15 }, OBJECTIVES = { x: 106, y: 36, w: 102, h: 15 };
+const SEARCH_PREV = { x: 8, y: 231, w: 80, h: 15 }, SEARCH_NEXT = { x: 92, y: 231, w: 80, h: 15 };
+const SEARCH_SELECT = { x: 312, y: 231, w: 104, h: 15 }, SEARCH_BACK = { x: 420, y: 231, w: 52, h: 15 };
 const QUESTS = { x: 212, y: 36, w: 86, h: 15 };
 const PLOT = { x: 312, y: 231, w: 104, h: 15 };
 const MARK = { x: 420, y: 231, w: 52, h: 15 };
@@ -33,11 +39,22 @@ export class GalaxyScene implements Scene {
   infoScroll = 0;
   query = "";
   searching = false;
-  searchIndex = 0;
+  search = new ListView<string>(12);
+  get searchIndex(): number { return this.search.index; }
+  set searchIndex(value: number) { this.search.select(value); }
+  private drawnResults: string[] = [];
+  private searchRemoved = false;
+  private selectionRemoved = false;
+  private knownSystems: string[] = [];
+  info?: ReaderOverlay;
+  get capturesKeys(): boolean { return this.searching || !!this.info?.closeSearchBox; }
+  get pausesVoyage(): boolean { return this.searching || !!this.info; }
+  onSceneLeave(): void { this.info?.onSceneLeave(); this.info = undefined; this.searching = false; }
   labels: PlacedLabel[] = [];
 
   fit(g: Game): void { this.camera.fit(Object.values(g.world.systems).map(s => ({ x: s.gx, y: s.gy }))); }
   enter(g: Game): void {
+    this.onSceneLeave(); this.search = new ListView(12); this.drawnResults = []; this.searchRemoved = false; this.selectionRemoved = false; this.knownSystems = Object.keys(g.world.systems);
     this.selected = g.world.player.systemId; this.infoScroll = 0; this.searching = false; this.questOnly = false;
     this.fit(g);
     if (g.world.realGalaxy) void wire.fetchLights();
@@ -47,13 +64,14 @@ export class GalaxyScene implements Scene {
   select(g: Game, id: string, center = false): void {
     if (!g.world.systems[id]) return;
     if (id !== this.selected) this.infoScroll = 0;
-    this.selected = id;
+    this.selected = id; this.selectionRemoved = false;
     if (center) { const s = g.world.systems[id]; this.camera.x = s.gx; this.camera.y = s.gy; }
   }
   clearLocal(g: Game): void { const flight = g.scenes.flight as FlightScene | undefined; if (flight) { flight.localTarget = null; flight.autopilot = false; flight.autoRoute = false; } }
   plot(g: Game): void {
     const p = g.world.player, id = this.selected;
-    if (!id || id === p.systemId) { g.toast("YOU ARE ALREADY IN THIS SYSTEM."); return; }
+    if (!id || !g.world.systems[id]) { g.toast("SELECT AN AVAILABLE SYSTEM FIRST."); return; }
+    if (id === p.systemId) { g.toast("YOU ARE ALREADY IN THIS SYSTEM."); return; }
     if (p.navTarget === id) { p.navTarget = null; p.singersCourse = false; delete p.navStationId; this.clearLocal(g); g.toast("COURSE CLEARED."); return; }
     const route = navRoute(g.world, p.systemId, id);
     if (!route || route.length < 2) { g.toast("NO OPEN ROUTE TO THIS SYSTEM."); return; }
@@ -63,7 +81,8 @@ export class GalaxyScene implements Scene {
   }
   fly(g: Game): void {
     const p = g.world.player, id = this.selected;
-    if (!id || id === p.systemId) { g.toast("YOU ARE HERE. USE THE SYSTEM MAP FOR A LOCAL DESTINATION."); return; }
+    if (!id || !g.world.systems[id]) { g.toast("SELECT AN AVAILABLE SYSTEM FIRST."); return; }
+    if (id === p.systemId) { g.toast("YOU ARE HERE. USE THE SYSTEM MAP FOR A LOCAL DESTINATION."); return; }
     const route = navRoute(g.world, p.systemId, id);
     if (!route || route.length < 2) { g.toast("NO OPEN ROUTE TO THIS SYSTEM."); return; }
     const fs = g.scenes.flight as FlightScene;
@@ -71,30 +90,69 @@ export class GalaxyScene implements Scene {
     p.navTarget = id; delete p.navStationId; p.singersCourse = false; fs.localTarget = null;
     if (fs.startAutopilot(g, true)) { fs.resumeNext = true; g.input.flush?.(); g.input.down?.clear(); g.setScene("flight"); }
   }
-  results(g: Game) { const quests = new Set(questLocations(g.world).map(q=>q.systemId)); return Object.values(g.world.systems).filter(s => (!this.questOnly || quests.has(s.id)) && s.name.toLowerCase().includes(this.query.toLowerCase())).sort((a,b) => a.name.localeCompare(b.name)); }
-  update(g: Game, dt: number): void {
-    const inp = g.input, p = g.world.player;
-    if (this.searching) {
-      if (inp.wasPressed("Escape")) { this.searching = false; return; }
-      if (inp.wasPressed("Backspace")) { this.query = this.query.slice(0, -1); this.searchIndex = 0; }
-      for (const raw of inp.textEvents ?? []) if (/^[a-z0-9 .'-]$/i.test(raw) && this.query.length < 30) { this.query += raw; this.searchIndex = 0; }
-      const found = this.results(g);
-      if (inp.wasPressed("ArrowDown") || (inp.wheel && contains(PANEL_RECT, inp.mouseX, inp.mouseY) && inp.wheel > 0)) this.searchIndex++;
-      if (inp.wasPressed("ArrowUp") || (inp.wheel && contains(PANEL_RECT, inp.mouseX, inp.mouseY) && inp.wheel < 0)) this.searchIndex--;
-      this.searchIndex = Math.max(0, Math.min(found.length - 1, this.searchIndex));
-      const start = Math.max(0, this.searchIndex - 11);
-      if (inp.mousePressed && inp.mouseX >= 318 && inp.mouseX < 466 && inp.mouseY >= 65 && inp.mouseY < 209) {
-        const index = start + Math.floor((inp.mouseY - 65) / 12);
-        if (found[index]) { this.select(g, found[index].id, true); this.searching = false; }
-      }
-      if (inp.wasPressed("Enter") && found[this.searchIndex]) { this.select(g, found[this.searchIndex].id, true); this.searching = false; }
+  results(g: Game) { const quests = new Set(questLocations(g.world).map(q=>q.systemId)); return Object.values(g.world.systems).filter(s => (!this.questOnly || quests.has(s.id)) && s.name.toLowerCase().includes((this.searching ? this.query : "").toLowerCase())).sort((a,b) => a.name.localeCompare(b.name)); }
+  syncSelection(g: Game): void {
+    const keys = Object.keys(g.world.systems);
+    if (this.selected && !keys.includes(this.selected)) {
+      const oldIndex = this.knownSystems.indexOf(this.selected);
+      this.selected = keys[Math.min(Math.max(0, oldIndex), keys.length - 1)] ?? null;
+      this.infoScroll = 0; this.selectionRemoved = true;
+    }
+    if (!this.selected) this.selected = keys.includes(g.world.player.systemId) ? g.world.player.systemId : keys[0] ?? null;
+    this.knownSystems = keys;
+  }
+  syncSearch(g: Game) {
+    const found = this.results(g), previous = this.search.selected;
+    this.search.sync(found.map(s => s.id));
+    if (previous && !this.search.keys.includes(previous)) this.searchRemoved = true;
+    return found;
+  }
+  updateSearch(g: Game): void {
+    const inp = g.input, click = (r: { x: number; y: number; w: number; h: number }) => inp.mousePressed && contains(r, inp.mouseX, inp.mouseY);
+    if (inp.wasPressed("Escape") || click(SEARCH_BACK)) { this.searching = false; return; }
+    const before = this.query;
+    if (inp.wasPressed("Backspace")) this.query = this.query.slice(0, -1);
+    for (const raw of inp.textEvents ?? []) if (/^[a-z0-9 .'-]$/i.test(raw) && this.query.length < 48) this.query += raw;
+    if (before !== this.query) { this.search = new ListView(12); this.drawnResults = []; this.searchRemoved = false; }
+    this.syncSearch(g);
+    const removed = this.searchRemoved; this.searchRemoved = false;
+    if (inp.wasPressed("ArrowDown")) this.search.move(1);
+    if (inp.wasPressed("ArrowUp")) this.search.move(-1);
+    if (inp.wheel && contains(PANEL_RECT, inp.mouseX, inp.mouseY)) this.search.move(Math.sign(inp.wheel));
+    if (inp.wasPressed("PageDown") || click(SEARCH_NEXT)) this.search.page(1);
+    if (inp.wasPressed("PageUp") || click(SEARCH_PREV)) this.search.page(-1);
+    if (inp.wasPressed("Home")) this.search.select(0);
+    if (inp.wasPressed("End")) this.search.select(this.search.keys.length - 1);
+    if (click({ x: 318, y: 65, w: 148, h: 144 })) {
+      const id = this.drawnResults[Math.floor((inp.mouseY - 65) / 12)], index = this.search.keys.indexOf(id);
+      if (index >= 0) this.search.select(index);
       return;
     }
+    if ((inp.wasPressed("Enter") || click(SEARCH_SELECT)) && !removed && this.search.selected) {
+      this.select(g, this.search.selected, true); this.searching = false;
+    }
+  }
+  openInfo(g: Game, all = false): void {
+    const sys = g.world.systems[this.selected ?? g.world.player.systemId] ?? g.world.systems[g.world.player.systemId];
+    if (!sys) return;
+    const sections: [string, string[]][] = all ? questLocations(g.world).map(q => [q.title, [g.world.systems[q.systemId]?.name ?? q.systemId, q.source, q.action]])
+      : [[sys.name, this.infoLines(g, null).map(line => line.text)]];
+    this.info = new ReaderOverlay(all ? "GALAXY OBJECTIVES" : "SYSTEM DETAILS", sections.length ? sections : [["Objectives", ["No current quest locations."]]], () => { this.info = undefined; });
+  }
+  update(g: Game, dt: number): void {
+    const inp = g.input, p = g.world.player;
+    if (this.info) { this.info.update(g); return; }
+    this.syncSelection(g);
+    if (this.searching) { this.updateSearch(g); return; }
+    const removed = this.selectionRemoved; this.selectionRemoved = false;
+    if (removed && (inp.wasPressed("a") || inp.wasPressed("n") || inp.wasPressed("Enter") || inp.wasPressed("b") || (inp.mousePressed && (contains(FLY, inp.mouseX, inp.mouseY) || contains(PLOT, inp.mouseX, inp.mouseY) || contains(MARK, inp.mouseX, inp.mouseY))))) { g.toast("SYSTEM CHANGED. CHECK THE NEW SELECTION."); return; }
+    if (inp.wasPressed("i") || (inp.mousePressed && contains(DETAILS, inp.mouseX, inp.mouseY))) { this.openInfo(g); return; }
+    if (inp.wasPressed("o") || (inp.mousePressed && contains(OBJECTIVES, inp.mouseX, inp.mouseY))) { this.openInfo(g, true); return; }
     if (inp.wasPressed("Escape") || inp.wasPressed("g")) { (g.scenes.flight as FlightScene).resumeNext = true; g.setScene("flight"); return; }
     if (inp.wasPressed("F5")) g.save();
     if (inp.wasPressed("F9")) { g.load(); return; }
     if (inp.wasPressed("a") || (inp.mousePressed && contains(FLY, inp.mouseX, inp.mouseY))) { this.fly(g); return; }
-    if (inp.wasPressed("f") || (inp.mousePressed && contains(FIND, inp.mouseX, inp.mouseY))) { this.searching = true; this.query = ""; this.searchIndex = 0; return; }
+    if (inp.wasPressed("f") || (inp.mousePressed && contains(FIND, inp.mouseX, inp.mouseY))) { this.searching = true; this.query = ""; this.search = new ListView(12); this.drawnResults = []; this.searchRemoved = false; this.syncSearch(g); return; }
     if (inp.wasPressed("u") && p.service?.order) {
       if (plotServiceOrder(g.world)) { this.select(g, p.navTarget!, true); this.clearLocal(g); g.autosave(); }
       else g.toast("NO OPEN ROUTE FOR YOUR SERVICE ORDERS.");
@@ -111,7 +169,7 @@ export class GalaxyScene implements Scene {
     }
     if (inp.wasPressed("q") || (inp.mousePressed && contains(QUESTS,inp.mouseX,inp.mouseY))) {
       this.questOnly = !this.questOnly; this.query = "";
-      const found = this.results(g); if (this.questOnly && found.length) this.select(g,found[0].id,true);
+      const found = this.results(g); if (this.questOnly && found.length && !found.some(s => s.id === this.selected)) this.select(g,found[0].id,true);
       if (this.questOnly && !found.length) g.toast("NO ACTIVE QUEST LOCATIONS."); return;
     }
     this.camera.update(inp, dt);
@@ -133,29 +191,26 @@ export class GalaxyScene implements Scene {
         const d = Math.hypot(at.x - inp.mouseX, at.y - inp.mouseY);
         if (d < distance) { best = s.id; distance = d; }
       }
-      if (best) this.select(g, best);
+      if (best && this.results(g).some(s => s.id === best)) this.select(g, best);
     }
     if (inp.wheel && contains(PANEL_RECT, inp.mouseX, inp.mouseY)) this.infoScroll += Math.sign(inp.wheel) * 3;
     if (inp.wasPressed("PageDown")) this.infoScroll += 12;
     if (inp.wasPressed("PageUp")) this.infoScroll -= 12;
+    if (inp.wasPressed("End")) this.infoScroll = this.infoLines(g).length;
     this.infoScroll = Math.max(0, Math.min(Math.max(0, this.infoLines(g).length - 16), this.infoScroll));
   }
-  infoLines(g: Game): { text: string; color: string }[] {
-    const w = g.world, sys = w.systems[this.selected ?? w.player.systemId], fac = faction(sys.factionId);
+  infoLines(g: Game, columns: number | null = 36): { text: string; color: string }[] {
+    const w = g.world, sys = w.systems[this.selected ?? w.player.systemId] ?? w.systems[w.player.systemId];
+    if (!sys) return [{ text: "NO AVAILABLE SYSTEM", color: PAL.grey }];
+    const fac = faction(sys.factionId);
     const lines: { text: string; color: string }[] = [];
     const line = (text: string, _x: number, _y: number, color: string) => {
-      let current = "";
-      for (const word of text.split(/\s+/)) {
-        const next = current ? `${current} ${word}` : word;
-        if (current && textWidth(next) > 146) { lines.push({ text: current, color }); current = word; }
-        else current = next;
-      }
-      if (current) lines.push({ text: current, color });
+      for (const part of columns === null ? [text] : wrapText(text, columns)) lines.push({ text: part, color });
     };
       let y = 0; const px = 0;
       line( sys.name.toUpperCase(), px + 6, y, PAL.white); y += 9;
       const quests = questLocations(w).filter(q=>q.systemId === sys.id);
-      if (quests.length) line(`QUEST OBJECTIVES: ${quests.length}`,px,y,PAL.gold);
+      line(`QUEST OBJECTIVES: ${quests.length}`,px,y,PAL.gold);
       for (const q of quests) {
         line(`${q.ready ? "READY" : q.source}: ${q.title.toUpperCase()}`,px,y,q.ready ? PAL.good : PAL.gold);
         const location=q.contactId?.startsWith("station:") ? findStation(w,q.contactId.slice(8))?.st.name : q.contactId?.startsWith("planet:") ? sys.planets[Number(q.contactId.slice(7))]?.name : q.contactId?.startsWith("wreck:") ? sys.wrecks.find(x=>`wreck:${x.id}`===q.contactId)?.name : undefined;
@@ -181,7 +236,7 @@ export class GalaxyScene implements Scene {
       const homes = (w.player.homesteads ?? []).filter((h) => h.systemId === sys.id);
       if (homes.length) { line( `HOMESTEAD: ${homes.map((h) => sys.planets[h.planetIdx].name).join(", ")}`, px + 6, y, PAL.gold); y += 9; }
       for (const wd of wondersIn(w, sys.id)) { if (wd.seen || w.player.flags?.[`rumour:${wd.id}`]) { line( `${wd.seen ? "WONDER" : "RUMOURED"}: ${wd.name.toUpperCase()}`, px + 6, y, PAL.gold); y += 9; const fb = w.player.firsts?.[`wonder:${wd.id}`]; if (fb) { line( `FIRST LOGGED BY ${fb}`, px + 6, y, PAL.gold); y += 9; } } }
-      if (w.realGalaxy) for (const l of wire.lightsAt(sys.name).slice(0, 2)) { line( `${l.callsign}'S ${l.upgraded ? "WAYSTATION" : l.kind.toUpperCase()}`, px + 6, y, PAL.info); y += 9; }
+      if (w.realGalaxy) for (const l of wire.lightsAt(sys.name)) { line( `${l.callsign}'S ${l.upgraded ? "WAYSTATION" : l.kind.toUpperCase()}`, px + 6, y, PAL.info); y += 9; }
       for (const inf of infraAt(w, sys.id)) { line( `${inf.kind.toUpperCase()}: ${infraLit(inf) ? `LIT, TILL ${Math.round(inf.till)}CR` : "DARK"}`, px + 6, y, infraLit(inf) ? PAL.gold : PAL.danger); y += 9; }
       if (!sys.stations.length && !infraAt(w, sys.id).length && ((w.player.kits?.beacon ?? 0) > 0 || (w.player.kits?.depot ?? 0) > 0)) { line( "DEAD SYSTEM: KIT DEPLOYABLE", px + 6, y, PAL.gold); y += 9; }
       const first = w.player.firsts?.[sys.id];
@@ -198,20 +253,23 @@ export class GalaxyScene implements Scene {
       for (const st of sys.stations) { const b = wire.baseAt(st.id); const sy = syndicateAt(w, st.id); line( `${st.military ? "*" : "-"} ${st.name}${b ? ` [${b.tag}]` : sy ? ` [${sy.tag}] AI` : ""}`, px + 6, y, b ? PAL.gold : sy ? sy.color : st.military ? PAL.danger : PAL.ui); y += 8; }
       y += 3;
       line( "LINKS:", px + 6, y, PAL.greyDark); y += 9;
-      for (const l of sys.links) { line( `> ${w.systems[l].name} ${sys.ly[l] ?? "?"}LY`, px + 6, y, PAL.info); y += 8; }
+      for (const l of sys.links) { if (!w.systems[l]) continue; line( `> ${w.systems[l].name} ${sys.ly[l] ?? "?"}LY`, px + 6, y, PAL.info); y += 8; }
     return lines;
   }
   draw(g: Game, ctx: CanvasRenderingContext2D): void {
+    if (this.info) { this.info.draw(g, ctx); return; }
+    this.syncSelection(g);
     const w = g.world, p = w.player, systems = Object.values(w.systems), cur = w.systems[p.systemId];
-    const sys = w.systems[this.selected ?? p.systemId];
-    const route = p.navTarget ? navRoute(w, p.systemId, p.navTarget) : null;
+    const sys = w.systems[this.selected ?? p.systemId] ?? cur;
+    if (!sys || !cur) { mapFrame(ctx, "GALAXY MAP", "NO AVAILABLE SYSTEM"); return; }
+    const route = p.navTarget && w.systems[p.navTarget] ? navRoute(w, p.systemId, p.navTarget) : null;
     const planned = this.selected && this.selected !== p.systemId ? navRoute(w, p.systemId, this.selected) : null;
     const title = w.realGalaxy ? `SOL NEIGHBOURHOOD / ${w.galaxyLy ?? 20} LY` : "GALAXY MAP";
     const shortcuts = [knowsSingersBerth(p) ? "R SINGERS" : "", p.council?.mandate ? "C COUNCIL" : "", p.service?.order ? "U ORDERS" : ""].filter(Boolean).join(" / ");
     mapFrame(ctx, title, `CURRENT: ${cur.name.toUpperCase()}${shortcuts ? ` / ${shortcuts}` : ""}`);
     ctx.save(); ctx.beginPath(); ctx.rect(MAP_RECT.x + 1, MAP_RECT.y + 1, MAP_RECT.w - 2, MAP_RECT.h - 2); ctx.clip();
     const point = (s: typeof cur) => this.camera.project({ x: s.gx, y: s.gy });
-    const edge = (a: typeof cur, b: typeof cur, color: string, alpha = 1) => { const x = point(a), y = point(b); ctx.globalAlpha = alpha; ctx.strokeStyle = color; ctx.beginPath(); ctx.moveTo(x.x,x.y); ctx.lineTo(y.x,y.y); ctx.stroke(); ctx.globalAlpha = 1; };
+    const edge = (a: typeof cur, b: typeof cur, color: string, alpha = 1) => { if (!a || !b) return; const x = point(a), y = point(b); ctx.globalAlpha = alpha; ctx.strokeStyle = color; ctx.beginPath(); ctx.moveTo(x.x,x.y); ctx.lineTo(y.x,y.y); ctx.stroke(); ctx.globalAlpha = 1; };
     for (const a of systems) for (const id of a.links) {
       const b = w.systems[id]; if (!b || a.id > id) continue;
       if (a.id === sys.id || b.id === sys.id) edge(a,b,"#37536d");
@@ -228,7 +286,7 @@ export class GalaxyScene implements Scene {
     const labels: MapLabel[] = [];
     for (const s of systems) {
       const objectives=quests.filter(q=>q.systemId===s.id);
-      if (this.questOnly && !objectives.length && s.id!==cur.id) continue;
+      if (this.questOnly && !objectives.length && s.id!==cur.id && s.id!==this.selected) continue;
       const at = point(s), selected = s.id === sys.id, current = s.id === cur.id;
       if (!contains(MAP_RECT,at.x,at.y)) continue;
       ctx.fillStyle = faction(s.factionId).color; ctx.globalAlpha = selected || current ? 0.25 : 0.10; ctx.beginPath(); ctx.arc(at.x,at.y,selected ? 10 : 5,0,Math.PI*2); ctx.fill(); ctx.globalAlpha = 1;
@@ -245,10 +303,10 @@ export class GalaxyScene implements Scene {
     drawText(ctx, `ZOOM ${(this.camera.scale/this.camera.baseScale).toFixed(1)}X`, MAP_RECT.x+5, MAP_RECT.y+5,PAL.greyDark);
     if (this.searching) {
       drawText(ctx,"FIND SYSTEM",318,39,PAL.ui); drawText(ctx,clippedText(`${this.query}_`,148),318,51,PAL.white);
-      const found = this.results(g), start = Math.max(0,this.searchIndex-11);
+      const found = this.syncSearch(g), start = this.search.offset; this.drawnResults = found.slice(start, start + 12).map(s => s.id);
       found.slice(start,start+12).forEach((s,i) => { if (start+i===this.searchIndex) { ctx.fillStyle="#20374b";ctx.fillRect(316,65+i*12,152,12); } drawText(ctx,clippedText(s.name.toUpperCase(),145),320,68+i*12,PAL.grey); });
       if (!found.length) drawText(ctx,"NO MATCHING SYSTEMS",318,69,PAL.grey);
-      drawText(ctx,`${found.length} MATCHES / ENTER SELECT`,318,214,PAL.greyDark);
+      drawText(ctx,`${found.length ? this.searchIndex + 1 : 0}/${found.length}  ENTER SELECT`,318,214,PAL.greyDark);
     } else {
       drawText(ctx,clippedText(sys.name.toUpperCase(),148),318,39,PAL.white);
       const lines=this.infoLines(g).slice(1), start=Math.min(this.infoScroll,Math.max(0,lines.length-16));
@@ -256,6 +314,14 @@ export class GalaxyScene implements Scene {
       lines.slice(start,start+16).forEach((line,i)=>drawText(ctx,clippedText(line.text,146),318,53+i*10,line.color));ctx.restore();
       drawText(ctx,`${start+1}..${Math.min(start+16,lines.length)} / ${lines.length}  SCROLL DETAILS`,318,215,PAL.greyDark);
     }
+    if (this.searching) {
+      mapButton(ctx, SEARCH_PREV, "PAGE UP"); mapButton(ctx, SEARCH_NEXT, "PAGE DOWN");
+      mapButton(ctx, SEARCH_SELECT, "ENTER SELECT"); mapButton(ctx, SEARCH_BACK, "ESC BACK");
+      drawText(ctx, "TYPE TO FIND / HOME/END FIRST/LAST / ROW CLICK SELECTS", 8, 250, PAL.grey);
+      drawText(ctx, "SELECT INSPECTS A SYSTEM. PLOT OR FLY AFTER CLOSING SEARCH.", 8, 261, PAL.greyDark);
+      return;
+    }
+    mapButton(ctx, DETAILS, "I FULL DETAILS"); mapButton(ctx, OBJECTIVES, "O ALL OBJECTIVES");
     mapButton(ctx,QUESTS,`Q QUESTS ${new Set(quests.map(q=>q.systemId)).size}`,this.questOnly);
     mapButton(ctx,FIT,"HOME FIT");mapButton(ctx,FIND,"F FIND");mapButton(ctx,LAYERS,`V LANES ${this.layers ? "ON" : "OFF"}`,this.layers);
     mapButton(ctx,PLOT,p.navTarget===this.selected ? "N CLEAR COURSE" : "N PLOT COURSE",p.navTarget===this.selected);

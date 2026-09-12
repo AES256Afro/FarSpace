@@ -1,22 +1,22 @@
 # M418 menu inventory
 
-Baseline: v0.269.0, inspected September 12, 2026. Native acceptance is recorded
-per migration. M418 is still open.
+Baseline: v0.270.0, inspected September 12, 2026. M418 implementation and
+native acceptance are complete. Release verification is pending below.
 
 | Surface | Current behavior | Remaining work | Acceptance state |
 | --- | --- | --- | --- |
-| Title and save library | Native HTML pages retain page, focus and scroll; save operations are explicit. The former slots scene is absent. | Preserve M416/M417 regressions; audit long names and child returns when shared rules change. | Previous release checks; current regression suite passes. |
-| Workshop | Native HTML inventory, research and jobs preserve scroll and action focus on stock changes. | Include in shared key ownership and return checks. | v0.261 native checks; current regression suite passes. |
+| Title and save library | Native HTML pages retain page, focus and scroll; save operations are explicit. The former slots scene is absent. | Preserve M416/M417 regressions. | Current native Settings and Handbook return restored caller page and focus; title and library regression suite passes. |
+| Workshop | Native HTML inventory, research and jobs preserve scroll and action focus on stock changes. | Preserve industry and form input tests. | Native inventory changes retained scroll 507.5; return kept the same flight. Current regression suite passes. |
 | Station transaction tabs | Stable goods, yard actions, hulls, missions, crew, fares, warehouse entries, blueprints and base actions. Page controls, Home/End, full details and explicit execution. | Preserve domain and reader tests. | Native market sale, exact yard purchase, owned hull boarding, mission acceptance, crew hire, warehouse transfer and engineering upgrade passed. Base viewport and absence of requests covered by an isolated unit fixture. |
 | Station records | Six row pages for News, Wire, Survey and every Record subview. Stable ids, separate viewports, full selected readers and searchable Read all. Existing votes, replies and sales use explicit controls. | Preserve caller and input tests. | Native complete guestbook, logs, achievements search, dispatches, letters, Survey, codex and squadron records passed. |
-| Settings | Existing full option and binding scrolling. | Preserve binding input ownership and caller return during later menu work. | Existing regression suite passes. |
+| Settings | Existing full option and binding scrolling. | Preserve binding input ownership and caller return. | Native final row, h binding without music change, world pause and same flight objects/position passed. |
 | Roster | Stable member identity, eight visible rows, full wrapped details, pointer actions, wheel and page navigation. Crew on leave are readable but cannot receive aboard actions. | Preserve this model while migrating other lists. | Native empty and 21 member fixtures; full details, page and wheel controls, insertion, exact bonus recipient, review return and leave restrictions passed. |
 | Chronicle | Shared ReaderScene, complete export text grouped by its existing headings. Explicit Back, search, section navigation and paging. | Preserve read-only behavior. | Native body click, End at log entry 99 and complete matching sections passed. |
 | What's new | Shared ReaderScene retains all historical release sections with paging and search. | Preserve title return and the seen version setting. | Production End reached 0.10; search found 0.261; body click stayed open. |
 | Help, handbook and service file | Shared reader closes search on external scene changes and resumes the current flight. Long headings and unbroken text wrap completely. | Keep scene-specific regression coverage. | Native search entry and cancellation passed. First Escape now cancels even a populated search field. Unit tests cover external cleanup and flight resume. |
 | Letters | Newest first live list with stable message identity, paging, Home/End and complete text wrapping. | Preserve station caller and read-state regressions. | Native new arrival kept Ari Sen at paragraph 18, left new mail unread, and End reached paragraph 129. Home returned to the top. |
 | Orbit | Separate six row Site and Territory lists, stable keys and fixed landing controls. Full details and all objectives use a nested reader. | Preserve domain landing and Q focus tests. | Native 25 sites and 20 territories; Q selected site 24 on the last page; Land entered that ruin; Rover entered territory 19. Details retained selection and globe rotation. |
-| Galaxy and system maps | Bounded maps and explicit navigation. Local I reads all destination quests; O reads every system objective. Contact updates retain selection and top row. | Finish galaxy selection/removal and other map acceptance checks alongside M419/M420. | Native 12 shared station quests, final material requirement, search, and exact camera/selection/course/time preservation. Contact insertion/removal tests pass. |
+| Galaxy and system maps | Bounded maps and explicit navigation. Local I reads all destination quests; O reads every system objective. Contact updates retain selection and top row. | Preserve map and quest selection tests; M419/M420 cover flight/contact presentation. | Native 51 system paging and selection, typing ownership, 15 full objectives, search, completion and camera/course/time preservation passed. Missing and changing destination tests pass. |
 | Service and council desks | Six row action pages with explicit execution, stable ids, full terms and complete office records. Service file and conversation returns retain selection. | Preserve service, fare, cutter and council domain tests. | Native eight action service fixture, exact 950CR report, complete archive and fare return; council chair, agenda return, 20 minutes, search and promenade return passed. |
 | City and outpost desks | Six visible rows, stable selection, full details and explicit transactions. Desk input switches to menu controls while open. | Preserve domain trade, hiring, mission and growth tests. Foreman and plant repair returns now retain position, refresh facilities and avoid repeated arrival effects. | Native 20 goods, 15 crew offers and 15 long contracts; exact trade/hire/accept, wanted premium, reader return and orbit return passed. |
 | Waystation | Fixed walking interactions and at most three visitors. | Preserve flight resume behavior. | Native airlock E and Escape retained all nine NPC objects and the player position at 3000,3000. AI rebuilds the containing array each tick. |
@@ -306,3 +306,41 @@ closed, with actual saves and identity unchanged. Dev5199 runs v0.268.1.
   existing models. Then continue M419 flight priorities and M420 contacts,
   followed by the documented dependency order. The nine hour continuation
   remains active until 2026-09-12 11:31:03 UTC. Do not extend it.
+
+## v0.270.0 implementation evidence
+
+- Galaxy search uses stable system ids, twelve row pages, Home/End and explicit
+  Select. A row click only selects. Closing search stops applying its text
+  query to map selection. Changed results retain the selected and top ids;
+  removal consumes a queued action before an adjacent destination can execute.
+  Galaxy and local contact removal guards survive a draw before the input.
+- I reads complete selected system details and O reads every galaxy objective.
+  Long unspaced names wrap completely. All retained pilot lights are included.
+  Closing readers preserves camera, selection and course. Quest filtering keeps
+  an eligible selection; a completed destination remains inspectable with zero
+  current objectives. Missing destinations do not plot or start flight.
+- Global music and postcard shortcuts respect canvas search, active rebinding
+  and focused HTML text fields. Input captured at frame start stays owned even
+  when that interaction closes. Settings explicitly pauses voyage updates and
+  requests the existing flight on return. The normal flight pause menu already
+  requested a resume before opening Settings; the return guard covers every
+  entry path rather than documenting a reproduced population reset.
+- Native isolated 51 system fixture: End reached result 51 at offset 39; Select
+  inspected it with no course or autopilot. Typing h left music muted. Fourteen
+  objectives at one station were complete in I; O contained all 15 galaxy
+  objectives and search found Delivery 14, including its 15 provisions. Camera,
+  course and world time stayed unchanged. Completing those fourteen kept the
+  selected system and existing course while the quest count fell to one.
+- Settings End reached the final row; binding h left music muted and world
+  time unchanged. Return kept all thirteen nearby ship objects and position.
+  Workshop retained scrollTop 507.5 when six material stocks changed to 60 and
+  returned to the same flight. Title Settings restored Settings focus; Handbook
+  reached its final section and returned to the same title help page and focus.
+  No application warnings/errors. Temporary tabs closed. Memory storage and
+  disabled online calls preserved actual saves and identity.
+- 746 tests in 48 files pass. TypeScript and production build pass. Save schema remains
+  16. Release CI, container publication, deployment and hosted checks are pending.
+  M418 implementation and native acceptance are complete across the menu
+  inventory. Physical controller/touch acceptance remains M426. Next is M419
+  flight display priorities, then M420 contact presentation, followed by the
+  documented dependency order. The nine hour deadline remains 11:31:03 UTC.

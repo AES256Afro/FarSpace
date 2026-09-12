@@ -23,6 +23,7 @@ export const VH = 270;
 
 export interface Scene {
   readonly pausesVoyage?: boolean;
+  readonly capturesKeys?: boolean;
   update(g: Game, dt: number): void;
   draw(g: Game, ctx: CanvasRenderingContext2D): void;
   enter?(g: Game): void;

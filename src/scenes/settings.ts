@@ -14,6 +14,8 @@ const LIST_LEFT = 8, LIST_RIGHT = VW - 20;
 
 export class SettingsScene implements Scene {
   touchMode = "menu" as const;
+  readonly pausesVoyage = true;
+  get capturesKeys(): boolean { return this.binding !== null; }
   cursor = 0;
   top = 0;
   binding: string | null = null; // action key waiting for a physical key
@@ -80,7 +82,7 @@ export class SettingsScene implements Scene {
       }
       return;
     }
-    if (inp.wasPressed("Escape") || backClick) { const back = g.settingsReturn; g.settingsReturn = "title"; g.setScene(back); return; }
+    if (inp.wasPressed("Escape") || backClick) { const back = g.settingsReturn; g.settingsReturn = "title"; if (back === "flight" && g.scenes?.flight) (g.scenes.flight as unknown as { resumeNext: boolean }).resumeNext = true; g.setScene(back); return; }
     const rows = this.rows();
     this.window(rows.length);
     // Resolve clicks against the frame the player saw, before moving the window.

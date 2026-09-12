@@ -146,8 +146,8 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Current release: v0.269.0. M416 and M417, mining and industry M428 through
-M432, and quest locations M436 are implemented. M418 now includes a scrolling roster, shared readers, bounded orbital lists,
+Current release: v0.270.0. M416 through M418, mining and industry M428 through
+M432, and quest locations M436 are implemented. M418 includes a scrolling roster, shared readers, bounded orbital lists,
 complete local quest details, letters that keep their position and paged
 settlement desks with explicit trade, hire and contract controls. Service and
 council desks preserve action selection and provide complete office records.
@@ -155,7 +155,9 @@ Conversations have bounded text, paged answers, full terms and explicit choices.
 Station transaction tabs preserve item identity, provide full details and use
 separate selection and action controls. News, Wire, Survey and Record now page
 through all retained records, with complete selected readers and a searchable
-Read all view. Record subviews preserve separate positions.
+Read all view. Record subviews preserve separate positions. Galaxy search has
+stable twelve row pages and complete system/objective readers. Text entry and
+rebinding own their keys. Native caller checks preserve flight and title state.
 The [milestone plan](docs/NEXT-MILESTONES.md) and
 [menu inventory](docs/MENU-INVENTORY.md) record the remaining work.
 

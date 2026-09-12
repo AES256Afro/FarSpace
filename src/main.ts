@@ -1,3 +1,4 @@
+import { runGlobalShortcuts } from "./core/globalshortcuts";
 import { WorkshopScene } from "./scenes/workshop";
 // FarSpace entry point: boot the game, register scenes, run the loop.
 
@@ -93,7 +94,7 @@ function frame(now: number): void {
   if (game.hintTimer > 0) { game.hintTimer -= dt; if (game.hintTimer <= 0) game.hint = ""; }
 
   game.input.pollGamepad(game.touchMode());
-  if (game.input.wasPressed("h")) game.toast(music.toggle() ? "MUSIC ON" : "MUSIC OFF");
+  const keysCaptured = game.scene.capturesKeys === true;
   music.start();
   // one bad frame must not kill the loop: log it, toast it, carry on
   try {
@@ -105,7 +106,7 @@ function frame(now: number): void {
   }
   try { game.scene.draw(game, game.bctx); }
   catch (err) { console.error("draw failed in", game.sceneName, err); if (!game.toastMsg.startsWith("GLITCH")) game.toast("GLITCH LOGGED - CARRYING ON"); }
-  if (game.input.wasPressed("F7") && game.sceneName !== "title") game.postcard(game.postcardCaption());
+  runGlobalShortcuts(game, keysCaptured);
   game.input.flush();
 
   game.ctx.imageSmoothingEnabled = false;

@@ -54,12 +54,13 @@ export class SystemMap {
   info?: ReaderOverlay;
   private listKeys: string[] = [];
   private drawnRows: string[] = [];
+  private selectionChanged = false;
   closeInfo(): void { this.info?.onSceneLeave(); this.info = undefined; }
   sync(g: Game): SystemContact[] {
     const contacts = this.contacts(g), keys = contacts.map(c => c.id), top = this.listKeys[this.scroll];
     if (keys.length !== this.listKeys.length || keys.some((id, i) => id !== this.listKeys[i])) {
       const oldIndex = this.selected ? this.listKeys.indexOf(this.selected) : -1;
-      if (oldIndex >= 0 && !keys.includes(this.selected!)) this.selected = keys[Math.min(oldIndex, keys.length - 1)] ?? null;
+      if (oldIndex >= 0 && !keys.includes(this.selected!)) { this.selected = keys[Math.min(oldIndex, keys.length - 1)] ?? null; this.selectionChanged = true; }
       if (top && keys.includes(top)) this.scroll = keys.indexOf(top);
       this.listKeys = keys;
     }
@@ -67,7 +68,7 @@ export class SystemMap {
     return contacts;
   }
   private setFilter(g: Game, filter: string): void {
-    this.filter = filter; this.scroll = 0; this.listKeys = []; this.drawnRows = [];
+    this.filter = filter; this.scroll = 0; this.selectionChanged = false; this.listKeys = []; this.drawnRows = [];
     const contacts = this.contacts(g);
     if (!contacts.some(c => c.id === this.selected)) this.selected = contacts[0]?.id ?? null;
     this.sync(g);
@@ -86,7 +87,7 @@ export class SystemMap {
     const p=g.world.player;
     this.camera.fit([{x:-SYSTEM_SIZE,y:-SYSTEM_SIZE},{x:SYSTEM_SIZE,y:SYSTEM_SIZE},{x:p.x,y:p.y},...systemContacts(g)]);
   }
-  enter(g: Game): void { this.closeInfo(); this.fit(g); this.selected = (g.scenes.flight as FlightScene).localTarget?.id ?? null; this.scroll=0; this.filter="ALL"; this.listKeys=[]; this.drawnRows=[]; this.sync(g); }
+  enter(g: Game): void { this.closeInfo(); this.fit(g); this.selected = (g.scenes.flight as FlightScene).localTarget?.id ?? null; this.scroll=0; this.selectionChanged=false; this.filter="ALL"; this.listKeys=[]; this.drawnRows=[]; this.sync(g); }
   fly(g: Game): void {
     const target = systemContacts(g, this.selected ?? undefined).find(c => c.id === this.selected);
     if (!target) { g.toast("SELECT A DESTINATION FIRST."); return; }
@@ -104,7 +105,7 @@ export class SystemMap {
     if (inp.wasPressed("F9")) { g.load(); return; }
     if (stormBlind(g.world,g.world.player.systemId)) return;
     const previous = this.selected, contacts = this.sync(g);
-    const changedSelection = previous !== null && previous !== this.selected;
+    const changedSelection = this.selectionChanged || (previous !== null && previous !== this.selected); this.selectionChanged = false;
     if (changedSelection && (inp.wasPressed("a") || inp.wasPressed("n") || inp.wasPressed("Enter") || (inp.mousePressed && contains({x:312,y:231,w:160,h:15},inp.mouseX,inp.mouseY)))) { g.toast("CONTACT CHANGED. CHECK THE NEW SELECTION."); return; }
     if (inp.wasPressed("i") || (inp.mousePressed && contains(DETAILS, inp.mouseX, inp.mouseY))) { this.openInfo(g); return; }
     if (inp.wasPressed("o") || (inp.mousePressed && contains(OBJECTIVES, inp.mouseX, inp.mouseY))) { this.openInfo(g, true); return; }
