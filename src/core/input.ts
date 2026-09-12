@@ -18,6 +18,11 @@ export class Input {
   lastRawKey: string | null = null; // unmapped key of the most recent keydown (for rebinding)
   padConnected = false;
   private padHeld = new Set<string>();
+  private touchHeld = new Set<string>();
+  private keyboardHeld = new Map<string,string>();
+  private focused = true;
+  private padMode?: "flight" | "walk" | "menu";
+  private padNeedsNeutral = false;
 
   constructor(canvas: HTMLCanvasElement, getScale: () => { scale: number; ox: number; oy: number }) {
     window.addEventListener("keydown", (e) => {
@@ -28,14 +33,18 @@ export class Input {
       this.lastRawKey = raw;
       if (!e.ctrlKey && !e.metaKey && !e.altKey && raw.length === 1) this.textEvents.push(raw);
       const k = this.map(raw);
+      this.keyboardHeld.set(raw,k);
       if (!this.down.has(k)) this.pressed.add(k);
       this.down.add(k);
     });
     window.addEventListener("keyup", (e) => {
-      const k = this.map(e.key.length === 1 ? e.key.toLowerCase() : e.key);
-      this.down.delete(k);
+      const raw=e.key.length===1?e.key.toLowerCase():e.key;
+      const k=this.keyboardHeld.get(raw)??this.map(raw);
+      this.keyboardHeld.delete(raw);
+      this.releaseUnowned(k);
     });
-    window.addEventListener("blur", () => this.down.clear());
+    window.addEventListener("blur", () => {this.focused=false;this.padNeedsNeutral=true;this.keyboardHeld.clear();this.padHeld.clear();this.touchHeld.clear();this.down.clear();this.pressed.clear();this.mouseDown=false;this.mouseRight=false;});
+    window.addEventListener("focus", () => {this.focused=true;});
     canvas.addEventListener("mousemove", (e) => {
       const { scale, ox, oy } = getScale();
       const r = canvas.getBoundingClientRect();
@@ -60,19 +69,34 @@ export class Input {
   // Standard-mapping pad → keys. Call once per frame before scenes update.
   // mode "flight": left stick = thrust/turn, "walk": left stick = WASD, "menu": D-pad/stick = arrows.
   pollGamepad(mode: "flight" | "walk" | "menu"): void {
+    if(!this.focused)return;
     const pads = typeof navigator.getGamepads === "function" ? navigator.getGamepads() : [];
     const pad = Array.from(pads).find((p) => p && p.connected);
-    if (!pad) { if (this.padHeld.size) this.releasePad(); return; }
+    if (!pad) { this.padConnected=false; if (this.padHeld.size) this.releasePad(); return; }
     this.padConnected = true;
     const btn = (i: number) => !!pad.buttons[i] && (pad.buttons[i].pressed || pad.buttons[i].value > 0.5);
     const ax = (i: number) => (Math.abs(pad.axes[i] ?? 0) > 0.3 ? pad.axes[i] : 0);
     const lx = ax(0), ly = ax(1);
+    if(this.padMode!==mode&&this.padHeld.size)this.padNeedsNeutral=true;
+    this.padMode=mode;
+    if(this.padNeedsNeutral){
+      this.releasePad();
+      if(pad.buttons.some(b=>b.pressed||b.value>.5)||lx||ly)return;
+      this.padNeedsNeutral=false;
+    }
     const want = new Set<string>();
     const up = btn(12) || ly < -0.3, down = btn(13) || ly > 0.3, left = btn(14) || lx < -0.3, right = btn(15) || lx > 0.3;
     if (mode === "menu") {
       if (up) want.add("ArrowUp"); if (down) want.add("ArrowDown"); if (left) want.add("ArrowLeft"); if (right) want.add("ArrowRight");
       if (btn(0)) want.add("Enter"); if (btn(1)) want.add("Escape");
       if (btn(2)) want.add("s"); if (btn(3)) want.add("p");
+    } else if(mode==="walk") {
+      if(up)want.add("w");if(down)want.add("s");if(left)want.add("a");if(right)want.add("d");
+      if(btn(0))want.add("e");if(btn(1))want.add("Escape");
+      if(btn(2))want.add("r");if(btn(3))want.add("q");
+      if(btn(4))want.add("v");if(btn(5))want.add("c");
+      if(btn(6))want.add("Tab");if(btn(8))want.add("i");
+      if(btn(9))want.add("g");if(btn(10))want.add("b");
     } else {
       if (up) want.add("w"); if (down) want.add("s"); if (left) want.add("a"); if (right) want.add("d");
       if (btn(0)) want.add("e");            // A: interact / dock / jump
@@ -91,18 +115,21 @@ export class Input {
       if (btn(14)) want.add("t");           // D-left: system channel
       if (btn(15)) want.add("h");           // D-right: music
     }
-    for (const k of want) {
-      if (!this.padHeld.has(k)) { this.padHeld.add(k); if (!this.down.has(k)) this.pressed.add(k); this.down.add(k); }
-    }
-    for (const k of Array.from(this.padHeld)) {
-      if (!want.has(k)) { this.padHeld.delete(k); this.down.delete(k); }
-    }
+    this.setHeld(this.padHeld,want);
   }
 
-  private releasePad(): void {
-    for (const k of this.padHeld) this.down.delete(k);
-    this.padHeld.clear();
+  setTouchKeys(want: ReadonlySet<string>): void {this.setHeld(this.touchHeld,want);}
+
+  private setHeld(held:Set<string>,want:ReadonlySet<string>):void {
+    for(const k of Array.from(held))if(!want.has(k)){held.delete(k);this.releaseUnowned(k);}
+    for(const k of want)if(!held.has(k)){held.add(k);if(!this.down.has(k))this.pressed.add(k);this.down.add(k);}
   }
+
+  private releaseUnowned(k:string):void {
+    if(!this.padHeld.has(k)&&!this.touchHeld.has(k)&&!Array.from(this.keyboardHeld.values()).includes(k))this.down.delete(k);
+  }
+
+  private releasePad(): void {this.setHeld(this.padHeld,new Set());}
 
   // Apply the player's rebinds: physical key → action key
   private map(k: string): string {

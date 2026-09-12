@@ -37,7 +37,7 @@ import { EncounterScene } from "./scenes/encounter";
 import { RepairScene } from "./scenes/repair";
 import { presence } from "./core/presence";
 import { initAudioUnlock } from "./core/sfx";
-import { initTouch } from "./core/touch";
+import { initTouch, updateTouch, drawTouchControls } from "./core/touch";
 import { music } from "./core/music";
 import { updateVoyageSystems } from "./core/runtime";
 
@@ -95,6 +95,7 @@ function frame(now: number): void {
   if (game.toastTimer > 0) game.toastTimer -= dt;
   if (game.hintTimer > 0) { game.hintTimer -= dt; if (game.hintTimer <= 0) game.hint = ""; }
 
+  updateTouch(game);
   game.input.pollGamepad(game.touchMode());
   const keysCaptured = game.scene.capturesKeys === true;
   music.start();
@@ -106,7 +107,7 @@ function frame(now: number): void {
     console.error(err);
     if (!game.toastMsg.startsWith("GLITCH")) game.toast("GLITCH LOGGED - CARRYING ON");
   }
-  try { game.scene.draw(game, game.bctx); }
+  try { game.scene.draw(game, game.bctx); if(game.touchMode()==="walk")drawTouchControls(game,game.bctx); }
   catch (err) { console.error("draw failed in", game.sceneName, err); if (!game.toastMsg.startsWith("GLITCH")) game.toast("GLITCH LOGGED - CARRYING ON"); }
   runGlobalShortcuts(game, keysCaptured);
   game.input.flush();

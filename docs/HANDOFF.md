@@ -11,7 +11,50 @@ At the deadline, stop new implementation, finish a safe checkpoint and pause.
 M421 player acceptance, M426 through M427 and M433 through M435 remain open
 in NEXT-MILESTONES.md.
 
-## Current checkpoint: v0.277.0, M425 interior navigation
+## Current checkpoint: v0.278.0, M426 input follow-up
+
+- Walking gamepad input is separate from flight input. D-pad movement no
+  longer also sends roster, cards, channel or music actions. On a ship, X
+  opens the roster, Y selects damage, LT opens the guide, Start selects the
+  airlock and L3 the bridge. A uses, B returns, LB looks out and RB plays cards.
+- Keyboard, gamepad and touch retain separate holds. Releasing one device
+  cannot release another device's held key. Physical key aliases release
+  independently. Focus loss clears held and pressed input. A controller
+  requires neutral input after changing modes or losing focus; a held button
+  cannot activate an action in the newly opened menu.
+- Paused readers inside walking scenes use menu mode. A mode change or blur
+  resets touch gestures. A touch button remains held until its last finger
+  lifts. Top deck buttons accept touches on either side of the screen.
+  Walking scenes now render their touch controls; formerly only flight did.
+- Windows below two-times scale use the available width. An 800x600 viewport
+  now displays an 800x450 canvas instead of 480x270. A 1280x720 viewport keeps
+  the existing 960x540 canvas. Portrait 390x844 stays 390x219.
+- Ten new tests cover independent device holds, shared touch buttons, focus,
+  neutral input after mode changes, D-pad walking, stick/menu transitions,
+  top guide clicks, paused scene modes and small-window sizing. All 853 tests
+  in 56 files, typecheck and build pass. Save schema stays 19.
+- Native 390x844 title review found all buttons visible. Tab reached Settings,
+  Enter opened it, End reached cursor 33, and Escape restored focus to the
+  Settings button. Canvas Settings text remains too small in portrait.
+- At 800x600 the game filled the available width. A synthetic browser pad
+  moved the Wren from (255,35) to (255,13.0275) using D-up without opening the
+  roster. LT opened the deck reader in menu mode; D-down scrolled to 13 and B
+  returned to the same position with no held keys.
+- The in-app browser does not support native touch injection. Explicit
+  synthetic TouchEvents exercised the actual handlers: a held stick walked
+  left, a second finger opened the top guide button, and menu entry released
+  movement. Touch end and reader close retained the walking position and
+  left no held keys. Walking touch controls were visible in the final build.
+- No browser warnings/errors. Temporary tab closed and viewport/touch
+  emulation reset. Fixture storage stayed in memory; online calls were off.
+- M426 remains partial: portrait canvas readability, physical touch and pad
+  use, screen reader scope and the complete measured performance matrix are
+  pending. M427 still needs its native two-hour journey and full release gate.
+  M433-M435 and M421 uncoached player acceptance remain open. No automated
+  check or accelerated soak is evidence of those player/device acceptances.
+- Publication and hosted verification are pending for v0.278.0.
+
+## Previous checkpoint: v0.277.0, M425 interior navigation
 
 - All hulls have room labels, floor colours, visible door edges, an airlock
   panel and a marked helm. Owned paint colours the hull edges. Existing wear,
@@ -53,7 +96,16 @@ in NEXT-MILESTONES.md.
   0.900ms on this Mac. These are draw CPU timings, not full-frame or device
   acceptance. No browser warnings/errors. Temporary tab closed; storage stayed
   in memory and online calls were disabled. Real saves were untouched.
-- Publication and hosted verification are pending for this checkpoint.
+- Published commit 1a0b352370c120e0d15190a0221a5a6d1dd25d9d, tag v0.277.0.
+  CI 34690138256 passed, including Cloudflare; container 34690138293 passed.
+  Hosted health is ok. Normal TLS download matched index-Ccf5gCAK.js,
+  SHA-256 9108779a18792e5448439292d993dd40198fb84942525cbcc1b8bdf74287bebe.
+  CSS remains index-CwZdn5Vi.css, SHA-256
+  4f9ba0bcb103d7e5d276c53d483e014ca4cc6c86a417f6d91da0474ff6e1e085.
+- Fresh hosted title displayed v0.277.0. Pointer Airlock selected its
+  twenty-nine tile Bastion route. The full fifty-item record reached offset
+  405. Repaired engines remained at 100 percent and two parts remained.
+  No warnings/errors. The isolated temporary tab was closed.
 - M426-M427, M433-M435 and M421 uncoached player acceptance remain open.
   The original deadline is 2026-09-12 11:31:03 UTC.
 

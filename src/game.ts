@@ -187,6 +187,7 @@ export class Game {
   }
 
   touchMode(): "flight" | "walk" | "menu" {
+    if(this.scene?.pausesVoyage)return "menu";
     if (this.sceneName === "flight" && (this.scene as Scene & { mapOpen?: boolean }).mapOpen) return "menu";
     return this.scene?.touchMode ?? "menu";
   }
@@ -207,9 +208,9 @@ export class Game {
 
   resize(): void {
     const w = window.innerWidth, h = window.innerHeight;
-    // integer scale on desktop; allow fractional on small screens so phones fill the width
+    // Fill smaller windows; keep integer scaling when at least two pixels fit.
     const raw = Math.min(w / VW, h / VH);
-    this.scale = raw >= 1 ? Math.floor(raw) : Math.max(0.5, raw);
+    this.scale = raw >= 2 ? Math.floor(raw) : Math.max(0.5, raw);
     this.canvas.width = Math.round(VW * this.scale);
     this.canvas.height = Math.round(VH * this.scale);
     this.canvas.style.width = `${Math.round(VW * this.scale)}px`;

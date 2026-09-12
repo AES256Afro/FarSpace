@@ -11,6 +11,7 @@ export const touch = {
   stickId: -1,
   stickX: 0, stickY: 0,   // stick centre (internal px)
   dx: 0, dy: 0,           // -1..1
+  mode: "menu" as "flight" | "walk" | "menu",
   buttons: new Map<number, string>(), // touch id → key
 };
 
@@ -48,8 +49,8 @@ export function initTouch(canvas: HTMLCanvasElement, g: Game): void {
     return [(t.clientX - r.left) / g.scale, (t.clientY - r.top) / g.scale];
   };
   const mode = () => g.touchMode();
-  const press = (key: string) => { if (!g.input.down.has(key)) g.input.pressed.add(key); g.input.down.add(key); };
-  const release = (key: string) => g.input.down.delete(key);
+  touch.mode=mode();
+  window.addEventListener("blur",()=>resetTouch(g));
 
   canvas.addEventListener("touchstart", (e) => {
     e.preventDefault();
@@ -58,8 +59,8 @@ export function initTouch(canvas: HTMLCanvasElement, g: Game): void {
       const [x, y] = toInternal(t);
       const m = mode();
       const btn = touchButtons(m).find((b) => Math.hypot(b.x - x, b.y - y) < b.r + 6);
-      if (btn) { touch.buttons.set(t.identifier, btn.key); press(btn.key); continue; }
-      if (m === "menu") {
+      if (btn) { touch.buttons.set(t.identifier, btn.key); applyStick(g); continue; }
+      if (m === "menu" || m === "walk" && y < 60) {
         g.input.mouseX = x; g.input.mouseY = y;
         g.input.mousePressed = true; g.input.mouseDown = true;
         continue;
@@ -93,12 +94,13 @@ export function initTouch(canvas: HTMLCanvasElement, g: Game): void {
     e.preventDefault();
     for (const t of Array.from(e.changedTouches)) {
       const key = touch.buttons.get(t.identifier);
-      if (key) { release(key); touch.buttons.delete(t.identifier); }
+      if (key) touch.buttons.delete(t.identifier);
       if (t.identifier === touch.stickId) {
         touch.stickId = -1; touch.dx = 0; touch.dy = 0;
         applyStick(g);
       }
     }
+    applyStick(g);
     g.input.mouseDown = false;
   };
   canvas.addEventListener("touchend", end, { passive: false });
@@ -107,21 +109,22 @@ export function initTouch(canvas: HTMLCanvasElement, g: Game): void {
 
 // Map the stick to WASD. In flight: up = thrust, left/right = rotate, down = retro.
 function applyStick(g: Game): void {
-  const m = g.touchMode();
-  const set = (k: string, on: boolean) => {
-    if (on) { if (!g.input.down.has(k)) g.input.pressed.add(k); g.input.down.add(k); }
-    else g.input.down.delete(k);
-  };
-  if (m === "menu") return;
-  const { dx, dy } = touch;
-  if (m === "flight") {
-    set("w", dy < -0.35);
-    set("s", dy > 0.5);
-    set("a", dx < -0.35);
-    set("d", dx > 0.35);
-  } else {
-    set("w", dy < -0.35); set("s", dy > 0.35); set("a", dx < -0.35); set("d", dx > 0.35);
+  const m=g.touchMode(),want=new Set(touch.buttons.values());
+  if(m!=="menu"&&touch.stickId>=0){
+    if(touch.dy<-.35)want.add("w");if(touch.dy>(m==="flight"?.5:.35))want.add("s");
+    if(touch.dx<-.35)want.add("a");if(touch.dx>.35)want.add("d");
   }
+  g.input.setTouchKeys(want);
+}
+
+function resetTouch(g:Game):void {
+  touch.stickId=-1;touch.dx=0;touch.dy=0;touch.buttons.clear();
+  g.input.setTouchKeys(new Set());g.input.mouseDown=false;
+}
+
+export function updateTouch(g:Game):void {
+  const mode=g.touchMode();
+  if(mode!==touch.mode){resetTouch(g);touch.mode=mode;}
 }
 
 export function drawTouchControls(g: Game, ctx: CanvasRenderingContext2D): void {

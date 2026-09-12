@@ -20,10 +20,12 @@ menu keeps one layout across all three.
 
 ## Current milestone status
 
-v0.277.0 implements M425 interior navigation. All 843 tests, typecheck,
-build and local walking/repair checks pass. Publication verification is
-pending. M421 uncoached acceptance, M426-M427 and M433-M435 remain open.
-M428-M432 and M436 are released. The existing nine hour deadline is unchanged.
+v0.278.0 adds a partial M426 input follow-up after the verified M425 release.
+All 853 tests, typecheck, build and local input checks pass. Hosted verification
+is pending. M426 still needs portrait canvas readability, physical touch and
+pad use and the complete performance/accessibility matrix. M421 uncoached
+acceptance, M427 and M433-M435 remain open. M428-M432 and M436 are released.
+The existing nine hour deadline is unchanged.
 
 ## Nine hour work window and quest visibility
 
