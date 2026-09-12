@@ -21,11 +21,12 @@ menu keeps one layout across all three.
 ## Current milestone status
 
 v0.278.1 adds a partial M426 input follow-up after the verified M425 release.
-All 853 tests, typecheck and build pass. The v0.278.0 input checks, CI,
-container and hosted checks passed. Final v0.278.1 publication checks are pending. M426 still needs portrait canvas readability, physical touch and
+All 853 tests, typecheck, build, local input checks, CI, container publication
+and hosted v0.278.1 verification pass. M426 still needs portrait canvas readability, physical touch and
 pad use and the complete performance/accessibility matrix. M421 uncoached
 acceptance, M427 and M433-M435 remain open. M428-M432 and M436 are released.
-The existing nine hour deadline is unchanged.
+The nine hour window closed at 11:31:03 UTC on September 12. The continuation
+is paused. Further implementation requires a new user instruction.
 [Industry order implementation plan](INDUSTRY-ORDERS.md) details the next
 mining, logistics and technology work against the current source owners.
 
@@ -57,9 +58,9 @@ capacity or danger must stop work without deleting or inventing materials.
 ## Nine hour work window and quest visibility
 
 The user authorized work on every remaining milestone from September 12,
-02:31:03 UTC through 11:31:03 UTC (06:31:03 America/Chicago). Work continues
-in dependency order. At the deadline, finish a safe checkpoint and record
-which milestones remain open. WORKLOG-2026-09-12.md records this window.
+02:31:03 UTC through 11:31:03 UTC (06:31:03 America/Chicago). The window is
+closed and its continuation is paused. WORKLOG-2026-09-12.md records the
+releases, evidence and remaining milestones.
 
 The following release history records status at each checkpoint. Use the
 current milestone table above for remaining work.
@@ -519,6 +520,16 @@ Acceptance:
   Additional customization follows only if the layout work calls for it.
 
 ### M426: Comfortable across devices
+
+Known issue from the v0.278.1 review: at 390x844 the title remains usable,
+but the game canvas is 390x219 and Settings text is too small. The next slice
+should move Settings and the shared reference reader to a responsive semantic
+layout, reusing their existing action and selection owners. Keep one active
+input surface, preserve scroll and caller position, and return focus after
+closing. Start with readable body text and touch targets at this viewport;
+verify with an actual phone before extending the same treatment to market and
+other dense menus. The Workshop and title already provide DOM layout examples.
+Do not duplicate transaction handlers or introduce different rules by device.
 
 Complete a deliberate desktop, narrow-window, touch and gamepad review. Apply
 text scaling, contrast, motion and input lessons across scenes. Profile title,

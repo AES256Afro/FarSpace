@@ -1,15 +1,19 @@
-# FarSpace handoff, September 11, 2026
+# FarSpace handoff, September 12, 2026
 
-## Active work window
+## Closed work window
 
-The user authorized nine hours on all remaining milestones, with quest location
-visibility first. Start: 2026-09-12 02:31:03 UTC. Deadline: 2026-09-12 11:31:03
-UTC, or 06:31:03 America/Chicago. The task continuation uses the existing id
-farspace-six-hour-development, renamed FarSpace nine hour milestones, and is
-active every ten minutes. Read WORKLOG-2026-09-12.md on each continuation.
-At the deadline, stop new implementation, finish a safe checkpoint and pause.
-M421 player acceptance, M426 through M427 and M433 through M435 remain open
-in NEXT-MILESTONES.md.
+The authorized window ran from 2026-09-12 02:31:03 UTC to 11:31:03 UTC,
+06:31:03 America/Chicago. Implementation stopped before the deadline; the
+final release was verified on the public site. The continuation
+farspace-six-hour-development, named FarSpace nine hour milestones, was
+paused after the deadline and its persisted PAUSED state was verified.
+Do not resume or extend this window without a new user instruction.
+
+Read the current status table in NEXT-MILESTONES.md and the closing entry in
+WORKLOG-2026-09-12.md. M421 player acceptance, M426-M427 and M433-M435 remain
+open. INDUSTRY-ORDERS.md contains the source-based plan for the industry work.
+Dev5199 runs v0.278.1 in session 50337. No temporary browser tabs or viewport
+emulation remain. No BigBox service or unrelated infrastructure was changed.
 
 ## Current checkpoint: v0.278.1, final focus cleanup
 
@@ -17,7 +21,18 @@ in NEXT-MILESTONES.md.
   the last raw key as well as held controls. The focus regression covers all
   of these queues, preventing a stale action after switching windows.
 - All 853 tests in 56 files, typecheck and production build pass. Save schema
-  remains 19. Publication and hosted verification are pending for v0.278.1.
+  remains 19. Published f57c1a2079ce4a0cc829f02c4e02f7984a198e94, tag
+  v0.278.1. CI 34691008627 passed, including Cloudflare deployment; container
+  34691008535 passed. Hosted health is ok. Normal TLS download matches
+  index-DdspceZN.js, SHA-256
+  5d83b09bd349f590dd8b277dfa41ec78ec245a327ff5f83d80c9866d41ed6080.
+  CSS remains index-CwZdn5Vi.css, SHA-256
+  4f9ba0bcb103d7e5d276c53d483e014ca4cc6c86a417f6d91da0474ff6e1e085.
+- Local and hosted browser fixtures queued a click on Deck guide, a wheel
+  event and a key before dispatching blur. All pending queues cleared; focus
+  return did not open the reader. The hosted title showed v0.278.1. No browser
+  warnings/errors. Temporary tabs closed; storage stayed in memory and online
+  calls were disabled. Actual saves, identity and user tabs were untouched.
 - The industry order plan is in INDUSTRY-ORDERS.md. It identifies existing
   state owners, the asteroid identity gap, mining and collection ranges,
   interruption behavior, inventory ownership and acceptance for M433-M435.
