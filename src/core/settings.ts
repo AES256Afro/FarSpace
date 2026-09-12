@@ -9,6 +9,9 @@ export interface Settings {
   music: number;                  // hum volume 0..1
   sfx: number;                    // effects volume 0..1
   presence: boolean;              // share position with pilots in the same system
+  hudDensity?: "full" | "compact" | "minimal";
+  hudOpacity?: number;            // panel opacity, 30..100; text stays opaque
+  screenFit?: "fit" | "integer"; // fit the window or use whole scale increments
   voice?: boolean;                // the ship speaks on the band (default on)
   alertOnUndock?: "green" | "yellow"; // standing order: the alert status the ship leaves the clamp at (default green)
   numberOneHails?: boolean;       // standing order: Number One acknowledges passing hails on autopilot (default on)
@@ -50,6 +53,16 @@ export function saveSettings(patch: Partial<Settings>): Settings {
   const s = Object.assign(settings(), patch);
   try { localStorage.setItem(KEY, JSON.stringify(s)); } catch { /* ignore */ }
   return s;
+}
+
+// Validate presentation preferences from older or manually edited settings.
+export function displaySettings() {
+  const s = settings();
+  return {
+    hudDensity: s.hudDensity === "full" || s.hudDensity === "minimal" ? s.hudDensity : "compact" as const,
+    hudOpacity: typeof s.hudOpacity === "number" && Number.isFinite(s.hudOpacity) ? Math.max(30, Math.min(100, s.hudOpacity)) : 90,
+    screenFit: s.screenFit === "integer" ? "integer" as const : "fit" as const,
+  };
 }
 
 export function keyLabel(k: string): string {

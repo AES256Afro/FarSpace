@@ -10,7 +10,7 @@ import { World, generateWorld, WreckDef } from "./world";
 import { loadSave, writeSave, saveKeyFor, activeSlot } from "./save";
 import * as cloud from "./core/cloud";
 import { syncScores } from "./core/wire";
-import { settings } from "./core/settings";
+import { settings, displaySettings } from "./core/settings";
 import { titlePreview } from "./core/titlepreview";
 import { storeImportedWorld } from "./core/savelibrary";
 import { hull } from "./data/hulls";
@@ -208,9 +208,9 @@ export class Game {
 
   resize(): void {
     const w = window.innerWidth, h = window.innerHeight;
-    // Fill smaller windows; keep integer scaling when at least two pixels fit.
+    // Both choices preserve the viewport's aspect ratio and logical coordinates.
     const raw = Math.min(w / VW, h / VH);
-    this.scale = raw >= 2 ? Math.floor(raw) : Math.max(0.5, raw);
+    this.scale = displaySettings().screenFit === "integer" && raw >= 2 ? Math.floor(raw) : Math.max(0.01, raw);
     this.canvas.width = Math.round(VW * this.scale);
     this.canvas.height = Math.round(VH * this.scale);
     this.canvas.style.width = `${Math.round(VW * this.scale)}px`;

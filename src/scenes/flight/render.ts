@@ -1,4 +1,5 @@
-import { renderFlightHud } from "./hud";
+import { renderFlightHud, flightHudBounds } from "./hud";
+import { flightDisplay } from "./display";
 import { systemContacts } from "../systemmap";
 import { drawQuestMarker } from "../../gfx/questmarkers";
 import { aimedRock, rockMaterials, hasMiningRemains } from "../../core/mining";
@@ -419,8 +420,9 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
     ctx.fillStyle = `rgba(255,60,60,${(fs.hitFlash * 0.22).toFixed(3)})`;
     ctx.fillRect(0, 0, VW, VH);
   }
-  drawEdgeMarkers(fs, g, ctx, camX, camY, z);
-  drawHud(fs, g, ctx);
+  const display = flightDisplay(fs, g);
+  drawEdgeMarkers(fs, g, ctx, camX, camY, z, flightHudBounds(display, g.toastTimer > 0));
+  renderFlightHud(fs, g, ctx, display);
   drawTouchControls(g, ctx);
   if (fs.mapOpen) drawSystemMap(g, ctx);
   if (fs.paused) {
@@ -440,16 +442,16 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
 
 }
 
-export function drawEdgeMarkers(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D, camX: number, camY: number, z: number): void {
+export function drawEdgeMarkers(fs: FlightScene, g: Game, ctx: CanvasRenderingContext2D, camX: number, camY: number, z: number, bounds = flightHudBounds(flightDisplay(fs, g), g.toastTimer > 0)): void {
   const p = g.world.player;
   const sys = g.world.systems[p.systemId];
   const mark = (wx: number, wy: number, color: string, label?: string) => {
     const sx = (wx - camX) * z;
     const sy = (wy - camY) * z;
-    if (sx > 8 && sx < VW - 8 && sy > 8 && sy < VH - 30) return;
-    const cx = VW / 2, cy = VH / 2 - 11;
+    if (sx > 8 && sx < VW - 8 && sy > bounds.top && sy < bounds.bottom) return;
+    const cx = VW / 2, cy = VH / 2;
     const dx = sx - cx, dy = sy - cy;
-    const t = Math.max(Math.abs(dx) / (VW / 2 - 8), Math.abs(dy) / (VH / 2 - 22));
+    const t = Math.max(Math.abs(dx) / (VW / 2 - 8), Math.abs(dy) / (dy < 0 ? cy - bounds.top : bounds.bottom - cy));
     const ex = cx + dx / t, ey = cy + dy / t;
     ctx.fillStyle = color;
     ctx.fillRect(Math.round(ex) - 1, Math.round(ey) - 1, 3, 3);
@@ -457,13 +459,13 @@ export function drawEdgeMarkers(fs: FlightScene, g: Game, ctx: CanvasRenderingCo
       const dist10 = Math.round(Math.hypot(wx - p.x, wy - p.y) / 100) / 10;
       const txt = `${label} ${dist10}K`;
       const tx = clamp(ex - textWidth(txt) / 2, 2, VW - textWidth(txt) - 2);
-      const ty = clamp(ey + (ey < cy ? 5 : -8), 8, VH - 34);
+      const ty = clamp(ey + (ey < cy ? 5 : -8), bounds.top + 3, bounds.bottom - 8);
       drawText(ctx, txt, tx, ty, color);
     }
   };
   if (stormBlind(g.world, sys.id)) {
     // the storm eats the radar: only what's close, and only the beacon if there is one
-    if (Math.floor(g.world.time * 3) % 2 === 0) drawText(ctx, "RADAR: STORM", VW - textWidth("RADAR: STORM") - 4, 34, PAL.warn);
+    if (Math.floor(g.world.time * 3) % 2 === 0) drawText(ctx, "RADAR: STORM", VW - textWidth("RADAR: STORM") - 4, bounds.top + 3, PAL.warn);
     return;
   }
   const berth = singersBerth(g.world);

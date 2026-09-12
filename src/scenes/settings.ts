@@ -3,7 +3,7 @@
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { settings, saveSettings, ACTIONS, keyLabel, toggleFullscreen } from "../core/settings";
+import { settings, saveSettings, displaySettings, ACTIONS, keyLabel, toggleFullscreen } from "../core/settings";
 import { music } from "../core/music";
 import { sfx, applySfxVolume } from "../core/sfx";
 
@@ -31,8 +31,15 @@ export class SettingsScene implements Scene {
     return [this.top, Math.min(count, this.top + PAGE_ROWS)];
   }
 
-  rows(): Row[] {
+  rows(g?: Game): Row[] {
     const s = settings();
+    const display = displaySettings();
+    const density = (dir: number) => {
+      const modes = ["full", "compact", "minimal"] as const;
+      saveSettings({ hudDensity: modes[(modes.indexOf(display.hudDensity) + dir + modes.length) % modes.length] });
+    };
+    const fit = () => { saveSettings({ screenFit: display.screenFit === "fit" ? "integer" : "fit" }); g?.resize(); };
+    const opacity = (dir: number) => saveSettings({ hudOpacity: Math.max(30, Math.min(100, display.hudOpacity + dir * 10)) });
     const bar = (v: number) => "[" + "#".repeat(Math.round(v * 10)) + ".".repeat(10 - Math.round(v * 10)) + "]";
     const vol = (key: "music" | "sfx", dir: number) => {
       const v = Math.round(Math.max(0, Math.min(1, s[key] + dir * 0.1)) * 10) / 10;
@@ -40,6 +47,9 @@ export class SettingsScene implements Scene {
       if (key === "music") music.applyVolume(); else { applySfxVolume(); sfx.blip(); }
     };
     const rows: Row[] = [
+      { label: "FLIGHT HUD", value: `${display.hudDensity.toUpperCase()} / L OPENS FULL RECORD`, act: () => density(1), adj: density },
+      { label: "HUD BACKGROUND", value: `${display.hudOpacity}% / TEXT STAYS SOLID`, act: () => opacity(display.hudOpacity >= 100 ? -7 : 1), adj: opacity },
+      { label: "SCREEN SIZE", value: display.screenFit === "fit" ? "FIT WINDOW" : "WHOLE PIXELS", act: fit, adj: fit },
       { label: "AIM", value: s.aim === "mouse" ? "MOUSE TURRET" : "KEYBOARD (A/D)", act: () => saveSettings({ aim: s.aim === "mouse" ? "keys" : "mouse" }) },
       { label: "DIFFICULTY (NEW GAMES)", value: s.hardcore ? "HARDCORE - DESTRUCTION ERASES THE SAVE" : "STANDARD", act: () => saveSettings({ hardcore: !s.hardcore }) },
       { label: "HUM", value: `${music.isMuted() ? "OFF" : "ON "} ${bar(s.music)} ${Math.round(s.music * 100)}%`, act: () => { music.toggle(); }, adj: (d) => vol("music", d) },
@@ -83,7 +93,7 @@ export class SettingsScene implements Scene {
       return;
     }
     if (inp.wasPressed("Escape") || backClick) { const back = g.settingsReturn; g.settingsReturn = "title"; if (back === "flight" && g.scenes?.flight) (g.scenes.flight as unknown as { resumeNext: boolean }).resumeNext = true; g.setScene(back); return; }
-    const rows = this.rows();
+    const rows = this.rows(g);
     this.window(rows.length);
     // Resolve clicks against the frame the player saw, before moving the window.
     const row = inp.mouseX >= LIST_LEFT && inp.mouseX < LIST_RIGHT
@@ -113,8 +123,8 @@ export class SettingsScene implements Scene {
     ctx.fillStyle = "#13203a"; ctx.fillRect(VW - 72, 4, 64, 14);
     drawText(ctx, this.binding ? "ESC CANCEL" : "ESC BACK", VW - 66, 8, PAL.ui);
     drawText(ctx, this.binding ? "PRESS A KEY TO BIND - ESC OR CANCEL KEEPS THE CURRENT KEY"
-      : "WHEEL/ARROWS SCROLL - ENTER/CLICK CHANGE - LEFT/RIGHT VOLUME", 12, 22, PAL.grey);
-    const rows = this.rows();
+      : "WHEEL/ARROWS SCROLL / ENTER/CLICK CHANGE / LEFT/RIGHT ADJUST", 12, 22, PAL.grey);
+    const rows = this.rows(g);
     const [start, end] = this.window(rows.length);
     this.rowBoxes = rows.map(() => [NaN, NaN]);
     let y = 34;

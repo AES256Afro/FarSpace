@@ -5,7 +5,7 @@ import {Game} from "../src/game";
 import {initTouch,touch,updateTouch} from "../src/core/touch";
 import {saveSettings} from "../src/core/settings";
 
-afterEach(()=>{vi.restoreAllMocks();vi.unstubAllGlobals();saveSettings({keymap:{}});});
+afterEach(()=>{vi.restoreAllMocks();vi.unstubAllGlobals();saveSettings({keymap:{},screenFit:"fit"});});
 function fixture(){
   const canvas=document.createElement("canvas"),input=new Input(canvas,()=>({scale:1,ox:0,oy:0}));
   let mode:"flight"|"walk"|"menu"="walk";
@@ -68,10 +68,25 @@ describe("touch scene transitions",()=>{
 
 
 describe("small window sizing",()=>{
-  it("fills an 800 pixel window while keeping larger desktop scaling unchanged",()=>{
+  it("fills an 800 pixel window while keeping the optional whole pixel scaling",()=>{
     const canvas=document.createElement("canvas"),g=Object.assign(Object.create(Game.prototype),{canvas,ctx:{imageSmoothingEnabled:true}}) as Game;
+    saveSettings({screenFit:"integer"});
     vi.stubGlobal("innerWidth",800);vi.stubGlobal("innerHeight",600);g.resize();expect(canvas.width).toBe(800);expect(canvas.height).toBe(450);
     vi.stubGlobal("innerWidth",1280);vi.stubGlobal("innerHeight",720);g.resize();expect(canvas.width).toBe(960);expect(canvas.height).toBe(540);
     vi.stubGlobal("innerWidth",390);vi.stubGlobal("innerHeight",844);g.resize();expect(canvas.width).toBe(390);expect(canvas.height).toBe(219);
   });
+});
+
+
+it("fits large windows and maps pointer positions back to game coordinates", () => {
+  const canvas=document.createElement("canvas"),g=Object.assign(Object.create(Game.prototype),{canvas,ctx:{imageSmoothingEnabled:true}}) as Game;
+  saveSettings({screenFit:"fit"});
+  vi.stubGlobal("innerWidth",1920);vi.stubGlobal("innerHeight",911);g.resize();
+  expect(canvas.width).toBe(1620);expect(canvas.height).toBe(911);
+  vi.spyOn(canvas,"getBoundingClientRect").mockReturnValue({left:150,top:0} as DOMRect);
+  const input=new Input(canvas,()=>({scale:g.scale,ox:0,oy:0}));
+  canvas.dispatchEvent(new MouseEvent("mousemove",{clientX:150+447*g.scale,clientY:20*g.scale}));
+  expect(input.mouseX).toBeCloseTo(447);expect(input.mouseY).toBeCloseTo(20);
+  vi.stubGlobal("innerWidth",180);vi.stubGlobal("innerHeight",120);g.resize();
+  expect(canvas.width).toBeLessThanOrEqual(180);expect(canvas.height).toBeLessThanOrEqual(120);
 });

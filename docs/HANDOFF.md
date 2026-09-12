@@ -1,5 +1,30 @@
 # FarSpace handoff, September 12, 2026
 
+## Current checkpoint: v0.279.0, adjustable flight display
+
+The user requested more flight screen space after the earlier work window.
+This is a scoped display follow-up. The nine hour continuation stays paused.
+
+- Settings begins with Flight HUD, HUD Background and Screen Size. Full keeps
+  the expanded HUD; Compact moves gauges and contacts to the edges; Minimal
+  keeps headings, course, vital numbers and current action. Critical status
+  appears in every mode. L Record retains the complete status and messages.
+- Defaults are Compact, Fit Window and 90 percent background opacity. Panel
+  opacity can range from 30 to 100 percent; text stays opaque. Preferences
+  persist outside the voyage save. Missing or invalid values use safe defaults.
+- Fit Window preserves the 480:270 aspect ratio. At 1920x911 it displays a
+  1620x911 canvas; Whole Pixels retains 1440x810. Simulation coordinates and
+  camera zoom are unchanged. Edge destination labels stay clear of HUD bands.
+- All 863 tests in 57 files, typecheck and production build pass. Browser
+  checks cover Full, Compact, Minimal, immediate resizing from Settings,
+  return to the same position/course, critical hull/fuel with 40 percent
+  opacity, and the Record button at fractional scale. Record pauses flight
+  and retains hidden Yellow Alert status. No browser warnings or errors.
+- Browser fixtures isolate storage in memory and disable online requests.
+  Actual saves and identity are untouched. Save schema remains 19.
+- This does not complete M426 portrait, physical device or performance and
+  accessibility acceptance. Other remaining milestones are unchanged.
+
 ## Closed work window
 
 The authorized window ran from 2026-09-12 02:31:03 UTC to 11:31:03 UTC,
@@ -12,10 +37,9 @@ Do not resume or extend this window without a new user instruction.
 Read the current status table in NEXT-MILESTONES.md and the closing entry in
 WORKLOG-2026-09-12.md. M421 player acceptance, M426-M427 and M433-M435 remain
 open. INDUSTRY-ORDERS.md contains the source-based plan for the industry work.
-Dev5199 runs v0.278.1 in session 50337. No temporary browser tabs or viewport
-emulation remain. No BigBox service or unrelated infrastructure was changed.
+The final checkpoint of that window was v0.278.1. No BigBox service or unrelated infrastructure was changed.
 
-## Current checkpoint: v0.278.1, final focus cleanup
+## Previous checkpoint: v0.278.1, final focus cleanup
 
 - Losing focus now clears pending mouse clicks, wheel input, text events and
   the last raw key as well as held controls. The focus regression covers all

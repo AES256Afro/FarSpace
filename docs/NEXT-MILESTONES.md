@@ -20,13 +20,14 @@ menu keeps one layout across all three.
 
 ## Current milestone status
 
-v0.278.1 adds a partial M426 input follow-up after the verified M425 release.
-All 853 tests, typecheck, build, local input checks, CI, container publication
-and hosted v0.278.1 verification pass. M426 still needs portrait canvas readability, physical touch and
+v0.279.0 adds adjustable HUD density, opacity and canvas fitting after the
+v0.278.1 input follow-up. All 863 tests, typecheck, build and local display
+checks pass. M426 still needs portrait canvas readability, physical touch and
 pad use and the complete performance/accessibility matrix. M421 uncoached
 acceptance, M427 and M433-M435 remain open. M428-M432 and M436 are released.
 The nine hour window closed at 11:31:03 UTC on September 12. The continuation
-is paused. Further implementation requires a new user instruction.
+is paused. The subsequent user request authorized the scoped display work
+in v0.279.0; it did not extend that window.
 [Industry order implementation plan](INDUSTRY-ORDERS.md) details the next
 mining, logistics and technology work against the current source owners.
 

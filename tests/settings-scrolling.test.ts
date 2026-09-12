@@ -22,7 +22,7 @@ function fixture() {
     wheel: 0, lastRawKey: null as string | null,
     flush() { keys.clear(); this.mousePressed = false; this.wheel = 0; },
   };
-  const g = { input, settingsReturn: "flight", setScene: vi.fn(), toastTimer: 0 } as unknown as Game;
+  const g = { input, settingsReturn: "flight", setScene: vi.fn(), resize: vi.fn(), toastTimer: 0 } as unknown as Game;
   const ctx = { fillRect: vi.fn(), fillStyle: "" } as unknown as CanvasRenderingContext2D;
   const draw = () => scene.draw(g, ctx);
   const frame = () => { scene.update(g, 0); input.flush(); draw(); };
@@ -74,7 +74,7 @@ describe("settings scrolling", () => {
   it("places the key heading with the bindings, including a mixed window", () => {
     const { scene, key, draw } = fixture();
     expect(vi.mocked(drawText).mock.calls.some(([, label]) => label === "KEY BINDINGS (FLIGHT)")).toBe(false);
-    scene.cursor = 14; vi.mocked(drawText).mockClear(); draw();
+    scene.cursor = scene.rows().findIndex(r => r.keyBinding); vi.mocked(drawText).mockClear(); draw();
     const calls = vi.mocked(drawText).mock.calls;
     const heading = calls.find(([, label]) => label === "KEY BINDINGS (FLIGHT)")!;
     const thrust = calls.find(([, label]) => label === "THRUST")!;
@@ -86,7 +86,8 @@ describe("settings scrolling", () => {
   it("clicks the actual scrolled standing order without changing adjacent options", () => {
     const { scene, draw, clickRow } = fixture();
     scene.cursor = 20; draw(); const before = { ...settings() };
-    clickRow(13); expect(scene.cursor).toBe(13);
+    const row = scene.rows().findIndex(r => r.label === "ORDERS: THE SHIP'S QUIET LEG");
+    clickRow(row); expect(scene.cursor).toBe(row);
     expect(settings()).toEqual({ ...before, keepQuietLeg: true });
   });
 
@@ -121,7 +122,7 @@ describe("settings scrolling", () => {
 
   it("retains volume adjustment and returns to the original scene with Back", () => {
     const { scene, draw, key, input, frame, g } = fixture();
-    scene.cursor = 3; draw(); key("ArrowRight"); expect(settings().sfx).toBe(0.9);
+    scene.cursor = scene.rows().findIndex(r => r.label === "EFFECTS"); draw(); key("ArrowRight"); expect(settings().sfx).toBe(0.9);
     key("ArrowLeft"); expect(settings().sfx).toBe(0.8);
     input.mouseX = 430; input.mouseY = 10; input.mousePressed = true; frame();
     expect(g.setScene).toHaveBeenCalledWith("flight"); expect(g.settingsReturn).toBe("title");
@@ -131,4 +132,20 @@ describe("settings scrolling", () => {
 it("requests the current flight population when returning from Settings", () => {
   const { scene, g, key } = fixture(); const flight = { resumeNext: false }; g.scenes = { flight } as unknown as Game["scenes"];
   key("End"); const cursor = scene.cursor, top = scene.top; key("Escape"); expect(flight.resumeNext).toBe(true); expect(g.setScene).toHaveBeenCalledWith("flight"); scene.enter(); expect(scene.cursor).toBe(cursor); expect(scene.top).toBe(top);
+});
+
+
+it("saves display choices through clicks and arrows and resizes the current screen immediately", () => {
+  const { scene, key, clickRow, g } = fixture();
+  expect(scene.rows()[0].value).toContain("COMPACT");
+  clickRow(0); expect(settings().hudDensity).toBe("minimal");
+  key("ArrowLeft"); expect(settings().hudDensity).toBe("compact");
+  clickRow(1); expect(settings().hudOpacity).toBe(100);
+  key("ArrowRight"); expect(settings().hudOpacity).toBe(100);
+  for (let i = 0; i < 9; i++) key("ArrowLeft");
+  expect(settings().hudOpacity).toBe(30);
+  clickRow(2); expect(settings().screenFit).toBe("integer"); expect(g.resize).toHaveBeenCalledOnce();
+  key("ArrowRight"); expect(settings().screenFit).toBe("fit"); expect(g.resize).toHaveBeenCalledTimes(2);
+  const saved = JSON.parse(vi.mocked(localStorage.setItem).mock.calls.at(-1)![1]);
+  expect(saved).toMatchObject({ hudDensity: "compact", hudOpacity: 30, screenFit: "fit" });
 });

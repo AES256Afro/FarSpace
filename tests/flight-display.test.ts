@@ -4,13 +4,15 @@ import { generateWorld } from "../src/world";
 import { FlightScene } from "../src/scenes/flight/index";
 import { flightDisplay, flightRecordSections } from "../src/scenes/flight/display";
 import { flightInteraction } from "../src/scenes/flight/interaction";
-import { renderFlightHud } from "../src/scenes/flight/hud";
+import { drawEdgeMarkers } from "../src/scenes/flight/render";
+import { renderFlightHud, flightHudBounds } from "../src/scenes/flight/hud";
 import { updateVoyageSystems } from "../src/core/runtime";
 import * as font from "../src/gfx/font";
 import { PAL } from "../src/gfx/palette";
+import { saveSettings } from "../src/core/settings";
 import * as wire from "../src/core/wire";
 
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => { vi.restoreAllMocks(); saveSettings({hudDensity:"compact",hudOpacity:90}); });
 function fixture() {
   vi.spyOn(wire, "getCallsign").mockReturnValue(null);
   const world = generateWorld(419), p = world.player, fs = new FlightScene(), keys = new Set<string>();
@@ -21,7 +23,8 @@ function fixture() {
 }
 
 describe("flight display priorities", () => {
-  it("keeps direction, course, fuel, pursuit and rescue readable while lessons and chatter wait", () => {
+  it.each(["full", "compact", "minimal"] as const)("keeps direction, course, fuel, pursuit and rescue readable in %s while lessons and chatter wait", mode => {
+    saveSettings({hudDensity:mode});
     const { g, fs, p, sys } = fixture(); p.tutorial = 1; p.fuel = 4; p.navTarget = sys.links[0]; p.angle = 0; p.vx = 0; p.vy = -20; fs.mouseAim = true; fs.aim = Math.PI;
     vi.spyOn(fs, "lawStatus").mockReturnValue("WARRANT: BREAK CONTACT / U TRAFFIC CONTROL");
     fs.npcs.push({ kind: "trader", name: "Aid vessel", hull: 10, hullMax: 100, x: p.x + 30, y: p.y, vx: 0, vy: 0, angle: 0, fireCd: 0, targetIdx: 0 });
@@ -107,4 +110,38 @@ describe("complete flight record", () => {
     fs.recordNotices(g); fs.recordNotices(g); expect(fs.commsLog).toHaveLength(1); g.toastTimer = 0; fs.recordNotices(g); g.toastTimer = 3; fs.recordNotices(g); expect(fs.commsLog).toHaveLength(2);
     fs.openFlightRecord(g); const close = vi.fn(); fs.logReader!.closeSearchBox = close; fs.onSceneLeave(); expect(close).toHaveBeenCalledOnce(); expect(fs.logReader).toBeUndefined(); expect(fs.logOpen).toBe(false);
   });
+});
+
+
+it("opens the record from the same button in every density and gives space back without changing the voyage", () => {
+  const { g, fs } = fixture();
+  fs.alert = 1;
+  fs.comms.push({ from: "CREW", text: "Ordinary chatter", life: 8, color: PAL.grey });
+  const before = JSON.stringify(g.world), heights: number[] = [];
+  vi.spyOn(font, "drawText").mockImplementation(() => {});
+  for (const mode of ["full", "compact", "minimal"] as const) {
+    saveSettings({ hudDensity: mode, hudOpacity: 30 });
+    const fillRect = vi.fn();
+    const ctx = new Proxy({fillRect}, {get: (obj, key) => key === "fillRect" ? obj.fillRect : () => {}, set: () => true}) as unknown as CanvasRenderingContext2D;
+    renderFlightHud(fs, g, ctx);
+    heights.push(fillRect.mock.calls.filter(([x,,w]) => x === 0 && w === 480).reduce((sum,[,,,h]) => sum + h, 0));
+    expect(JSON.stringify(g.world)).toBe(before);
+    Object.assign(g.input, {mousePressed:true,mouseX:447,mouseY:20});
+    fs.update(g,0); expect(fs.logOpen).toBe(true);
+    expect(JSON.stringify(fs.logReader!.sections)).toContain("YELLOW ALERT");
+    fs.onSceneLeave(); g.input.mousePressed = false;
+  }
+  expect(heights[1]).toBeLessThan(heights[0]); expect(heights[2]).toBeLessThan(heights[1]);
+});
+
+
+it.each(["full", "compact", "minimal"] as const)("keeps edge destination labels clear of the %s HUD", mode => {
+  const { g, fs, p, sys } = fixture(); saveSettings({hudDensity:mode,hudOpacity:30}); p.hull=20;p.fuel=4;
+  sys.jumpPoints[0].x=p.x;sys.jumpPoints[0].y=p.y-10000;
+  const draw=vi.spyOn(font,"drawText").mockImplementation(()=>{});
+  const ctx=new Proxy({}, {get:()=>()=>{},set:()=>true}) as CanvasRenderingContext2D;
+  const bounds=flightHudBounds(flightDisplay(fs,g),false);
+  drawEdgeMarkers(fs,g,ctx,p.x-240,p.y-135,1);
+  expect(draw.mock.calls.some(([,text])=>String(text).startsWith("GATE"))).toBe(true);
+  for (const [,,,y] of draw.mock.calls) { expect(y).toBeGreaterThanOrEqual(bounds.top);expect(Number(y)+5).toBeLessThan(bounds.bottom); }
 });
