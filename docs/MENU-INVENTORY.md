@@ -1,6 +1,6 @@
 # M418 menu inventory
 
-Baseline: v0.264.0, inspected September 12, 2026. Native acceptance is recorded
+Baseline: v0.265.0, inspected September 12, 2026. Native acceptance is recorded
 per migration. M418 is still open.
 
 | Surface | Current behavior | Remaining work | Acceptance state |
@@ -17,7 +17,8 @@ per migration. M418 is still open.
 | Orbit | Separate six row Site and Territory lists, stable keys and fixed landing controls. Full details and all objectives use a nested reader. | Preserve domain landing and Q focus tests. | Native 25 sites and 20 territories; Q selected site 24 on the last page; Land entered that ruin; Rover entered territory 19. Details retained selection and globe rotation. |
 | Galaxy and system maps | Bounded maps and explicit navigation. Local I reads all destination quests; O reads every system objective. Contact updates retain selection and top row. | Finish galaxy selection/removal and other map acceptance checks alongside M419/M420. | Native 12 shared station quests, final material requirement, search, and exact camera/selection/course/time preservation. Contact insertion/removal tests pass. |
 | Service and council desks | Dedicated action menus. Service history uses ReaderScene. | Audit dynamic rows, scrolling and all action hit areas against current state. | Needs focused audit. |
-| City, outpost and waystation | City and outpost use list panels; waystation has fixed walking interactions and at most three visitors. | Fix city/outpost hover overriding selection and clicks outside panel X bounds. Bound lists and verify transactions, empty states and caller return. | Concrete source issues identified for the next slice. Waystation needs return acceptance. |
+| City and outpost desks | Six visible rows, stable selection, full details and explicit transactions. Desk input switches to menu controls while open. | Preserve domain trade, hiring, mission and growth tests. Audit the outpost foreman encounter return with the remaining caller checks. | Native 20 goods, 15 crew offers and 15 long contracts; exact trade/hire/accept, wanted premium, reader return and orbit return passed. |
+| Waystation | Fixed walking interactions and at most three visitors. | Finish caller return acceptance. | Needs focused return check. |
 
 ## Implementation sequence
 
@@ -77,3 +78,33 @@ available when it exceeds the header. Home/End reach the complete message.
 disabled online calls. Remaining M418 work focuses on the other station tabs,
 service and council desks, city/outpost/waystation lists and the final input
 and return audit. Earlier title, Settings and workshop regressions remain.
+
+## v0.265.0 implementation evidence
+
+DeskMenu shares six row geometry, drawn row identity, selection and paging.
+City market and outpost goods use commodity ids. City crew offers use live
+member identity, so duplicate names stay separate. Contract keys include the
+mission id and whether the action is acceptance or hand-in. If an entry
+vanishes in the input frame, its adjacent replacement requires a fresh action.
+Rows only select; Buy, Sell, Hire and Accept/Turn in are separate controls.
+Headers and margins cannot trigger transactions. Empty lists remain inert.
+
+City hiring respects crew on leave. Completed trades, recruitment and contracts
+update the existing ledger and autosave. Outpost premiums and settlement growth
+keep their existing values. Failed purchases or sales keep credits and cargo.
+ReaderOverlay shows complete entries without repeating arrival effects or
+resetting selection. Open desks use menu input, then restore walking input.
+
+Native checks used 20 goods at each desk, 15 crew offers including a long name,
+and 15 contracts with 40 requirements each. End reached Crystal Lattice;
+buying cost 29CR and selling returned 24CR. The last crew offer was hired and
+selection moved to the adjacent offer. Contract 14 showed its final requirement
+and acceptance added that exact mission. A wanted outpost provision sold for
+30CR and added six growth; the unavailable purchase spent nothing. Escape
+closed details, then the desk, then returned to orbit. No application errors.
+Fixture storage was in memory and online calls were disabled.
+
+646 tests in 43 files pass. TypeScript and production build pass. Physical
+controller and touch acceptance remain scheduled for M426. M418 still needs
+service/council, remaining station tabs, galaxy selection/removal and the final
+caller audit. Outpost foreman return is included in that audit.

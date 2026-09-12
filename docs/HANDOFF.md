@@ -10,7 +10,34 @@ active every ten minutes. Read WORKLOG-2026-09-12.md on each continuation.
 At the deadline, stop new implementation, finish a safe checkpoint and pause.
 M418 through M427 and M433 through M435 remain open in NEXT-MILESTONES.md.
 
-## Current checkpoint: v0.264.0, M418 locations and objectives
+## Current checkpoint: v0.265.0, M418 settlement desks
+
+- City markets, cantina crew offers, contracts and outpost goods use six row
+  pages with arrows, wheel, Page Up/Down and Home/End. Pointer rows select;
+  explicit Buy, Sell, Hire and Accept/Turn in controls perform transactions.
+  Headers and margins are inert. Hover no longer changes keyboard selection.
+- DeskMenu shares geometry and drawn row identity; domain actions stay in
+  their scenes. Goods use commodity ids, offers use CrewMember objects and
+  contracts use mission ids plus acceptance/hand-in state. Dynamic removal
+  picks an adjacent item and requires fresh input before acting on it.
+- I opens full details in ReaderOverlay. Closing retains the parent and list
+  without replaying arrival effects. Desk input uses menu mode, then restores
+  walking mode. City hiring counts reserved leave berths. Transactions update
+  the existing ledger and autosave; outpost premiums and growth remain.
+- Native acceptance: 20 goods at both desks, 15 crew offers including a long
+  name and 15 long contracts. Exact last good buy/sell, last crew hire and
+  contract acceptance passed. Full details reached requirement 39 plus the
+  final contract marker. Wanted provisions paid 30CR and six growth; purchase
+  was unavailable and spent nothing. Nested Escape returned to orbit.
+- 646 tests in 43 files pass. TypeScript and production build pass. Native
+  fixtures used memory storage and disabled online calls. No application
+  errors. Actual saves and identity unchanged. Save schema stays 16.
+- Release and hosted verification pending. M418 remains open. Next audit
+  ServiceScene and CouncilScene, then remaining station tabs, galaxy removal,
+  waystation and final input/caller returns. Include outpost foreman return:
+  it enters the parent again after an encounter, unlike ReaderOverlay.
+
+## Previous checkpoint: v0.264.0, M418 locations and objectives
 
 - Orbit now separates Sites and Territories into six row pages. Tab switches
   lists; arrows/wheel/pointer select; Page Up/Down and Home/End reach all rows.

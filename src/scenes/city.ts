@@ -4,7 +4,7 @@
 import { Game, Scene, VW } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { settlementLine } from "../world";
+import { settlementLine, berthsUsed, ledger } from "../world";
 import { RNG, hashStr } from "../core/rng";
 import { addCargo, removeCargo, cargoUsed, Poi, Region, Mission, genCrewCandidate, missionDeliverable, adjustRep, genMissionsFor, findStation } from "../world";
 import { commodity, faction, genPersonName } from "../data/data";
@@ -12,6 +12,9 @@ import { CrewMember, ROLE_INFO } from "../data/crew";
 import { hull } from "../data/hulls";
 import { sfx } from "../core/sfx";
 import { music } from "../core/music";
+import { DeskMenu, deskClick, DESK_ACTION, DESK_SELL, DESK_INFO, DESK_CLOSE } from "./deskmenu";
+import { mapButton } from "../core/mapview";
+import { ReaderOverlay } from "./reader";
 import { T, moveWalker, deckOrigin, drawTiles, drawPerson, drawKiosk, nearestTile, tooltip, footer } from "./walkbase";
 
 const DECK = [
@@ -33,13 +36,15 @@ interface Resident { x: number; y: number; tx: number; ty: number; name: string;
 type Panel = "none" | "market" | "bar" | "board";
 
 export class CityScene implements Scene {
-  touchMode = "walk" as const;
+  get touchMode(): "walk" | "menu" { return this.panel !== "none" || this.info ? "menu" : "walk"; }
   px = 32 * T; py = 7 * T + 5;
   poi!: Poi; region!: Region;
   residents: Resident[] = [];
   panel: Panel = "none";
-  cursor = 0;
-  rowBoxes: [number, number][] = [];
+  market = new DeskMenu<string>();
+  bar = new DeskMenu<CrewMember>();
+  contracts = new DeskMenu<string>();
+  info?: ReaderOverlay;
   rows: { id: string; buy: number; sell: number }[] = [];
   candidates: CrewMember[] = [];
   board: Mission[] = [];
@@ -55,6 +60,7 @@ export class CityScene implements Scene {
     this.region = surf.regions[poi.regionIdx];
     this.px = 32 * T; this.py = 7 * T + 5;
     this.panel = "none";
+    this.onSceneLeave(); this.market = new DeskMenu(); this.bar = new DeskMenu(); this.contracts = new DeskMenu();
     const rng = new RNG(hashStr(poi.id) ^ g.world.seed ^ Math.floor(g.world.time / 120));
     this.residents = [];
     for (let i = 0; i < 6; i++) {
@@ -106,6 +112,7 @@ export class CityScene implements Scene {
   update(g: Game, dt: number): void {
     const inp = g.input;
     const p = g.world.player;
+    if (this.info) { this.info.update(g); return; }
     if (this.panel !== "none") { this.updatePanel(g); return; }
     if (inp.wasPressed("Escape")) { g.setScene(g.surfaceReturn ? "surface" : "orbit"); return; }
     if (inp.wasPressed("F5")) g.save();
@@ -119,9 +126,9 @@ export class CityScene implements Scene {
     const near = nearestTile(DECK, this.px, this.py, "TRBA");
     const res = this.residents.find((r) => Math.hypot(r.x - this.px, r.y - this.py) < 16);
     if (inp.wasPressed("e")) {
-      if (near?.ch === "T") { this.panel = "market"; this.cursor = 0; sfx.select(); }
-      else if (near?.ch === "R") { this.panel = "bar"; this.cursor = 0; sfx.select(); }
-      else if (near?.ch === "B") { this.panel = "board"; this.cursor = 0; sfx.select(); }
+      if (near?.ch === "T") { this.panel = "market"; this.market.view.sync(this.rows.map(r => r.id)); sfx.select(); }
+      else if (near?.ch === "R") { this.panel = "bar"; this.bar.view.sync(this.candidates); sfx.select(); }
+      else if (near?.ch === "B") { this.panel = "board"; this.contracts.view.sync(this.contractRows(g).map(r => r.key)); sfx.select(); }
       else if (near?.ch === "A") { g.setScene(g.surfaceReturn ? "surface" : "orbit"); return; }
       else if (res) this.say(`${res.name.toUpperCase()}: ${res.line}`);
     }
@@ -129,55 +136,74 @@ export class CityScene implements Scene {
     void p;
   }
 
+  onSceneLeave(): void { this.info?.onSceneLeave(); this.info = undefined; }
+
+  contractRows(g: Game): { key: string; mission: Mission; ready: boolean }[] {
+    const fake = { id: this.poi.id } as unknown as Parameters<typeof missionDeliverable>[2];
+    return [
+      ...g.world.player.missions.filter(m => missionDeliverable(g.world, m, fake)).map(mission => ({ key: `turnin:${mission.id}`, mission, ready: true })),
+      ...this.board.filter(m => !m.accepted && !m.done).map(mission => ({ key: `accept:${mission.id}`, mission, ready: false })),
+    ];
+  }
+
+  read(title: string, lines: string[]): void {
+    this.info = new ReaderOverlay("DESK DETAILS", [[title, lines]], () => { this.info = undefined; });
+  }
+
   updatePanel(g: Game): void {
-    const inp = g.input;
-    const p = g.world.player;
-    if (inp.wasPressed("Escape")) { this.panel = "none"; return; }
-    if (inp.wasPressed("ArrowUp")) { this.cursor--; sfx.blip(); }
-    if (inp.wasPressed("ArrowDown")) { this.cursor++; sfx.blip(); }
-    const row = this.rowBoxes.findIndex(([y0, y1]) => inp.mouseY >= y0 && inp.mouseY <= y1);
-    if (row >= 0 && inp.mouseX > 60 && inp.mouseX < 420) this.cursor = row;
-    const enter = inp.wasPressed("Enter") || inp.wasPressed("b") || (inp.mousePressed && row >= 0);
+    const inp = g.input, p = g.world.player;
+    if (inp.wasPressed("Escape") || deskClick(inp, DESK_CLOSE)) { this.panel = "none"; return; }
+    const enter = inp.wasPressed("Enter") || deskClick(inp, DESK_ACTION);
+    const details = inp.wasPressed("i") || deskClick(inp, DESK_INFO);
     if (this.panel === "market") {
-      const n = this.rows.length; this.cursor = ((this.cursor % n) + n) % n;
-      const r = this.rows[this.cursor];
-      if (enter) { if (p.credits < r.buy) g.toast("NOT ENOUGH CREDITS"); else if (!addCargo(p, r.id, 1)) g.toast("CARGO FULL"); else { p.credits -= r.buy; sfx.select(); } }
-      if (inp.wasPressed("s")) { if (!removeCargo(p, r.id, 1)) g.toast("NONE IN CARGO"); else { p.credits += r.sell; sfx.select(); } }
+      const fresh = this.market.update(this.rows.map(r => r.id), inp);
+      const r = this.rows.find(r => r.id === this.market.view.selected);
+      if (!r || !fresh) return;
+      if (details) { this.read(commodity(r.id).name, [`BUY ONE: ${r.buy}CR. SELL ONE: ${r.sell}CR.`, `HELD: ${p.cargo[r.id] ?? 0}. CARGO: ${cargoUsed(p)}/${p.cargoMax}.`, "BUY ADDS ONE UNIT TO CARGO. SELL REMOVES ONE UNIT FROM CARGO."]); return; }
+      if (enter || inp.wasPressed("b")) {
+        if (p.credits < r.buy) g.toast("NOT ENOUGH CREDITS");
+        else if (!addCargo(p, r.id, 1)) g.toast("CARGO FULL");
+        else { p.credits -= r.buy; ledger(p, "settlements", -r.buy); sfx.select(); g.autosave(); }
+      } else if (inp.wasPressed("s") || deskClick(inp, DESK_SELL)) {
+        if (!removeCargo(p, r.id, 1)) g.toast("NONE IN CARGO");
+        else { p.credits += r.sell; ledger(p, "settlements", r.sell); sfx.select(); g.autosave(); }
+      }
     } else if (this.panel === "bar") {
-      const n = Math.max(1, this.candidates.length); this.cursor = ((this.cursor % n) + n) % n;
-      const c = this.candidates[this.cursor];
-      if (enter && c) {
+      const fresh = this.bar.update(this.candidates, inp), c = this.bar.view.selected;
+      if (!c || !fresh) return;
+      if (details) { this.read(c.name, [`${ROLE_INFO[c.role].label}. SKILL ${c.skill}.`, ROLE_INFO[c.role].effect, `WAGE: ${c.wage}CR EACH DOCKING. SIGNING BONUS: ${c.wage * 3}CR.`, c.trait ?? "", `BERTHS USED: ${berthsUsed(p)}/${hull(p.hullId).crewSlots}. CREW ON LEAVE KEEP THEIR BERTHS.`]); return; }
+      if (enter) {
         const slots = hull(p.hullId).crewSlots, cost = c.wage * 3;
-        if (p.crew.length >= slots) g.toast(`NO BERTHS LEFT (${slots})`);
-        else if (p.credits < cost) g.toast(`SIGNING BONUS ${cost}CR - NOT ENOUGH`);
-        else { p.credits -= cost; p.crew.push({ ...c }); this.candidates = this.candidates.filter((x) => x !== c); g.toast(`${c.name.toUpperCase()} SIGNED ON`); sfx.pickup(); }
+        if (berthsUsed(p) >= slots) g.toast(`NO BERTHS LEFT (${slots}, INCLUDING CREW ON LEAVE)`);
+        else if (p.credits < cost) g.toast(`SIGNING BONUS ${cost}CR. NOT ENOUGH CREDITS`);
+        else {
+          p.credits -= cost; ledger(p, "crew", -cost); p.crew.push({ ...c });
+          this.candidates = this.candidates.filter(x => x !== c); this.bar.view.sync(this.candidates);
+          g.toast(`${c.name.toUpperCase()} SIGNED ON`); sfx.pickup(); g.autosave();
+        }
       }
     } else if (this.panel === "board") {
-      const fake = { id: this.poi.id } as unknown as Parameters<typeof missionDeliverable>[2];
-      const ready = p.missions.filter((m) => missionDeliverable(g.world, m, fake));
-      const avail = this.board.filter((m) => !m.accepted);
-      const n = Math.max(1, ready.length + avail.length); this.cursor = ((this.cursor % n) + n) % n;
+      const rows = this.contractRows(g), fresh = this.contracts.update(rows.map(r => r.key), inp);
+      const selected = rows.find(r => r.key === this.contracts.view.selected);
+      if (!selected || !fresh) return;
+      const { mission: m, ready } = selected;
+      if (details) { this.read(m.title, [ready ? "READY TO TURN IN HERE." : "AVAILABLE CONTRACT.", m.desc, `REWARD: ${m.reward}CR.`, ...(m.commodityId && m.qty ? [`REQUIRED: ${m.qty} ${commodity(m.commodityId).name}.`] : []), "ESC CLOSES THESE DETAILS. USE THE DESK ACTION TO ACCEPT OR TURN IN."]); return; }
       if (enter) {
-        if (this.cursor < ready.length) {
-          const m = ready[this.cursor];
-          if (m.commodityId && m.qty && m.kind !== "research") removeCargo(p, m.commodityId, m.qty);
-          m.done = true; p.credits += m.reward;
+        if (ready) {
+          if (m.commodityId && m.qty && m.kind !== "research" && !removeCargo(p, m.commodityId, m.qty)) { g.toast("REQUIRED CARGO IS MISSING"); return; }
+          m.done = true; p.credits += m.reward; ledger(p, "contracts", m.reward);
           if (this.region.factionId) adjustRep(g.world, this.region.factionId, m.repReward ?? 3);
-          p.missions = p.missions.filter((x) => !x.done);
-          g.toast(`CONTRACT COMPLETE +${m.reward}CR`); sfx.pickup();
-        } else {
-          const m = avail[this.cursor - ready.length];
-          if (m) {
-            if (p.missions.filter((x) => x.accepted && !x.done).length >= 5) g.toast("MISSION LOG FULL");
-            else { m.accepted = true; p.missions.push(m); g.toast("CONTRACT ACCEPTED"); sfx.select(); }
-          }
-        }
+          p.missions = p.missions.filter(x => !x.done);
+          g.toast(`CONTRACT COMPLETE +${m.reward}CR`); sfx.pickup(); g.autosave();
+        } else if (p.missions.filter(x => x.accepted && !x.done).length >= 5) g.toast("MISSION LOG FULL");
+        else { m.accepted = true; p.missions.push(m); g.toast("CONTRACT ACCEPTED"); sfx.select(); g.autosave(); }
+        this.contracts.view.sync(this.contractRows(g).map(r => r.key));
       }
     }
   }
 
   draw(g: Game, ctx: CanvasRenderingContext2D): void {
-    this.rowBoxes = [];
+    if (this.info) { this.info.draw(g, ctx); return; }
     const p = g.world.player;
     const fac = this.region.factionId ? faction(this.region.factionId) : null;
     ctx.fillStyle = "#0a0d18";
@@ -212,30 +238,27 @@ export class CityScene implements Scene {
   }
 
   drawPanel(g: Game, ctx: CanvasRenderingContext2D): void {
-    const p = g.world.player;
-    ctx.fillStyle = "rgba(8,12,22,0.95)"; ctx.fillRect(60, 40, 360, 180);
-    ctx.strokeStyle = PAL.uiBorder; ctx.strokeRect(60.5, 40.5, 359, 179);
-    let y = 48;
-    const rowAt = (i: number) => { this.rowBoxes.push([y - 2, y + 8]); if (i === this.cursor) { ctx.fillStyle = "#13203a"; ctx.fillRect(64, y - 2, 352, 10); } };
+    const p = g.world.player, status = `${p.credits}CR   CARGO ${cargoUsed(p)}/${p.cargoMax}   BERTHS ${berthsUsed(p)}/${hull(p.hullId).crewSlots}`;
     if (this.panel === "market") {
-      drawText(ctx, "STREET MARKET - ENTER/B BUY  S SELL  ESC CLOSE", 68, y, PAL.greyDark); y += 12;
-      drawText(ctx, "GOODS", 68, y, PAL.greyDark); drawText(ctx, "BUY", 220, y, PAL.greyDark); drawText(ctx, "SELL", 260, y, PAL.greyDark); drawText(ctx, "HELD", 310, y, PAL.greyDark); y += 10;
-      this.rows.forEach((r, i) => { rowAt(i); const c = commodity(r.id); drawText(ctx, c.name, 68, y, PAL.white); drawText(ctx, `${r.buy}`, 220, y, PAL.gold); drawText(ctx, `${r.sell}`, 260, y, PAL.gold); drawText(ctx, `${p.cargo[r.id] ?? 0}`, 310, y, PAL.ui); y += 11; });
+      this.market.draw(ctx, "STREET MARKET", status, id => {
+        const r = this.rows.find(r => r.id === id)!;
+        return { title: commodity(id).name, right: `BUY ${r.buy} / SELL ${r.sell}CR`, detail: `HELD ${p.cargo[id] ?? 0}` };
+      }, "NO GOODS AVAILABLE.");
+      mapButton(ctx, DESK_ACTION, "ENTER/B BUY 1"); mapButton(ctx, DESK_SELL, "S SELL 1");
     } else if (this.panel === "bar") {
-      drawText(ctx, "CANTINA - HIRE (ENTER)  ESC CLOSE", 68, y, PAL.greyDark); y += 12;
-      if (!this.candidates.length) drawText(ctx, "NOBODY'S LOOKING FOR A BERTH TONIGHT.", 68, y, PAL.greyDark);
-      this.candidates.forEach((c, i) => { rowAt(i); ctx.drawImage(g.portrait(c.name), 68, y - 2, 12, 12); drawText(ctx, `${c.name} - ${ROLE_INFO[c.role].label} ${"*".repeat(c.skill)}`, 84, y, PAL.ui); y += 9; drawText(ctx, `${ROLE_INFO[c.role].effect}. WAGE ${c.wage}CR, BONUS ${c.wage * 3}CR`, 84, y, PAL.greyDark); y += 12; });
+      this.bar.draw(ctx, "CANTINA", status, c => ({ title: c.name, right: `SIGN ${c.wage * 3}CR`, detail: `${ROLE_INFO[c.role].label} ${"*".repeat(c.skill)} / WAGE ${c.wage}CR / ${ROLE_INFO[c.role].effect}` }), "NOBODY IS LOOKING FOR A BERTH TONIGHT.");
+      mapButton(ctx, DESK_ACTION, "ENTER HIRE");
     } else {
-      const fake = { id: this.poi.id } as unknown as Parameters<typeof missionDeliverable>[2];
-      const ready = p.missions.filter((m) => missionDeliverable(g.world, m, fake));
-      const avail = this.board.filter((m) => !m.accepted);
-      drawText(ctx, "CONTRACTS OFFICE - ENTER ACCEPT / TURN IN  ESC CLOSE", 68, y, PAL.greyDark); y += 12;
-      let i = 0;
-      for (const m of ready) { rowAt(i++); drawText(ctx, `TURN IN: ${m.title} +${m.reward}CR`, 68, y, PAL.gold); y += 11; }
-      if (!avail.length && !ready.length) drawText(ctx, "NO CONTRACTS POSTED.", 68, y, PAL.greyDark);
-      for (const m of avail) { rowAt(i++); drawText(ctx, m.title, 68, y, PAL.white); drawText(ctx, `+${m.reward}CR`, 380, y, PAL.gold); y += 8; drawText(ctx, m.desc.slice(0, 84), 68, y, PAL.greyDark); y += 12; }
+      const rows = this.contractRows(g);
+      this.contracts.draw(ctx, "CONTRACTS OFFICE", status, key => {
+        const r = rows.find(r => r.key === key)!;
+        return { title: r.mission.title, right: `+${r.mission.reward}CR`, detail: `${r.ready ? "TURN IN" : "AVAILABLE"}: ${r.mission.desc}` };
+      }, "NO CONTRACTS POSTED.");
+      mapButton(ctx, DESK_ACTION, rows.find(r => r.key === this.contracts.view.selected)?.ready ? "ENTER TURN IN" : "ENTER ACCEPT");
     }
+    mapButton(ctx, DESK_INFO, "I FULL DETAILS");
   }
+
 }
 
 const CITY_LINES: ((poi: Poi, r: Region, g: Game) => string)[] = [

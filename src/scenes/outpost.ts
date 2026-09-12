@@ -13,6 +13,9 @@ import { RNG, hashStr } from "../core/rng";
 import { addCargo, removeCargo, cargoUsed, adjustRep, Poi, Region } from "../world";
 import { commodity, faction, genPersonName } from "../data/data";
 import { sfx } from "../core/sfx";
+import { DeskMenu, deskClick, DESK_ACTION, DESK_SELL, DESK_INFO, DESK_CLOSE } from "./deskmenu";
+import { mapButton } from "../core/mapview";
+import { ReaderOverlay } from "./reader";
 import { T, moveWalker, deckOrigin, drawTiles, drawPerson, drawKiosk, nearestTile, tooltip, footer } from "./walkbase";
 
 const DECK = [
@@ -29,14 +32,15 @@ const DECK = [
 interface Npc { x: number; y: number; name: string; skin: string; suit: string; line: string }
 
 export class OutpostScene implements Scene {
-  touchMode = "walk" as const;
+  get touchMode(): "walk" | "menu" { return this.trade.open || this.info ? "menu" : "walk"; }
   px = 11 * T; py = 5 * T + 5;
   poi!: Poi; region!: Region;
   npcs: Npc[] = [];
-  trade: { open: boolean; cursor: number; rows: { id: string; buy: number; sell: number }[] } = { open: false, cursor: 0, rows: [] };
+  trade: { open: boolean; rows: { id: string; buy: number; sell: number }[] } = { open: false, rows: [] };
   needs: string[] = [];
   msg = ""; msgTimer = 0;
-  rowBoxes: [number, number][] = [];
+  market = new DeskMenu<string>();
+  info?: ReaderOverlay;
 
   enter(g: Game): void {
     const p = g.world.player;
@@ -48,7 +52,7 @@ export class OutpostScene implements Scene {
     this.poi = poi;
     this.region = surf.regions[poi.regionIdx];
     this.px = 11 * T; this.py = 5 * T + 5;
-    this.trade.open = false;
+    this.trade.open = false; this.onSceneLeave(); this.market = new DeskMenu();
     const rng = new RNG(hashStr(poi.id) ^ g.world.seed);
     this.npcs = [];
     for (let i = 0; i < 3; i++) {
@@ -93,7 +97,7 @@ export class OutpostScene implements Scene {
       g.toast(`FOREMAN PAYS OUT: ${m.title.toUpperCase()} +${m.reward}CR`); sfx.pickup();
       { const line = growSettlement(g.world, poi, m.kind === "repair" ? 25 : 15, this.who(g)); if (line) { g.toast(line); logEntry(g.world, line.toLowerCase()); flag(g, "founder"); } }
     }
-    this.trade.cursor = 0;
+    this.market.view.sync(this.trade.rows.map(r => r.id));
     this.msg = `LANDED: ${poi.name.toUpperCase()}`;
     this.msgTimer = 3;
     p.oxygen = p.oxygenMax;
@@ -132,27 +136,32 @@ export class OutpostScene implements Scene {
   say(m: string): void { this.msg = m; this.msgTimer = 3; }
   who(g: Game): string { return g.world.player.captainName ?? wire.getCallsign() ?? (g.world.player.shipName ? `the ${g.world.player.shipName}` : "an independent captain"); }
 
+  onSceneLeave(): void { this.info?.onSceneLeave(); this.info = undefined; }
+
   update(g: Game, dt: number): void {
+    if (this.info) { this.info.update(g); return; }
     const inp = g.input;
     const p = g.world.player;
     if (this.trade.open) {
-      if (inp.wasPressed("Escape")) { this.trade.open = false; return; }
-      if (inp.wasPressed("ArrowUp")) { this.trade.cursor--; sfx.blip(); }
-      if (inp.wasPressed("ArrowDown")) { this.trade.cursor++; sfx.blip(); }
-      const row = this.rowBoxes.findIndex(([y0, y1]) => inp.mouseY >= y0 && inp.mouseY <= y1);
-      if (row >= 0 && inp.mouseX > 100 && inp.mouseX < 380) { this.trade.cursor = row; }
-      const n = this.trade.rows.length;
-      this.trade.cursor = ((this.trade.cursor % n) + n) % n;
-      const r = this.trade.rows[this.trade.cursor];
-      if (inp.wasPressed("Enter") || inp.wasPressed("b") || (inp.mousePressed && row >= 0)) {
-        if (r.buy <= 0) g.toast("THEY'RE BUYING, NOT SELLING");
+      if (inp.wasPressed("Escape") || deskClick(inp, DESK_CLOSE)) { this.trade.open = false; return; }
+      const fresh = this.market.update(this.trade.rows.map(r => r.id), inp);
+      const r = this.trade.rows.find(r => r.id === this.market.view.selected);
+      if (!r || !fresh) return;
+      if (inp.wasPressed("i") || deskClick(inp, DESK_INFO)) {
+        this.info = new ReaderOverlay("TRADE DETAILS", [[commodity(r.id).name, [
+          r.buy > 0 ? `BUY ONE: ${r.buy}CR.` : "THE DESK ONLY BUYS THIS GOOD FROM YOU.",
+          `SELL ONE: ${r.sell}CR. HELD: ${p.cargo[r.id] ?? 0}. CARGO: ${cargoUsed(p)}/${p.cargoMax}.`,
+          this.needs.includes(r.id) ? "WANTED THIS WEEK. THE DISPLAYED SELL PRICE INCLUDES THE PREMIUM. EACH DELIVERY CONTRIBUTES EXTRA SETTLEMENT GROWTH." : "SELLING GOODS CONTRIBUTES TO SETTLEMENT GROWTH.",
+        ]]], () => { this.info = undefined; }); return;
+      }
+      if (inp.wasPressed("Enter") || inp.wasPressed("b") || deskClick(inp, DESK_ACTION)) {
+        if (r.buy <= 0) g.toast("THIS DESK ONLY BUYS THAT GOOD FROM YOU");
         else if (p.credits < r.buy) g.toast("NOT ENOUGH CREDITS");
         else if (!addCargo(p, r.id, 1)) g.toast("CARGO FULL");
-        else { p.credits -= r.buy; ledger(p, "settlements", -r.buy); sfx.select(); }
-      }
-      if (inp.wasPressed("s")) {
+        else { p.credits -= r.buy; ledger(p, "settlements", -r.buy); sfx.select(); g.autosave(); }
+      } else if (inp.wasPressed("s") || deskClick(inp, DESK_SELL)) {
         if (!removeCargo(p, r.id, 1)) g.toast("NONE IN CARGO");
-        else { p.credits += r.sell; ledger(p, "settlements", r.sell); sfx.select(); const line = growSettlement(g.world, this.poi, this.needs.includes(r.id) ? 6 : 2, this.who(g)); if (line) { g.toast(line); logEntry(g.world, line.toLowerCase()); flag(g, "founder"); } }
+        else { p.credits += r.sell; ledger(p, "settlements", r.sell); sfx.select(); const line = growSettlement(g.world, this.poi, this.needs.includes(r.id) ? 6 : 2, this.who(g)); if (line) { g.toast(line); logEntry(g.world, line.toLowerCase()); flag(g, "founder"); } g.autosave(); }
       }
       return;
     }
@@ -161,7 +170,7 @@ export class OutpostScene implements Scene {
     const near = nearestTile(DECK, this.px, this.py, "TSBA");
     const npc = this.npcs.find((n) => Math.hypot(n.x - this.px, n.y - this.py) < 16);
     if (inp.wasPressed("e")) {
-      if (near?.ch === "T") { this.trade.open = true; sfx.select(); }
+      if (near?.ch === "T") { this.trade.open = true; this.market.view.sync(this.trade.rows.map(r => r.id)); sfx.select(); }
       else if (near?.ch === "S") {
         const sys = g.world.systems[p.systemId];
         const surf = sys.planets[g.orbitPlanetIdx].surface!;
@@ -185,7 +194,7 @@ export class OutpostScene implements Scene {
   }
 
   draw(g: Game, ctx: CanvasRenderingContext2D): void {
-    this.rowBoxes = [];
+    if (this.info) { this.info.draw(g, ctx); return; }
     const p = g.world.player;
     const sys = g.world.systems[p.systemId];
     const pl = sys.planets[g.orbitPlanetIdx];
@@ -229,22 +238,11 @@ export class OutpostScene implements Scene {
     footer(ctx, g, this.msg);
 
     if (this.trade.open) {
-      ctx.fillStyle = "rgba(8,12,22,0.94)";
-      ctx.fillRect(90, 60, 300, 130);
-      ctx.strokeStyle = PAL.uiBorder; ctx.strokeRect(90.5, 60.5, 299, 129);
-      drawText(ctx, "OUTPOST TRADE DESK  -  ENTER/B BUY   S SELL   ESC CLOSE", 98, 66, PAL.greyDark);
-      drawText(ctx, "GOODS", 98, 80, PAL.greyDark); drawText(ctx, "BUY", 230, 80, PAL.greyDark); drawText(ctx, "SELL", 270, 80, PAL.greyDark); drawText(ctx, "HELD", 320, 80, PAL.greyDark);
-      this.trade.rows.forEach((r, i) => {
-        const y = 92 + i * 11;
-        this.rowBoxes.push([y - 2, y + 8]);
-        if (i === this.trade.cursor) { ctx.fillStyle = "#13203a"; ctx.fillRect(94, y - 2, 292, 10); }
-        const c = commodity(r.id);
-        drawText(ctx, c.name, 98, y, c.illegal ? PAL.danger : PAL.white);
-        drawText(ctx, `${r.buy}`, 230, y, PAL.gold);
-        drawText(ctx, `${r.sell}`, 270, y, PAL.gold);
-        drawText(ctx, `${p.cargo[r.id] ?? 0}`, 320, y, PAL.ui);
-        if (this.needs.includes(r.id)) drawText(ctx, `WANTED +${Math.round(SETTLEMENT_PREMIUM * 100)}%`, 340, y, PAL.gold);
-      });
+      this.market.draw(ctx, "OUTPOST TRADE DESK", `${p.credits}CR   CARGO ${cargoUsed(p)}/${p.cargoMax}`, id => {
+        const r = this.trade.rows.find(r => r.id === id)!;
+        return { title: commodity(id).name, right: `BUY ${r.buy > 0 ? r.buy : "N/A"} / SELL ${r.sell}CR`, detail: `HELD ${p.cargo[id] ?? 0}${this.needs.includes(id) ? " / WANTED THIS WEEK. PREMIUM INCLUDED." : ""}` };
+      }, "NO GOODS AVAILABLE.");
+      mapButton(ctx, DESK_ACTION, "ENTER/B BUY 1"); mapButton(ctx, DESK_SELL, "S SELL 1"); mapButton(ctx, DESK_INFO, "I FULL DETAILS");
     }
   }
 }
