@@ -320,7 +320,8 @@ Acceptance:
 ### M419: A readable flight deck
 
 Implemented and natively accepted in v0.271.0 with 762 passing tests.
-Release verification is pending. HANDOFF.md records the acceptance fixtures.
+Release CI, container publication, Cloudflare deployment and hosted acceptance
+passed. HANDOFF.md records the acceptance fixtures and asset hashes.
 
 Give the HUD explicit display regions and priorities. Always retain hull
 heading, actual drift, essential condition, current destination and urgent

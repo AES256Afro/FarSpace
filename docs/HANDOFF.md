@@ -48,8 +48,20 @@ M420 through M427 and M433 through M435 remain open in NEXT-MILESTONES.md.
 - 762 tests in 49 files pass. TypeScript and production build pass. Coverage
   includes interaction order, occupied repair, jump limits, read-only drawing,
   expired state, record cleanup, full text, pause and pixel bounds. Save schema
-  remains 16. Physical controller/touch acceptance remains M426. Release CI,
-  container publication, deployment and hosted acceptance are pending.
+  remains 16. Physical controller/touch acceptance remains M426.
+- Release faa4dc234bc49afe96bf1d9ac04af8ef25a48e4d, tag v0.271.0: CI
+  34682861943 passed including Cloudflare deployment; container 34682861929
+  passed. Hosted assets match dist and health is ok. Fresh title shows v0.271.0.
+  JS index-Guqny0kV.js SHA-256
+  93ae50727131c7cd941f06f8b9066c7d26fc6b50dd642e169e44d2c2bdf8665e;
+  CSS index-CwZdn5Vi.css SHA-256
+  4f9ba0bcb103d7e5d276c53d483e014ca4cc6c86a417f6d91da0474ff6e1e085.
+- Hosted isolated fixture showed simultaneous law cooldown, low fuel and the
+  disabled freighter action. L opened the complete record; End reached the last
+  retained guidance. Serialized world stayed unchanged while reading. Escape
+  returned to flight. No app warnings/errors; fixture tab closed. A minor copy
+  follow-up for M420: round fractional condition values in the complete record
+  to match the HUD, which already rounds them. Dev5199 serves v0.271.0.
 - M419 implementation and native acceptance are complete. Next is M420 contact
   presentation, then the remaining documented sequence. The authorized deadline
   remains 2026-09-12 11:31:03 UTC. Do not extend it.
