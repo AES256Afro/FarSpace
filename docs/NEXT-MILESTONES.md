@@ -18,6 +18,12 @@ The user's title preference is explicit: randomly alternate between an
 orbital ship scene, station traffic and a bridge-window scene. The title
 menu keeps one layout across all three.
 
+## Current milestone status
+
+v0.270.0 completes M418. M419 through M427 and M433 through M435 remain open.
+M428 through M432 and M436 are released. Next: M419 flight display priorities,
+then M420 contact presentation. The existing nine hour deadline is unchanged.
+
 ## Nine hour work window and quest visibility
 
 The user authorized work on every remaining milestone from September 12,
@@ -285,7 +291,8 @@ Acceptance:
 
 ### M418: Menus with one set of rules
 
-Implemented and natively accepted in v0.270.0. Release verification is pending.
+Implemented, natively accepted and released in v0.270.0. CI, container
+publication, Cloudflare deployment and hosted verification passed.
 746 tests in 48 files pass. MENU-INVENTORY.md records each migrated surface.
 Physical touch and controller acceptance remains M426.
 

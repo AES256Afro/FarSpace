@@ -1,7 +1,7 @@
 # M418 menu inventory
 
 Baseline: v0.270.0, inspected September 12, 2026. M418 implementation and
-native acceptance are complete. Release verification is pending below.
+native acceptance are complete. Release verification passed as recorded below.
 
 | Surface | Current behavior | Remaining work | Acceptance state |
 | --- | --- | --- | --- |
@@ -338,8 +338,21 @@ closed, with actual saves and identity unchanged. Dev5199 runs v0.268.1.
   reached its final section and returned to the same title help page and focus.
   No application warnings/errors. Temporary tabs closed. Memory storage and
   disabled online calls preserved actual saves and identity.
-- 746 tests in 48 files pass. TypeScript and production build pass. Save schema remains
-  16. Release CI, container publication, deployment and hosted checks are pending.
+- 746 tests in 48 files pass. TypeScript and production build pass. The 55 title
+  and reader checks also pass after Help and What's new text updates. Save schema
+  remains 16. Release c6460cd9aaedc08a938e6b9bacafd2f91cef9306, tag v0.270.0:
+  CI 34680467225 passed including Deploy to Cloudflare. Container publication
+  34680467282 passed. Hosted JS and CSS match the tested build; health returned
+  ok. JS index-DB_4k5rQ.js SHA-256
+  43445c7ab14e454ff4942a8a41cf550d2c3eed050a7e300b094738aa7580e214;
+  CSS index-CwZdn5Vi.css SHA-256
+  4f9ba0bcb103d7e5d276c53d483e014ca4cc6c86a417f6d91da0474ff6e1e085.
+- Fresh public title showed v0.270.0. Its isolated fixture read all fourteen
+  quest objectives through the final 14 provisions requirement at scroll 354.
+  Credits stayed 50000, course stayed empty and the reader pause was active.
+  Search End selected the tenth system; Enter inspected it without plotting or
+  starting autopilot. No application warnings/errors. Temporary tabs closed;
+  actual saves and identity unchanged. Dev5199 runs v0.270.0.
   M418 implementation and native acceptance are complete across the menu
   inventory. Physical controller/touch acceptance remains M426. Next is M419
   flight display priorities, then M420 contact presentation, followed by the
