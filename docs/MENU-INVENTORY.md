@@ -147,3 +147,8 @@ uses the explicit action control. Plant repair settlement and queued load
 cancellation are tested. Physical controller/touch acceptance remains M426.
 M418 stays open for conversation lists, remaining station tabs, galaxy
 selection/removal and final input/caller checks.
+
+Release CI 34674411003, container publication and Cloudflare deployment passed.
+Hosted v0.266.0 matches the tested build. Its isolated service fixture read the
+full 750CR report terms, retained selection on return, collected that amount
+and showed the full reply in O. No application warnings/errors.

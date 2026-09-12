@@ -56,7 +56,8 @@ CI, container publication, Cloudflare deployment and hosted checks passed.
 The v0.266.0 office slice adds stable service/council action lists, complete
 records, service file and conversation returns, and foreman return state.
 667 tests pass. Native office and waystation checks are in MENU-INVENTORY.md.
-Release and hosted verification are pending. Conversation lists, remaining
+CI, container publication, Cloudflare deployment and hosted checks passed.
+Conversation lists, remaining
 station tabs, galaxy removal and final caller checks keep M418 open.
 
 ## September 11 priority update: mining and industry
