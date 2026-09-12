@@ -32,6 +32,7 @@ describe("warehouse inventory", () => {
     const { station, g, ctx, input, p, st } = fixture(), id = COMMODITIES.at(-1)!.id;
     station.cursor = 51; station.drawStorage(g, ctx, 56);
     input.mouseX = 200; input.mouseY = station.rowBoxes[51][0] + 4; input.mousePressed = true;
+    station.update(g, 0); expect(p.cargo[id]).toBe(2); input.mouseX = 40; input.mouseY = 250;
     station.update(g, 0); expect(p.cargo[id]).toBe(3); expect(p.storage[st.id][id]).toBe(2);
     expect(p.cargo.food).toBe(2); expect(p.storage[st.id].food).toBe(3); expect(p.storage.elsewhere.food).toBe(80);
     expect(cargoUsed(p)).toBe(53);

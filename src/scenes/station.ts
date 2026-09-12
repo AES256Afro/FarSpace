@@ -1,5 +1,7 @@
 import { openWorkshop } from "./workshop";
-import type { ReaderScene } from "./reader";
+import { ReaderOverlay, type ReaderScene } from "./reader";
+import { StationList } from "./stationlist";
+import { clippedText, contains, mapButton, type Rect } from "../core/mapview";
 import { deliverRecovery, hullSalePrice } from "../core/shiprecovery";
 import { recordOffence, closeLawCases } from "../core/law";
 import { loanHullChangeReason, loanReturnReason, loanSummary, plotLoanDepot, returnServiceCutter } from "../core/serviceloan";
@@ -12,7 +14,7 @@ import { plotServiceOrder, recordServiceFareDelivery, serviceAudienceAt, service
 import { ask, confirmBox } from "../core/dialog";
 import { Game, Scene, VW, VH } from "../game";
 import { singerBoardingReason } from "../core/singers";
-import { drawText, textWidth, CHAR_H } from "../gfx/font";
+import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 import { RNG, hashStr } from "../core/rng";
 import { clamp } from "../core/mathx";
@@ -45,17 +47,25 @@ import * as wire from "../core/wire";
 import { stationHour, clockText, tannoyLines, hoursRate } from "../data/tannoy";
 import { dockhandLines } from "../data/dockhand";
 import { weeklyIssue, myVote, voteResult, castVote, voteMods } from "../data/votes";
-import { drawTutorial } from "../core/tutorial";
+import { drawTutorial, tutorialActive, STEPS } from "../core/tutorial";
 import { music } from "../core/music";
 
 type ShipRow = { kind: "market"; hull: HullDef } | { kind: "parked"; ship: StoredShip } | { kind: "remote"; ship: StoredShip } | { kind: "working"; charter: Charter };
 
+type YardOption = { id: string; label: string; sub: string; action: () => void };
+const PREV = { x: 8, y: 227, w: 48, h: 15 }, NEXT = { x: 62, y: 227, w: 48, h: 15 };
+const DETAILS = { x: 200, y: 227, w: 94, h: 15 }, WORKSHOP = { x: 300, y: 227, w: 174, h: 15 };
+const RUN = { x: 8, y: 245, w: 132, h: 14 };
+const LIST_PAGES: Record<string, number> = { MARKET: 12, SHIPYARD: 18, SHIPS: 7, MISSIONS: 7, BAR: 7, STORAGE: 12, ENGINEER: 9, BASE: 10 };
 const TABS = ["MARKET", "SHIPYARD", "SHIPS", "MISSIONS", "BAR", "SURVEY", "ENGINEER", "STORAGE", "BASE", "NEWS", "WIRE", "RECORD"] as const;
 
 export class StationScene implements Scene {
   touchMode = "menu" as const;
   tab = 0;
   cursor = 0;
+  list = new StationList();
+  info?: ReaderOverlay;
+  get pausesVoyage(): boolean { return !!this.info; }
   boardMissions: Mission[] = [];
   barLine = "";
   candidates: CrewMember[] = [];
@@ -78,6 +88,7 @@ export class StationScene implements Scene {
       if (this.presentPortAudience(g)) g.autosave();
       return;
     }
+    this.list = new StationList(); this.onSceneLeave();
     this.visitWorld = g.world; this.visit = visit;
     this.station = found.st;
     { const recovered = deliverRecovery(g.world, this.station.id); if (recovered) { g.toast(`HULL RECOVERED. SHIPS TAB: KEEP IT OR X TO SELL FOR ${hullSalePrice(recovered)}CR.`); g.autosave(); } }
@@ -418,15 +429,187 @@ export class StationScene implements Scene {
     (g.scenes["encounter"] as EncounterScene).open(g, enc, "station", true);
   }
 
+  onSceneLeave(): void { this.info?.onSceneLeave(); this.info = undefined; }
+
+  listKeys(g: Game): string[] | null {
+    const tab = TABS[this.tab];
+    switch (tab) {
+      case "MARKET": return this.marketRows(g);
+      case "SHIPYARD": return this.shipyardOptions(g).map(row => row.id ?? row.label);
+      case "SHIPS": return this.shipRows(g).map(row => row.kind === "market" ? `market:${row.hull.id}` : row.kind === "working" ? `working:${row.charter.id}` : `${row.kind}:${this.list.objectKey(row.ship)}`);
+      case "MISSIONS": return this.missionRows(g).map(row => `${row.ready ? "turn-in" : "accept"}:${row.m.id}`);
+      case "BAR": return this.barEntries(g).map(row => row.key);
+      case "STORAGE": return this.storageRows(g).map(row => `${row.kind}:${row.id}`);
+      case "ENGINEER": return BLUEPRINTS.map(row => row.id);
+      case "BASE": return this.baseRows(g).map(row => `${row.kind}:${row.id ?? ""}:${row.treaty ?? ""}`);
+      default: return null;
+    }
+  }
+
+  syncList(g: Game): boolean {
+    const keys = this.listKeys(g);
+    if (keys === null) { this.list.tab = -1; return false; }
+    this.cursor = this.list.sync(this.tab, keys, this.cursor, LIST_PAGES[TABS[this.tab]]);
+    return true;
+  }
+
+  prepareListDraw(g: Game): void { this.syncList(g); this.list.capture(); this.rowBoxes = []; }
+
+  extraButtons(g: Game): { key: string; label: string; rect: Rect }[] {
+    const p = g.world.player;
+    let buttons: [string, string][] = [];
+    switch (TABS[this.tab]) {
+      case "MARKET": buttons = [["b", "B BUY ONE"], ["s", "S SELL ONE"], ["v", "V BUY SHARE"]]; break;
+      case "SHIPS": {
+        const row = this.shipRows(g)[this.cursor];
+        if (row?.kind === "market") buttons = [["k", "K KEEP OLD HULL"]];
+        if (row?.kind === "parked") buttons = [["w", "W PUT TO WORK"], ["x", "X SELL HULL"]];
+        if (row?.kind === "working") buttons = [["r", "R RELEASE"]];
+        break;
+      }
+      case "MISSIONS": buttons = [["j", "J FULL LOG"], ...(p.service?.order ? [["u", "U SERVICE COURSE"] as [string, string]] : []), ...(p.council?.mandate ? [["c", "C COUNCIL COURSE"] as [string, string]] : [])]; break;
+      case "BAR": buttons = [["r", "R ROSTER"], ["o", "O READ REPLY"]]; break;
+    }
+    return buttons.map(([key, label], i) => ({ key, label, rect: { x: 148 + i * 110, y: 245, w: 104, h: 14 } }));
+  }
+
+  actionLabel(g: Game): string {
+    const p = g.world.player;
+    switch (TABS[this.tab]) {
+      case "MARKET": return (p.cargo[this.marketRows(g)[this.cursor]] ?? 0) > 0 ? "ENTER SELL ONE" : "ENTER BUY ONE";
+      case "SHIPYARD": return "ENTER DO THIS";
+      case "SHIPS": {
+        const row = this.shipRows(g)[this.cursor];
+        return row?.kind === "parked" ? "ENTER BOARD" : row?.kind === "remote" ? "ENTER LINER" : row?.kind === "working" ? "R RELEASE" : "ENTER TRADE IN";
+      }
+      case "MISSIONS": return this.missionRows(g)[this.cursor]?.ready ? "ENTER TURN IN" : "ENTER ACCEPT";
+      case "STORAGE": return this.storageRows(g)[this.cursor]?.kind === "held" ? "ENTER STORE ONE" : "ENTER LOAD ONE";
+      case "ENGINEER": return "ENTER UPGRADE";
+      case "BAR": return "ENTER TALK / HIRE";
+      default: return "ENTER DO THIS";
+    }
+  }
+
+  drawListControls(g: Game, ctx: CanvasRenderingContext2D): void {
+    ctx.fillStyle = PAL.uiPanel; ctx.fillRect(0, 223, VW, 47);
+    mapButton(ctx, PREV, "PG UP"); mapButton(ctx, NEXT, "PG DN");
+    drawText(ctx, `${this.list.view.keys.length ? this.cursor + 1 : 0}/${this.list.view.keys.length} HOME/END`, 116, 232, PAL.grey);
+    mapButton(ctx, DETAILS, "I FULL DETAILS"); mapButton(ctx, WORKSHOP, "F2 WORKSHOP / MATERIALS");
+    mapButton(ctx, RUN, this.actionLabel(g));
+    for (const button of this.extraButtons(g)) mapButton(ctx, button.rect, button.label);
+    const hint = TABS[this.tab] === "MARKET" ? "SHIFT: BUY TEN / SELL STACK  N: PLOT BEST KNOWN MARKET"
+      : TABS[this.tab] === "SHIPS" ? "N NAME  O PAINT  ROWS SELECT; USE THE ACTION CONTROLS"
+      : "ARROWS/WHEEL SELECT  PAGE UP/DOWN PAGE  HOME/END FIRST/LAST";
+    const lesson = tutorialActive(g) ? `SCHOOL ${g.world.player.tutorial! + 1}: ${STEPS[g.world.player.tutorial!].text}  K SKIPS` : g.hint || hint;
+    drawText(ctx, clippedText(g.toastTimer > 0 ? g.toastMsg : lesson, 464), 8, 262, g.toastTimer > 0 ? PAL.ui : PAL.greyDark);
+  }
+
+  openReply(): void {
+    this.info = new ReaderOverlay("LOUNGE REPLY", [["LAST REPLY", [this.barLine || "No reply yet."]]], () => { this.info = undefined; });
+  }
+
+  barEntries(g: Game): { key: string; title: string; lines: string[]; portrait?: string }[] {
+    const p = g.world.player, st = this.station;
+    return [
+      ...st.barPatrons.map((name, index) => {
+        const friend = friendsAt(g.world, st.id).find(c => c.name === name);
+        return { key: `patron:${name}:${st.barPatrons.slice(0, index).filter(n => n === name).length}`, title: name, portrait: name, lines: friend ? [`CAPTAIN OF THE ${friend.ship}. HELPED ${friend.helped} TIMES.`, "ENTER TO TALK."] : ["ENTER TO TALK."] };
+      }),
+      ...this.candidates.map(c => ({ key: `crew:${this.list.objectKey(c)}`, title: `FOR HIRE: ${c.name}`, portrait: c.name, lines: [
+        `${ROLE_INFO[c.role].label}, SKILL ${c.skill}. ${ROLE_INFO[c.role].effect}.`, `WAGE ${c.wage}CR PER DOCKING. SIGNING BONUS ${c.wage * 3}CR.`, ...(c.trait ? [c.trait] : []),
+        `BERTHS USED ${berthsUsed(p)}/${hull(p.hullId).crewSlots}. CREW ON LEAVE KEEP THEIR BERTHS.`,
+      ] })),
+      ...this.fares.map(m => ({ key: `fare:${this.list.objectKey(m)}`, title: m.title, lines: [m.desc,
+        `DESTINATION: ${findStation(g.world, m.targetStationId ?? "")?.st.name ?? "SYSTEM OBJECTIVE"}, ${g.world.systems[m.targetSystemId]?.name ?? m.targetSystemId}.`,
+        m.passengerKind === "singer" ? `REWARD ${m.lightReward ?? 25} LIGHT.` : `REWARD ${m.reward}CR.`,
+        `CABINS ${passengersAboard(p).length}/${passengerCap(p)}.`, ...(m.demand ? [`REQUESTS ${commodity(m.demand).name}.`] : []),
+      ] })),
+      ...(st.military ? [] : [{ key: `race:${st.id}`, title: "THE RING RACE", lines: [
+        `${RACE_GATES} RINGS ROUND THE STATION, AGAINST THE CLOCK. ENTER TO REGISTER.`,
+        `LOCAL RECORD ${raceHolder(g.world, st).t.toFixed(1)}S, ${raceHolder(g.world, st).name}.`,
+        `YOUR BEST: ${p.raceBest?.[st.id]?.toFixed(1) ?? "NO TIME"}. ${p.racePending === st.id ? "ALREADY ENTERED." : ""}`,
+        ...(this.raceRecords?.[0] ? [`WIRE RECORD ${this.raceRecords[0].t.toFixed(1)}S BY ${this.raceRecords[0].callsign}.`] : []),
+      ] }]),
+    ];
+  }
+
+  openDetails(g: Game): void {
+    const p = g.world.player, st = this.station;
+    let sections: [string, string[]][] = [];
+    switch (TABS[this.tab]) {
+      case "MARKET": {
+        const id = this.marketRows(g)[this.cursor]; if (!id) break;
+        const c = commodity(id), rep = p.rep[st.factionId] ?? 0, best = this.bestKnownSell(g, id), run = this.bestRoute(g);
+        const lines = [
+          `ABOARD ${p.cargo[id] ?? 0}. STATION STOCK ${st.stock[id] ?? 0}.`,
+          `B BUYS ONE. S SELLS ONE. ENTER ${p.cargo[id] ? "SELLS" : "BUYS"} ONE. SHIFT BUYS TEN OR SELLS THE HELD STACK. PRICES CHANGE PER UNIT.`,
+          ...(best ? [`BEST KNOWN SALE ${best.price}CR AT ${best.station}, ${best.system}. LAST SEEN ${Math.floor(best.ago / 60)} MINUTES AGO. N PLOTS THAT SYSTEM.`] : ["NO OTHER MARKET SEEN FOR THIS GOOD."]),
+          ...(run ? [`BEST KNOWN RUN: ${commodity(run.id).name}, BUY ${run.buy}CR HERE, SELL ${run.sell}CR AT ${run.station}, ${run.system}.`] : []),
+          c.rare ? `RARE GOOD. CURRENT SALE QUOTE ${rareSellPrice(g.world, st, id, rep)}CR; DISTANCE FROM ITS ORIGIN AFFECTS VALUE.` : `BASE SALE QUOTE ${sellPrice(st, id, rep)}CR BEFORE STATION BENEFITS AND PREMIUMS.`,
+          c.illegal ? blackMarket(g.world, st) ? "BLACK MARKET: SALES RECEIVE A 30% PREMIUM." : "CUSTOMS CAN SEIZE AN ILLEGAL SALE WITHOUT PAYMENT." : "LEGAL GOODS.",
+          ...(this.goal.stationType === st.type ? [`COMMUNITY GOAL: ${commodity(this.goal.commodityId).name} PAYS ${Math.round(this.goal.premium * 100)}% EXTRA HERE THIS WEEK.`] : []),
+          ...(this.demandHere(g) ? [`WANTED GOODS: ${this.demandHere(g)!.goods.map(id => commodity(id).name).join(", ")}. PREMIUM ${Math.round(ROUTE_PREMIUM * 100)}%.`] : []),
+          `V BUYS ONE STATION SHARE FOR ${stakePrice(g.world, st)}CR. SHIFT BUYS TEN. SHARES HERE ${p.stakes?.[st.id] ?? 0}. ESTIMATED DIVIDEND ${stakeDividend(g.world, st)}CR PER DOCKING.`,
+        ];
+        sections = [[c.name, lines]]; break;
+      }
+      case "SHIPYARD": {
+        const row = this.shipyardOptions(g)[this.cursor]; if (!row) break;
+        const module = MODULES.find(m => row.id === `module:${m.id}`), furnishing = FURNISHINGS.find(f => row.id === `furniture:${f.id}`);
+        sections = [[row.label, [row.sub, ...(module ? [module.desc] : []), ...(furnishing ? [furnishing.desc] : [])]], ["SHIP SYSTEMS", p.systems.map(s => `${s.name}: ${Math.round(s.health)}%.`)]]; break;
+      }
+      case "SHIPS": {
+        const row = this.shipRows(g)[this.cursor]; if (!row) break;
+        const name = row.kind === "market" ? row.hull.name : row.kind === "working" ? row.charter.name : row.ship.name ?? hull(row.ship.hullId).name;
+        sections = [[name, this.shipDetailLines(g, row)]]; break;
+      }
+      case "MISSIONS": {
+        const m = this.missionRows(g)[this.cursor]?.m, section = this.missionSections(g).find(s => s.mission === m && !!m);
+        if (section) sections = [[section.title, section.lines]]; break;
+      }
+      case "BAR": {
+        const row = this.barEntries(g)[this.cursor]; if (row) sections = [[row.title, row.lines]];
+        if (this.barLine) sections.push(["LAST REPLY", [this.barLine]]); break;
+      }
+      case "STORAGE": {
+        const row = this.storageRows(g)[this.cursor]; if (row) sections = [[commodity(row.id).name, [
+          `${row.qty} ${row.kind === "held" ? "ABOARD" : `STORED AT ${st.name}`}.`,
+          row.kind === "held" ? "ENTER STORES ONE HERE." : "ENTER LOADS ONE INTO YOUR HOLD.",
+          `CARGO ${cargoUsed(p)}/${p.cargoMax}. GOODS AT OTHER STATIONS STAY THERE.`,
+        ]]]; break;
+      }
+      case "ENGINEER": {
+        const bp = BLUEPRINTS[this.cursor]; if (!bp) break;
+        const cost = nextCost(p, bp);
+        sections = [[bp.name, [bp.desc, `CURRENT GRADE ${engGrade(p, bp.id)} OF ${bp.grades.length}.`, this.hasEngineer() ? "ENGINEER AVAILABLE HERE." : "VISIT A RESEARCH OR REFINERY STATION.",
+          ...(cost ? Object.entries(cost).map(([id, qty]) => `${MATERIALS.find(m => m.id === id)?.name ?? id}: NEED ${qty}, HAVE ${p.materials?.[id] ?? 0}.`) : ["ALL GRADES FITTED."]),
+        ]]]; break;
+      }
+      case "BASE": {
+        const row = this.baseRows(g)[this.cursor]; if (row) sections = [[row.label, [row.sub]]];
+        if (this.base) sections.push(["BASE RECORD", [`TREASURY ${this.base.treasury}CR.`, ...this.base.log.map(l => `${l.callsign}: ${l.text}`)]]); break;
+      }
+    }
+    if (!sections.length) sections = [["NO SELECTION", ["No action is available in this list."]]];
+    sections.push(["PORT", [st.name, `${st.type} station. ${faction(st.factionId).name}.`]]);
+    if (g.hint) sections.push(["PORT NOTE", [g.hint]]);
+    if (tutorialActive(g)) sections.push(["FLIGHT SCHOOL", [STEPS[g.world.player.tutorial!].text, "K SKIPS FLIGHT SCHOOL AFTER CLOSING THIS READER."]]);
+    this.info = new ReaderOverlay("STATION DETAILS", sections, () => { this.info = undefined; });
+  }
+
   paTimer = 20;
   update(g: Game, dt: number): void {
+    if (this.info) { this.info.update(g); return; }
     const inp = g.input;
-    if (inp.wasPressed("F2") || (inp.mousePressed && inp.mouseX >= 300 && inp.mouseY >= 227 && inp.mouseY < 242)) { openWorkshop(g); return; }
+    let pointerAction: string | undefined;
+    const pressed = (key: string) => pointerAction === key || (!(key === "k" && tutorialActive(g)) && inp.wasPressed(key));
+    const click = (rect: Rect) => inp.mousePressed && contains(rect, inp.mouseX, inp.mouseY);
+    if (pressed("F2") || click(WORKSHOP)) { openWorkshop(g); return; }
     music.setMood(this.station.factionId, 0);
     this.paTimer -= dt;
     if (this.paTimer <= 0) { this.paTimer = 25 + Math.random() * 35; sfx.pa(); }
     presence.tick(g.world.player, g.world.systems[g.world.player.systemId].name); // still "here" while docked
-    if (inp.wasPressed("Escape")) {
+    if (pressed("Escape")) {
       this.flushGoal();
       g.world.player.lastDockedAt = this.station.id;
       if (this.routeShare > 0 && this.baseOwner) { const v = Math.min(5000, this.routeShare); this.routeShare = 0; void wire.baseActionFor(this.baseOwner, "route", { value: v }); }
@@ -434,30 +617,49 @@ export class StationScene implements Scene {
       else { g.world.player.dockedAt = null; g.justUndocked = true; g.setScene("flight"); g.toast("UNDOCKED"); }
       return;
     }
-    if (inp.wasPressed("p")) { g.setScene("stationwalk"); return; }
-    if (inp.wasPressed("F5")) g.save();
+    if (pressed("p") && TABS[this.tab] !== "RECORD") { g.setScene("stationwalk"); return; }
+    if (pressed("F5")) g.save();
     this.tannoyT -= dt;
     if (this.tannoyT <= 0) { if (this.tannoy) { this.tannoy = ""; this.tannoyT = 20 + Math.random() * 20; } else { const rng = new RNG((Math.random() * 1e9) >>> 0); this.tannoy = rng.pick(tannoyLines(g.world, this.station, rng)); this.tannoyT = this.tannoyDur = 5 + this.tannoy.length * 0.07; } }
-    if (inp.wasPressed("ArrowLeft") || inp.wasPressed("q")) { this.tab = (this.tab + TABS.length - 1) % TABS.length; this.cursor = 0; }
-    if (inp.wasPressed("ArrowRight") || inp.wasPressed("e")) { this.tab = (this.tab + 1) % TABS.length; this.cursor = 0; }
-    if (inp.wasPressed("ArrowUp")) { this.cursor--; sfx.blip(); }
-    if (inp.wasPressed("ArrowDown")) { this.cursor++; sfx.blip(); }
-    if (inp.wheel) this.cursor += Math.sign(inp.wheel);
-
-    let clickedRow = false, rightClickedRow = false; // right-click on a market row always buys
+    const oldTab = this.tab;
+    if (pressed("ArrowLeft") || pressed("q")) { this.tab = (this.tab + TABS.length - 1) % TABS.length; this.cursor = 0; }
+    if (pressed("ArrowRight") || pressed("e")) { this.tab = (this.tab + 1) % TABS.length; this.cursor = 0; }
     if (inp.mousePressed) {
       let tx = 8;
       for (let i = 0; i < TABS.length; i++) {
-        const w = textWidth(TABS[i]) + 10;
-        if (inp.mouseY >= 36 && inp.mouseY <= 50 && inp.mouseX >= tx - 4 && inp.mouseX < tx + w - 4) { this.tab = i; this.cursor = 0; }
-        tx += w;
+        const width = textWidth(TABS[i]) + 10;
+        if (contains({ x: tx - 4, y: 36, w: width, h: 15 }, inp.mouseX, inp.mouseY)) { this.tab = i; this.cursor = 0; }
+        tx += width;
       }
     }
-    // Pointer drift during wheel or keyboard browsing must not change the
-    // selected purchase. Only a click selects a row under the pointer.
-    if ((inp.mousePressed || inp.mouseRightPressed) && inp.mouseX > 4 && inp.mouseX < (TABS[this.tab] === "SHIPS" ? 242 : TABS[this.tab] === "SHIPYARD" ? 290 : 476)) {
-      const row = this.rowBoxes.findIndex(([y0, y1]) => inp.mouseY >= y0 && inp.mouseY <= y1);
-      if (row >= 0) { this.cursor = row; if (inp.mousePressed) clickedRow = true; if (inp.mouseRightPressed) rightClickedRow = true; }
+    const hasList = this.syncList(g);
+    if (oldTab !== this.tab) { this.rowBoxes = []; return; }
+    const removed = hasList && this.list.takeRemoval();
+    if (hasList) {
+      if (pressed("ArrowUp")) this.list.view.move(-1);
+      if (pressed("ArrowDown")) this.list.view.move(1);
+      if (inp.wheel) this.list.view.move(Math.sign(inp.wheel));
+      if (pressed("PageUp") || click(PREV)) this.list.view.page(-1);
+      if (pressed("PageDown") || click(NEXT)) this.list.view.page(1);
+      if (pressed("Home")) this.list.view.select(0);
+      if (pressed("End")) this.list.view.select(this.list.view.keys.length - 1);
+      this.cursor = this.list.view.index;
+      if ((inp.mousePressed || inp.mouseRightPressed) && inp.mouseX >= 4 && inp.mouseX < (TABS[this.tab] === "SHIPS" ? 242 : TABS[this.tab] === "SHIPYARD" ? 290 : TABS[this.tab] === "ENGINEER" ? 284 : 476)) {
+        const row = this.rowBoxes.findIndex(([y0, y1]) => inp.mouseY >= y0 && inp.mouseY < y1 && inp.mouseY < 223);
+        if (row >= 0) {
+          const index = this.list.drawnIndex(row);
+          if (index >= 0) { this.list.view.select(index); this.cursor = this.list.view.index; }
+          return;
+        }
+      }
+      if (removed) return;
+      if (pressed("i") || click(DETAILS)) { this.openDetails(g); return; }
+      if (click(RUN) && this.list.view.selected !== undefined) pointerAction = TABS[this.tab] === "SHIPS" && this.shipRows(g)[this.cursor]?.kind === "working" ? "r" : "Enter";
+      for (const button of this.extraButtons(g)) if (click(button.rect)) { pointerAction = button.key; break; }
+    } else {
+      if (pressed("ArrowUp")) this.cursor--;
+      if (pressed("ArrowDown")) this.cursor++;
+      if (inp.wheel) this.cursor += Math.sign(inp.wheel);
     }
 
     const p = g.world.player;
@@ -466,7 +668,7 @@ export class StationScene implements Scene {
     const synHere = syndicateAt(g.world, st.id);
     const treaty = this.baseOwner && wire.getSquadron() && this.baseOwner !== wire.getSquadron() ? wire.treatyBetween(wire.getSquadron()!, this.baseOwner) : null;
     const rep = (p.rep[st.factionId] ?? 0) + (patron && patron === wire.getSquadron() ? 25 : 0) + (synHere && effectiveSynStanding(g.world, synHere.tag) >= 30 ? 25 : 0) - (treaty === "rivalry" ? 50 : 0); // patrons and affiliates (or partners of allies) trade like allies; rivals pay more
-    const enter = inp.wasPressed("Enter") || inp.wasPressed(" ") || clickedRow;
+    const enter = (pressed("Enter") || pressed(" ")) && (!hasList || this.list.view.selected !== undefined);
     if (enter) sfx.select();
 
     switch (TABS[this.tab]) {
@@ -474,19 +676,20 @@ export class StationScene implements Scene {
         const rows = this.marketRows(g);
         this.cursor = clamp(this.cursor, 0, rows.length - 1);
         const id = rows[this.cursor];
-        if (embargoed(g.world, st.factionId)) { if (enter || inp.wasPressed("b") || inp.wasPressed("s")) g.toast("EMBARGO - THIS MARKET WON'T TRADE WITH YOU"); break; }
-        if (inp.wasPressed("n") && id) {
+        if (!id) break;
+        if (embargoed(g.world, st.factionId)) { if (enter || pressed("b") || pressed("s")) g.toast("EMBARGO - THIS MARKET WON'T TRADE WITH YOU"); break; }
+        if (pressed("n") && id) {
           const best = this.bestKnownSell(g, id);
           const target = best ? Object.values(g.world.systems).find((s2) => s2.name === best.system) : null;
           if (!best || !target) g.toast("NO OTHER MARKET SEEN FOR THAT YET");
           else if (target.id === p.systemId) g.toast(`${best.station.toUpperCase()} IS IN THIS SYSTEM - JUST FLY THERE`);
           else { p.navTarget = target.id; p.singersCourse = false; delete p.navStationId; g.toast(`COURSE PLOTTED FOR ${best.station.toUpperCase()}, ${best.system.toUpperCase()}: ${commodity(id).name.toUpperCase()} SELLS FOR ${best.price}CR THERE`); sfx.select(); }
         }
-        if (inp.wasPressed("i")) { const n = inp.isDown("Shift") ? 10 : 1; const line = buyStake(g.world, st, n); g.toast(line); if (line.includes("HELD")) { sfx.select(); if (totalShares(p) >= 25) flag(g, "shareholder"); } }
-        // Enter and click sell what you hold; they buy only when your hold is empty of it. B and S stay explicit.
+        if (pressed("v")) { const n = inp.isDown("Shift") ? 10 : 1; const line = buyStake(g.world, st, n); g.toast(line); if (line.includes("HELD")) { sfx.select(); if (totalShares(p) >= 25) flag(g, "shareholder"); } }
+        // Enter follows the displayed action. B and S always buy and sell explicitly.
         const holding = (p.cargo[id] ?? 0) > 0;
-        const wantSell = inp.wasPressed("s") || inp.wasPressed("Backspace") || (enter && holding);
-        const wantBuy = inp.wasPressed("b") || rightClickedRow || (enter && !holding);
+        const wantSell = pressed("s") || pressed("Backspace") || (enter && holding);
+        const wantBuy = pressed("b") || (enter && !holding);
         // Shift trades in bulk: a stack of ten bought, or the whole hold of it sold. Prices move with every unit.
         const bulk = inp.isDown("Shift");
         const buyQty = wantBuy ? (bulk ? 10 : 1) : 0;
@@ -559,24 +762,25 @@ export class StationScene implements Scene {
       case "SHIPYARD": {
         const options = this.shipyardOptions(g);
         this.cursor = clamp(this.cursor, 0, options.length - 1);
-        if (enter) ledgerAround(p, "yard", () => options[this.cursor].action());
+        if (enter && options[this.cursor]) ledgerAround(p, "yard", () => options[this.cursor].action());
         break;
       }
       case "SHIPS": {
         const rows = this.shipRows(g);
         this.cursor = clamp(this.cursor, 0, rows.length - 1);
         const row = rows[this.cursor];
+        if (!row) break;
         if (enter) {
           if (row.kind === "market") this.buyHull(g, row.hull.id, false);
           else if (row.kind === "parked") this.swapShip(g, row.ship);
           else if (row.kind === "remote") { this.takeTheLiner(g, row.ship); return; }
         }
-        if (inp.wasPressed("k") && row.kind === "market") this.buyHull(g, row.hull.id, true);
-        if (inp.wasPressed("l") && row.kind === "remote") { this.takeTheLiner(g, row.ship); return; }
-        if (inp.wasPressed("w") && row.kind === "parked") this.putToWork(g, row.ship);
-        if (inp.wasPressed("x") && row.kind === "parked") this.scrapHull(g, row.ship);
-        if (inp.wasPressed("r") && row.kind === "working") { this.releaseWorkingShip(g, row.charter); inp.flush(); }
-        if (inp.wasPressed("o")) {
+        if (pressed("k") && row.kind === "market") this.buyHull(g, row.hull.id, true);
+        if (pressed("l") && row.kind === "remote") { this.takeTheLiner(g, row.ship); return; }
+        if (pressed("w") && row.kind === "parked") this.putToWork(g, row.ship);
+        if (pressed("x") && row.kind === "parked") this.scrapHull(g, row.ship);
+        if (pressed("r") && row.kind === "working") { this.releaseWorkingShip(g, row.charter); inp.flush(); }
+        if (pressed("o")) {
           const PAINTS = ["#63f2c8", "#ff5a5a", "#ffd75a", "#5ab3ff", "#e060ff", "#ff9a3a", "#f2f4ff", "#3aa55e"];
           const i = PAINTS.indexOf(p.paint ?? "");
           p.paint = PAINTS[(i + 1) % PAINTS.length];
@@ -584,7 +788,7 @@ export class StationScene implements Scene {
           g.toast(`PAINT: ${["TEAL", "RED", "GOLD", "BLUE", "VIOLET", "ORANGE", "WHITE", "GREEN"][PAINTS.indexOf(p.paint)]} TRIM`);
           sfx.blip();
         }
-        if (inp.wasPressed("n")) {
+        if (pressed("n")) {
           const raw = ask("Name your ship (2-18 characters):", p.shipName ?? "");
           if (raw !== null) {
             const n = raw.trim().toUpperCase().replace(/[^A-Z0-9 '\-]/g, "").slice(0, 18);
@@ -594,9 +798,9 @@ export class StationScene implements Scene {
         break;
       }
       case "MISSIONS": {
-        if (inp.wasPressed("j") || (inp.mousePressed && inp.mouseX >= 392 && inp.mouseX < 476 && inp.mouseY >= 54 && inp.mouseY < 67)) { this.openMissionLog(g); return; }
-        if (inp.wasPressed("u") && p.service?.order) { g.toast(plotServiceOrder(g.world) ? "SERVICE COURSE SET. N IN FLIGHT FOLLOWS THE ROUTE." : "THE SERVICE ROUTE IS CLOSED. THE ORDERS CAN WAIT."); g.autosave(); return; }
-        if (inp.wasPressed("c") && p.council?.mandate) { g.toast(plotCouncilMandate(g.world) ? "COUNCIL COURSE SET. N IN FLIGHT FOLLOWS THE ROUTE." : "THE COUNCIL ROUTE IS CLOSED. THE PAPERS CAN WAIT."); g.autosave(); return; }
+        if (pressed("j") || (inp.mousePressed && inp.mouseX >= 392 && inp.mouseX < 476 && inp.mouseY >= 54 && inp.mouseY < 67)) { this.openMissionLog(g); return; }
+        if (pressed("u") && p.service?.order) { g.toast(plotServiceOrder(g.world) ? "SERVICE COURSE SET. N IN FLIGHT FOLLOWS THE ROUTE." : "THE SERVICE ROUTE IS CLOSED. THE ORDERS CAN WAIT."); g.autosave(); return; }
+        if (pressed("c") && p.council?.mandate) { g.toast(plotCouncilMandate(g.world) ? "COUNCIL COURSE SET. N IN FLIGHT FOLLOWS THE ROUTE." : "THE COUNCIL ROUTE IS CLOSED. THE PAPERS CAN WAIT."); g.autosave(); return; }
         if (Date.now() - this.goalFetched > 60_000) { this.goalFetched = Date.now(); this.flushGoal(); void wire.fetchGoal(this.goal.id).then((st) => { if (st) this.goalState = st; }); }
         const rows = this.missionRows(g);
         this.cursor = clamp(this.cursor, 0, Math.max(0, rows.length - 1));
@@ -608,7 +812,8 @@ export class StationScene implements Scene {
         break;
       }
       case "BAR": {
-        if (inp.wasPressed("r")) { g.settingsReturn = "station"; g.setScene("roster"); return; }
+        if (pressed("o")) { this.openReply(); return; }
+        if (pressed("r")) { g.settingsReturn = "station"; g.setScene("roster"); return; }
         const raceRow = st.military ? 0 : 1;
         const rows = st.barPatrons.length + this.candidates.length + this.fares.length + raceRow;
         this.cursor = clamp(this.cursor, 0, Math.max(0, rows - 1));
@@ -651,25 +856,26 @@ export class StationScene implements Scene {
           } else g.toast("CARGO FULL");
           const next = this.storageRows(g), selected = next.findIndex(r => r.kind === row.kind && r.id === row.id);
           this.cursor = selected >= 0 ? selected : clamp(this.cursor, 0, Math.max(0, next.length - 1));
+          this.list.view.sync(next.map(r => `${r.kind}:${r.id}`)); this.list.view.select(this.cursor);
         }
         break;
       }
       case "NEWS":
         this.cursor = clamp(this.cursor, 0, g.world.news.length - 1);
-        if (inp.wasPressed("l") || (inp.mousePressed && inp.mouseX >= 8 && this.mailRows.some(row => inp.mouseY >= row.y0 && inp.mouseY < row.y1))) {
+        if (pressed("l") || (inp.mousePressed && inp.mouseX >= 8 && inp.mouseX < 476 && this.mailRows.some(row => inp.mouseY >= row.y0 && inp.mouseY < row.y1))) {
           const row = inp.mousePressed ? this.mailRows.find(row => inp.mouseY >= row.y0 && inp.mouseY < row.y1) : null;
           (g.scenes.letters as LettersScene).open(g, row?.index ?? 0); return;
         }
-        if (!st.military && st.factionId !== "vex" && (inp.wasPressed("y") || inp.wasPressed("n"))) { g.toast(castVote(g.world, st.factionId, inp.wasPressed("y"))); sfx.select(); }
-        if (inp.wasPressed("r")) { const m = [...(p.mail ?? [])].reverse().find((x) => !x.replied); if (!m) g.toast("NO LETTERS WAITING FOR AN ANSWER"); else { g.toast(replyToLetter(g.world, m)); sfx.letter(); } }
+        if (!st.military && st.factionId !== "vex" && (pressed("y") || pressed("n"))) { g.toast(castVote(g.world, st.factionId, pressed("y"))); sfx.select(); }
+        if (pressed("r")) { const m = [...(p.mail ?? [])].reverse().find((x) => !x.replied); if (!m) g.toast("NO LETTERS WAITING FOR AN ANSWER"); else { g.toast(replyToLetter(g.world, m)); sfx.letter(); } }
         break;
       case "WIRE":
         if (!this.wireLoaded) { this.wireLoaded = true; void this.loadWire(); }
-        if (inp.wasPressed("c")) { void this.chooseCallsign(g); }
+        if (pressed("c")) { void this.chooseCallsign(g); }
         break;
       case "SURVEY":
         this.cursor = 0;
-        if (inp.wasPressed("c")) { this.surveyView = this.surveyView === "codex" ? "data" : "codex"; sfx.blip(); }
+        if (pressed("c")) { this.surveyView = this.surveyView === "codex" ? "data" : "codex"; sfx.blip(); }
         if (enter && this.surveyView === "data") this.sellExploration(g);
         break;
       case "BASE": {
@@ -729,13 +935,13 @@ export class StationScene implements Scene {
         break;
       }
       case "RECORD":
-        if (inp.wasPressed("l")) { this.recordView = this.recordView === "log" ? "achievements" : "log"; this.cursor = 0; sfx.blip(); }
-        if (inp.wasPressed("b")) { this.recordView = this.recordView === "ledger" ? "achievements" : "ledger"; this.cursor = 0; sfx.blip(); }
-        if (inp.wasPressed("p")) { this.recordView = this.recordView === "guestbook" ? "achievements" : "guestbook"; this.cursor = 0; sfx.blip(); }
-        if (inp.wasPressed("w")) { this.recordView = this.recordView === "week" ? "achievements" : "week"; this.cursor = 0; sfx.blip(); }
-        if (inp.wasPressed("o")) { this.recordView = this.recordView === "harbour" ? "achievements" : "harbour"; this.cursor = 0; sfx.blip(); }
-        if (inp.wasPressed("c")) { g.settingsReturn = "station"; g.setScene("chronicle"); return; }
-        if (inp.wasPressed("x")) {
+        if (pressed("l")) { this.recordView = this.recordView === "log" ? "achievements" : "log"; this.cursor = 0; sfx.blip(); }
+        if (pressed("b")) { this.recordView = this.recordView === "ledger" ? "achievements" : "ledger"; this.cursor = 0; sfx.blip(); }
+        if (pressed("p")) { this.recordView = this.recordView === "guestbook" ? "achievements" : "guestbook"; this.cursor = 0; sfx.blip(); }
+        if (pressed("w")) { this.recordView = this.recordView === "week" ? "achievements" : "week"; this.cursor = 0; sfx.blip(); }
+        if (pressed("o")) { this.recordView = this.recordView === "harbour" ? "achievements" : "harbour"; this.cursor = 0; sfx.blip(); }
+        if (pressed("c")) { g.settingsReturn = "station"; g.setScene("chronicle"); return; }
+        if (pressed("x")) {
           try {
             const text = chronicleText(g.world, wire.getCallsign());
             const a = document.createElement("a");
@@ -1054,14 +1260,14 @@ export class StationScene implements Scene {
     void wire.post("hull", `took delivery of a ${h.name}`, g.world.systems[p.systemId].name);
   }
 
-  shipyardOptions(g: Game): { label: string; sub: string; action: () => void }[] {
+  shipyardOptions(g: Game): YardOption[] {
     const p = g.world.player;
     const st = this.station;
-    const opts: { label: string; sub: string; action: () => void }[] = [];
+    const opts: YardOption[] = [];
     if (p.service?.loan) {
       const loan = p.service.loan;
-      opts.push({ label: "RETURN SERVICE CUTTER", sub: loanReturnReason(g.world) ?? "YOUR HELD SHIP IS READY. CURRENT CARGO AND CREW FIT. NO CHARGE.", action: () => { g.toast(returnServiceCutter(g.world, loan)); g.spriteCache.clear(); g.autosave(); } });
-      opts.push({ label: "PLOT SERVICE DEPOT", sub: loanSummary(g.world)!, action: () => { g.toast(plotLoanDepot(g.world) ? "DEPOT COURSE SET. N IN FLIGHT FOLLOWS IT." : "THE DEPOT ROUTE IS CLOSED. YOUR HELD SHIP CAN WAIT."); g.autosave(); } });
+      opts.push({ id: "loan-return", label: "RETURN SERVICE CUTTER", sub: loanReturnReason(g.world) ?? "YOUR HELD SHIP IS READY. CURRENT CARGO AND CREW FIT. NO CHARGE.", action: () => { g.toast(returnServiceCutter(g.world, loan)); g.spriteCache.clear(); g.autosave(); } });
+      opts.push({ id: "loan-depot", label: "PLOT SERVICE DEPOT", sub: loanSummary(g.world)!, action: () => { g.toast(plotLoanDepot(g.world) ? "DEPOT COURSE SET. N IN FLIGHT FOLLOWS IT." : "THE DEPOT ROUTE IS CLOSED. YOUR HELD SHIP CAN WAIT."); g.autosave(); } });
     }
     // patron squadrons keep their faction's yards half price for members
     const patronHere = (!!wire.getSquadron() && wire.patronOf(st.factionId) === wire.getSquadron()) || this.myBaseHere() || hasCharter(g.world, st.factionId);
@@ -1072,14 +1278,14 @@ export class StationScene implements Scene {
     const fuelPrice = depot ? 0 : Math.max(1, Math.round((patronHere ? Math.max(1, Math.round(st.fuelPrice / 2)) : st.fuelPrice) * homeMul / hr.mul));
     const repairPrice = depot ? 0 : Math.max(1, Math.round((patronHere ? Math.max(1, Math.round(st.repairPrice / 2)) : st.repairPrice) * homeMul));
     const fuelNeed = Math.ceil(p.fuelMax - p.fuel);
-    opts.push({ label: `REFUEL (${fuelNeed} UNITS)${patronHere ? " - PATRON RATE" : ""}`, sub: `${fuelNeed * fuelPrice}CR`, action: () => {
+    opts.push({ id: "refuel", label: `REFUEL (${fuelNeed} UNITS)${patronHere ? " - PATRON RATE" : ""}`, sub: `${fuelNeed * fuelPrice}CR`, action: () => {
       if (fuelNeed <= 0) return g.toast("TANKS FULL");
       const afford = fuelPrice ? Math.min(fuelNeed, Math.floor(p.credits / fuelPrice)) : fuelNeed;
       p.fuel += afford; p.credits -= afford * fuelPrice;
       g.toast(afford < fuelNeed ? "PARTIAL REFUEL" : "REFUELED");
     } });
     const hullNeed = Math.ceil(p.hullMax - p.hull);
-    opts.push({ label: `HULL REPAIR (${hullNeed} PTS)${patronHere ? " - PATRON RATE" : hrTag}`, sub: `${hullNeed * repairPrice}CR`, action: () => {
+    opts.push({ id: "hull-repair", label: `HULL REPAIR (${hullNeed} PTS)${patronHere ? " - PATRON RATE" : hrTag}`, sub: `${hullNeed * repairPrice}CR`, action: () => {
       if (hullNeed <= 0) return g.toast("HULL INTACT");
       const afford = repairPrice ? Math.min(hullNeed, Math.floor(p.credits / repairPrice)) : hullNeed;
       p.hull += afford; p.credits -= afford * repairPrice;
@@ -1088,7 +1294,7 @@ export class StationScene implements Scene {
     } });
     const sysDamaged = p.systems.filter((s) => s.health < 100);
     { const rk = commandRank(p); const reqKey = `requisition:${weekKey()}`; if (st.military && (rk === "COMMANDER" || rk === "CAPTAIN" || rk === "COMMODORE" || rk === "ADMIRAL") && !(p.flags ?? {})[reqKey]) {
-      opts.push({ label: `REQUISITION: FULL SERVICE ON THE WATCH (${rk}, ONCE A WEEK)`, sub: "0CR", action: () => {
+      opts.push({ id: `requisition:${reqKey}`, label: `REQUISITION: FULL SERVICE ON THE WATCH (${rk}, ONCE A WEEK)`, sub: "0CR", action: () => {
         (p.flags ??= {})[reqKey] = true; p.hull = p.hullMax; p.breaches = []; p.fires = []; serviceHull(p, st.id, g.world.time, 0); for (const s of p.systems) s.health = 100; flag(g, "requisition");
         logEntry(g.world, `Requisitioned a full service at ${st.name} on the watch's account`);
         g.toast(`THE WATCH SIGNS FOR IT. HULL, SYSTEMS AND WEAR TO NEW. "COURTESY OF THE SERVICE, ${rk}. DON'T MAKE A HABIT OF IT."`); sfx.repair();
@@ -1096,14 +1302,14 @@ export class StationScene implements Scene {
     } }
     if ((p.wear ?? 0) >= WEAR_SERVICE_FROM) {
       const price = servicePrice(p, (patronHere ? 0.7 : 1) * voteMods(g.world, st.factionId).yard * hr.mul);
-      opts.push({ label: `YARD SERVICE (WEAR ${Math.round(p.wear ?? 0)}%)${patronHere ? " - PATRON RATE" : hrTag}`, sub: `${price}CR`, action: () => {
+      opts.push({ id: "wear-service", label: `YARD SERVICE (WEAR ${Math.round(p.wear ?? 0)}%)${patronHere ? " - PATRON RATE" : hrTag}`, sub: `${price}CR`, action: () => {
         if (p.credits < price) { g.toast("NOT ENOUGH CREDITS"); return; }
         p.credits -= price; serviceHull(p, st.id, g.world.time, price);
         logEntry(g.world, `Yard service at ${st.name}, ${price}cr, signed`);
         g.toast(`SERVICED AND SIGNED IN THE BERTH LOG. SHE'LL FLY LIKE NEW.`); sfx.repair();
       } });
     }
-    opts.push({ label: `SERVICE ALL SYSTEMS (${sysDamaged.length})`, sub: `${sysDamaged.length * 60}CR`, action: () => {
+    opts.push({ id: "systems-service", label: `SERVICE ALL SYSTEMS (${sysDamaged.length})`, sub: `${sysDamaged.length * 60}CR`, action: () => {
       if (!sysDamaged.length) return g.toast("ALL SYSTEMS NOMINAL");
       const cost = sysDamaged.length * 60;
       if (p.credits < cost) return g.toast("NOT ENOUGH CREDITS");
@@ -1111,23 +1317,23 @@ export class StationScene implements Scene {
       for (const s of p.systems) s.health = 100;
       g.toast("SYSTEMS SERVICED");
     } });
-    opts.push({ label: "BUY SPARE PARTS KIT", sub: `${st.prices["parts"] ?? 45}CR`, action: () => {
+    opts.push({ id: "parts", label: "BUY SPARE PARTS KIT", sub: `${st.prices["parts"] ?? 45}CR`, action: () => {
       const cost = st.prices["parts"] ?? 45;
       if (p.credits < cost) return g.toast("NOT ENOUGH CREDITS");
       if (!addCargo(p, "parts", 1)) return g.toast("CARGO FULL");
       p.credits -= cost; g.toast("PARTS STOWED IN CARGO");
     } });
-    opts.push({ label: `SEISMIC CHARGES x3 (NOW ${p.seismic ?? 0})`, sub: "300CR", action: () => {
+    opts.push({ id: "seismic", label: `SEISMIC CHARGES x3 (NOW ${p.seismic ?? 0})`, sub: "300CR", action: () => {
       if (p.credits < 300) return g.toast("NOT ENOUGH CREDITS");
       p.credits -= 300; p.seismic = (p.seismic ?? 0) + 3; g.toast("CHARGES RACKED - PLANT ON A CORE ROCK WITH C");
     } });
-    opts.push({ label: `TORPEDOES x4 (NOW ${p.torpedoes ?? 0})`, sub: "240CR", action: () => {
+    opts.push({ id: "torpedoes", label: `TORPEDOES x4 (NOW ${p.torpedoes ?? 0})`, sub: "240CR", action: () => {
       if (p.credits < 240) return g.toast("NOT ENOUGH CREDITS");
       p.credits -= 240; p.torpedoes = (p.torpedoes ?? 0) + 4; g.toast("TORPEDOES RACKED - FIRE WITH R");
     } });
     for (const m of MODULES) {
       if (hasModule(p, m.id)) continue;
-      opts.push({ label: `FIT ${m.name.toUpperCase()}`, sub: `${m.price}CR`, action: () => {
+      opts.push({ id: `module:${m.id}`, label: `FIT ${m.name.toUpperCase()}`, sub: `${m.price}CR`, action: () => {
         if (p.credits < m.price) return g.toast("NOT ENOUGH CREDITS");
         if (hasModule(p, m.id)) return g.toast("THIS MODULE IS ALREADY FITTED");
         rememberYardFittings(p);
@@ -1141,7 +1347,7 @@ export class StationScene implements Scene {
     }
     for (const f of FURNISHINGS) {
       if ((p.furnishings ?? []).includes(f.id)) continue;
-      opts.push({ label: `FOR THE DECK: ${f.name.toUpperCase()}`, sub: `${f.price}CR`, action: () => {
+      opts.push({ id: `furniture:${f.id}`, label: `FOR THE DECK: ${f.name.toUpperCase()}`, sub: `${f.price}CR`, action: () => {
         if (p.credits < f.price) return g.toast("NOT ENOUGH CREDITS");
         p.credits -= f.price; (p.furnishings ??= []).push(f.id);
         g.toast(`${f.name.toUpperCase()} CARRIED ABOARD. ${f.desc.toUpperCase()}`); sfx.pickup();
@@ -1152,7 +1358,7 @@ export class StationScene implements Scene {
       const best = this.bestRoute(g);
       const toId = best ? Object.keys(p.marketMemory ?? {}).find((id) => findStation(g.world, id)?.st.name === best.station) : null;
       if (best && toId && (p.haulers ?? []).length < CHARTER_CAP) {
-        opts.push({ label: `CHARTER A HAULER: ${commodity(best.id).name.toUpperCase()} TO ${best.station.toUpperCase()} (${(p.haulers ?? []).length}/${CHARTER_CAP})`, sub: `${CHARTER_PRICE}CR - RUNS YOUR BEST KNOWN ROUTE WHILE YOU FLY, ${Math.round(CHARTER_CUT * 100)}% OF THE MARGIN IS YOURS, PAID WHEN YOU DOCK`, action: () => {
+        opts.push({ id: `charter:${best.id}:${toId}`, label: `CHARTER A HAULER: ${commodity(best.id).name.toUpperCase()} TO ${best.station.toUpperCase()} (${(p.haulers ?? []).length}/${CHARTER_CAP})`, sub: `${CHARTER_PRICE}CR - RUNS YOUR BEST KNOWN ROUTE WHILE YOU FLY, ${Math.round(CHARTER_CUT * 100)}% OF THE MARGIN IS YOURS, PAID WHEN YOU DOCK`, action: () => {
           const r = hireCharter(g.world, st.id, toId, best.id, new RNG((g.world.seed ^ Math.floor(g.world.time * 29)) >>> 0));
           if (typeof r === "string") return g.toast(r);
           g.toast(`${r.name.toUpperCase()} SIGNED ON THE ${st.name.toUpperCase()} - ${best.station.toUpperCase()} RUN. FIRST TRIP IN ${Math.round(r.tripSecs / 60)} MINUTES.`); sfx.dock();
@@ -1160,18 +1366,18 @@ export class StationScene implements Scene {
           void wire.post("trade", `chartered ${r.name} on the ${st.name} - ${best.station} run`, g.world.systems[p.systemId].name);
         } });
       } else if (!best && (p.haulers ?? []).length < CHARTER_CAP) {
-        opts.push({ label: "CHARTER A HAULER", sub: "VISIT ANOTHER MARKET FIRST: A CHARTER RUNS YOUR BEST KNOWN ROUTE FROM HERE", action: () => g.toast("NO KNOWN RUN FROM HERE YET - DOCK AT ANOTHER STATION AND COME BACK") });
+        opts.push({ id: "charter-unavailable", label: "CHARTER A HAULER", sub: "VISIT ANOTHER MARKET FIRST: A CHARTER RUNS YOUR BEST KNOWN ROUTE FROM HERE", action: () => g.toast("NO KNOWN RUN FROM HERE YET - DOCK AT ANOTHER STATION AND COME BACK") });
       }
     }
-    if (!isHome(p, st.id)) opts.push({ label: "MAKE THIS YOUR HOME PORT", sub: `YARD PRICES -15% HERE, CREW SETTLE, THE CHRONICLE NAMES IT${p.homePort ? " (REPLACES " + (findStation(g.world, p.homePort)?.st.name.toUpperCase() ?? "?") + ")" : ""}`, action: () => { setHomePort(p, st.id); logEntry(g.world, `${st.name} is home port now`); g.toast(`${st.name.toUpperCase()} IS HOME. THE HARBOURMASTER WRITES IT DOWN.`); sfx.select(); flag(g, "homePort"); } });
-    if (st.type === "research" && (p.cargo.relics ?? 0) > 0) opts.push({ label: "DONATE A RELIC TO THE MUSEUM", sub: "STANDING UP, A CARD WITH YOUR NAME UNDER THE GLASS", action: () => { const l = donateRelic(g.world, st, p.captainName ?? wire.getCallsign() ?? (p.shipName ? `the ${p.shipName}` : "an independent captain")); if (l) { g.toast(l); sfx.pickup(); flag(g, "donor"); } } });
-    opts.push({ label: "REST A WHILE (TEN MINUTES OF SHIP TIME)", sub: "MARKETS BREATHE, TILLS FILL, THE SICK MEND, CREW SETTLE", action: () => {
+    if (!isHome(p, st.id)) opts.push({ id: "home-port", label: "MAKE THIS YOUR HOME PORT", sub: `YARD PRICES -15% HERE, CREW SETTLE, THE CHRONICLE NAMES IT${p.homePort ? " (REPLACES " + (findStation(g.world, p.homePort)?.st.name.toUpperCase() ?? "?") + ")" : ""}`, action: () => { setHomePort(p, st.id); logEntry(g.world, `${st.name} is home port now`); g.toast(`${st.name.toUpperCase()} IS HOME. THE HARBOURMASTER WRITES IT DOWN.`); sfx.select(); flag(g, "homePort"); } });
+    if (st.type === "research" && (p.cargo.relics ?? 0) > 0) opts.push({ id: "donate-relic", label: "DONATE A RELIC TO THE MUSEUM", sub: "STANDING UP, A CARD WITH YOUR NAME UNDER THE GLASS", action: () => { const l = donateRelic(g.world, st, p.captainName ?? wire.getCallsign() ?? (p.shipName ? `the ${p.shipName}` : "an independent captain")); if (l) { g.toast(l); sfx.pickup(); flag(g, "donor"); } } });
+    opts.push({ id: "rest", label: "REST A WHILE (TEN MINUTES OF SHIP TIME)", sub: "MARKETS BREATHE, TILLS FILL, THE SICK MEND, CREW SETTLE", action: () => {
       const lines = restAtDock(g.world);
       g.toast(lines[0] ?? "TEN MINUTES PASS. THE DECK HUMS. NOTHING BROKE."); for (const l of lines.slice(1)) g.toast(l);
       refreshPrices(st); g.autosave();
     } });
     if (!p.cat && st.type === "agri") {
-      opts.push({ label: "ADOPT THE YARD CAT", sub: "150CR - CREW MORALE, AND SOMEONE TO TALK TO ABOARD", action: () => {
+      opts.push({ id: "cat", label: "ADOPT THE YARD CAT", sub: "150CR - CREW MORALE, AND SOMEONE TO TALK TO ABOARD", action: () => {
         if (p.credits < 150) return g.toast("NOT ENOUGH CREDITS");
         p.credits -= 150; const name = CAT_NAMES[(g.world.seed + st.id.length) % CAT_NAMES.length]; adoptCat(p, name, g.world.time);
         logEntry(g.world, `${name} came aboard at ${st.name}`); flag(g, "shipsCat");
@@ -1180,24 +1386,24 @@ export class StationScene implements Scene {
     }
     for (const k of ["beacon", "depot"] as const) {
       const kit = INFRA_KITS[k];
-      opts.push({ label: `${kit.name.toUpperCase()} (ABOARD ${(p.kits ?? {})[k] ?? 0})`, sub: `${kit.price}CR`, action: () => {
+      opts.push({ id: `kit:${k}`, label: `${kit.name.toUpperCase()} (ABOARD ${(p.kits ?? {})[k] ?? 0})`, sub: `${kit.price}CR`, action: () => {
         if (p.credits < kit.price) return g.toast("NOT ENOUGH CREDITS");
         p.credits -= kit.price; (p.kits ??= {})[k] = ((p.kits ?? {})[k] ?? 0) + 1;
         g.toast(`${kit.name.toUpperCase()} CRATED. FLY TO A SYSTEM WITH NO STATION AND PRESS E TO PLANT IT.`);
         g.showHint("lighthouse", "DEAD SYSTEMS ONLY: NO STATION. TRAFFIC PAYS TOLLS; FLY BACK TO EMPTY THE TILL");
       } });
     }
-    opts.push({ label: `CARGO POD +10 (NOW ${p.cargoMax})`, sub: "500CR", action: () => {
+    opts.push({ id: "cargo-pod", label: `CARGO POD +10 (NOW ${p.cargoMax})`, sub: "500CR", action: () => {
       if (p.credits < 500) return g.toast("NOT ENOUGH CREDITS");
       rememberYardFittings(p); p.credits -= 500; p.yardFittings!.cargo += 10; refreshFittedStats(p); g.toast("CARGO POD FITTED. +10 CAPACITY; MOVES WITH YOUR FITTINGS.");
     } });
-    opts.push({ label: `SHIELD BOOSTER +25 (NOW ${p.shieldMax})`, sub: "800CR", action: () => {
+    opts.push({ id: "shield-booster", label: `SHIELD BOOSTER +25 (NOW ${p.shieldMax})`, sub: "800CR", action: () => {
       if (p.credits < 800) return g.toast("NOT ENOUGH CREDITS");
       rememberYardFittings(p); p.credits -= 800; p.yardFittings!.shield += 25; refreshFittedStats(p); g.toast("BOOSTER PLATE FITTED. +25 SHIELD CAPACITY; MOVES WITH YOUR FITTINGS.");
     } });
     if (p.wanted > 0 && !st.military) {
       const cost = Math.round(p.wanted * 1000);
-      opts.push({ label: "BRIBE RECORDS CLERK (CLEAR WARRANT)", sub: `${cost}CR`, action: () => {
+      opts.push({ id: "settle-warrant", label: "BRIBE RECORDS CLERK (CLEAR WARRANT)", sub: `${cost}CR`, action: () => {
         if (p.credits < cost) return g.toast("NOT ENOUGH CREDITS");
         p.credits -= cost; closeLawCases(g.world); g.toast("RECORDS... MISPLACED");
       } });
@@ -1205,7 +1411,7 @@ export class StationScene implements Scene {
     const rep = p.rep[st.factionId] ?? 0;
     if (rep < 0 && !st.military) {
       const cost = Math.round(-rep * 30);
-      opts.push({ label: `CLEAN RECORD FEE (${faction(st.factionId).name.split(" ")[0]} REP → 0)`, sub: `${cost}CR`, action: () => {
+      opts.push({ id: "settle-standing", label: `CLEAN RECORD FEE (${faction(st.factionId).name.split(" ")[0]} REP → 0)`, sub: `${cost}CR`, action: () => {
         if (p.credits < cost) return g.toast("NOT ENOUGH CREDITS");
         p.credits -= cost; p.rep[st.factionId] = 0; g.toast("YOUR FILE IS CLEAN. FOR NOW.");
       } });
@@ -1216,6 +1422,7 @@ export class StationScene implements Scene {
   // ---------- Draw ----------
 
   draw(g: Game, ctx: CanvasRenderingContext2D): void {
+    if (this.info) { this.info.draw(g, ctx); return; }
     this.rowBoxes = [];
     this.mailRows = [];
     const p = g.world.player;
@@ -1225,11 +1432,12 @@ export class StationScene implements Scene {
     ctx.fillStyle = PAL.uiPanel;
     ctx.fillRect(0, 0, VW, VH);
     ctx.drawImage(g.stationSprite(st.id, st.military), 8, 6, 28, 28);
-    drawText(ctx, st.name.toUpperCase(), 42, 8, PAL.white);
+    drawText(ctx, clippedText(st.name.toUpperCase(), 210), 42, 8, PAL.white);
     drawText(ctx, `${st.military ? "STAR BASE" : "STATION"} - ${st.type.toUpperCase()} - ${fac.name}`, 42, 17, fac.color);
     drawText(ctx, `${p.credits}CR   CARGO ${cargoUsed(p)}/${p.cargoMax}   REP ${repLabel(rep)} (${rep})`, 42, 26, PAL.gold);
+    const walkLabel = TABS[this.tab] === "RECORD" ? "P GUESTBOOK" : "P WALK DECK";
     const escLabel = this.returnTo === "stationwalk" ? "ESC PROMENADE" : "ESC UNDOCK";
-    drawText(ctx, `P WALK DECK - ${escLabel}`, VW - textWidth(`P WALK DECK - ${escLabel}`) - 6, 8, PAL.greyDark);
+    drawText(ctx, `${walkLabel} - ${escLabel}`, VW - textWidth(`${walkLabel} - ${escLabel}`) - 6, 8, PAL.greyDark);
     if (this.tannoy) {
       // the tannoy has a window of its own on the right; what does not fit scrolls through it
       const tl = `TANNOY: ${this.tannoy}`; const tw = textWidth(tl); const WW = 230; const x0 = VW - 6 - WW;
@@ -1259,7 +1467,8 @@ export class StationScene implements Scene {
     ctx.fillStyle = PAL.uiBorder;
     ctx.fillRect(0, 50, VW, 1);
 
-    const top = 56;
+    const top = 56, hasList = LIST_PAGES[TABS[this.tab]] !== undefined;
+    if (hasList) { ctx.save(); ctx.beginPath(); ctx.rect(0, 52, VW, 171); ctx.clip(); }
     switch (TABS[this.tab]) {
       case "MARKET": this.drawMarket(g, ctx, top); break;
       case "SHIPYARD": this.drawShipyard(g, ctx, top); break;
@@ -1274,6 +1483,7 @@ export class StationScene implements Scene {
       case "ENGINEER": this.drawEngineer(g, ctx, top); break;
       case "BASE": this.drawBase(g, ctx, top); break;
     }
+    if (hasList) { ctx.restore(); this.drawListControls(g, ctx); return; }
     ctx.fillStyle = "#193542"; ctx.fillRect(300, 227, 174, 15);
     drawText(ctx, "F2 WORKSHOP / MATERIALS & CRAFT", 306, 232, PAL.ui);
     if (g.toastTimer > 0) drawText(ctx, g.toastMsg, VW / 2 - textWidth(g.toastMsg) / 2, VH - 10, PAL.ui);
@@ -1281,10 +1491,10 @@ export class StationScene implements Scene {
     drawTutorial(g, ctx, VH - 46);
   }
 
-  row(ctx: CanvasRenderingContext2D, y: number, selected: boolean, index = this.rowBoxes.length): void {
+  row(ctx: CanvasRenderingContext2D, y: number, selected: boolean, index = this.rowBoxes.length, height = 9): void {
     while (this.rowBoxes.length <= index) this.rowBoxes.push([Infinity, -Infinity]);
-    this.rowBoxes[index] = [y - 2, y + 8];
-    if (selected) { ctx.fillStyle = "#13203a"; ctx.fillRect(4, y - 2, VW - 8, 10); }
+    this.rowBoxes[index] = [y - 2, y - 2 + height];
+    if (selected) { ctx.fillStyle = "#13203a"; ctx.fillRect(4, y - 2, TABS[this.tab] === "SHIPYARD" ? 286 : VW - 8, height); }
   }
 
   // Everything the station lists, plus any rare goods in the hold (sellable anywhere)
@@ -1296,8 +1506,8 @@ export class StationScene implements Scene {
   }
 
   marketWindow(g: Game, top = 56): { id: string; index: number; y: number }[] {
-    const rows = this.marketRows(g), count = 12;
-    const start = clamp(this.cursor - Math.floor(count / 2), 0, Math.max(0, rows.length - count));
+    this.syncList(g);
+    const rows = this.marketRows(g), count = 12, start = this.list.view.offset;
     return rows.slice(start, start + count).map((id, i) => ({ id, index: start + i, y: top + 12 + i * 9 }));
   }
 
@@ -1354,6 +1564,7 @@ export class StationScene implements Scene {
   }
 
   drawMarket(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
+    this.prepareListDraw(g);
     const p = g.world.player;
     const st = this.station;
     const patron = wire.patronOf(st.factionId);
@@ -1365,10 +1576,7 @@ export class StationScene implements Scene {
     drawText(ctx, "STOCK", 235, top, PAL.greyDark);
     drawText(ctx, "HELD", 280, top, PAL.greyDark);
     drawText(ctx, "TREND", 320, top, PAL.greyDark);
-    // the hint follows the cursor: what Enter will do to the highlighted row
-    const selId = this.marketRows(g)[clamp(this.cursor, 0, Math.max(0, this.marketRows(g).length - 1))];
-    const selHeld = selId ? (p.cargo[selId] ?? 0) : 0;
-    drawText(ctx, selHeld > 0 ? "ENTER SELLS  SHIFT ALL  N PLOT" : "ENTER BUYS  SHIFT X10  N PLOT", 366, top, selHeld > 0 ? PAL.gold : PAL.greyDark);
+    drawText(ctx, "I FULL DETAILS", 366, top, PAL.greyDark);
     const rows = this.marketRows(g);
     const visible = this.marketWindow(g, top);
     this.rowBoxes = rows.map(() => [Infinity, -Infinity]);
@@ -1376,7 +1584,7 @@ export class StationScene implements Scene {
       const c = commodity(id);
       const listed = id in st.prices;
       this.row(ctx, y, i === this.cursor, i);
-      drawText(ctx, c.name + (c.illegal ? " *" : c.rare ? " +" : ""), 8, y, c.illegal ? PAL.danger : c.rare ? PAL.gold : PAL.white);
+      drawText(ctx, clippedText(c.name + (c.illegal ? " *" : c.rare ? " +" : ""), 134), 8, y, c.illegal ? PAL.danger : c.rare ? PAL.gold : PAL.white);
       drawText(ctx, listed ? `${buyPrice(st, id, rep)}` : "-", 150, y, listed ? PAL.gold : PAL.greyDark);
       drawText(ctx, `${c.rare ? rareSellPrice(g.world, st, id, rep) : sellPrice(st, id, rep)}`, 190, y, c.rare && st.rare !== id ? PAL.gold : PAL.grey);
       drawText(ctx, listed ? `${st.stock[id] ?? 0}` : "-", 235, y, PAL.grey);
@@ -1404,23 +1612,23 @@ export class StationScene implements Scene {
       drawText(ctx, line, 8, ny + 9, PAL.info);
       const r = this.bestRoute(g);
       if (r) drawText(ctx, `BEST KNOWN RUN: BUY ${commodity(r.id).name.toUpperCase()} ${r.buy} - SELL ${r.sell} AT ${r.station.toUpperCase()}, ${r.system.toUpperCase()} (+${r.sell - r.buy}/UNIT)`.slice(0, 90), 8, ny + 18, PAL.gold);
-      if (this.goal.stationType === st.type) drawText(ctx, `COMMUNITY GOAL: ${commodity(this.goal.commodityId).name.toUpperCase()} SELLS HERE AT +${Math.round(this.goal.premium * 100)}% THIS WEEK`, 8, ny + 27, PAL.info);
-      else { const dem = this.demandHere(g); if (dem) drawText(ctx, `${dem.label} BASE WANTS THIS WEEK: ${dem.goods.map((d) => commodity(d).name.toUpperCase()).join(", ")} AT +${Math.round(ROUTE_PREMIUM * 100)}% - A SHARE FEEDS THEIR TREASURY`, 8, ny + 27, PAL.gold); }
+      if (ny + 27 <= 217 && this.goal.stationType === st.type) drawText(ctx, `COMMUNITY GOAL: ${commodity(this.goal.commodityId).name.toUpperCase()} SELLS HERE AT +${Math.round(this.goal.premium * 100)}% THIS WEEK`, 8, ny + 27, PAL.info);
+      else { const dem = this.demandHere(g); if (ny + 27 <= 217 && dem) drawText(ctx, `${dem.label} BASE WANTS THIS WEEK: ${dem.goods.map((d) => commodity(d).name.toUpperCase()).join(", ")} AT +${Math.round(ROUTE_PREMIUM * 100)}% - A SHARE FEEDS THEIR TREASURY`, 8, ny + 27, PAL.gold); }
     }
     drawText(ctx, blackMarket(g.world, st) ? "* BLACK MARKET HERE: ILLEGAL GOODS FENCE AT +30%, NO QUESTIONS.  + RARE - WORTH MORE FAR FROM ORIGIN." : "* ILLEGAL - CUSTOMS MAY SEIZE A SALE HERE; FENCE IT AT VEIL OR PIRATE-HEAVY HUBS.  + RARE - WORTH MORE FAR FROM ORIGIN.", 8, ny, blackMarket(g.world, st) ? PAL.gold : PAL.greyDark);
-    if (!st.military) { const held = p.stakes?.[st.id] ?? 0; drawText(ctx, `${held ? `YOUR STAKE: ${held} SHARES, ~${stakeDividend(g.world, st)}CR A DOCKING` : "NO STAKE HERE"} - I BUYS A SHARE AT ${stakePrice(g.world, st)}CR (SHIFT: TEN)`, 8, ny + 36, held ? PAL.gold : PAL.greyDark); }
+    if (!st.military && ny + 36 <= 217) { const held = p.stakes?.[st.id] ?? 0; drawText(ctx, `${held ? `YOUR STAKE: ${held} SHARES, ~${stakeDividend(g.world, st)}CR A DOCKING` : "NO STAKE HERE"} - V BUYS A SHARE AT ${stakePrice(g.world, st)}CR (SHIFT: TEN)`, 8, ny + 36, held ? PAL.gold : PAL.greyDark); }
   }
 
   drawShipyard(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
+    this.prepareListDraw(g);
     const opts = this.shipyardOptions(g);
     // the list is longer than the screen: a window of rows follows the cursor
-    const maxRows = Math.floor((VH - 40 - top) / 9);
-    const off = Math.max(0, Math.min(this.cursor - maxRows + 1, opts.length - maxRows));
+    const maxRows = this.list.view.pageSize, off = this.list.view.offset;
     let longSub = "";
     opts.slice(off, off + maxRows).forEach((o, j) => {
       const i = off + j; const y = top + j * 9;
       this.row(ctx, y, i === this.cursor, i);
-      drawText(ctx, o.label, 8, y, PAL.white);
+      drawText(ctx, clippedText(o.label, 274), 8, y, PAL.white);
       // a sub that would run into the label keeps its first part on the row; the rest goes to the info line when selected
       let s = o.sub;
       if (textWidth(o.label) + textWidth(s) > 268) {
@@ -1431,8 +1639,6 @@ export class StationScene implements Scene {
       }
       drawText(ctx, s, 290 - textWidth(s) - 8, y, PAL.gold);
     });
-    if (off > 0) drawText(ctx, `^ ${off} MORE`, 200, top - 8, PAL.greyDark);
-    if (off + maxRows < opts.length) drawText(ctx, `v ${opts.length - off - maxRows} MORE`, 200, top + maxRows * 9, PAL.greyDark);
     const p = g.world.player;
     const cur = opts[this.cursor];
     const mod = cur && MODULES.find((m) => cur.label === `FIT ${m.name.toUpperCase()}`);
@@ -1469,9 +1675,10 @@ export class StationScene implements Scene {
   }
 
   shipWindow(g: Game, top = 56): { row: ShipRow; index: number; y: number }[] {
+    this.syncList(g);
     const rows = this.shipRows(g), firstY = top + 27;
     const count = Math.max(1, Math.floor((VH - 40 - firstY) / 20));
-    const start = clamp(this.cursor - Math.floor(count / 2), 0, Math.max(0, rows.length - count));
+    const start = this.list.view.offset;
     return rows.slice(start, start + count).map((row, i) => ({ row, index: start + i, y: firstY + i * 20 }));
   }
 
@@ -1486,30 +1693,9 @@ export class StationScene implements Scene {
     logEntry(g.world, `Released ${c.name} from its working charter; settled ${total}cr.`);
   }
 
-  drawShips(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
-    const p = g.world.player, rows = this.shipRows(g), selected = rows[this.cursor] ?? rows[0];
-    const tradeIn = Math.round(hull(p.hullId).price * 0.6);
-    drawText(ctx, `SHIPS AND FLEET - ${(p.shipName ?? hull(p.hullId).name).toUpperCase()} - N NAME / O PAINT`.slice(0, 96), 8, top, PAL.ui);
-    drawText(ctx, p.service?.loan ? "CUTTER ON LOAN: RETURN THROUGH THE DEPOT OR SHIPYARD" : `TRADE-IN ${tradeIn}CR - SELECT A HULL FOR ITS PRICE, CAPACITY AND ACTIONS`, 8, top + 10, PAL.greyDark);
-    this.rowBoxes = rows.map(() => [Infinity, -Infinity]);
-    for (const { row, index, y } of this.shipWindow(g, top)) {
-      this.rowBoxes[index] = [y - 2, y + 16];
-      if (index === this.cursor) { ctx.fillStyle = "#13203a"; ctx.fillRect(4, y - 2, 237, 18); }
-      const name = row.kind === "market" ? row.hull.name : row.kind === "working" ? row.charter.name : row.ship.name ?? hull(row.ship.hullId).name;
-      drawText(ctx, `${row.kind.toUpperCase()}: ${name.toUpperCase()}`.slice(0, 57), 8, y, index === this.cursor ? PAL.white : row.kind === "market" ? PAL.grey : PAL.ui);
-      const sub = row.kind === "market" ? row.hull.id === p.hullId ? "CURRENT HULL" : `${Math.max(0, row.hull.price - tradeIn)}CR WITH TRADE-IN`
-        : row.kind === "parked" ? "HERE: ENTER SWAP / W WORK / X SELL"
-        : row.kind === "remote" ? `${findStation(g.world, row.ship.stationId)?.st.name.toUpperCase() ?? "UNKNOWN PORT"}: L LINER`
-        : `${row.charter.trips} TRIPS / TILL ${Math.round(row.charter.till)}CR / R RELEASE`;
-      drawText(ctx, sub.slice(0, 57), 8, y + 8, PAL.greyDark);
-    }
-    ctx.fillStyle = PAL.uiBorder; ctx.fillRect(244, top + 24, 1, VH - top - 63);
-    const x = 252, lines: string[] = [];
+  shipDetailLines(g: Game, selected: ShipRow): string[] {
+    const p = g.world.player, tradeIn = Math.round(hull(p.hullId).price * 0.6), lines: string[] = [];
     const h = selected.kind === "market" ? selected.hull : selected.kind === "working" ? selected.charter.hullId ? hull(selected.charter.hullId) : null : hull(selected.ship.hullId);
-    if (h) {
-      const spr = g.sprite(`hull-preview-${h.id}`, () => spriteMod.genShip(new RNG(g.world.seed ^ 0x51e9 ^ h.id.length), h.spriteSize, h.color, h.accent, h.id));
-      ctx.drawImage(spr, VW - 8 - spr.width, top + 1);
-    }
     if (selected.kind === "working") {
       const c = selected.charter;
       lines.push(c.name.toUpperCase(), c.own ? "YOUR HULL, HIRED CREW" : "HIRED HULL AND CREW", "");
@@ -1529,7 +1715,35 @@ export class StationScene implements Scene {
         }
       }
     }
-    lines.slice(0, 17).forEach((line, i) => drawText(ctx, line.slice(0, 53), x, top + 27 + i * 9, i === 0 ? PAL.white : PAL.grey));
+    return lines;
+  }
+
+  drawShips(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
+    this.prepareListDraw(g);
+    const p = g.world.player, rows = this.shipRows(g), selected = rows[this.cursor] ?? rows[0];
+    const tradeIn = Math.round(hull(p.hullId).price * 0.6);
+    drawText(ctx, `SHIPS AND FLEET - ${(p.shipName ?? hull(p.hullId).name).toUpperCase()} - N NAME / O PAINT`.slice(0, 96), 8, top, PAL.ui);
+    drawText(ctx, p.service?.loan ? "CUTTER ON LOAN: RETURN THROUGH THE DEPOT OR SHIPYARD" : `TRADE-IN ${tradeIn}CR - SELECT A HULL FOR ITS PRICE, CAPACITY AND ACTIONS`, 8, top + 10, PAL.greyDark);
+    this.rowBoxes = rows.map(() => [Infinity, -Infinity]);
+    for (const { row, index, y } of this.shipWindow(g, top)) {
+      this.rowBoxes[index] = [y - 2, y + 16];
+      if (index === this.cursor) { ctx.fillStyle = "#13203a"; ctx.fillRect(4, y - 2, 237, 18); }
+      const name = row.kind === "market" ? row.hull.name : row.kind === "working" ? row.charter.name : row.ship.name ?? hull(row.ship.hullId).name;
+      drawText(ctx, `${row.kind.toUpperCase()}: ${name.toUpperCase()}`.slice(0, 57), 8, y, index === this.cursor ? PAL.white : row.kind === "market" ? PAL.grey : PAL.ui);
+      const sub = row.kind === "market" ? row.hull.id === p.hullId ? "CURRENT HULL" : `${Math.max(0, row.hull.price - tradeIn)}CR WITH TRADE-IN`
+        : row.kind === "parked" ? "HERE: ENTER SWAP / W WORK / X SELL"
+        : row.kind === "remote" ? `${findStation(g.world, row.ship.stationId)?.st.name.toUpperCase() ?? "UNKNOWN PORT"}: L LINER`
+        : `${row.charter.trips} TRIPS / TILL ${Math.round(row.charter.till)}CR / R RELEASE`;
+      drawText(ctx, sub.slice(0, 57), 8, y + 8, PAL.greyDark);
+    }
+    ctx.fillStyle = PAL.uiBorder; ctx.fillRect(244, top + 24, 1, VH - top - 63);
+    const x = 252, lines = selected ? this.shipDetailLines(g, selected) : [];
+    const h = !selected ? null : selected.kind === "market" ? selected.hull : selected.kind === "working" ? selected.charter.hullId ? hull(selected.charter.hullId) : null : hull(selected.ship.hullId);
+    if (h) {
+      const spr = g.sprite(`hull-preview-${h.id}`, () => spriteMod.genShip(new RNG(g.world.seed ^ 0x51e9 ^ h.id.length), h.spriteSize, h.color, h.accent, h.id));
+      ctx.drawImage(spr, VW - 8 - spr.width, top + 1);
+    }
+    lines.slice(0, 15).forEach((line, i) => drawText(ctx, line.slice(0, 53), x, top + 27 + i * 9, i === 0 ? PAL.white : PAL.grey));
     drawText(ctx, `UP/DOWN OR WHEEL: ${this.cursor + 1}/${rows.length} - CLICK A VISIBLE ROW`, 8, VH - 32, PAL.greyDark);
   }
 
@@ -1541,8 +1755,8 @@ export class StationScene implements Scene {
   }
 
   missionWindow(g: Game, top = 56) {
-    const rows = this.missionRows(g), cursor = clamp(this.cursor, 0, Math.max(0, rows.length - 1));
-    const offset = Math.max(0, cursor - 6);
+    this.syncList(g);
+    const rows = this.missionRows(g), offset = this.list.view.offset;
     return rows.slice(offset, offset + 7).map((row, i) => ({ ...row, index: offset + i, y: top + 28 + i * 20 }));
   }
 
@@ -1593,104 +1807,37 @@ export class StationScene implements Scene {
   }
 
   drawMissions(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
+    this.prepareListDraw(g);
     const p = g.world.player, tier = missionTier(p.rep[this.station.factionId] ?? 0), rows = this.missionRows(g);
     drawText(ctx, `MISSION BOARD - ${["CIVILIAN", "TRUSTED", "MILITARY"][tier]}`, 8, top, PAL.grey);
     drawText(ctx, "[ J FULL LOG ]", 400, top, PAL.ui);
     drawText(ctx, `${rows.filter(r => r.ready).length} READY HERE / ${rows.filter(r => !r.ready).length} POSTED / ${p.missions.filter(m => m.accepted && !m.done).length} ACTIVE`, 8, top + 12, PAL.greyDark);
     for (const { m, ready, index, y } of this.missionWindow(g, top)) {
       const locked = !ready && (m.tier ?? 0) > tier;
-      this.row(ctx, y, index === this.cursor, index);
+      this.row(ctx, y, index === this.cursor, index, 18);
       drawText(ctx, `${ready ? "TURN IN: " : locked ? "LOCKED: " : "POSTED: "}${m.title}`.slice(0, 91), 12, y, ready ? PAL.good : locked ? PAL.greyDark : PAL.white);
       const reward = m.passengerKind === "singer" ? `+${m.lightReward ?? 25} LIGHT` : `+${m.reward}CR`;
       drawText(ctx, reward, VW - textWidth(reward) - 8, y, PAL.gold);
       drawText(ctx, m.desc.slice(0, 112), 12, y + 8, PAL.greyDark);
     }
     if (!rows.length) drawText(ctx, "NO POSTINGS OR HAND-INS HERE. J READS YOUR CURRENT LOG.", 12, top + 30, PAL.greyDark);
-    drawText(ctx, `${rows.length ? `${this.cursor + 1}/${rows.length} - ` : ""}ENTER: ACCEPT / TURN IN   U: SERVICE COURSE   C: COUNCIL COURSE`, 8, 222, PAL.grey);
-    drawText(ctx, `${this.goal.title} - ${this.goalState ? `${this.goalState.progress}/${this.goal.target}` : "LIVE PROGRESS UNAVAILABLE"}`.slice(0, 116), 8, 233, PAL.info);
+
   }
 
   drawBar(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
-    const st = this.station;
-    const p = g.world.player;
-    drawText(ctx, "THE LOUNGE - ENTER TALK / HIRE - R ROSTER - ARROWS / WHEEL SCROLL", 8, top, PAL.greyDark);
-    const leaveHere = (p.shoreCrew ?? []).filter((s) => s.stationId === st.id);
-    if (leaveHere.length) drawText(ctx, `ON LEAVE HERE: ${leaveHere.map((s) => s.member.name.toUpperCase()).join(", ")} (BACK ABOARD WHEN BERTHS ALLOW)`, 200, top, PAL.gold);
-    const rowPositions: number[] = [];
-    let naturalY = top + 12;
-    for (const _ of st.barPatrons) { rowPositions.push(naturalY + 2); naturalY += 18; }
-    if (this.candidates.length) naturalY += 10;
-    for (const _ of this.candidates) { rowPositions.push(naturalY + 2); naturalY += 18; }
-    if (this.fares.length) naturalY += 10;
-    for (const _ of this.fares) { rowPositions.push(naturalY); naturalY += 9; if (rowPositions.length - 1 === this.cursor) naturalY += 9; }
-    if (this.fares.length) naturalY += 2;
-    if (!st.military) rowPositions.push(naturalY);
-    const offset = Math.max(0, (rowPositions[this.cursor] ?? 0) - (VH - 85));
-    const bottom = VH - 54;
-    ctx.save(); ctx.beginPath(); ctx.rect(0, top + 9, VW, bottom - top - 9); ctx.clip();
-    let y = top + 12 - offset;
-    let idx = 0;
-    st.barPatrons.forEach((name, i) => {
-      this.row(ctx, y + 2, idx === this.cursor);
-      ctx.drawImage(g.portrait(name), 10, y - 2, 12, 12);
-      const fr = friendsAt(g.world, st.id).find((c) => c.name === name);
-      drawText(ctx, name + (fr ? " - FRIEND" : ""), 28, y, fr ? PAL.gold : PAL.white);
-      drawText(ctx, fr ? `CAPTAIN OF THE ${fr.ship.toUpperCase()}, HELPED ${fr.helped} TIMES` : ["HAULER", "ENGINEER", "OFF-DUTY SECURITY", "PROSPECTOR", "DRIFTER"][i % 5], 28, y + 8, PAL.greyDark);
-      y += 18; idx++;
-    });
-    if (this.candidates.length) {
-      drawText(ctx, `FOR HIRE (BERTHS ${p.crew.length}/${hull(p.hullId).crewSlots}):`, 8, y, PAL.greyDark); y += 10;
-      for (const c of this.candidates) {
-        this.row(ctx, y + 2, idx === this.cursor);
-        ctx.drawImage(g.portrait(c.name), 10, y - 2, 12, 12);
-        drawText(ctx, `${c.name} - ${ROLE_INFO[c.role].label} ${"*".repeat(c.skill)}`, 28, y, PAL.ui);
-        drawText(ctx, `${ROLE_INFO[c.role].effect}. WAGE ${c.wage}CR/DOCK, BONUS ${c.wage * 3}CR`, 28, y + 8, PAL.greyDark);
-        y += 18; idx++;
-      }
+    this.prepareListDraw(g);
+    const rows = this.barEntries(g), p = g.world.player;
+    drawText(ctx, `THE LOUNGE  BERTHS ${berthsUsed(p)}/${hull(p.hullId).crewSlots}  CABINS ${passengersAboard(p).length}/${passengerCap(p)}`, 8, top, PAL.grey);
+    for (let i = this.list.view.offset; i < this.list.view.end; i++) {
+      const row = rows[i], y = top + 15 + (i - this.list.view.offset) * 20;
+      this.row(ctx, y, i === this.cursor, i, 18);
+      if (row.portrait) ctx.drawImage(g.portrait(row.portrait), 10, y - 1, 16, 16);
+      const x = row.portrait ? 32 : 12;
+      drawText(ctx, clippedText(row.title, 468 - x), x, y, i === this.cursor ? PAL.white : PAL.ui);
+      drawText(ctx, clippedText(row.lines[0], 468 - x), x, y + 9, PAL.grey);
     }
-    if (this.fares.length) {
-      drawText(ctx, `FARES (CABINS ${passengersAboard(p).length}/${passengerCap(p)}):`, 8, y, PAL.greyDark); y += 10;
-      for (const f of this.fares) {
-        const sel = idx === this.cursor;
-        this.row(ctx, y, sel);
-        drawText(ctx, `${f.notable ? "* " : ""}${f.title.toUpperCase()}  -  ${g.world.systems[f.targetSystemId].name.toUpperCase()}${f.demand ? "  (WANTS " + commodity(f.demand).name.toUpperCase() + ")" : ""}`, 12, y, f.notable ? PAL.gold : f.passengerKind === "fugitive" ? PAL.danger : PAL.ui);
-        const pay = f.passengerKind === "singer" ? `+${f.lightReward ?? 25} LIGHT` : `+${f.reward}CR`;
-        drawText(ctx, pay, VW - textWidth(pay) - 8, y, PAL.gold);
-        y += 9;
-        if (sel) { drawText(ctx, f.desc.toUpperCase().slice(0, 112), 12, y, PAL.greyDark); y += 9; }
-        idx++;
-      }
-      y += 2;
-    }
-    if (!st.military) {
-      const sel = idx === this.cursor;
-      this.row(ctx, y, sel);
-      const best = p.raceBest?.[st.id];
-      drawText(ctx, `THE RING RACE  -  ${RACE_GATES} RINGS ROUND THE STATION, AGAINST THE CLOCK${best !== undefined ? `  -  YOUR BEST HERE ${best.toFixed(1)}S` : ""}${p.racePending === st.id ? "  -  ENTERED" : ""}`, 12, y, p.racePending === st.id ? PAL.gold : PAL.ui);
-      y += 9;
-      if (sel) {
-        const h = raceHolder(g.world, st);
-        const rec = this.raceRecords?.[0];
-        drawText(ctx, `LOCAL RECORD ${h.t.toFixed(1)}S, ${h.name.toUpperCase()}${p.raceBeaten?.[st.id] ? " (BEATEN)" : ""}${rec ? `  -  WIRE RECORD ${rec.t.toFixed(1)}S BY ${rec.callsign}` : g.world.realGalaxy ? "  -  NO WIRE TIMES YET" : ""}`.slice(0, 112), 12, y, PAL.greyDark); y += 9;
-      }
-      idx++; y += 2;
-    }
-    ctx.restore();
-    this.rowBoxes = this.rowBoxes.map(([a, b]) => a < top + 9 || b > bottom ? [Infinity, -Infinity] : [a, b]);
-    if (offset) drawText(ctx, "^", VW - 10, top + 12, PAL.ui);
-    if (naturalY - offset > bottom - 10) drawText(ctx, "V", VW - 10, bottom - 8, PAL.ui);
-    if (this.barLine) {
-      y = VH - 51;
-      ctx.fillStyle = "#0e1626"; ctx.fillRect(6, y, VW - 12, 28);
-      ctx.strokeStyle = PAL.uiBorder; ctx.strokeRect(6.5, y + 0.5, VW - 13, 27);
-      const words = this.barLine.split(" ");
-      let line = "", ly = y + 4;
-      for (const wd of words) {
-        if (textWidth(line + " " + wd) > VW - 30) { drawText(ctx, line, 12, ly, PAL.ui); ly += CHAR_H + 2; line = wd; }
-        else line = line ? line + " " + wd : wd;
-      }
-      drawText(ctx, line, 12, ly, PAL.ui);
-    }
+    if (!rows.length) drawText(ctx, "THE LOUNGE IS EMPTY.", 12, top + 15, PAL.grey);
+    drawText(ctx, clippedText(this.barLine || "I READS TERMS. O READS THE LAST REPLY.", 456), 12, 216, this.barLine ? PAL.ui : PAL.greyDark);
   }
 
   storageRows(g: Game): { kind: "held" | "stored"; id: string; qty: number }[] {
@@ -1702,24 +1849,25 @@ export class StationScene implements Scene {
   }
 
   storageWindow(g: Game, top = 56) {
-    const rows = this.storageRows(g), cursor = clamp(this.cursor, 0, Math.max(0, rows.length - 1));
-    const offset = Math.max(0, cursor - 11);
+    this.syncList(g);
+    const rows = this.storageRows(g), offset = this.list.view.offset;
     return rows.slice(offset, offset + 12).map((row, i) => ({ row, index: offset + i, y: top + 28 + i * 11 }));
   }
 
   drawStorage(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
+    this.prepareListDraw(g);
     const p = g.world.player, rows = this.storageRows(g), visible = this.storageWindow(g, top);
-    drawText(ctx, "WAREHOUSE - ENTER / CLICK MOVES ONE UNIT - ARROWS / WHEEL SCROLL", 8, top, PAL.greyDark);
+    drawText(ctx, "WAREHOUSE - ENTER MOVES ONE UNIT - ARROWS / WHEEL SCROLL", 8, top, PAL.greyDark);
     drawText(ctx, `HOLD ${cargoUsed(p)}/${p.cargoMax}   ${rows.filter(r => r.kind === "held").length} GOODS ABOARD / ${rows.filter(r => r.kind === "stored").length} STORED`, 8, top + 12, PAL.grey);
     for (const { row, index, y } of visible) {
-      this.row(ctx, y, index === this.cursor, index);
+      this.row(ctx, y, index === this.cursor, index, 10);
       drawText(ctx, `${row.kind === "held" ? "HOLD" : "WAREHOUSE"}: ${commodity(row.id).name.toUpperCase()}`, 12, y, row.kind === "held" ? PAL.white : PAL.ui);
       drawText(ctx, `X${row.qty}   ${row.kind === "held" ? "STORE" : "LOAD"}`, 324, y, PAL.gold);
     }
     if (!rows.length) drawText(ctx, "THE HOLD AND THIS STATION'S WAREHOUSE ARE EMPTY.", 12, top + 30, PAL.greyDark);
     const selected = rows[this.cursor];
     if (selected) {
-      drawText(ctx, `${this.cursor + 1}/${rows.length} - ${commodity(selected.id).name.toUpperCase()}`, 8, 222, PAL.gold);
+      drawText(ctx, `${this.cursor + 1}/${rows.length} - ${commodity(selected.id).name.toUpperCase()}`, 8, 216, PAL.gold);
       drawText(ctx, selected.kind === "held" ? "STORE ONE HERE. STORED GOODS STAY AT THIS STATION." : cargoUsed(p) < p.cargoMax ? "LOAD ONE INTO YOUR HOLD. OTHER STATIONS KEEP THEIR OWN STOCK." : "HOLD FULL. STORE SOMETHING BEFORE LOADING MORE.", 8, 233, PAL.greyDark);
     }
   }
@@ -1820,6 +1968,7 @@ export class StationScene implements Scene {
   }
 
   drawBase(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
+    this.prepareListDraw(g);
     const tag = wire.getSquadron();
     const st = this.station;
     const syn = syndicateAt(g.world, st.id);
@@ -1874,12 +2023,12 @@ export class StationScene implements Scene {
     drawText(ctx, b && b.stationId ? `TREASURY ${b.treasury}CR   VAULT ${Object.values(b.vault).reduce((a, v) => a + v, 0)}/${b.upgrades.includes("vault") ? 600 : 200}   HALF-PRICE SERVICES FOR MEMBERS` : `POOL CREDITS, THEN BUY A CIVILIAN STATION. THIS ONE: ${wire.basePrice(st.type, st.military) ? wire.basePrice(st.type, st.military) + "CR" : "MILITARY, NOT FOR SALE"}`, 8, top + 10, PAL.grey);
     if (b && b.stationId === st.id && g.world.synWar) { const war = g.world.synWar; drawText(ctx, war.backed ? `WAR: [${war.backedBy}] BACKS [${war.backed}] AT ${g.world.systems[war.systemId].name.toUpperCase()} - FRONT ${war.score > 0 ? "+" : ""}${war.score}` : `SYNDICATE WAR AT ${g.world.systems[war.systemId].name.toUpperCase()} - DECLARE A SIDE (ROWS ABOVE)`, 8, VH - 93, PAL.warn); }
     if (b && b.stationId === st.id) drawText(ctx, `WANTED THIS WEEK (+${Math.round(ROUTE_PREMIUM * 100)}%, 10% TO THE TREASURY): ${baseDemand(`base:${tag}`).map((d) => commodity(d).name.toUpperCase()).join(", ")}`, 8, VH - 84, PAL.gold);
-    rows.forEach((r, i) => {
-      const y = top + 24 + i * 9;
+    rows.slice(this.list.view.offset, this.list.view.end).forEach((r, j) => {
+      const i = this.list.view.offset + j, y = top + 24 + j * 9;
       if (y > VH - 86) return;
-      this.row(ctx, y, i === this.cursor);
-      drawText(ctx, r.label, 8, y, r.kind === "upgrade" && r.label.startsWith("FITTED") ? PAL.good : PAL.white);
-      drawText(ctx, r.sub, 200, y, PAL.grey);
+      this.row(ctx, y, i === this.cursor, i);
+      drawText(ctx, clippedText(r.label, 184), 8, y, r.kind === "upgrade" && r.label.startsWith("FITTED") ? PAL.good : PAL.white);
+      drawText(ctx, clippedText(r.sub, 272), 200, y, PAL.grey);
     });
     if (b && b.stationId) {
       const c = wire.baseContract(tag);
@@ -1903,6 +2052,7 @@ export class StationScene implements Scene {
   }
 
   drawEngineer(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
+    this.prepareListDraw(g);
     const p = g.world.player;
     const here = this.hasEngineer();
     drawText(ctx, here ? `ENGINEERING BAY - ${this.station.name.toUpperCase()}` : "NO ENGINEER HERE - RESEARCH AND REFINERY STATIONS HAVE ONE", 8, top, here ? PAL.info : PAL.warn);

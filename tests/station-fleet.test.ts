@@ -45,6 +45,7 @@ describe("station fleet selection", () => {
     const swap = vi.spyOn(station, "swapShip").mockImplementation(() => {}), buy = vi.spyOn(station, "buyHull").mockImplementation(() => {});
     input.mouseX = 100; input.mouseY = station.rowBoxes[index][0] + 4; input.mousePressed = true;
     station.update(g, 0);
+    expect(swap).not.toHaveBeenCalled(); input.mouseX = 40; input.mouseY = 250; station.update(g, 0);
     expect(swap).toHaveBeenCalledWith(g, p.fleet![10]); expect(buy).not.toHaveBeenCalled();
   });
   it("clicking ship details does not buy or board anything", () => {
@@ -95,19 +96,20 @@ describe("station fleet selection", () => {
 describe("scrolled shipyard pointer mapping", () => {
   it("clicking a visible scrolled option runs exactly its action", () => {
     const { station, g, ctx, input } = fixture(); station.tab = 1;
-    const options = Array.from({ length: 40 }, (_, i) => ({ label: `ITEM ${i}`, sub: "", action: vi.fn() }));
+    const options = Array.from({ length: 40 }, (_, i) => ({ id: `item-${i}`, label: `ITEM ${i}`, sub: "", action: vi.fn() }));
     vi.spyOn(station, "shipyardOptions").mockReturnValue(options);
     station.cursor = 34; station.drawShipyard(g, ctx, 56);
     const y = station.rowBoxes[34][0] + 4;
     expect(y).toBeGreaterThan(56); expect(y).toBeLessThan(235);
     input.mouseX = 90; input.mouseY = y; input.mousePressed = true;
     station.update(g, 0);
+    expect(options[34].action).not.toHaveBeenCalled(); input.mouseX = 40; input.mouseY = 250; station.update(g, 0);
     expect(options[34].action).toHaveBeenCalledOnce();
     expect(options.filter(o => o.action.mock.calls.length)).toEqual([options[34]]);
   });
   it("shipyard details on the right cannot activate a purchase on the left", () => {
     const { station, g, ctx, input } = fixture(); station.tab = 1;
-    const options = [{ label: "ITEM", sub: "", action: vi.fn() }];
+    const options = [{ id: "item", label: "ITEM", sub: "", action: vi.fn() }];
     vi.spyOn(station, "shipyardOptions").mockReturnValue(options); station.drawShipyard(g, ctx, 56);
     input.mouseX = 320; input.mouseY = 58; input.mousePressed = true;
     station.update(g, 0); expect(options[0].action).not.toHaveBeenCalled();

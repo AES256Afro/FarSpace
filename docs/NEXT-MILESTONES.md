@@ -64,6 +64,14 @@ outcomes and rover damage. 682 tests pass; native evidence is recorded in the
 menu inventory. CI, container publication, Cloudflare deployment and hosted
 verification passed. M418 remains
 open for remaining station tabs, galaxy selection/removal and final input checks.
+The v0.268.0 station transaction slice adds stable selection and paging to the
+market, yard, fleet, missions, lounge, engineering, warehouse and base actions.
+Rows select; explicit controls execute. Full details and lounge replies use a
+reader that pauses voyage updates. P reaches the Record guestbook; V buys shares
+so I consistently reads details. 707 tests pass. Release verification is pending.
+M418 remains open for News, Wire, Survey and Record text, galaxy selection/removal
+and the remaining input/caller audit. Physical touch/gamepad acceptance stays M426.
+
 
 
 ## September 11 priority update: mining and industry

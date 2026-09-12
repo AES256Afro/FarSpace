@@ -1,13 +1,13 @@
 # M418 menu inventory
 
-Baseline: v0.267.0, inspected September 12, 2026. Native acceptance is recorded
+Baseline: v0.268.0, inspected September 12, 2026. Native acceptance is recorded
 per migration. M418 is still open.
 
 | Surface | Current behavior | Remaining work | Acceptance state |
 | --- | --- | --- | --- |
 | Title and save library | Native HTML pages retain page, focus and scroll; save operations are explicit. The former slots scene is absent. | Preserve M416/M417 regressions; audit long names and child returns when shared rules change. | Previous release checks; current regression suite passes. |
 | Workshop | Native HTML inventory, research and jobs preserve scroll and action focus on stock changes. | Include in shared key ownership and return checks. | v0.261 native checks; current regression suite passes. |
-| Station market and shipyard | Existing selection and viewport fixes retain scrolling. | Audit other station tabs, dynamic row identity and transaction hit areas. | Existing station scrolling and fleet tests pass. |
+| Station transaction tabs | Stable goods, yard actions, hulls, missions, crew, fares, warehouse entries, blueprints and base actions. Page controls, Home/End, full details and explicit execution. | Preserve domain and reader tests; finish the separate News, Wire, Survey and Record text audit. | Native market sale, exact yard purchase, owned hull boarding, mission acceptance, crew hire, warehouse transfer and engineering upgrade passed. Base viewport and absence of requests covered by an isolated unit fixture. |
 | Settings | Existing full option and binding scrolling. | Preserve binding input ownership and caller return during later menu work. | Existing regression suite passes. |
 | Roster | Stable member identity, eight visible rows, full wrapped details, pointer actions, wheel and page navigation. Crew on leave are readable but cannot receive aboard actions. | Preserve this model while migrating other lists. | Native empty and 21 member fixtures; full details, page and wheel controls, insertion, exact bonus recipient, review return and leave restrictions passed. |
 | Chronicle | Shared ReaderScene, complete export text grouped by its existing headings. Explicit Back, search, section navigation and paging. | Preserve read-only behavior. | Native body click, End at log entry 99 and complete matching sections passed. |
@@ -194,3 +194,46 @@ kept PAY 50CR selected when a conditional option appeared above it. Reading
 terms spent nothing. Choose paid exactly 50CR, body click preserved the outcome,
 and Enter returned to flight with one callback invocation. No app warnings or
 errors. All temporary tabs closed; no actual saves or identity changed.
+
+## v0.268.0 implementation evidence
+
+StationList adapts the existing numeric domain cursor to ListView keys and drawn
+row identity. Goods use ids; yard actions have explicit ids independent of price
+or quantity labels. Hulls and crew retain live object identity; fleet categories,
+mission acceptance/hand-in state and storage direction remain part of identity.
+A removed selection requires fresh input before executing its replacement.
+Per-tab page sizes match the visible rows. Both mouse buttons select only;
+explicit footer buttons and keyboard actions execute. Adjacent row bounds do
+not overlap. Mission and lounge descriptions are part of their selectable row.
+
+I opens complete selected text, including long hull names, yard conditions,
+mission requirements, crew/fare terms, warehouse direction and blueprint costs.
+V replaces the former I share purchase shortcut. Market B/S and Shift behavior
+remain. The lounge has seven visible rows with portraits and O for its complete
+last reply. Reader return preserves selection and viewport without replaying a
+dock visit. Scene.pausesVoyage stops runtime production, tutorial and story
+updates while this nested station reader owns input. Flight school stays visible
+in the footer and readable in details. Its K skip cannot also buy a hull; the
+explicit Keep old hull button remains available. P on Record now reaches the
+guestbook. Workshop and mail hit areas include their right edge bounds.
+
+Native isolated checks: 26 market goods and the final carried rare; row click
+made no trade, then Sell reduced only that rare. The 37th yard action displayed
+800CR and added exactly 25 shield for that price, retaining its stable id.
+A fleet with 18 owned hulls boarded Owned Ship 17 with its 17 torpedoes. Fifteen
+mission postings retained the selected final entry; I reached requirement 34
+and FINAL INSTRUCTION 14, then Accept took only Delivery 14. Fifteen crew offers
+reached Crew Member 14 and its complete trait text, then hired that person for
+120CR. Two warehouse loads kept stored medical supplies selected and conserved
+food, medical supplies and water. Rover Battery grade one consumed five carbon
+and two nickel. Record P kept the station open and displayed the guestbook.
+Production progress stayed at zero in details and resumed after closing them.
+
+All 707 tests in 46 files pass. The existing pointer tests now select a row and
+then use the action control. New coverage includes dynamic insertion/removal,
+duplicate ship names, storage direction, complete readers, world replacement,
+shortcut ownership and a 25 action base fixture that sends no requests. Save
+schema stays 16. Native fixtures used memory storage and disabled online calls;
+actual saves and identity were unchanged. No application warnings/errors.
+M418 remains open for remaining station text, galaxy selection/removal and final
+input/caller checks. Physical touch/gamepad acceptance remains M426.

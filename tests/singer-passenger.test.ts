@@ -101,12 +101,12 @@ describe("singer passage home", () => {
     station.barPatrons = Array.from({ length: 7 }, (_, i) => `Patron ${i}`);
     scene.candidates = Array.from({ length: 9 }, (_, i) => ({ name: `Crew ${i}`, role: "pilot" as const, skill: 1, morale: 70, wage: 40 }));
     scene.fares = [m, { ...m, id: "second" }];
-    scene.cursor = station.barPatrons.length + scene.candidates.length;
+    scene.tab = 4; scene.cursor = station.barPatrons.length + scene.candidates.length;
     const ctx = new Proxy({}, { get: () => () => {}, set: () => true }) as CanvasRenderingContext2D;
     scene.drawBar(g, ctx, 56);
     const [top, bottom] = scene.rowBoxes[scene.cursor];
     expect(top).toBeGreaterThanOrEqual(65); expect(bottom).toBeLessThanOrEqual(216);
-    expect(scene.rowBoxes.findIndex(([a, b]) => 185 >= a && 185 <= b)).toBe(scene.cursor);
+    expect(scene.rowBoxes.findIndex(([a, b]) => top + 4 >= a && top + 4 < b)).toBe(scene.cursor);
     expect(scene.rowBoxes[0]).toEqual([Infinity, -Infinity]);
   });
 

@@ -10,7 +10,43 @@ active every ten minutes. Read WORKLOG-2026-09-12.md on each continuation.
 At the deadline, stop new implementation, finish a safe checkpoint and pause.
 M418 through M427 and M433 through M435 remain open in NEXT-MILESTONES.md.
 
-## Current checkpoint: v0.267.0, M418 conversations
+## Current checkpoint: v0.268.0, M418 station transactions
+
+- Station transaction tabs use stable keys, page controls and Home/End. Row
+  clicks, including right click, select without transacting. Explicit buttons
+  and keyboard commands run existing domain actions. Drawn identity handles
+  insertion; removed selections require fresh input. Nonoverlapping row bounds
+  match visible rows. Yard action ids do not depend on quantity or price text.
+- I reads all selected terms; V now buys market shares. The seven row lounge
+  retains portraits and has O for its full reply. Mission descriptions are
+  selectable. Warehouse transfers preserve direction and selected commodity
+  when loading creates a new held row. Working hull controls still use the
+  existing confirmation and settlement functions.
+- A station reader sets Scene.pausesVoyage. Runtime production, tutorial and
+  story updates stop while it owns input, then resume on close. It preserves
+  selection/viewport and cleans pending search on scene changes. A new world
+  or dock visit resets the adapter. Flight school stays in the footer/details;
+  its K skip cannot trigger the Ships K purchase. The explicit Keep old hull
+  button works during school. Record P now opens the guestbook. Workshop/mail
+  pointer bounds include the right edge.
+- Native: 26 goods, 37 yard actions, 18 owned hulls, 15 missions and 15 crew
+  offers. Exact rare sale, 800CR/+25 shield purchase, Owned Ship 17 boarding,
+  Delivery 14 acceptance, Crew Member 14 hire, stable medical supply loading
+  and Rover Battery upgrade passed. Full mission requirement 34 and final crew
+  terms remained readable. Guestbook P and paused/resumed production passed.
+  Test fixtures used memory storage and disabled online calls. No application
+  warnings/errors; actual saves and identity unchanged. Full evidence is in
+  MENU-INVENTORY.md. The base action viewport is unit tested without requests.
+- 707 tests in 46 files pass. TypeScript and production build pass. Release
+  verification pending. Save schema remains 16. M418 remains open; physical touch/gamepad stays M426.
+- Next: finish News, Wire, Survey and Record text in StationScene. Their source
+  still clips or truncates longer records; reuse complete readers and preserve
+  selection/return state. The guestbook shortcut is fixed but its text audit
+  remains open. Then finish galaxy selection/removal and global input/caller
+  checks, including other nested readers' runtime ownership. Continue M419
+  onward in dependency order. The existing nine hour deadline is unchanged.
+
+## Previous checkpoint: v0.267.0, M418 conversations
 
 - Conversation cards fit within the canvas. Eight story lines and four visible
   answers have separate paging. Outcomes show twenty lines with scroll and

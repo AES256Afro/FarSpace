@@ -55,6 +55,7 @@ describe("market viewport", () => {
     const { station, draw, g, input, p } = fixture(0), rows = station.marketRows(g), id = rows.at(-1)!;
     station.cursor = rows.length - 1; draw(); const before = { ...p.cargo };
     input.mouseY = station.rowBoxes[station.cursor][0] + 4; input.mousePressed = true;
+    station.update(g, 0); expect(p.cargo).toEqual(before); input.mouseX = 40; input.mouseY = 250;
     station.update(g, 0); expect(p.cargo).toEqual({ ...before, [id]: before[id] - 1 });
     expect(p.credits).toBeGreaterThan(10000);
   });

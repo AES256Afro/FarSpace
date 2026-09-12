@@ -32,6 +32,7 @@ describe("complete mission board", () => {
   it("accepts the actual visible scrolled posting by pointer", () => {
     const { station, g, ctx, input, p } = fixture(); station.cursor = 11; station.drawMissions(g, ctx, 56);
     input.mouseX = 150; input.mouseY = station.rowBoxes[11][0] + 4; input.mousePressed = true; station.update(g, 0);
+    expect(p.missions).toEqual([]); input.mouseX = 40; input.mouseY = 250; station.update(g, 0);
     expect(p.missions.map(m => m.id)).toEqual(["posted-11"]); expect(p.cargo.food).toBe(1);
     expect(station.boardMissions[0].accepted).toBe(false);
   });
@@ -39,6 +40,7 @@ describe("complete mission board", () => {
     const { station, g, ctx, input, p, mission } = fixture(); p.cargo.food = 3;
     p.missions = [20, 21, 22].map(i => ({ ...mission(i), accepted: true })); const credits = p.credits;
     station.cursor = 2; station.drawMissions(g, ctx, 56); input.mouseX = 150; input.mouseY = station.rowBoxes[2][0] + 4; input.mousePressed = true;
+    station.update(g, 0); expect(p.missions).toHaveLength(3); input.mouseX = 40; input.mouseY = 250;
     station.update(g, 0); expect(p.missions.map(m => m.id)).toEqual(["posted-20", "posted-21"]); expect(p.cargo.food).toBe(2); expect(p.credits).toBeGreaterThan(credits);
   });
   it("reads every active mission and passenger and keeps the full description", () => {

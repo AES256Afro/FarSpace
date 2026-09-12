@@ -8,7 +8,7 @@ import { crewArcUpdate } from "./crewarcs";
 import { keeperUpdate } from "./keeper";
 import { checkAchievements } from "./achievements";
 export function updateVoyageSystems(g: Game, dt = 0): void {
-  if (g.frontend) return;
+  if (g.frontend || g.scene?.pausesVoyage) return;
   const flight = g.scenes.flight as FlightScene | undefined;
   const working = ["workshop", "station", "interior", "orbit", "surface"].includes(g.sceneName)
     || (g.sceneName === "flight" && flight && !flight.paused && !flight.mapOpen && !flight.logOpen);
