@@ -186,3 +186,49 @@ it("a queued plant repair cannot reopen after the player loads another world", (
     g.world = generateWorld(419); g.sceneName = "flight"; vi.runOnlyPendingTimers(); expect(g.sceneName).toBe("flight"); expect(scene.resumeNext).toBe(false);
   } finally { vi.useRealTimers(); }
 });
+
+describe("city arrival and walking routes", () => {
+  function walkFixture() {
+    const f = fixture(), scene = f.scene as CityScene;
+    scene.panel = "none";
+    f.g.input.isDown = key => f.keys.has(key);
+    return { ...f, scene };
+  }
+  it("arrives with the entire character clear of the landing kiosk and moves immediately", () => {
+    const { g, scene, keys } = walkFixture();
+    for (const dx of [-3, 3]) for (const dy of [-3, 3]) expect(scene.solid(Math.floor((scene.px + dx) / 10), Math.floor((scene.py + dy) / 10))).toBe(false);
+    const before = scene.px; keys.add("a"); scene.update(g, 1 / 60); expect(scene.px).toBeLessThan(before);
+  });
+  for (const [name, tx, ty, panel] of [["market", 9, 1, "market"], ["cantina", 31, 1, "bar"], ["contracts", 5, 7, "board"]] as const) {
+    it(`walks from arrival to the ${name} and opens the correct desk`, () => {
+      const { g, scene, keys, press } = walkFixture();
+      const start = [Math.floor(scene.px / 10), Math.floor(scene.py / 10)];
+      const queue = [start], parents = new Map<string, number[] | null>([[start.join(","), null]]);
+      let goal: number[] | undefined;
+      for (let i = 0; i < queue.length; i++) {
+        const at = queue[i];
+        if (Math.abs(at[0] - tx) + Math.abs(at[1] - ty) === 1) { goal = at; break; }
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const next = [at[0] + dx, at[1] + dy], id = next.join(",");
+          if (!scene.solid(...next as [number, number]) && !parents.has(id)) { parents.set(id, at); queue.push(next); }
+        }
+      }
+      expect(goal).toBeDefined();
+      const path: number[][] = [];
+      for (let at: number[] | null = goal!; at; at = parents.get(at.join(","))!) path.unshift(at);
+      for (let i = 1; i < path.length; i++) {
+        const [x, y] = path[i], [px, py] = path[i - 1];
+        keys.add(x > px ? "d" : x < px ? "a" : y > py ? "s" : "w");
+        for (let step = 0; step < 4; step++) scene.update(g, 2.5 / 55);
+        keys.clear(); expect(scene.px).toBeCloseTo(x * 10 + 5); expect(scene.py).toBeCloseTo(y * 10 + 5);
+      }
+      press("e"); expect(scene.panel).toBe(panel);
+      press("Escape"); const x = scene.px; keys.add("a"); scene.update(g, 1 / 60); expect(scene.px).toBeLessThan(x);
+    });
+  }
+  it("can return through the landing pad from either arrival path and on a repeat visit", () => {
+    const { g, scene, press } = walkFixture();
+    press("e"); expect(g.setScene).toHaveBeenLastCalledWith("orbit");
+    g.surfaceReturn = true; scene.enter(g); press("e"); expect(g.setScene).toHaveBeenLastCalledWith("surface");
+  });
+});

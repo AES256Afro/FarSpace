@@ -10,7 +10,26 @@ active every ten minutes. Read WORKLOG-2026-09-12.md on each continuation.
 At the deadline, stop new implementation, finish a safe checkpoint and pause.
 M419 through M427 and M433 through M435 remain open in NEXT-MILESTONES.md.
 
-## Current checkpoint: v0.270.0, M418 menu audit complete
+## Current checkpoint: v0.270.1, city arrival collision fix
+
+- User reported that the Delphi Landing city template prevented all walking.
+  CityScene placed the character at 320,75, overlapping the solid A kiosk at
+  tile 32,7. Both movement axes rejected the hitbox. Arrival now uses the clear
+  adjacent floor centre at 315,75. Kiosks and walls remain solid.
+- Five regressions cover hitbox clearance, immediate movement, actual walking
+  routes to market/cantina/contracts and their E actions, desk close movement,
+  landing pad exit to orbit/surface and a repeat visit. Four failed before the
+  fix; all five pass after it. All 751 tests in 48 files and production build
+  pass. Save schema remains 16.
+- Isolated browser fixture used held keyboard events to walk from 315,75 to
+  63.37,75 at the contracts office. Native E opened that desk; Escape closed it
+  and returned to orbit. No application warnings/errors. Real saves and identity
+  were protected by memory storage and disabled online calls. Fixture tab closed.
+  Release/deployment and hosted acceptance are pending.
+- This reported defect took priority over M419. Resume the documented milestone
+  sequence after the patch; the nine hour deadline stays 11:31:03 UTC.
+
+## Previous checkpoint: v0.270.0, M418 menu audit complete
 
 - Galaxy search uses stable system ids, twelve row pages, Home/End and explicit
   Select. A row click only selects. Closing search stops applying its text

@@ -37,7 +37,8 @@ type Panel = "none" | "market" | "bar" | "board";
 
 export class CityScene implements Scene {
   get touchMode(): "walk" | "menu" { return this.panel !== "none" || this.info ? "menu" : "walk"; }
-  px = 32 * T; py = 7 * T + 5;
+  // Stand beside the solid landing kiosk with the full walking hitbox on floor.
+  px = 31 * T + T / 2; py = 7 * T + 5;
   poi!: Poi; region!: Region;
   residents: Resident[] = [];
   panel: Panel = "none";
@@ -59,7 +60,7 @@ export class CityScene implements Scene {
     if (!poi) { g.setScene(g.surfaceReturn ? "surface" : "orbit"); return; }
     this.poi = poi;
     this.region = surf.regions[poi.regionIdx];
-    this.px = 32 * T; this.py = 7 * T + 5;
+    this.px = 31 * T + T / 2; this.py = 7 * T + 5;
     this.panel = "none";
     this.onSceneLeave(); this.market = new DeskMenu(); this.bar = new DeskMenu(); this.contracts = new DeskMenu();
     const rng = new RNG(hashStr(poi.id) ^ g.world.seed ^ Math.floor(g.world.time / 120));

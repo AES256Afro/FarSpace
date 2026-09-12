@@ -357,3 +357,13 @@ closed, with actual saves and identity unchanged. Dev5199 runs v0.268.1.
   inventory. Physical controller/touch acceptance remains M426. Next is M419
   flight display priorities, then M420 contact presentation, followed by the
   documented dependency order. The nine hour deadline remains 11:31:03 UTC.
+
+## v0.270.1 city arrival follow-up
+
+The reported city movement defect was an arrival hitbox overlapping its solid
+landing kiosk. Arrival now uses adjacent clear floor. All three desk routes,
+interactions and repeat entry are covered by five new regressions. The full
+751 test suite passes. A browser held-input fixture walked to the contracts
+office, opened it with E, and returned to orbit through Escape. Deployment
+verification is recorded in HANDOFF.md. This corrects the earlier inventory
+limit: desk tests opened panels directly and did not prove arrival movement.
