@@ -14,6 +14,17 @@ import { sfx } from "../core/sfx";
 import { music } from "../core/music";
 import { hasModule } from "../data/modules";
 import { clamp } from "../core/mathx";
+import { ListView } from "../core/listview";
+import { wrapText } from "../core/text";
+import { mapButton, clippedText, contains } from "../core/mapview";
+import { ReaderOverlay } from "./reader";
+import type { Planet, Region } from "../world";
+
+const LIST = { x: 246, y: 56, width: 226, rowHeight: 22 };
+const SITES = { x: 244, y: 32, w: 110, h: 17 }, REGIONS = { x: 358, y: 32, w: 114, h: 17 };
+const PREV = { x: 244, y: 195, w: 68, h: 17 }, NEXT = { x: 404, y: 195, w: 68, h: 17 };
+const LAND = { x: 244, y: 220, w: 72, h: 17 }, ROVER = { x: 320, y: 220, w: 72, h: 17 }, INFO = { x: 396, y: 220, w: 76, h: 17 };
+const QUEST = { x: 8, y: 47, w: 104, h: 16 }, OBJECTIVES = { x: 116, y: 47, w: 116, h: 16 };
 
 const R = 64;
 const GX = 130, GY = 140;
@@ -22,16 +33,53 @@ export class OrbitScene implements Scene {
   touchMode = "menu" as const;
   rot = 0;
   questFocus = false;
-  sel = 0;
+  sites = new ListView<string>(6);
+  regions = new ListView<Region>(6);
+  pane: "sites" | "regions" = "sites";
+  info?: ReaderOverlay;
+  private planet?: Planet;
+  private drawnRows: (string | Region)[] = [];
+  private drawnPane: "sites" | "regions" = "sites";
+  get sel(): number { return this.sites.index; }
+  set sel(index: number) { this.sites.select(index); }
+  get regionSel(): number | null { return this.pane === "regions" ? this.regions.index : null; }
   scan = 0;
   msg = ""; msgTimer = 0;
-  rowBoxes: [number, number][] = [];
-  regionRows: [number, number][] = [];
-  regionSel: number | null = null; // territory picked for the rover; null = the selected site's region
+
+  sync(g: Game): void {
+    const pl = g.world.systems[g.world.player.systemId].planets[g.orbitPlanetIdx];
+    if (pl !== this.planet) {
+      this.planet = pl; this.sites = new ListView<string>(6); this.regions = new ListView<Region>(6);
+      this.pane = "sites"; this.questFocus = false; this.onSceneLeave();
+    }
+    const before = this.sites.selected;
+    this.sites.sync(pl.surface!.pois.map(poi => poi.id)); this.regions.sync(pl.surface!.regions);
+    if (before !== this.sites.selected) this.questFocus = false;
+  }
+
+  onSceneLeave(): void { this.info?.onSceneLeave(); this.info = undefined; }
+
+  openInfo(g: Game, objectives = false): void {
+    const sys = g.world.systems[g.world.player.systemId], pl = sys.planets[g.orbitPlanetIdx], surf = pl.surface!;
+    const poi = this.pane === "sites" ? surf.pois[this.sel] : undefined;
+    const region = surf.regions[this.regionSel ?? poi?.regionIdx ?? 0];
+    const quests = questLocations(g.world).filter(q => q.systemId === sys.id && q.contactId === `planet:${g.orbitPlanetIdx}`
+      && (objectives || !q.poiId || (poi ? q.poiId === poi.id : surf.pois.some(site => site.id === q.poiId && surf.regions[site.regionIdx] === region))));
+    const sections: [string, string[]][] = objectives ? [[pl.name.toUpperCase(), [`${quests.length} CURRENT OBJECTIVES.`]]]
+      : [[(poi?.name ?? region?.name ?? pl.name).toUpperCase(), [
+        `PLANET: ${pl.name}. SYSTEM: ${sys.name}.`,
+        ...(poi ? [`SITE: ${settlementTierLabel(poi)}. ${poi.surveyed ? "SURVEYED" : "NOT SURVEYED"}.${poi.looted ? " RUIN CLEARED." : ""}`] : []),
+        `TERRITORY: ${region?.name ?? "UNAVAILABLE"}.`,
+        `CONTROL: ${region?.factionId ? faction(region.factionId).name : "UNCLAIMED"}. RESOURCE: ${region?.resource ?? "UNKNOWN"}.`,
+        poi ? (poi.kind === "defense" ? "MILITARY SITE. CIVILIAN LANDING PROHIBITED." : poi.landable || poi.kind === "ruin" ? "E LANDS AT THIS SITE." : "NO LANDING PAD. L DEPLOYS THE ROVER IN THE TERRITORY.") : "L DEPLOYS THE ROVER IN THIS TERRITORY.",
+      ]]];
+    sections.push(...quests.map(q => [q.title.toUpperCase(), [`${q.source}${q.ready ? " / READY TO HAND IN" : ""}`, q.action]] as [string, string[]]));
+    if (!objectives) sections.push(["PLANET RECORD", [planetLore(g.world, sys, g.orbitPlanetIdx)]]);
+    this.info = new ReaderOverlay(objectives ? "ORBITAL OBJECTIVES" : "LOCATION DETAILS", sections, () => { this.info = undefined; });
+  }
 
   enter(g: Game): void {
-    this.sel = 0; this.questFocus = false;
-    this.scan = 0;
+    this.sync(g); this.scan = 0; g.hint = ""; g.hintTimer = 0;
     const sys = g.world.systems[g.world.player.systemId];
     const pl = sys.planets[g.orbitPlanetIdx];
     music.setMood(sys.factionId, 0);
@@ -46,7 +94,7 @@ export class OrbitScene implements Scene {
       if (after > before) { const m = p.missions.find((x) => x.kind === "passenger" && x.accepted && !x.done && x.sightSeen && x.sightPlanetIdx === g.orbitPlanetIdx); g.toast(`${(m?.passengerName ?? "THE TOURISTS").toUpperCase()}: "WORTH EVERY CREDIT." - NOW TAKE THEM TO THEIR STATION`); sfx.pickup(); }
       else if (any) g.toast("YOUR PASSENGERS CROWD THE VIEWPORT. ANOTHER SIGHT FOR THE BILL.");
     }
-    g.showHint("orbit", "ARROWS/CLICK TO TARGET A POI - E LANDS THERE - L DROPS THE ROVER IN ITS REGION - HOLD V TO SCAN");
+    g.showHint("orbit", "TAB: SITES/TERRITORIES / E: LAND / L: ROVER / I: DETAILS / HOLD V: SCAN");
   }
 
   // Project lat/lon onto the visible hemisphere; null if on the far side
@@ -61,32 +109,51 @@ export class OrbitScene implements Scene {
   }
 
   update(g: Game, dt: number): void {
-    const inp = g.input;
-    const p = g.world.player;
-    const sys = g.world.systems[p.systemId];
-    const pl = sys.planets[g.orbitPlanetIdx];
-    const surf = pl.surface!;
+    if (this.info) { this.info.update(g); return; }
+    const previousSite = this.sites.selected, previousRegion = this.regions.selected;
+    this.sync(g);
+    const changedSite = previousSite !== undefined && previousSite !== this.sites.selected;
+    const changedRegion = previousRegion !== undefined && previousRegion !== this.regions.selected;
+    const inp = g.input, p = g.world.player, sys = g.world.systems[p.systemId];
+    const pl = sys.planets[g.orbitPlanetIdx], surf = pl.surface!, pois = surf.pois;
+    const clicked = (rect: { x: number; y: number; w: number; h: number }) => inp.mousePressed && contains(rect, inp.mouseX, inp.mouseY);
     if (!this.questFocus) this.rot += dt * 0.25;
-    if (inp.wasPressed("Escape")) { (g.scenes.flight as FlightScene).resumeNext = true; g.setScene("flight"); return; }
+    if (inp.wasPressed("Escape") || clicked({ x: 390, y: 2, w: 88, h: 16 })) { (g.scenes.flight as FlightScene).resumeNext = true; g.setScene("flight"); return; }
     if (inp.wasPressed("F5")) g.save();
-    const pois = surf.pois;
-    if (inp.wasPressed("q") || (inp.mousePressed && inp.mouseX>=8 && inp.mouseX<200 && inp.mouseY>=49 && inp.mouseY<63)) {
-      const sites=questLocations(g.world).filter(q=>q.systemId===sys.id && q.contactId===`planet:${g.orbitPlanetIdx}` && q.poiId).map(q=>pois.findIndex(poi=>poi.id===q.poiId)).filter(i=>i>=0);
-      if(sites.length) { this.sel=sites[(sites.indexOf(this.sel)+1)%sites.length]; this.rot=pois[this.sel].lon*Math.PI/180; this.regionSel=null; this.questFocus=true; }
+    if (inp.wasPressed("i") || clicked(INFO)) { this.openInfo(g); return; }
+    if (inp.wasPressed("o") || clicked(OBJECTIVES)) { this.openInfo(g, true); return; }
+    if (inp.wasPressed("Tab")) this.pane = this.pane === "sites" ? "regions" : "sites";
+    if (clicked(SITES)) this.pane = "sites";
+    if (clicked(REGIONS)) this.pane = "regions";
+    const view = this.pane === "sites" ? this.sites : this.regions;
+    const before = view.index;
+    if (inp.wasPressed("ArrowDown")) view.move(1);
+    if (inp.wasPressed("ArrowUp")) view.move(-1);
+    if (inp.wasPressed("PageDown") || clicked(NEXT)) view.page(1);
+    if (inp.wasPressed("PageUp") || clicked(PREV)) view.page(-1);
+    if (inp.wasPressed("Home")) view.select(0);
+    if (inp.wasPressed("End")) view.select(view.keys.length - 1);
+    if (inp.wheel && contains({ x: LIST.x, y: LIST.y, w: LIST.width, h: 132 }, inp.mouseX, inp.mouseY)) view.move(Math.sign(inp.wheel));
+    if (inp.mousePressed && this.drawnPane === this.pane && view.hit(inp.mouseX, inp.mouseY, LIST) !== undefined) {
+      const shown = this.drawnRows[Math.floor((inp.mouseY - LIST.y) / LIST.rowHeight)];
+      const index = this.pane === "sites" ? this.sites.keys.indexOf(shown as string) : this.regions.keys.indexOf(shown as Region);
+      if (index >= 0) view.select(index);
     }
-    if (inp.wasPressed("ArrowDown")) { this.questFocus=false; this.sel = (this.sel + 1) % pois.length; sfx.blip(); }
-    if (inp.wasPressed("ArrowUp")) { this.questFocus=false; this.sel = (this.sel + pois.length - 1) % pois.length; sfx.blip(); }
-    if (inp.mousePressed) {
-      if (!(inp.mouseX>=8 && inp.mouseX<200 && inp.mouseY>=49 && inp.mouseY<63)) this.questFocus=false;
-      const rrow = this.regionRows.findIndex(([y0, y1]) => inp.mouseY >= y0 && inp.mouseY <= y1 && inp.mouseX > 240);
-      if (rrow >= 0) { this.regionSel = this.regionSel === rrow ? null : rrow; sfx.blip(); }
-      const row = this.rowBoxes.findIndex(([y0, y1]) => inp.mouseY >= y0 && inp.mouseY <= y1 && inp.mouseX > 240);
-      if (row >= 0) { this.sel = row; sfx.blip(); }
-      // click a marker on the globe
-      pois.forEach((poi, i) => {
-        const pr = this.project(poi.lat, poi.lon);
-        if (pr && Math.hypot(pr[0] - inp.mouseX, pr[1] - inp.mouseY) < 6) this.sel = i;
-      });
+    const manual = before !== view.index || inp.wasPressed("ArrowDown") || inp.wasPressed("ArrowUp");
+    if (manual) { this.questFocus = false; sfx.blip(); if (this.pane === "sites" && pois[this.sel]) this.rot = pois[this.sel].lon * Math.PI / 180; }
+    if (inp.mousePressed && inp.mouseX < 240 && inp.mouseY >= 68 && inp.mouseY < 220) {
+      const candidates = pois.map((poi, index) => ({ poi, index, at: this.project(poi.lat, poi.lon) })).filter(poi => poi.at && Math.hypot(poi.at[0] - inp.mouseX, poi.at[1] - inp.mouseY) < 6);
+      candidates.sort((a, b) => Math.hypot(a.at![0] - inp.mouseX, a.at![1] - inp.mouseY) - Math.hypot(b.at![0] - inp.mouseX, b.at![1] - inp.mouseY));
+      if (candidates.length) { this.sel = candidates[0].index; this.pane = "sites"; this.questFocus = false; sfx.blip(); }
+    }
+    if (inp.wasPressed("[") || inp.wasPressed("]")) {
+      if (this.pane === "sites") this.regions.select(pois[this.sel]?.regionIdx ?? 0);
+      this.pane = "regions"; this.regions.move(inp.wasPressed("]") ? 1 : -1); this.questFocus = false;
+    }
+    if (inp.wasPressed("q") || clicked(QUEST)) {
+      const sites = [...new Set(questLocations(g.world).filter(q => q.systemId === sys.id && q.contactId === `planet:${g.orbitPlanetIdx}` && q.poiId).map(q => pois.findIndex(poi => poi.id === q.poiId)).filter(i => i >= 0))];
+      if (sites.length) { this.sel = sites[(sites.indexOf(this.sel) + 1) % sites.length]; this.rot = pois[this.sel].lon * Math.PI / 180; this.pane = "sites"; this.questFocus = true; }
+      else { this.openInfo(g, true); return; }
     }
     // scan: reveals unsurveyed POIs (each pays a small survey bounty once)
     if (inp.isDown("v")) {
@@ -109,15 +176,10 @@ export class OrbitScene implements Scene {
       }
     } else this.scan = 0;
 
-    if (inp.wasPressed("[") || inp.wasPressed("]")) {
-      const n = surf.regions.length;
-      const cur = this.regionSel ?? pois[this.sel]?.regionIdx ?? 0;
-      this.regionSel = (cur + (inp.wasPressed("]") ? 1 : n - 1)) % n;
-      sfx.blip();
-    }
     const poi = pois[this.sel];
     const roverRegion = this.regionSel ?? poi?.regionIdx ?? 0;
-    if (inp.wasPressed("l") && surf.regions[roverRegion]) {
+    if ((inp.wasPressed("l") || clicked(ROVER)) && surf.regions[roverRegion]) {
+      if (this.pane === "sites" ? changedSite : changedRegion) { g.toast("LOCATION CHANGED. CHECK THE NEW SELECTION."); return; }
       const reg = surf.regions[roverRegion];
       const rep = reg.factionId ? (p.rep[reg.factionId] ?? 0) : 0;
       if (reg.factionId && rep < -40) g.toast("LANDING DENIED - REGION HOSTILE TO YOU");
@@ -130,11 +192,13 @@ export class OrbitScene implements Scene {
         return;
       }
     }
-    if (poi && inp.wasPressed("e")) {
+    if (this.pane === "sites" && poi && (inp.wasPressed("e") || clicked(LAND))) {
+      if (changedSite) { g.toast("LOCATION CHANGED. CHECK THE NEW SELECTION."); return; }
       const canLand = poi.landable || poi.kind === "ruin";
       if (!canLand) { g.toast(`${poi.name.toUpperCase()}: NO LANDING PAD`); }
       else {
         const reg = surf.regions[poi.regionIdx];
+        if (!reg) { g.toast("SITE TERRITORY UNAVAILABLE."); return; }
         const rep = reg.factionId ? (p.rep[reg.factionId] ?? 0) : 0;
         if (reg.factionId && rep < -40) g.toast("LANDING DENIED - REGION HOSTILE TO YOU");
         else if (poi.kind === "defense") g.toast("MILITARY SITE - CIVILIAN LANDING PROHIBITED");
@@ -150,8 +214,7 @@ export class OrbitScene implements Scene {
   }
 
   draw(g: Game, ctx: CanvasRenderingContext2D): void {
-    this.rowBoxes = [];
-    this.regionRows = [];
+    if (this.info) { this.info.draw(g, ctx); return; }
     const p = g.world.player;
     const sys = g.world.systems[p.systemId];
     const pl = sys.planets[g.orbitPlanetIdx];
@@ -186,7 +249,7 @@ export class OrbitScene implements Scene {
     surf.pois.forEach((poi, i) => {
       const pr = this.project(poi.lat, poi.lon);
       if (!pr) return;
-      const col = this.poiColor(poi, surf.regions[poi.regionIdx].factionId);
+      const col = this.poiColor(poi, surf.regions[poi.regionIdx]?.factionId ?? null);
       ctx.fillStyle = col;
       ctx.fillRect(Math.round(pr[0]) - 1, Math.round(pr[1]) - 1, 3, 3);
       if (quests.some(q=>q.poiId===poi.id)) drawQuestMarker(ctx,pr[0],pr[1]);
@@ -202,58 +265,43 @@ export class OrbitScene implements Scene {
       ctx.globalAlpha = 1;
     }
     // header
-    drawText(ctx, `${pl.name.toUpperCase()} - ORBIT`, 8, 6, PAL.white);
-    drawText(ctx, `${sys.name} - ${faction(sys.factionId).name}`, 8, 15, faction(sys.factionId).color);
+    drawText(ctx, clippedText(`${pl.name.toUpperCase()} / ORBIT`, 374), 8, 6, PAL.white);
+    drawText(ctx, clippedText(`${sys.name} / ${faction(sys.factionId).name}`, 464), 8, 15, faction(sys.factionId).color);
     drawText(ctx, "ESC LEAVE ORBIT", VW - textWidth("ESC LEAVE ORBIT") - 6, 6, PAL.greyDark);
 
-    if (quests.length) { drawText(ctx,`Q QUEST LOCATION / ${quests.length} ${quests.length === 1 ? "OBJECTIVE" : "OBJECTIVES"}`,8,29,PAL.gold); drawText(ctx,quests[0].action.replace(/^ENTER ORBIT\. ?/, "").slice(0,55),8,40,PAL.gold); if(quests.some(q=>q.poiId)) drawText(ctx,"[Q] SELECT QUEST SITE",8,52,PAL.gold); }
-
-    // right panel: territories + POIs
-    const px = 246;
-    let y = 30;
-    drawText(ctx, "TERRITORIES", px, y, PAL.greyDark); y += 9;
-    const roverRegion = this.regionSel ?? surf.pois[this.sel]?.regionIdx ?? 0;
-    surf.regions.forEach((r, ri) => {
-      const fac = r.factionId ? faction(r.factionId) : null;
-      this.regionRows.push([y - 1, y + 7]);
-      if (ri === roverRegion) { ctx.fillStyle = "#13203a"; ctx.fillRect(px - 4, y - 2, VW - px, 10); }
-      ctx.fillStyle = r.color; ctx.fillRect(px, y + 1, 4, 4);
-      const charted = p.ground?.[`${sys.id}:${g.orbitPlanetIdx}:${ri}`]?.charted;
-      const home = (p.homesteads ?? []).some((h) => h.systemId === sys.id && h.planetIdx === g.orbitPlanetIdx && h.regionIdx === ri);
-      drawText(ctx, `${r.name}`.slice(0, 16) + (home ? " H" : charted ? " *" : ""), px + 7, y, home ? PAL.gold : ri === roverRegion ? PAL.white : PAL.grey);
-      drawText(ctx, fac ? fac.name.split(" ")[0] : "UNCLAIMED", px + 76, y, fac ? fac.color : PAL.greyDark);
-      drawText(ctx, r.resource.toUpperCase(), px + 176, y, PAL.gold);
-      y += 8;
-    });
-    y += 6;
-    drawText(ctx, "POINTS OF INTEREST", px, y, PAL.greyDark); y += 9;
-    surf.pois.forEach((poi, i) => {
-      this.rowBoxes.push([y - 1, y + 7]);
-      if (i === this.sel) { ctx.fillStyle = "#13203a"; ctx.fillRect(px - 4, y - 2, VW - px, 10); }
-      const col = this.poiColor(poi, surf.regions[poi.regionIdx].factionId);
-      drawText(ctx, `${quests.some(q=>q.poiId===poi.id) ? "Q QUEST " : settlementTierLabel(poi).padEnd(8)} ${poi.name}`.slice(0, 34), px, y, quests.some(q=>q.poiId===poi.id) ? PAL.gold : i === this.sel ? PAL.white : col);
-      drawText(ctx, poi.surveyed ? "OK" : "?", VW - 14, y, poi.surveyed ? PAL.good : PAL.greyDark);
-      y += 9;
-    });
+    drawText(ctx, `${quests.length} QUEST ${quests.length === 1 ? "OBJECTIVE" : "OBJECTIVES"}`, 8, 32, quests.length ? PAL.gold : PAL.greyDark);
+    mapButton(ctx, QUEST, "Q QUEST SITE", this.questFocus);
+    mapButton(ctx, OBJECTIVES, "O OBJECTIVES");
+    const view = this.pane === "sites" ? this.sites : this.regions;
+    mapButton(ctx, SITES, `SITES ${surf.pois.length}`, this.pane === "sites");
+    mapButton(ctx, REGIONS, `TERRITORIES ${surf.regions.length}`, this.pane === "regions");
+    ctx.strokeStyle = PAL.uiBorder; ctx.strokeRect(244, 54, 229, 135);
+    this.drawnPane = this.pane; this.drawnRows = view.keys.slice(view.offset, view.end);
+    for (let index = view.offset; index < view.end; index++) {
+      const y = LIST.y + (index - view.offset) * LIST.rowHeight;
+      if (index === view.index) { ctx.fillStyle = "#132b43"; ctx.fillRect(LIST.x, y, LIST.width, LIST.rowHeight); }
+      if (this.pane === "sites") {
+        const poi = surf.pois[index], quest = quests.some(q => q.poiId === poi.id);
+        drawText(ctx, clippedText(poi.name.toUpperCase(), 196), 250, y + 4, index === this.sel ? PAL.white : quest ? PAL.gold : this.poiColor(poi, surf.regions[poi.regionIdx]?.factionId ?? null));
+        drawText(ctx, `${settlementTierLabel(poi)} / ${poi.surveyed ? "SURVEYED" : "UNSURVEYED"}${poi.looted ? " / CLEARED" : ""}`, 250, y + 13, PAL.grey);
+        if (quest) drawQuestMarker(ctx, 464, y + 8);
+      } else {
+        const region = surf.regions[index], charted = p.ground?.[`${sys.id}:${g.orbitPlanetIdx}:${index}`]?.charted;
+        const home = p.homesteads?.some(h => h.systemId === sys.id && h.planetIdx === g.orbitPlanetIdx && h.regionIdx === index);
+        drawText(ctx, clippedText(region.name.toUpperCase(), 210), 250, y + 4, index === this.regions.index ? PAL.white : PAL.grey);
+        drawText(ctx, clippedText(`${region.resource.toUpperCase()} / ${region.factionId ? faction(region.factionId).name : "UNCLAIMED"}${home ? " / HOME" : charted ? " / CHARTED" : ""}`, 210), 250, y + 13, home ? PAL.gold : PAL.grey);
+      }
+    }
+    if (!view.keys.length) drawText(ctx, this.pane === "sites" ? "NO SITES. CHOOSE A TERRITORY FOR THE ROVER." : "NO TERRITORIES AVAILABLE.", 250, 66, PAL.grey);
+    mapButton(ctx, PREV, "PAGE UP"); mapButton(ctx, NEXT, "PAGE DOWN");
+    drawText(ctx, `${view.keys.length ? view.offset + 1 : 0}..${view.end} / ${view.keys.length}`, 326, 201, PAL.grey);
     const poi = surf.pois[this.sel];
-    if (poi) {
-      y += 6;
-      const reg = surf.regions[poi.regionIdx];
-      drawText(ctx, `TARGET: ${poi.name.toUpperCase()}`, px, y, PAL.gold); y += 9;
-      drawText(ctx, `${reg.name} - ${reg.factionId ? faction(reg.factionId).name : "unclaimed"}`, px, y, PAL.grey); y += 9;
-      const canLand = poi.landable || poi.kind === "ruin";
-      drawText(ctx, canLand ? (poi.kind === "city" ? "[E] LAND - CITY" : poi.kind === "ruin" ? `[E] LAND - RUINS${poi.looted ? " (LOOTED)" : ""}` : "[E] LAND") : "NO LANDING PAD", px, y, canLand ? PAL.gold : PAL.greyDark); y += 9;
-    }
-    {
-      const rr = surf.regions[roverRegion];
-      const gs = p.ground?.[`${sys.id}:${g.orbitPlanetIdx}:${roverRegion}`];
-      y += 9;
-      if (rr) drawText(ctx, `[L] DROP ROVER IN ${rr.name.toUpperCase()}${gs?.charted ? " (CHARTED)" : ""}  [ ] PICK REGION`, px, y, PAL.ui);
-    }
-    drawText(ctx, planetLore(g.world, sys, g.orbitPlanetIdx).toUpperCase().slice(0, 112), 8, VH - 31, PAL.greyDark);
-    drawText(ctx, `SATELLITES: ${surf.satellites}   HOLD V: SURVEY SCAN   L: ROVER`, 8, VH - 22, PAL.greyDark);
-    if (this.msg) drawText(ctx, this.msg, VW / 2 - textWidth(this.msg) / 2, VH - 12, PAL.ui);
-    if (g.toastTimer > 0) drawText(ctx, g.toastMsg, VW / 2 - textWidth(g.toastMsg) / 2, VH - 32, PAL.ui);
+    mapButton(ctx, LAND, this.pane === "sites" && poi && (poi.landable || poi.kind === "ruin") && poi.kind !== "defense" ? "E LAND" : "NO PAD");
+    mapButton(ctx, ROVER, surf.regions.length ? "L ROVER" : "NO REGION"); mapButton(ctx, INFO, "I DETAILS");
+    drawText(ctx, "TAB: SITES/TERRITORIES / ARROWS OR WHEEL: SELECT / HOME/END: FIRST/LAST", 8, 249, PAL.greyDark);
+    drawText(ctx, `HOLD V: SURVEY / SATELLITES ${surf.satellites}`, 8, 261, PAL.greyDark);
+    if (this.msg) drawText(ctx, clippedText(this.msg, 210), 8, 220, PAL.ui);
+    if (g.toastTimer > 0) wrapText(g.toastMsg, 54).slice(0, 2).forEach((line, i) => drawText(ctx, line, 8, 224 + i * 8, PAL.ui));
     if (g.hint) drawText(ctx, g.hint, clamp(VW / 2 - textWidth(g.hint) / 2, 2, VW), 22, PAL.gold);
   }
 

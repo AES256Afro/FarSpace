@@ -2271,3 +2271,13 @@ combined delivery order and acceptance criteria.
   Body clicks stay in the reader. Search owns typing and the first Escape.
 - M418 remains open. MENU-INVENTORY.md records accepted surfaces and the
   remaining orbit, letters, map and station/location audits.
+
+### M418 progress: v0.264.0
+
+- Separate orbital site and territory pages keep Land, Rover and Details
+  controls visible. Q reaches the exact quest site, including offscreen rows.
+- Read complete location details and every local objective with I and O.
+  Close the reader to return to the same map or globe state.
+- Local contacts preserve selection and the visible top entry on list changes.
+  Letters preserve the current message and paragraph when new mail arrives.
+- M418 remains open for the remaining station/location menu and input audits.

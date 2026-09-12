@@ -43,8 +43,11 @@ open. M418's first slice is implemented in v0.263.0: stable roster selection,
 eight visible crew rows, full details, explicit transactions, and shared
 Chronicle and What's new readers. All 603 tests pass and native acceptance is
 recorded in MENU-INVENTORY.md. CI, container publication, Cloudflare deployment
-and hosted asset verification passed. Remaining M418 work starts with orbit, letters
-and local map objectives, then the other station and location menus.
+and hosted asset verification passed. The v0.264.0 follow-up adds bounded
+orbital site and territory lists, complete local objective readers, stable
+contact selection and letters that retain position across arrivals. It has
+622 passing tests and native acceptance in MENU-INVENTORY.md. Remaining M418
+work is the other station and location menus plus the final input/return audit.
 
 ## September 11 priority update: mining and industry
 

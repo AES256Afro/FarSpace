@@ -2106,3 +2106,27 @@ requested goods, tourist sight status and singer light rewards where applicable.
 Credit figures are base rewards, subject to the original mission conditions.
 Escape returns to the same Missions tab and selection. Reading does not accept
 or turn in a job; U and C on the board retain service and council course plotting.
+
+## Finding locations and reading objectives
+
+In orbit, Tab switches between Sites and Territories. Each list has six
+visible rows. Use arrows, the wheel or a row click to select, Page Up/Down to
+move a page, and Home/End to reach the first or last entry. E lands at the
+selected site. L deploys the rover in the selected territory, or in the
+selected site's territory while the Sites tab is active. Landing restrictions
+still apply. The controls remain at the bottom when either list grows.
+
+Q brings the exact quest site into view and keeps the globe there while you
+read. I opens full location details, including long names, control, resources
+and current quest instructions. O lists every objective on this planet.
+
+The system map also supports I for full destination details and O for every
+objective in the system. All accepted quests at a shared destination appear
+with their complete requirements. Search or page through the reader, then
+Escape returns to the same camera, selection and list position. Reading does
+not plot a route, start travel or advance a mission. Unknown signals remain
+search areas until discovered.
+
+Letters preserve the current message and paragraph when new mail arrives.
+Home and End reach both ends; Left/Right changes letters. Only the displayed
+letter is marked read. If it is removed, the adjacent remaining letter opens.

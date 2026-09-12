@@ -11,6 +11,7 @@ import { SYSTEM_SIZE, infraAt, infraLit, stormBlind, wondersIn } from "../world"
 import { singersBerth } from "../core/singers";
 import { MapCamera, MAP_RECT, PANEL_RECT, contains, drawMapLabels, mapFrame, mapButton, clippedText, type MapLabel, type PlacedLabel } from "../core/mapview";
 import type { FlightScene } from "./flight/index";
+import { ReaderOverlay } from "./reader";
 
 export interface LocalMapTarget { systemId: string; id: string }
 export interface SystemContact { id: string; name: string; kind: string; x: number; y: number; color: string; detail: string; range: number; quests?: QuestLocation[] }
@@ -41,6 +42,8 @@ export function resolveLocalTarget(g: Game, target: LocalMapTarget | null): Syst
 }
 
 const QUESTS = { x: 212, y: 36, w: 86, h: 15 };
+const OBJECTIVES = { x: 212, y: 55, w: 86, h: 15 };
+const DETAILS = { x: 316, y: 73, w: 152, h: 36 };
 const FILTERS = ["ALL","STATION","WRECK","SIGNAL","GATE","PLANET","ROCK"];
 export class SystemMap {
   camera = new MapCamera();
@@ -48,12 +51,42 @@ export class SystemMap {
   filter = "ALL";
   scroll = 0;
   labels: PlacedLabel[] = [];
+  info?: ReaderOverlay;
+  private listKeys: string[] = [];
+  private drawnRows: string[] = [];
+  closeInfo(): void { this.info?.onSceneLeave(); this.info = undefined; }
+  sync(g: Game): SystemContact[] {
+    const contacts = this.contacts(g), keys = contacts.map(c => c.id), top = this.listKeys[this.scroll];
+    if (keys.length !== this.listKeys.length || keys.some((id, i) => id !== this.listKeys[i])) {
+      const oldIndex = this.selected ? this.listKeys.indexOf(this.selected) : -1;
+      if (oldIndex >= 0 && !keys.includes(this.selected!)) this.selected = keys[Math.min(oldIndex, keys.length - 1)] ?? null;
+      if (top && keys.includes(top)) this.scroll = keys.indexOf(top);
+      this.listKeys = keys;
+    }
+    this.scroll = Math.max(0, Math.min(this.scroll, Math.max(0, keys.length - 7)));
+    return contacts;
+  }
+  private setFilter(g: Game, filter: string): void {
+    this.filter = filter; this.scroll = 0; this.listKeys = []; this.drawnRows = [];
+    const contacts = this.contacts(g);
+    if (!contacts.some(c => c.id === this.selected)) this.selected = contacts[0]?.id ?? null;
+    this.sync(g);
+  }
+  openInfo(g: Game, allObjectives = false): void {
+    const sys = g.world.systems[g.world.player.systemId];
+    const contact = systemContacts(g, this.selected ?? undefined).find(c => c.id === this.selected);
+    const quests = allObjectives || !contact ? questLocations(g.world).filter(q => q.systemId === sys.id) : contact.quests ?? [];
+    const sections: [string, string[]][] = allObjectives || !contact ? [[sys.name.toUpperCase(), [`${quests.length} CURRENT OBJECTIVES. UNKNOWN SIGNALS REQUIRE A SCAN.`]]]
+      : [[contact.name.toUpperCase(), [contact.kind, contact.detail, `DISTANCE ${Math.round(Math.hypot(contact.x - g.world.player.x, contact.y - g.world.player.y))}M.`, "CLOSE DETAILS TO PLOT OR FLY TO THIS DESTINATION."]]];
+    sections.push(...quests.map(q => [q.title.toUpperCase(), [`${q.source}${q.ready ? " / READY TO HAND IN" : ""}`, q.action]] as [string, string[]]));
+    this.info = new ReaderOverlay(allObjectives ? "SYSTEM OBJECTIVES" : "DESTINATION DETAILS", sections, () => { this.info = undefined; });
+  }
   contacts(g: Game): SystemContact[] { return systemContacts(g, this.selected ?? undefined).filter(c=>this.filter==="ALL" || (this.filter==="QUEST" ? !!c.quests?.length : c.kind===this.filter)).sort((a,b)=>Number(!!b.quests?.length)-Number(!!a.quests?.length)||a.kind.localeCompare(b.kind)||a.name.localeCompare(b.name)); }
   fit(g: Game): void {
     const p=g.world.player;
     this.camera.fit([{x:-SYSTEM_SIZE,y:-SYSTEM_SIZE},{x:SYSTEM_SIZE,y:SYSTEM_SIZE},{x:p.x,y:p.y},...systemContacts(g)]);
   }
-  enter(g: Game): void { this.fit(g); this.selected = (g.scenes.flight as FlightScene).localTarget?.id ?? null; this.scroll=0; this.filter="ALL"; }
+  enter(g: Game): void { this.closeInfo(); this.fit(g); this.selected = (g.scenes.flight as FlightScene).localTarget?.id ?? null; this.scroll=0; this.filter="ALL"; this.listKeys=[]; this.drawnRows=[]; this.sync(g); }
   fly(g: Game): void {
     const target = systemContacts(g, this.selected ?? undefined).find(c => c.id === this.selected);
     if (!target) { g.toast("SELECT A DESTINATION FIRST."); return; }
@@ -63,21 +96,26 @@ export class SystemMap {
     if (fs.startAutopilot(g)) { fs.mapOpen = false; g.input.flush?.(); g.input.down?.clear(); }
   }
   update(g: Game, dt: number): void {
+    if (this.info) { this.info.update(g); return; }
     const inp=g.input, fs=g.scenes.flight as FlightScene;
     if (inp.wasPressed("Escape") || inp.wasPressed("Tab")) { fs.mapOpen=false; return; }
     if (inp.wasPressed("g")) { fs.mapOpen=false; g.setScene("galaxy"); return; }
     if (inp.wasPressed("F5")) g.save();
     if (inp.wasPressed("F9")) { g.load(); return; }
     if (stormBlind(g.world,g.world.player.systemId)) return;
+    const previous = this.selected, contacts = this.sync(g);
+    const changedSelection = previous !== null && previous !== this.selected;
+    if (changedSelection && (inp.wasPressed("a") || inp.wasPressed("n") || inp.wasPressed("Enter") || (inp.mousePressed && contains({x:312,y:231,w:160,h:15},inp.mouseX,inp.mouseY)))) { g.toast("CONTACT CHANGED. CHECK THE NEW SELECTION."); return; }
+    if (inp.wasPressed("i") || (inp.mousePressed && contains(DETAILS, inp.mouseX, inp.mouseY))) { this.openInfo(g); return; }
+    if (inp.wasPressed("o") || (inp.mousePressed && contains(OBJECTIVES, inp.mouseX, inp.mouseY))) { this.openInfo(g, true); return; }
     if (inp.wasPressed("a") || (inp.mousePressed && contains({x:394,y:231,w:78,h:15},inp.mouseX,inp.mouseY))) { this.fly(g); return; }
-    if (inp.wasPressed("q") || (inp.mousePressed && contains(QUESTS,inp.mouseX,inp.mouseY))) { this.filter=this.filter === "QUEST" ? "ALL" : "QUEST"; this.scroll=0; if(this.filter === "QUEST") this.selected=this.contacts(g)[0]?.id ?? null; return; }
+    if (inp.wasPressed("q") || (inp.mousePressed && contains(QUESTS,inp.mouseX,inp.mouseY))) { this.setFilter(g, this.filter === "QUEST" ? "ALL" : "QUEST"); return; }
     this.camera.update(inp,dt);
     if (inp.wasPressed("Home") || (inp.mousePressed && contains({x:8,y:231,w:50,h:15},inp.mouseX,inp.mouseY))) this.fit(g);
     if (inp.mousePressed && inp.mouseY>=231 && inp.mouseY<246 && inp.mouseX>=62 && inp.mouseX<300) {
-      this.filter=FILTERS[Math.floor((inp.mouseX-62)/34)]; this.scroll=0;
+      this.setFilter(g, FILTERS[Math.floor((inp.mouseX-62)/34)]); return;
     }
-    const contacts=this.contacts(g);
-    if (inp.wheel && contains(PANEL_RECT,inp.mouseX,inp.mouseY)) this.scroll+=Math.sign(inp.wheel)*3;
+    if (inp.wheel && contains({ x:318, y:127, w:148, h:84 },inp.mouseX,inp.mouseY)) this.scroll+=Math.sign(inp.wheel)*3;
     if (inp.wasPressed("PageDown")) this.scroll+=7;
     if (inp.wasPressed("PageUp")) this.scroll-=7;
     this.scroll=Math.max(0,Math.min(this.scroll,Math.max(0,contacts.length-7)));
@@ -90,10 +128,11 @@ export class SystemMap {
       const label=this.labels.find(l=>contains(l.box,inp.mouseX,inp.mouseY));
       let best=label?.id ?? null, distance=label ? 0 : 9;
       for (const c of contacts) { const at=this.camera.project(c), d=Math.hypot(at.x-inp.mouseX,at.y-inp.mouseY); if (d<distance) { distance=d;best=c.id; } }
-      if (best && best!=="you") this.selected=best;
+      if (best && best!=="you" && contacts.some(c=>c.id===best)) this.selected=best;
     }
     if (inp.mousePressed && inp.mouseX>=318 && inp.mouseX<466 && inp.mouseY>=127 && inp.mouseY<211) {
-      const c=contacts[this.scroll+Math.floor((inp.mouseY-127)/12)];
+      const id=this.drawnRows[Math.floor((inp.mouseY-127)/12)];
+      const c=contacts.find(c=>c.id===id);
       if (c) { this.selected=c.id; this.camera.x=c.x; this.camera.y=c.y; }
     }
     if (inp.wasPressed("n") || inp.wasPressed("Enter") || (inp.mousePressed && contains({x:312,y:231,w:78,h:15},inp.mouseX,inp.mouseY))) {
@@ -104,6 +143,7 @@ export class SystemMap {
     }
   }
   draw(g: Game, ctx: CanvasRenderingContext2D): void {
+    if (this.info) { this.info.draw(g, ctx); return; }
     const p=g.world.player, sys=g.world.systems[p.systemId], fs=g.scenes.flight as FlightScene;
     mapFrame(ctx,`SYSTEM MAP / ${sys.name.toUpperCase()}`,"SELECT A CONTACT TO INSPECT IT OR SET A DESTINATION");
     if (stormBlind(g.world,sys.id)) { drawText(ctx,"ION STORM / CHART UNAVAILABLE",20,115,PAL.warn);drawText(ctx,"TAB OR ESC CLOSE / G GALAXY",20,250,PAL.grey);return; }
@@ -129,18 +169,19 @@ export class SystemMap {
       drawText(ctx,`${selected.kind} / ${Math.round(Math.hypot(selected.x-p.x,selected.y-p.y))}M`,318,51,selected.color);
       drawText(ctx,clippedText(selected.detail,146),318,63,PAL.grey);
     } else drawText(ctx,"CLICK A MARKER OR A LIST ROW",318,54,PAL.grey);
-    const objective=selected?.quests?.[0] ?? (this.filter === "QUEST" ? quests.find(q=>!q.contactId) : undefined);
+    const objective = selected?.quests?.[0];
+    ctx.strokeStyle = PAL.uiBorder; ctx.strokeRect(DETAILS.x, DETAILS.y, DETAILS.w, DETAILS.h);
+    drawText(ctx, `I DETAILS / ${selected?.quests?.length ?? 0} OBJECTIVES`, 320, 78, PAL.ui);
     if (objective) {
-      drawText(ctx,clippedText(`${objective.ready ? "READY" : "QUEST"}: ${objective.title.toUpperCase()}`,146),318,76,objective.ready ? PAL.good : PAL.gold);
-      const words=objective.action.split(/\s+/); const lines:string[]=[]; let line="";
-      for (const word of words) { const next=line ? `${line} ${word}` : word; if (next.length>35 && line) {lines.push(line);line=word;} else line=next; } if(line) lines.push(line);
-      lines.slice(0,2).forEach((line,i)=>drawText(ctx,clippedText(line,146),318,87+i*10,PAL.gold));
-      if ((selected?.quests?.length ?? 0)>1) drawText(ctx,`+${selected!.quests!.length-1} MORE AT THIS LOCATION`,318,107,PAL.grey);
-    } else drawText(ctx,quests.length ? `${quests.length} QUEST OBJECTIVES / Q TO FILTER` : "NO ACTIVE QUESTS IN THIS SYSTEM",318,82,PAL.greyDark);
+      drawText(ctx, clippedText(`${objective.ready ? "READY" : "QUEST"}: ${objective.title.toUpperCase()}`, 142), 320, 89, objective.ready ? PAL.good : PAL.gold);
+      drawText(ctx, clippedText(objective.action, 142), 320, 100, PAL.gold);
+    } else drawText(ctx, quests.length ? "O SHOWS ALL SYSTEM OBJECTIVES" : "READ LOCATION AND APPROACH DETAILS", 320, 94, PAL.greyDark);
     drawText(ctx,`${this.filter} CONTACTS / ${contacts.length}`,318,115,PAL.greyDark);
+    this.drawnRows = contacts.slice(this.scroll,this.scroll+7).map(c=>c.id);
     contacts.slice(this.scroll,this.scroll+7).forEach((c,i)=>{const y=127+i*12;if(c.id===this.selected){ctx.fillStyle="#20374b";ctx.fillRect(316,y,152,12);}drawText(ctx,clippedText(`${c.quests?.length ? "Q " : ""}${c.name.toUpperCase()}`,140),320,y+3,c.quests?.length ? PAL.gold : c.color);});
     drawText(ctx,contacts.length ? `${this.scroll+1}..${Math.min(this.scroll+7,contacts.length)} / ${contacts.length} / SCROLL LIST` : "NO CONTACTS IN THIS CATEGORY",318,215,PAL.greyDark);
     mapButton(ctx,QUESTS,`Q QUESTS ${quests.length}`,this.filter==="QUEST");
+    mapButton(ctx,OBJECTIVES,"O OBJECTIVES");
     mapButton(ctx,{x:8,y:231,w:50,h:15},"HOME FIT");
     FILTERS.forEach((f,i)=>mapButton(ctx,{x:62+i*34,y:231,w:32,h:15},f==="STATION"?"PORTS":f==="PLANET"?"WORLDS":f.slice(0,5),this.filter===f));
     mapButton(ctx,{x:312,y:231,w:78,h:15},fs.localTarget?.id===this.selected ? "N CLEAR" : "N PLOT",fs.localTarget?.id===this.selected);

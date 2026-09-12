@@ -10,7 +10,40 @@ active every ten minutes. Read WORKLOG-2026-09-12.md on each continuation.
 At the deadline, stop new implementation, finish a safe checkpoint and pause.
 M418 through M427 and M433 through M435 remain open in NEXT-MILESTONES.md.
 
-## Current checkpoint: v0.263.0, M418 first slice
+## Current implementation: v0.264.0, M418 locations and objectives
+
+- Orbit now separates Sites and Territories into six row pages. Tab switches
+  lists; arrows/wheel/pointer select; Page Up/Down and Home/End reach all rows.
+  E Land, L Rover and I Details stay fixed. Rover selection follows the active
+  territory or the selected site's territory. Military/hostile rules remain.
+- Site identity uses POI ids. Territory identity uses the live Region object.
+  A replaced planet resets selection. Pointer rows resolve their drawn identity.
+  Disappearing locations choose an adjacent row, with a fresh action required
+  before landing/travel if removal occurs in the same input frame.
+- Q still selects the exact quest site and holds globe rotation. I shows full
+  location details and related quests; O lists every objective on the planet.
+  ReaderOverlay keeps the parent alive and does not replay entry effects.
+  Closing it restores the same selected site, viewport and rotation.
+- System map I shows every quest at the selected destination, with full
+  requirements. O lists all system objectives. Returning preserves camera,
+  selection, list scroll, course and paused time. Unknown signals remain
+  search areas. Parent flight changes close pending reader search dialogs.
+- Letters retain message identity and reading position across new arrivals.
+  Only the displayed message is marked read. Home/End reach the entire body;
+  full sender text is included when it exceeds the fixed header.
+- Native checks used 25 sites, 20 territories, 12 quests at one station and a
+  130 paragraph letter. Land entered test-site-24; Rover entered territory 19.
+  All 12 station objectives were readable; camera, course and time were
+  unchanged after search. New mail kept Ari Sen at paragraph 18 and stayed
+  unread. End reached paragraph 129. No application warnings/errors.
+- A stale ruin hint appeared after returning to orbit. Orbit entry now clears
+  the prior surface hint before showing its own. Tests cover that return.
+- 622 tests in 42 files pass; TypeScript passes. Fixture writes use memory
+  storage with online calls disabled. No actual save or identity changed.
+  Save schema remains 16. M418 remains open for the station/location audits.
+- Release build, publication and hosted verification follow this checkpoint.
+
+## Previous checkpoint: v0.263.0, M418 first slice
 
 - Roster uses a small ListView model keyed by live CrewMember identity. It
   shows eight rows and a separate scrollable record. Pointer rows only select;

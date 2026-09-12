@@ -24,7 +24,7 @@ See [docs/PLAYING.md](docs/PLAYING.md) for a guide by career,
 |---|---|
 | Flight | **W/S** thrust · **A/D** rotate · **mouse** aims the turret (left-click fire, right-click mine) or **Space** fire / **M** mine in keyboard mode · **R** torpedo · **C** seismic charge · **X** brake assist · **J** cruise · **N** autopilot to your course · **V** (hold) deep scan (logs the system) · **E** dock / jump / orbit / board wreck · **U** traffic control / settle warrant · **T** hail · **L** comms log the system channel · **Tab** system map · **G** galaxy map · **I** board ship · **F** fullscreen |
 | Ship / station / wreck / outpost | **WASD** walk · **E** interact · **E** (hold) repair, seal, extinguish |
-| Orbit | **↑/↓** or click to target a site · **V** (hold) survey scan · **E** land at the site · **L** drop the rover in its region · **Esc** leave orbit |
+| Orbit | **Tab** sites/territories · **↑/↓**, wheel or click selects · **Page Up/Down** pages · **Home/End** first/last · **Q** quest site · **I** full details · **O** all objectives · **V** (hold) survey · **E** land at the site · **L** rover · **Esc** leave orbit |
 | Groundside (rover) | **WASD** drive · **E** mine / salvage / enter a site / lift off at the lander · **V** (hold) scan flora · **R** patch the rover at the lander · **T** choose up to two away crew at the lander · **L** shore leave |
 | Station menus | **↑/↓ / ←/→** or click · **Enter** select (at the MARKET it sells what you hold, else buys) · **B/S** buy/sell explicitly · **Shift** for bulk · **P** walk the deck · **F7** postcard · **Esc** undock · SURVEY sells exploration data · ENGINEER (research/refinery) spends materials · RECORD shows achievements and ranks · **N** in SHIPS names your ship |
 | Galaxy map | click a system for intel · click again (or **N**) to plot a course · **B** bookmark |
@@ -144,9 +144,9 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Current release: v0.263.0. M416 and M417, mining and industry M428 through
-M432, and quest locations M436 are implemented. M418 has its first menu slice:
-a scrolling crew roster and shared Chronicle and What's new readers.
+Current release: v0.264.0. M416 and M417, mining and industry M428 through
+M432, and quest locations M436 are implemented. M418 now includes a scrolling roster, shared readers, bounded orbital lists,
+complete local quest details and letters that keep their position.
 The [milestone plan](docs/NEXT-MILESTONES.md) and
 [menu inventory](docs/MENU-INVENTORY.md) record the remaining work.
 

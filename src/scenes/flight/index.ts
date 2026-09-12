@@ -95,6 +95,7 @@ export class FlightScene implements Scene {
   hitFlash = 0;
 
   private population: { world: World; systemId: string } | null = null;
+  onSceneLeave(): void { this.systemMap.closeInfo(); }
   resumeNext = false; // Temporary visits return to the same flight population.
   enter(g: Game): void {
     const resume = this.resumeNext && this.population?.world === g.world

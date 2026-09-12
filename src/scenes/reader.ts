@@ -45,15 +45,19 @@ export class ReaderScene implements Scene {
     this.scroll = clamp(target?.top ?? (direction > 0 ? this.maxScroll() : 0), 0, this.maxScroll());
   }
 
+  protected leave(g: Game): void {
+    const returnTo = g.settingsReturn; g.settingsReturn = "title";
+    if (returnTo === "flight" && g.scenes?.flight) (g.scenes.flight as unknown as { resumeNext: boolean }).resumeNext = true;
+    g.setScene(returnTo);
+  }
+
   update(g: Game): void {
     if (this.closeSearchBox) return;
     const inp = g.input;
     const click = (x0: number, x1: number) => inp.mousePressed && inp.mouseY >= 245 && inp.mouseY < 264 && inp.mouseX >= x0 && inp.mouseX < x1;
     const back = inp.mousePressed && inp.mouseY >= 3 && inp.mouseY < 17 && inp.mouseX >= 414 && inp.mouseX < VW;
     if (inp.wasPressed("Escape") || inp.wasPressed("Enter") || back) {
-      const returnTo = g.settingsReturn; g.settingsReturn = "title";
-      if (returnTo === "flight" && g.scenes?.flight) (g.scenes.flight as unknown as { resumeNext: boolean }).resumeNext = true;
-      g.setScene(returnTo); return;
+      this.leave(g); return;
     }
     if (inp.wasPressed("/") || inp.wasPressed("s") || click(308, 376)) {
       this.closeSearchBox = openSearchBox(this.title, this.query, query => {
@@ -102,5 +106,15 @@ export class ReaderScene implements Scene {
       [308, "[ FIND ]", true], [380, "[ CLEAR ]", !!this.query],
     ];
     for (const [x, label, enabled] of buttons) drawText(ctx, label, x, 252, enabled ? PAL.ui : PAL.greyDark);
+  }
+}
+
+// Read within a parent view without entering it again or changing its caller.
+export class ReaderOverlay extends ReaderScene {
+  constructor(title: string, sections: Section[], private readonly close: () => void) {
+    super(title, sections); this.enter();
+  }
+  protected leave(g: Game): void {
+    this.onSceneLeave(); g.input.flush?.(); g.input.down?.clear(); this.close();
   }
 }

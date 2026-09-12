@@ -54,4 +54,19 @@ describe("full letter reader", () => {
     keys.add("ArrowRight"); keys.add("F9"); letters.update(g);
     expect(g.load).toHaveBeenCalledOnce(); expect(letters.cursor).toBe(0);
   });
+  it("keeps the same letter and line when new mail arrives or earlier mail is removed", () => {
+    const { g, keys, letters } = fixture(); letters.open(g, 1); const selected = letters.mail[letters.cursor];
+    keys.add("PageDown"); letters.update(g); keys.clear();
+    g.world.player.mail!.push({ from: "New arrival", dueT: 40, text: "NEW MAIL" }); letters.update(g);
+    expect(letters.mail[letters.cursor]).toBe(selected); expect(letters.scroll).toBe(18); expect(g.world.player.mail!.at(-1)!.read).toBeUndefined();
+    g.world.player.mail!.pop(); letters.update(g); expect(letters.mail[letters.cursor]).toBe(selected); expect(letters.scroll).toBe(18);
+    g.world.player.mail!.splice(1, 1); letters.update(g); expect(letters.mail[letters.cursor].text).toBe("FIRST LETTER"); expect(letters.scroll).toBe(0);
+  });
+  it("supports Home and End and includes a complete sender when the header is too long", () => {
+    const { g, keys, letters } = fixture(); letters.open(g, 1); keys.add("End"); letters.update(g); keys.clear(); expect(letters.scroll).toBe(letters.maxScroll());
+    keys.add("Home"); letters.update(g); keys.clear(); expect(letters.scroll).toBe(0);
+    const from = "LONGNAME".repeat(80); letters.mail[letters.cursor].from = from;
+    expect(letters.lines().join("").replace(/\s+/g, "")).toContain(from); expect(letters.lines().every(line => line.length <= 108)).toBe(true);
+  });
+
 });
