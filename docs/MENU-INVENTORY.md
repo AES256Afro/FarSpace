@@ -1,6 +1,6 @@
 # M418 menu inventory
 
-Baseline: v0.268.0, inspected September 12, 2026. Native acceptance is recorded
+Baseline: v0.268.1, inspected September 12, 2026. Native acceptance is recorded
 per migration. M418 is still open.
 
 | Surface | Current behavior | Remaining work | Acceptance state |
@@ -195,7 +195,7 @@ terms spent nothing. Choose paid exactly 50CR, body click preserved the outcome,
 and Enter returned to flight with one callback invocation. No app warnings or
 errors. All temporary tabs closed; no actual saves or identity changed.
 
-## v0.268.0 implementation evidence
+## v0.268.1 implementation evidence
 
 StationList adapts the existing numeric domain cursor to ListView keys and drawn
 row identity. Goods use ids; yard actions have explicit ids independent of price
@@ -229,7 +229,7 @@ food, medical supplies and water. Rover Battery grade one consumed five carbon
 and two nickel. Record P kept the station open and displayed the guestbook.
 Production progress stayed at zero in details and resumed after closing them.
 
-All 707 tests in 46 files pass. The existing pointer tests now select a row and
+All 709 tests in 46 files pass. The existing pointer tests now select a row and
 then use the action control. New coverage includes dynamic insertion/removal,
 duplicate ship names, storage direction, complete readers, world replacement,
 shortcut ownership and a 25 action base fixture that sends no requests. Save
@@ -237,3 +237,10 @@ schema stays 16. Native fixtures used memory storage and disabled online calls;
 actual saves and identity were unchanged. No application warnings/errors.
 M418 remains open for remaining station text, galaxy selection/removal and final
 input/caller checks. Physical touch/gamepad acceptance remains M426.
+
+The final input audit caught a Survey pointer regression in the shared update.
+v0.268.1 restores the data sale as an explicit named button. Tests cover both
+axis bounds, one payout at the research premium and no sale from the codex.
+The Survey text audit remains open.
+Native research sale paid 500CR for 400 data once. Outside and repeated clicks
+made no extra payment. The codex click was inert. No application errors.

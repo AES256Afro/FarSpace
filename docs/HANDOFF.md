@@ -10,7 +10,7 @@ active every ten minutes. Read WORKLOG-2026-09-12.md on each continuation.
 At the deadline, stop new implementation, finish a safe checkpoint and pause.
 M418 through M427 and M433 through M435 remain open in NEXT-MILESTONES.md.
 
-## Current checkpoint: v0.268.0, M418 station transactions
+## Current checkpoint: v0.268.1, M418 station transactions
 
 - Station transaction tabs use stable keys, page controls and Home/End. Row
   clicks, including right click, select without transacting. Explicit buttons
@@ -37,7 +37,10 @@ M418 through M427 and M433 through M435 remain open in NEXT-MILESTONES.md.
   Test fixtures used memory storage and disabled online calls. No application
   warnings/errors; actual saves and identity unchanged. Full evidence is in
   MENU-INVENTORY.md. The base action viewport is unit tested without requests.
-- 707 tests in 46 files pass. TypeScript and production build pass. Release
+- Final input audit restored Survey pointer sales as an explicit named button
+  in v0.268.1. Native research sale paid 500CR for 400 data once; outside clicks
+  and repeated clicks made no further sale. The codex position is inert.
+- 709 tests in 46 files pass. TypeScript and production build pass. Release
   verification pending. Save schema remains 16. M418 remains open; physical touch/gamepad stays M426.
 - Next: finish News, Wire, Survey and Record text in StationScene. Their source
   still clips or truncates longer records; reuse complete readers and preserve

@@ -124,6 +124,17 @@ describe("station readers and shortcut ownership", () => {
     const f = fixture(); f.draw(); const before = JSON.stringify(f.p);
     for (const [x, y] of [[3, 70], [477, 70], [20, 55], [50, 210], [90, 70]]) f.click(x, y); f.click(90, 70, true); expect(JSON.stringify(f.p)).toBe(before);
   });
+  it("sells survey data through its explicit pointer button once and bounds every edge", () => {
+    const f = fixture(5); f.st.type = "research"; f.p.expData = 400; const before = f.p.credits;
+    for (const [x, y] of [[7, 70], [472, 70], [100, 65], [100, 81]]) f.click(x, y);
+    expect(f.p.expData).toBe(400); expect(f.p.credits).toBe(before);
+    f.click(100, 70); expect(f.p.expData).toBe(0); expect(f.p.credits).toBe(before + 500);
+    f.click(100, 70); expect(f.p.credits).toBe(before + 500);
+  });
+  it("does not sell data by clicking the same position in the codex", () => {
+    const f = fixture(5); f.p.expData = 400; f.press("c"); const before = f.p.credits;
+    f.click(100, 70); expect(f.p.expData).toBe(400); expect(f.p.credits).toBe(before);
+  });
   it("does not buy a station share with I and gives V its explicit action", () => {
     const f = fixture(); f.st.military = false; f.draw(); const before = f.p.credits; f.press("i"); expect(f.p.credits).toBe(before); f.press("Escape"); f.press("v"); expect(f.p.credits).toBeLessThan(before); expect(f.p.stakes?.[f.st.id]).toBe(1);
   });

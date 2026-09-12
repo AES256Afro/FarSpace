@@ -56,6 +56,7 @@ type YardOption = { id: string; label: string; sub: string; action: () => void }
 const PREV = { x: 8, y: 227, w: 48, h: 15 }, NEXT = { x: 62, y: 227, w: 48, h: 15 };
 const DETAILS = { x: 200, y: 227, w: 94, h: 15 }, WORKSHOP = { x: 300, y: 227, w: 174, h: 15 };
 const RUN = { x: 8, y: 245, w: 132, h: 14 };
+const SELL_DATA = { x: 8, y: 66, w: 464, h: 15 };
 const LIST_PAGES: Record<string, number> = { MARKET: 12, SHIPYARD: 18, SHIPS: 7, MISSIONS: 7, BAR: 7, STORAGE: 12, ENGINEER: 9, BASE: 10 };
 const TABS = ["MARKET", "SHIPYARD", "SHIPS", "MISSIONS", "BAR", "SURVEY", "ENGINEER", "STORAGE", "BASE", "NEWS", "WIRE", "RECORD"] as const;
 
@@ -876,7 +877,7 @@ export class StationScene implements Scene {
       case "SURVEY":
         this.cursor = 0;
         if (pressed("c")) { this.surveyView = this.surveyView === "codex" ? "data" : "codex"; sfx.blip(); }
-        if (enter && this.surveyView === "data") this.sellExploration(g);
+        if ((enter || click(SELL_DATA)) && this.surveyView === "data") this.sellExploration(g);
         break;
       case "BASE": {
         const p2 = g.world.player;
@@ -2121,9 +2122,7 @@ export class StationScene implements Scene {
     const st = this.station;
     drawText(ctx, "UNIVERSAL CARTOGRAPHICS - C FOR THE CODEX", 8, top, PAL.info);
     const worth = Math.round(p.expData ?? 0);
-    this.row(ctx, top + 12, true);
-    drawText(ctx, `SELL EXPLORATION DATA: ${worth}CR${st.type === "research" ? " x1.25 HERE" : ""}`, 8, top + 12, worth > 0 ? PAL.white : PAL.grey);
-    drawText(ctx, "ENTER", VW - textWidth("ENTER") - 8, top + 12, PAL.gold);
+    mapButton(ctx, SELL_DATA, `ENTER SELL EXPLORATION DATA: ${worth}CR${st.type === "research" ? " x1.25 HERE" : ""}`, worth > 0);
     let y = top + 28;
     drawText(ctx, "CAREERS:", 8, y, PAL.greyDark); y += 10;
     for (const kind of ["explorer", "trader", "miner", "rescuer"] as const) {
