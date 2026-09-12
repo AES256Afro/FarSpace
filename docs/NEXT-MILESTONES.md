@@ -36,8 +36,10 @@ M436 acceptance: viewing objectives never changes quest progress; markers
 follow current stages; completed and unaccepted contracts do not appear;
 map filtering does not change a course; a selected local quest supports Fly
 there; an exact orbital quest site can be selected with Q and entered with E.
-The implementation passes 587 tests and production browser checks. Publication
-verification is pending. M418 through M427 and M433 through M435 remain open.
+M436 is released in v0.262.0 with 587 passing tests and production browser
+checks. CI, container publication and Cloudflare deployment passed; hosted
+assets match the tested build. M418 through M427 and M433 through M435 remain
+open. MENU-INVENTORY.md starts M418 with the roster and shared readers.
 
 ## September 11 priority update: mining and industry
 

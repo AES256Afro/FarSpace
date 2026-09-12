@@ -10,7 +10,7 @@ active every ten minutes. Read WORKLOG-2026-09-12.md on each continuation.
 At the deadline, stop new implementation, finish a safe checkpoint and pause.
 M418 through M427 and M433 through M435 remain open in NEXT-MILESTONES.md.
 
-## Current checkpoint: v0.262.0 candidate, M436
+## Current checkpoint: v0.262.0, M436
 
 - Quest destinations come from a shared read-only projection of active
   contracts, stories, crew journeys, service orders and council journeys.
@@ -32,9 +32,18 @@ M418 through M427 and M433 through M435 remain open in NEXT-MILESTONES.md.
   both map filters, full galaxy objective details, local Fly there, docking
   and the orbital quest site. Fixtures used memory storage with online calls
   disabled. No actual save or identity changed. No browser warnings or errors.
-- Save schema remains 16; quest locations add no persistent state. Publication
-  verification is pending. Current assets: index-DnR_t85b.js and
-  index-CwZdn5Vi.css. Continue with the M418 menu acceptance inventory next.
+- Published as ba9be5364c43eb14b1204423bae4712919c4b135, tag v0.262.0.
+  CI 34668649526 passed, including the actual Cloudflare deployment step.
+  Container run 34668649569 passed. Hosted assets match the tested build,
+  health returned ok, and a fresh public tab showed v0.262.0 without errors.
+- Save schema remains 16; quest locations add no persistent state. Assets:
+  index-DnR_t85b.js and index-CwZdn5Vi.css. Dev5199 was restarted at v0.262.0.
+  Temporary tabs and preview5198 are closed. Bigbox and its catalog PR are
+  unchanged. The nine hour continuation is ACTIVE, with the deadline above.
+- M418 has a source inventory in MENU-INVENTORY.md. First work: stable roster
+  selection and a bounded viewport, then Chronicle and What's new readers.
+  Roster currently draws all cards without scrolling. Chronicle closes on
+  any mouse click. Do not mark M418 complete until its inventory is accepted.
 
 ## Previous checkpoint: v0.261.0
 
