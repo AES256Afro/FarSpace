@@ -18,6 +18,27 @@ The user's title preference is explicit: randomly alternate between an
 orbital ship scene, station traffic and a bridge-window scene. The title
 menu keeps one layout across all three.
 
+## Nine hour work window and quest visibility
+
+The user authorized work on every remaining milestone from September 12,
+02:31:03 UTC through 11:31:03 UTC (06:31:03 America/Chicago). Work continues
+in dependency order. At the deadline, finish a safe checkpoint and record
+which milestones remain open. WORKLOG-2026-09-12.md records this window.
+
+M436, Quest locations, is the first additional slice requested for this window.
+It adds shared current destinations for contracts, stories, crew journeys,
+service orders and council journeys. Both maps show quest diamonds, Q labels,
+filters and next actions. Flight and orbit use the same destinations. Known
+quest wrecks remain locatable, while hidden signals remain search areas.
+Completed work points to the correct return station or disappears.
+
+M436 acceptance: viewing objectives never changes quest progress; markers
+follow current stages; completed and unaccepted contracts do not appear;
+map filtering does not change a course; a selected local quest supports Fly
+there; an exact orbital quest site can be selected with Q and entered with E.
+The implementation passes 587 tests and production browser checks. Publication
+verification is pending. M418 through M427 and M433 through M435 remain open.
+
 ## September 11 priority update: mining and industry
 
 The user requested better mining, clear material uses, crafting, research,

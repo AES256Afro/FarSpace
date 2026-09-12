@@ -1,3 +1,5 @@
+import { questLocations } from "../core/questlocations";
+import { drawQuestMarker } from "../gfx/questmarkers";
 import { wreckAvailable } from "../core/salvage";
 import { Game, Scene } from "../game";
 import { drawText, textWidth } from "../gfx/font";
@@ -12,6 +14,7 @@ import type { FlightScene } from "./flight/index";
 import { sfx } from "../core/sfx";
 import * as wire from "../core/wire";
 
+const QUESTS = { x: 212, y: 36, w: 86, h: 15 };
 const PLOT = { x: 312, y: 231, w: 104, h: 15 };
 const MARK = { x: 420, y: 231, w: 52, h: 15 };
 const FLY = { x: 202, y: 231, w: 100, h: 15 };
@@ -23,6 +26,7 @@ export class GalaxyScene implements Scene {
   touchMode = "menu" as const;
   selected: string | null = null;
   layers = false;
+  questOnly = false;
   rooms: Record<string, number> = {};
   pilots = 0;
   camera = new MapCamera();
@@ -34,7 +38,7 @@ export class GalaxyScene implements Scene {
 
   fit(g: Game): void { this.camera.fit(Object.values(g.world.systems).map(s => ({ x: s.gx, y: s.gy }))); }
   enter(g: Game): void {
-    this.selected = g.world.player.systemId; this.infoScroll = 0; this.searching = false;
+    this.selected = g.world.player.systemId; this.infoScroll = 0; this.searching = false; this.questOnly = false;
     this.fit(g);
     if (g.world.realGalaxy) void wire.fetchLights();
     void wire.fetchSquadronData(); void wire.fetchBases();
@@ -67,7 +71,7 @@ export class GalaxyScene implements Scene {
     p.navTarget = id; delete p.navStationId; p.singersCourse = false; fs.localTarget = null;
     if (fs.startAutopilot(g, true)) { fs.resumeNext = true; g.input.flush?.(); g.input.down?.clear(); g.setScene("flight"); }
   }
-  results(g: Game) { return Object.values(g.world.systems).filter(s => s.name.toLowerCase().includes(this.query.toLowerCase())).sort((a,b) => a.name.localeCompare(b.name)); }
+  results(g: Game) { const quests = new Set(questLocations(g.world).map(q=>q.systemId)); return Object.values(g.world.systems).filter(s => (!this.questOnly || quests.has(s.id)) && s.name.toLowerCase().includes(this.query.toLowerCase())).sort((a,b) => a.name.localeCompare(b.name)); }
   update(g: Game, dt: number): void {
     const inp = g.input, p = g.world.player;
     if (this.searching) {
@@ -105,6 +109,11 @@ export class GalaxyScene implements Scene {
       this.select(g, p.singersHome!, true); p.navTarget = p.singersHome!; p.singersCourse = true; delete p.navStationId;
       this.clearLocal(g); return;
     }
+    if (inp.wasPressed("q") || (inp.mousePressed && contains(QUESTS,inp.mouseX,inp.mouseY))) {
+      this.questOnly = !this.questOnly; this.query = "";
+      const found = this.results(g); if (this.questOnly && found.length) this.select(g,found[0].id,true);
+      if (this.questOnly && !found.length) g.toast("NO ACTIVE QUEST LOCATIONS."); return;
+    }
     this.camera.update(inp, dt);
     if (inp.wasPressed("Home") || (inp.mousePressed && contains(FIT, inp.mouseX, inp.mouseY))) this.fit(g);
     if (inp.wasPressed("v") || (inp.mousePressed && contains(LAYERS, inp.mouseX, inp.mouseY))) this.layers = !this.layers;
@@ -114,12 +123,12 @@ export class GalaxyScene implements Scene {
     if (inp.wasPressed("n") || inp.wasPressed("Enter") || (inp.mousePressed && contains(PLOT, inp.mouseX, inp.mouseY))) this.plot(g);
     if (inp.wasPressed("[") || inp.wasPressed("]")) {
       const systems = this.results(g), i = systems.findIndex(s => s.id === this.selected);
-      this.select(g, systems[(i + (inp.wasPressed("]") ? 1 : systems.length - 1)) % systems.length].id, true);
+      if (systems.length) this.select(g, systems[(i + (inp.wasPressed("]") ? 1 : systems.length - 1)) % systems.length].id, true);
     }
     if (inp.mousePressed && contains(MAP_RECT, inp.mouseX, inp.mouseY)) {
       const label = this.labels.find(l => contains(l.box, inp.mouseX, inp.mouseY));
       let best = label?.id ?? null, distance = label ? 0 : 9;
-      for (const s of Object.values(g.world.systems)) {
+      for (const s of this.results(g)) {
         const at = this.camera.project({ x: s.gx, y: s.gy });
         const d = Math.hypot(at.x - inp.mouseX, at.y - inp.mouseY);
         if (d < distance) { best = s.id; distance = d; }
@@ -145,6 +154,14 @@ export class GalaxyScene implements Scene {
     };
       let y = 0; const px = 0;
       line( sys.name.toUpperCase(), px + 6, y, PAL.white); y += 9;
+      const quests = questLocations(w).filter(q=>q.systemId === sys.id);
+      if (quests.length) line(`QUEST OBJECTIVES: ${quests.length}`,px,y,PAL.gold);
+      for (const q of quests) {
+        line(`${q.ready ? "READY" : q.source}: ${q.title.toUpperCase()}`,px,y,q.ready ? PAL.good : PAL.gold);
+        const location=q.contactId?.startsWith("station:") ? findStation(w,q.contactId.slice(8))?.st.name : q.contactId?.startsWith("planet:") ? sys.planets[Number(q.contactId.slice(7))]?.name : q.contactId?.startsWith("wreck:") ? sys.wrecks.find(x=>`wreck:${x.id}`===q.contactId)?.name : undefined;
+        if(location) line(`AT ${location.toUpperCase()}`,px,y,PAL.white);
+        line(q.action.toUpperCase(),px,y,PAL.grey);
+      }
       if (sys.starClass) { line( `CLASS ${sys.starClass}`, px + 6, y, PAL.grey); y += 9; }
       line( fac.name, px + 6, y, fac.color); y += 9;
       line( `STANDING: ${repLabel(w.player.rep[sys.factionId] ?? 0)}`, px + 6, y, PAL.grey); y += 11;
@@ -207,18 +224,22 @@ export class GalaxyScene implements Scene {
     }
     if (planned) { ctx.setLineDash([2,3]); for (let i=1;i<planned.length;i++) edge(w.systems[planned[i-1]],w.systems[planned[i]],PAL.ui,0.65); ctx.setLineDash([]); }
     if (route) for (let i=1;i<route.length;i++) edge(w.systems[route[i-1]],w.systems[route[i]],PAL.gold);
+    const quests = questLocations(w);
     const labels: MapLabel[] = [];
     for (const s of systems) {
+      const objectives=quests.filter(q=>q.systemId===s.id);
+      if (this.questOnly && !objectives.length && s.id!==cur.id) continue;
       const at = point(s), selected = s.id === sys.id, current = s.id === cur.id;
       if (!contains(MAP_RECT,at.x,at.y)) continue;
       ctx.fillStyle = faction(s.factionId).color; ctx.globalAlpha = selected || current ? 0.25 : 0.10; ctx.beginPath(); ctx.arc(at.x,at.y,selected ? 10 : 5,0,Math.PI*2); ctx.fill(); ctx.globalAlpha = 1;
       ctx.fillStyle = s.sunColor; ctx.fillRect(Math.round(at.x)-2,Math.round(at.y)-2,4,4);
       if (current || selected) { ctx.strokeStyle = current ? PAL.white : PAL.ui; ctx.strokeRect(Math.round(at.x)-5.5,Math.round(at.y)-5.5,11,11); }
+      if (objectives.length) drawQuestMarker(ctx,at.x,at.y,objectives.some(q=>q.ready));
       if (p.bookmarks?.includes(s.id)) { ctx.fillStyle = PAL.gold; ctx.fillRect(at.x-2,at.y-9,3,2); }
       if (w.wars.some(war => war.systemId === s.id) || (w.crisis?.systemId === s.id && w.crisis.delivered < w.crisis.need && w.time < w.crisis.until)) { ctx.fillStyle = PAL.danger; ctx.fillRect(at.x+5,at.y-5,3,3); }
       if (s.permit && permitDenied(w,s.id)) { ctx.strokeStyle = PAL.warn; ctx.beginPath(); ctx.arc(at.x,at.y,7,0,Math.PI*2); ctx.stroke(); }
       if (this.layers && infraAt(w,s.id).length) { ctx.fillStyle = PAL.gold; ctx.fillRect(at.x+5,at.y+4,2,2); }
-      labels.push({ id:s.id,text:s.name.toUpperCase(),...at,color:current ? PAL.white : selected ? PAL.ui : route?.includes(s.id) ? PAL.gold : PAL.grey,priority:selected ? 100 : current ? 90 : route?.includes(s.id) ? 80 : p.bookmarks?.includes(s.id) ? 70 : sys.links.includes(s.id) ? 60 : 0 });
+      labels.push({ id:s.id,text:`${objectives.length ? "Q " : ""}${s.name.toUpperCase()}`,...at,color:current ? PAL.white : selected ? PAL.ui : objectives.length ? PAL.gold : route?.includes(s.id) ? PAL.gold : PAL.grey,priority:selected ? 100 : current ? 90 : objectives.length ? 85 : route?.includes(s.id) ? 80 : p.bookmarks?.includes(s.id) ? 70 : sys.links.includes(s.id) ? 60 : 0 });
     }
     this.labels = drawMapLabels(ctx,labels); ctx.restore();
     drawText(ctx, `ZOOM ${(this.camera.scale/this.camera.baseScale).toFixed(1)}X`, MAP_RECT.x+5, MAP_RECT.y+5,PAL.greyDark);
@@ -235,6 +256,7 @@ export class GalaxyScene implements Scene {
       lines.slice(start,start+16).forEach((line,i)=>drawText(ctx,clippedText(line.text,146),318,53+i*10,line.color));ctx.restore();
       drawText(ctx,`${start+1}..${Math.min(start+16,lines.length)} / ${lines.length}  SCROLL DETAILS`,318,215,PAL.greyDark);
     }
+    mapButton(ctx,QUESTS,`Q QUESTS ${new Set(quests.map(q=>q.systemId)).size}`,this.questOnly);
     mapButton(ctx,FIT,"HOME FIT");mapButton(ctx,FIND,"F FIND");mapButton(ctx,LAYERS,`V LANES ${this.layers ? "ON" : "OFF"}`,this.layers);
     mapButton(ctx,PLOT,p.navTarget===this.selected ? "N CLEAR COURSE" : "N PLOT COURSE",p.navTarget===this.selected);
     mapButton(ctx,FLY,"A FLY THERE");

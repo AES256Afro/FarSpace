@@ -25,6 +25,13 @@ describe("map layout and navigation",()=>{
     const t=flight.apTarget(g)!; Object.assign(g.world.player,{x:t.x,y:t.y,vx:0,vy:0});
     flight.updateAutopilot(g,0.05); expect(flight.autopilot).toBe(false); expect(g.world.player.vx).toBe(0); expect(g.world.player.vy).toBe(0);
   });
+  it("leaves docking margin when stopping at a moving quest station",()=>{
+    const {g,flight}=fixture(),p=g.world.player,sys=g.world.systems[p.systemId],st=sys.stations[0];
+    flight.localTarget={systemId:sys.id,id:`station:${st.id}`};const target=flight.apTarget(g)!;
+    expect(target.range).toBeLessThanOrEqual(40);Object.assign(p,{x:target.x+35,y:target.y,vx:0,vy:0});
+    flight.autopilot=true;flight.updateAutopilot(g,.05);expect(flight.autopilot).toBe(false);
+    st.angle+=st.speed*2;flight.tryInteract(g);expect(flight.docking).toBeTruthy();
+  });
   it("flies a plotted galaxy route through its gate and stops in the chosen system",()=>{
     const {g,flight,galaxy}=fixture(), p=g.world.player, sys=g.world.systems[p.systemId];
     vi.spyOn(flight,"claimFirst").mockResolvedValue(); p.fuel=1000;

@@ -1,3 +1,5 @@
+import { systemContacts } from "../systemmap";
+import { drawQuestMarker } from "../../gfx/questmarkers";
 import { aimedRock, rockMaterials, hasMiningRemains } from "../../core/mining";
 import { piratePassageRemaining } from "../../core/piracy";
 import { wreckAvailable } from "../../core/salvage";
@@ -520,11 +522,11 @@ export function drawEdgeMarkers(fs: FlightScene, g: Game, ctx: CanvasRenderingCo
   { const cr = g.world.crisis; if (cr && cr.systemId === p.systemId && cr.delivered < cr.need && g.world.time < cr.until) { const st = sys.stations.find((s) => s.id === cr.stationId); if (st) mark(Math.cos(st.angle) * st.orbit, Math.sin(st.angle) * st.orbit, PAL.danger, "CRISIS"); } }
   if (fs.escort && fs.escort.trader.hull > 0) mark(fs.escort.trader.x, fs.escort.trader.y, PAL.gold, "ESCORT");
   if (fs.race) { const gt = fs.race.gates[fs.race.idx]; mark(gt.x, gt.y, PAL.gold, `RING ${fs.race.idx + 1}`); }
-  // active mission target station in this system
-  for (const m of p.missions) {
-    if (!m.accepted || m.done || m.targetSystemId !== p.systemId || !m.targetStationId) continue;
-    const st = sys.stations.find((s) => s.id === m.targetStationId);
-    if (st) mark(Math.cos(st.angle) * st.orbit, Math.sin(st.angle) * st.orbit, PAL.gold, "MISSION");
+  for (const contact of systemContacts(g).filter(c=>c.quests?.length)) {
+    const color=contact.quests!.some(q=>q.ready) ? PAL.good : PAL.gold;
+    mark(contact.x,contact.y,color,`Q ${contact.name.toUpperCase().slice(0,18)}`);
+    const sx=(contact.x-camX)*z, sy=(contact.y-camY)*z;
+    if(sx>10 && sx<VW-10 && sy>28 && sy<VH-35) drawQuestMarker(ctx,sx,sy,contact.quests!.some(q=>q.ready));
   }
   for (const gh of presence.ghosts.values()) { const pos = presence.at(gh); mark(pos.x, pos.y, PAL.info, gh.callsign); }
   for (const m of fs.maydays) if (Math.floor(g.world.time * 3) % 2 === 0) mark(m.x, m.y, PAL.danger, `MAYDAY ${m.from}`);

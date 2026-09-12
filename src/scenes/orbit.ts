@@ -1,3 +1,5 @@
+import { questLocations } from "../core/questlocations";
+import { drawQuestMarker } from "../gfx/questmarkers";
 // Orbit view: a spinning globe with territories, POIs to pin/target, orbital
 // satellites, scanning, and landing at surface outposts.
 
@@ -19,6 +21,7 @@ const GX = 130, GY = 140;
 export class OrbitScene implements Scene {
   touchMode = "menu" as const;
   rot = 0;
+  questFocus = false;
   sel = 0;
   scan = 0;
   msg = ""; msgTimer = 0;
@@ -27,7 +30,7 @@ export class OrbitScene implements Scene {
   regionSel: number | null = null; // territory picked for the rover; null = the selected site's region
 
   enter(g: Game): void {
-    this.sel = 0;
+    this.sel = 0; this.questFocus = false;
     this.scan = 0;
     const sys = g.world.systems[g.world.player.systemId];
     const pl = sys.planets[g.orbitPlanetIdx];
@@ -63,13 +66,18 @@ export class OrbitScene implements Scene {
     const sys = g.world.systems[p.systemId];
     const pl = sys.planets[g.orbitPlanetIdx];
     const surf = pl.surface!;
-    this.rot += dt * 0.25;
+    if (!this.questFocus) this.rot += dt * 0.25;
     if (inp.wasPressed("Escape")) { (g.scenes.flight as FlightScene).resumeNext = true; g.setScene("flight"); return; }
     if (inp.wasPressed("F5")) g.save();
     const pois = surf.pois;
-    if (inp.wasPressed("ArrowDown")) { this.sel = (this.sel + 1) % pois.length; sfx.blip(); }
-    if (inp.wasPressed("ArrowUp")) { this.sel = (this.sel + pois.length - 1) % pois.length; sfx.blip(); }
+    if (inp.wasPressed("q") || (inp.mousePressed && inp.mouseX>=8 && inp.mouseX<200 && inp.mouseY>=49 && inp.mouseY<63)) {
+      const sites=questLocations(g.world).filter(q=>q.systemId===sys.id && q.contactId===`planet:${g.orbitPlanetIdx}` && q.poiId).map(q=>pois.findIndex(poi=>poi.id===q.poiId)).filter(i=>i>=0);
+      if(sites.length) { this.sel=sites[(sites.indexOf(this.sel)+1)%sites.length]; this.rot=pois[this.sel].lon*Math.PI/180; this.regionSel=null; this.questFocus=true; }
+    }
+    if (inp.wasPressed("ArrowDown")) { this.questFocus=false; this.sel = (this.sel + 1) % pois.length; sfx.blip(); }
+    if (inp.wasPressed("ArrowUp")) { this.questFocus=false; this.sel = (this.sel + pois.length - 1) % pois.length; sfx.blip(); }
     if (inp.mousePressed) {
+      if (!(inp.mouseX>=8 && inp.mouseX<200 && inp.mouseY>=49 && inp.mouseY<63)) this.questFocus=false;
       const rrow = this.regionRows.findIndex(([y0, y1]) => inp.mouseY >= y0 && inp.mouseY <= y1 && inp.mouseX > 240);
       if (rrow >= 0) { this.regionSel = this.regionSel === rrow ? null : rrow; sfx.blip(); }
       const row = this.rowBoxes.findIndex(([y0, y1]) => inp.mouseY >= y0 && inp.mouseY <= y1 && inp.mouseX > 240);
@@ -148,6 +156,7 @@ export class OrbitScene implements Scene {
     const sys = g.world.systems[p.systemId];
     const pl = sys.planets[g.orbitPlanetIdx];
     const surf = pl.surface!;
+    const quests=questLocations(g.world).filter(q=>q.systemId===sys.id && q.contactId===`planet:${g.orbitPlanetIdx}`);
     ctx.fillStyle = PAL.bg;
     ctx.fillRect(0, 0, VW, VH);
     ctx.globalAlpha = 0.4;
@@ -180,6 +189,7 @@ export class OrbitScene implements Scene {
       const col = this.poiColor(poi, surf.regions[poi.regionIdx].factionId);
       ctx.fillStyle = col;
       ctx.fillRect(Math.round(pr[0]) - 1, Math.round(pr[1]) - 1, 3, 3);
+      if (quests.some(q=>q.poiId===poi.id)) drawQuestMarker(ctx,pr[0],pr[1]);
       if (i === this.sel) {
         ctx.strokeStyle = PAL.gold;
         ctx.strokeRect(Math.round(pr[0]) - 4.5, Math.round(pr[1]) - 4.5, 9, 9);
@@ -195,6 +205,8 @@ export class OrbitScene implements Scene {
     drawText(ctx, `${pl.name.toUpperCase()} - ORBIT`, 8, 6, PAL.white);
     drawText(ctx, `${sys.name} - ${faction(sys.factionId).name}`, 8, 15, faction(sys.factionId).color);
     drawText(ctx, "ESC LEAVE ORBIT", VW - textWidth("ESC LEAVE ORBIT") - 6, 6, PAL.greyDark);
+
+    if (quests.length) { drawText(ctx,`Q QUEST LOCATION / ${quests.length} ${quests.length === 1 ? "OBJECTIVE" : "OBJECTIVES"}`,8,29,PAL.gold); drawText(ctx,quests[0].action.replace(/^ENTER ORBIT\. ?/, "").slice(0,55),8,40,PAL.gold); if(quests.some(q=>q.poiId)) drawText(ctx,"[Q] SELECT QUEST SITE",8,52,PAL.gold); }
 
     // right panel: territories + POIs
     const px = 246;
@@ -219,7 +231,7 @@ export class OrbitScene implements Scene {
       this.rowBoxes.push([y - 1, y + 7]);
       if (i === this.sel) { ctx.fillStyle = "#13203a"; ctx.fillRect(px - 4, y - 2, VW - px, 10); }
       const col = this.poiColor(poi, surf.regions[poi.regionIdx].factionId);
-      drawText(ctx, `${settlementTierLabel(poi).padEnd(8)} ${poi.name}`.slice(0, 34), px, y, i === this.sel ? PAL.white : col);
+      drawText(ctx, `${quests.some(q=>q.poiId===poi.id) ? "Q QUEST " : settlementTierLabel(poi).padEnd(8)} ${poi.name}`.slice(0, 34), px, y, quests.some(q=>q.poiId===poi.id) ? PAL.gold : i === this.sel ? PAL.white : col);
       drawText(ctx, poi.surveyed ? "OK" : "?", VW - 14, y, poi.surveyed ? PAL.good : PAL.greyDark);
       y += 9;
     });

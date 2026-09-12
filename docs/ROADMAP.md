@@ -2251,3 +2251,13 @@ combined delivery order and acceptance criteria.
 | M433: Mining orders, planned | Inspectable approach, extraction, collection and return orders for equipped ships. |
 | M434: Cargo logistics, planned | Port storage, transfers and repeat supply routes with explicit resource ownership. |
 | M435: Experimental technology, planned | Specialist paths, prototype fittings and construction using rare salvage and trials. |
+
+
+### M436: Quest locations
+
+- Show current quest destinations consistently across galaxy, system, flight
+  and orbital views, with shapes, labels, filters and explicit next actions.
+- Follow accepted contract, story, crew, service and council stages through
+  the work and return journey. Keep undiscovered signals as search areas.
+- Select exact orbital quest sites with Q and preserve their view for reading.
+- M418 through M427 and M433 through M435 remain in the active work window.

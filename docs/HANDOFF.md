@@ -1,6 +1,42 @@
 # FarSpace handoff, September 11, 2026
 
-## Current checkpoint: v0.261.0
+## Active work window
+
+The user authorized nine hours on all remaining milestones, with quest location
+visibility first. Start: 2026-09-12 02:31:03 UTC. Deadline: 2026-09-12 11:31:03
+UTC, or 06:31:03 America/Chicago. The task continuation uses the existing id
+farspace-six-hour-development, renamed FarSpace nine hour milestones, and is
+active every ten minutes. Read WORKLOG-2026-09-12.md on each continuation.
+At the deadline, stop new implementation, finish a safe checkpoint and pause.
+M418 through M427 and M433 through M435 remain open in NEXT-MILESTONES.md.
+
+## Current checkpoint: v0.262.0 candidate, M436
+
+- Quest destinations come from a shared read-only projection of active
+  contracts, stories, crew journeys, service orders and council journeys.
+  Markers follow survey, discovery, delivery and return stages. Unaccepted
+  and completed contracts do not appear. Quest viewing does not mutate saves.
+- Galaxy and system maps add diamond markers, Q labels and a Q quest filter.
+  Galaxy details list complete quest instructions before general information.
+  Local quest contacts sort first and show the next action beside the target.
+  Green diamonds identify contracts that can be handed in.
+- Hidden signals stay system search areas until scanned. Explicit quest wrecks
+  remain visible beyond ordinary scanner range, without revealing other wrecks.
+  Flight adds local quest markers; orbit marks exact quest sites. Q selects
+  the site, turns it into view and holds that view until manual selection.
+- The browser exposed a station moving out of reach after an automatic stop.
+  Local station targets now stop within 40 metres, leaving interaction margin.
+  The production approach stopped at 33.29 metres, zero velocity, and E began
+  docking. Another fixture used Q to select the exact ruin and E to land there.
+- 587 tests in 37 files pass. TypeScript and build pass. Browser checks covered
+  both map filters, full galaxy objective details, local Fly there, docking
+  and the orbital quest site. Fixtures used memory storage with online calls
+  disabled. No actual save or identity changed. No browser warnings or errors.
+- Save schema remains 16; quest locations add no persistent state. Publication
+  verification is pending. Current assets: index-DnR_t85b.js and
+  index-CwZdn5Vi.css. Continue with the M418 menu acceptance inventory next.
+
+## Previous checkpoint: v0.261.0
 
 The user requested clearer material uses, better mining, crafting, research,
 production automation and map travel that starts and stops automatically.
