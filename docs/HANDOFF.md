@@ -54,7 +54,22 @@ in NEXT-MILESTONES.md.
   closed; storage was in memory and online calls disabled to protect real saves.
 - This was a scripted developer playtest. Observation of an uncoached new player
   is unavailable and remains pending M421 acceptance. Do not label that passed.
-- Release CI, container publication, deployment and hosted verification pending.
+- Release 8c092753aad19434bdf84f8355f95b5aeadfbad8, tag v0.273.1: CI
+  34685306144 passed, including Cloudflare deployment and all 787 tests.
+  Container 34685306188 passed. Title help was corrected to six lessons; all
+  34 title checks passed locally after that copy change. Hosted assets match dist,
+  health is ok and a fresh title shows v0.273.1. JS index-BRT47ago.js SHA-256
+  50b0cbcdb72ff1d930ec9c5e90de985a27d67eac3d0fb8d92fb2bb2f038d7ade;
+  CSS index-CwZdn5Vi.css SHA-256
+  4f9ba0bcb103d7e5d276c53d483e014ca4cc6c86a417f6d91da0474ff6e1e085.
+- Hosted isolated input check reached 112.49m/s under thrust, then 3.26m/s under
+  braking; school advanced once to stage one with 650cr. L opened the complete
+  record. No app warnings/errors; temporary tab closed. Dev5199 runs v0.273.1.
+- Next implementation is M422 return briefing and selected objective. Avoid
+  PlayerState.focus, which already belongs to the senior staff system. Current
+  mission log is a ReaderScene populated by StationScene.openMissionLog. Local
+  title continue, Game.load and adoptWorld enter station/flight directly. F4 has
+  no current binding. M426 should also audit legacy hints with fixed key names.
   Next implementation is M422 return briefing and selected objective. M422-M427
   and M433-M435 remain open, alongside M421 player acceptance. Deadline remains
   2026-09-12 11:31:03 UTC. No extension.

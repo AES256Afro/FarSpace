@@ -368,7 +368,8 @@ Acceptance:
 
 Implemented in v0.273.1 with 787 passing tests and a complete native scripted
 postal round trip, return and save/load check. Uncoached new-player observation
-is unavailable and remains pending. Release verification is pending.
+is unavailable and remains pending. Release CI, container publication, deployment
+and hosted acceptance passed. See HANDOFF.md for the evidence.
 
 Revise Flight School around a complete first job and safe return: understand
 nose/drift, stop, choose a reachable port, dock, trade or accept suitable work,
