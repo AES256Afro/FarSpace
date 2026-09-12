@@ -20,10 +20,10 @@ menu keeps one layout across all three.
 
 ## Current milestone status
 
-v0.275.0 releases M423 support continuity. Local, CI, container and hosted
-checks pass. M421 uncoached player acceptance remains pending.
-M424 through M427 and M433 through M435 remain open. M428 through M432 and
-M436 are released. Next implementation: M424 visible port response.
+v0.276.0 implements M424 visible port response. Local checks pass; release CI,
+container and hosted checks are pending. M421 uncoached acceptance remains
+pending. M425 through M427 and M433 through M435 remain open. M428 through
+M432 and M436 are released. Next implementation: M425 interior readability.
 The existing nine hour deadline is unchanged.
 
 ## Nine hour work window and quest visibility
@@ -443,6 +443,12 @@ Acceptance:
 - Record a compact completion receipt for the return briefing and port state.
 
 ### M424: The port changes
+
+Implemented in v0.276.0. The promenade reads live stock, crisis demand and
+completed aid handoffs at the actual station. Records and staff interactions
+are read only. Eight new regressions bring the suite to 830 passing tests.
+Native walking, actual market delivery, recovery display, saved settlement,
+long record paging and draw cost checks passed. Release verification is pending.
 
 Make existing economic and social state visible in station space. Start with
 three compositions: ordinary operation, shortage and recovery. Use signage,

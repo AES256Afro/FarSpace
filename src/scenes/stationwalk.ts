@@ -26,8 +26,13 @@ import { dockhandLines, dockhandFavour } from "../data/dockhand";
 import { voteMods, myVote } from "../data/votes";
 import { hull, HULLS } from "../data/hulls";
 import * as spriteMod from "../gfx/sprites";
+import { portState } from "../core/portstate";
+import { ReaderOverlay } from "./reader";
+import { clippedText, contains, mapButton } from "../core/mapview";
 
 const T = 10;
+const PORT_STATUS = { x: 350, y: 42, w: 122, h: 15 };
+const PORT_STAFF = [{ x: 135, y: 75, name: "STORES CLERK" }, { x: 245, y: 75, name: "CLINIC ORDERLY" }] as const;
 
 // Promenade layout. # wall, . floor, A airlock, M market, Y shipyard,
 // B mission board, R bar, N news terminal, ~ window strip (solid, shows space)
@@ -77,6 +82,9 @@ interface WalkerNpc {
 
 export class StationWalkScene implements Scene {
   touchMode = "walk" as const;
+  info?: ReaderOverlay;
+  get pausesVoyage(): boolean { return !!this.info; }
+  get capturesKeys(): boolean { return !!this.info?.closeSearchBox; }
   px = 37 * T;
   py = 3 * T + 5;
   npcs: WalkerNpc[] = [];
@@ -88,6 +96,7 @@ export class StationWalkScene implements Scene {
   msgTimer = 0;
 
   enter(g: Game): void {
+    this.onSceneLeave();
     const found = findStation(g.world, g.world.player.dockedAt!);
     if (!found) { g.setScene("flight"); return; }
     this.station = found.st;
@@ -195,6 +204,11 @@ export class StationWalkScene implements Scene {
     this.bubbles = []; this.gossipCd = 1;
     this.tannoy = ""; this.tannoyT = 2;
   }
+  onSceneLeave(): void { this.info?.onSceneLeave(); this.info=undefined; }
+  openPortRecord(g: Game, section?: "STORES" | "CLINIC"): void {
+    const state=portState(g.world,this.station);
+    this.info=new ReaderOverlay(`${this.station.name.toUpperCase()} / PORT RECORD`,section ? state.sections.filter(([name])=>name===section||name==="YOUR AID HANDOFFS") : state.sections,()=>{this.info=undefined;});
+  }
   farewell(g: Game, c: CrewMember): void {
     if (!lastLegAtPort(g.world, c)) return;
     const finish = (g2: Game, bonus: boolean) => {
@@ -272,6 +286,7 @@ export class StationWalkScene implements Scene {
     const sys = w.systems[p.systemId];
     const here = (w.captains ?? []).filter((c) => w.time - c.lastSeen < 900).slice(0, 4);
     const lines: string[] = [];
+    lines.push(...portState(w,this.station).sections.flatMap(([title,body])=>[title,...body]));
     lines.push(`${this.station.name.toUpperCase()} HARBOUR OFFICE - TRAFFIC THIS HOUR: ${Math.max(2, sys.stations.length * 3 + Math.floor((w.time / 60) % 7))} MOVEMENTS`);
     lines.push(here.length ? `IN THE LANES LATELY: ${here.map((c) => `${c.name.toUpperCase()} (${c.ship.toUpperCase()}${isFriend(c) ? ", FRIEND" : isRival(c) ? ", RIVAL" : ""})`).join("; ")}`.slice(0, 118) : "IN THE LANES LATELY: NOBODY YOU'D KNOW.");
     const r = rivalOf(w);
@@ -320,7 +335,9 @@ export class StationWalkScene implements Scene {
   }
 
   update(g: Game, dt: number): void {
+    if(this.info){this.info.update(g);return;}
     const inp = g.input;
+    if(inp.wasPressed("i") || inp.mousePressed&&contains(PORT_STATUS,inp.mouseX,inp.mouseY)){this.openPortRecord(g);return;}
     if (inp.wasPressed("Escape")) {
       // back to the docked services screen
       g.setScene("station");
@@ -328,6 +345,7 @@ export class StationWalkScene implements Scene {
       return;
     }
     if (inp.wasPressed("F5")) g.save();
+    if (inp.wasPressed("F9")) {g.load();return;}
 
     const speed = 55;
     let dx = 0, dy = 0;
@@ -373,6 +391,8 @@ export class StationWalkScene implements Scene {
     this.tickTannoy(g, dt);
     // the cat comes first, kiosk or no kiosk
     if (inp.wasPressed("e")) {
+      const staff=PORT_STAFF.find(n=>dist(this.px,this.py,n.x,n.y)<16);
+      if(staff){this.openPortRecord(g,staff.name==="STORES CLERK"?"STORES":"CLINIC");return;}
       const farewell = this.npcs.find(n => n.farewell && dist(this.px, this.py, n.x, n.y) < 16);
       if (farewell && lastLegAtPort(g.world, farewell.farewell!)) { this.farewell(g, farewell.farewell!); return; }
       const cat = this.npcs.find((n) => n.tag === "YOUR CAT" && dist(this.px, this.py, n.x, n.y) < 16);
@@ -475,11 +495,22 @@ export class StationWalkScene implements Scene {
   }
 
   draw(g: Game, ctx: CanvasRenderingContext2D): void {
+    if(this.info){this.info.draw(g,ctx);return;}
     ctx.fillStyle = PAL.bg;
     ctx.fillRect(0, 0, VW, VH);
     const ox = Math.round(VW / 2 - (DECK[0].length * T) / 2);
     const oy = Math.round(VH / 2 - (DECK.length * T) / 2) + 10;
     const fac = faction(this.station.factionId);
+    const response=portState(g.world,this.station);
+    const responseColor=response.mode==="shortage"?PAL.warn:response.mode==="recovery"?PAL.good:PAL.info;
+    const near=this.nearestKiosk();
+    const staffHere=PORT_STAFF.find(n=>dist(this.px,this.py,n.x,n.y)<16);
+    const closeNpc=(n:WalkerNpc)=>dist(this.px,this.py,n.x,n.y)<16;
+    const speaker=staffHere?undefined:
+      this.npcs.find(n=>n.farewell&&lastLegAtPort(g.world,n.farewell)&&closeNpc(n))
+      ??this.npcs.find(n=>n.tag==="YOUR CAT"&&closeNpc(n))
+      ??this.npcs.find(n=>n.tag==="RETIRED"&&closeNpc(n))
+      ??(!near?this.npcs.find(n=>n.line&&closeNpc(n)):undefined);
 
     for (let ty = 0; ty < DECK.length; ty++) {
       for (let tx = 0; tx < DECK[0].length; tx++) {
@@ -544,6 +575,21 @@ export class StationWalkScene implements Scene {
         else if (type === "military") { ctx.fillStyle = "#5d6680"; ctx.fillRect(x + 1, y + 2, 8, 6); ctx.fillStyle = "#ff5a5a"; ctx.fillRect(x + 3, y + 4, 1, 1); ctx.fillRect(x + 6, y + 4, 1, 1); }
       });
     }
+    // Store racks and the clinic intake read current stock and recorded handoffs.
+    {
+      const filled=Math.min(4,Math.max(0,Math.ceil(response.stock.count/response.stock.baseline*4)));
+      for(let i=0;i<4;i++){
+        const x=ox+90+i*10,y=oy+42;
+        ctx.fillStyle="#2c3550";ctx.fillRect(x,y,8,6);
+        if(i<filled){ctx.fillStyle=responseColor;ctx.fillRect(x+1,y+1,6,3);}
+      }
+      ctx.fillStyle=responseColor;ctx.fillRect(ox+265,oy+68,20,2);
+      if(response.mode!=="ordinary")for(let i=0;i<2;i++){
+        const x=ox+(response.mode==="shortage"?115+i*10:255+i*10),y=oy+85;
+        ctx.fillStyle="#c78a5a";ctx.fillRect(x-2,y-4,4,3);
+        ctx.fillStyle=responseColor;ctx.fillRect(x-3,y-1,6,5);
+      }
+    }
     // the bays: your ship on the airlock side, a parked hull of yours across the deck, traffic below
     {
       const fit = (spr: HTMLCanvasElement, cx: number, cy: number, max: number) => { const sc = Math.min(1, max / Math.max(spr.width, spr.height)); ctx.drawImage(spr, Math.round(cx - spr.width * sc / 2), Math.round(cy - spr.height * sc / 2), Math.round(spr.width * sc), Math.round(spr.height * sc)); };
@@ -583,9 +629,18 @@ export class StationWalkScene implements Scene {
       ctx.fillRect(x - 3, y - 1, 6, 5);
     }
 
+    // Two port staff have fixed clear positions; their records do not award gifts.
+    for(const staff of PORT_STAFF){
+      const x=ox+staff.x,y=oy+staff.y;
+      ctx.fillStyle="#e8b48c";ctx.fillRect(x-2,y-4,4,3);
+      ctx.fillStyle=staff.name==="STORES CLERK"?responseColor:PAL.good;ctx.fillRect(x-3,y-1,6,5);
+      ctx.fillStyle=PAL.ui;ctx.fillRect(x-1,y-8,2,2);
+      if(dist(this.px,this.py,staff.x,staff.y)<16){drawText(ctx,staff.name,x-textWidth(staff.name)/2,y-16,PAL.ui);drawText(ctx,"E READ RECORD",x-26,y+8,PAL.gold);}
+    }
+
     // overheard, over their heads
     const placed: { x: number; y: number; w: number }[] = [];
-    for (const b of this.bubbles) {
+    for (const b of staffHere||speaker||near?[]:this.bubbles) {
       const w = textWidth(b.text) + 4;
       const bx = Math.max(2, Math.min(VW - w - 2, Math.round(ox + b.n.x - w / 2))); let by = Math.round(oy + b.n.y) - 24;
       while (placed.some((q) => Math.abs(q.y - by) < 10 && bx < q.x + q.w + 2 && q.x < bx + w + 2)) by -= 10;
@@ -603,10 +658,10 @@ export class StationWalkScene implements Scene {
 
     // NPC name on proximity
     for (const n of this.npcs) {
-      if (dist(this.px, this.py, n.x, n.y) < 16) {
+      if (n===speaker) {
         const x = Math.round(ox + n.x), y = Math.round(oy + n.y);
-        const label = n.tag ? `${n.name} - ${n.tag}` : n.name;
-        drawText(ctx, label, x - textWidth(label) / 2, y - 12, n.tag ? PAL.gold : PAL.grey);
+        const label = clippedText(n.tag ? `${n.name} / ${n.tag}` : n.name,VW-16);
+        drawText(ctx, label, Math.max(8,Math.min(VW-textWidth(label)-8,x-textWidth(label)/2)), y - 12, n.tag ? PAL.gold : PAL.grey);
         if (n.line) drawText(ctx, "[E] TALK", x - textWidth("[E] TALK") / 2, y + 8, PAL.gold);
       } else if (n.tag) {
         const x = Math.round(ox + n.x), y = Math.round(oy + n.y);
@@ -615,8 +670,7 @@ export class StationWalkScene implements Scene {
     }
 
     // kiosk tooltip
-    const near = this.nearestKiosk();
-    if (near) {
+    if (near&&!staffHere&&!speaker) {
       const kx = ox + near.tx * T + T / 2;
       drawText(ctx, near.def.label, kx - textWidth(near.def.label) / 2, oy + near.ty * T - 9, PAL.ui);
       const hint = near.def.tab === null ? "[E] BOARD SHIP + UNDOCK" : near.def.tab === -1 ? "[E] TREAT SICK CREW (120CR EACH)" : near.def.tab === -2 ? "[E] ASK" : "[E] USE";
@@ -624,16 +678,21 @@ export class StationWalkScene implements Scene {
     }
 
     // header
-    { const t = stationHour(this.station); drawText(ctx, `${this.station.name.toUpperCase()} - PROMENADE - ${clockText(t)} STATION TIME, ${t.label}`, 8, 6, PAL.white); }
+    { const t = stationHour(this.station); drawText(ctx,clippedText(`${this.station.name.toUpperCase()} / PROMENADE`,280),8,6,PAL.white);drawText(ctx,`${clockText(t)} / ${t.label}`,VW-textWidth(`${clockText(t)} / ${t.label}`)-8,6,PAL.grey); }
     if (this.tannoy) { const lines = wrap(`TANNOY: ${this.tannoy}`, 90).slice(0, 2); lines.forEach((tl, i) => drawText(ctx, tl, VW / 2 - textWidth(tl) / 2, 26 + i * 8, PAL.gold)); }
     drawText(ctx, `${fac.name}${this.station.military ? " - MILITARY" : ""}`, 8, 15, fac.color);
-    drawText(ctx, "WASD WALK - E USE - ESC SERVICES MENU", VW - textWidth("WASD WALK - E USE - ESC SERVICES MENU") - 6, 6, PAL.greyDark);
+    drawText(ctx, "WASD WALK / E USE / I PORT RECORD / ESC SERVICES", 40,222,PAL.greyDark);
     if (this.station.military) {
       drawText(ctx, "ARMED GUARDS WATCH THE DECK", VW - textWidth("ARMED GUARDS WATCH THE DECK") - 6, 15, PAL.danger);
     }
 
-    if (serviceOffice(g.world, this.station.id)) drawText(ctx, "SERVICE OFFICE: UPPER DECK, BETWEEN MARKET AND HARBOURMASTER", 40, 54, PAL.ui);
-    if (councilAt(g.world, this.station.id)) drawText(ctx, "COUNCIL: UPPER DECK, BETWEEN MARKET AND HARBOURMASTER", 40, 54, PAL.gold);
+    ctx.fillStyle="#0d1424";ctx.fillRect(8,43,336,38);
+    ctx.fillStyle=responseColor;ctx.fillRect(8,43,2,38);
+    drawText(ctx,clippedText(response.title,320),15,48,responseColor);
+    wrap(response.summary.toUpperCase(),78).slice(0,2).forEach((line,i)=>drawText(ctx,line,15,61+i*8,PAL.grey));
+    mapButton(ctx,PORT_STATUS,"I PORT RECORD");
+    if (serviceOffice(g.world, this.station.id)) drawText(ctx, "SERVICE OFFICE: UPPER DECK, BETWEEN MARKET AND HARBOURMASTER", 40, 208, PAL.ui);
+    if (councilAt(g.world, this.station.id)) drawText(ctx, "COUNCIL: UPPER DECK, BETWEEN MARKET AND HARBOURMASTER", 40, 208, PAL.gold);
     if (this.msg) {
       if (textWidth(this.msg) <= VW - 16) drawText(ctx, this.msg, VW / 2 - textWidth(this.msg) / 2, VH - 12, PAL.ui);
       else {

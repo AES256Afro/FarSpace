@@ -8,10 +8,54 @@ UTC, or 06:31:03 America/Chicago. The task continuation uses the existing id
 farspace-six-hour-development, renamed FarSpace nine hour milestones, and is
 active every ten minutes. Read WORKLOG-2026-09-12.md on each continuation.
 At the deadline, stop new implementation, finish a safe checkpoint and pause.
-M421 player acceptance, M424 through M427 and M433 through M435 remain open
+M421 player acceptance, M425 through M427 and M433 through M435 remain open
 in NEXT-MILESTONES.md.
 
-## Current checkpoint: v0.275.0, M423 support continuity
+## Current checkpoint: v0.276.0, M424 visible port response
+
+- The promenade reads ordinary, shortage and recovery states from the current
+  station stock, the existing crisis request and completed support jobs at
+  that station. Stock comparisons use the same baseline as stationPrice.
+  A crisis shows its exact remaining demand, separate from general stock.
+- A fixed operations panel, filled or empty store racks, clinic intake lights
+  and up to two intake workers distinguish states. Two static staff open
+  stores or clinic records with E. I and the pointer Port record button open
+  all records, including previous aid handoffs. The harbourmaster reads them
+  too. No extra port ledger, stock simulation or reward system was added.
+- The reader pauses voyage updates, supports search and paging, and returns to
+  the same walking position and actors. F9 on the promenade uses the saved
+  voyage load path. Nearby interaction labels take priority over unrelated
+  names and gossip, avoiding the overlap seen during the first native check.
+- Current shortages take visual priority over aid recovery. Older handoffs
+  remain in the record after the recent activity display ends. Stable station
+  ids preserve the association through faction control changes. Rendering and
+  reading cannot change stock, credits, reputation or completed requests.
+- Eight new tests cover ordinary and depleted stock, pricing baseline parity,
+  actual market crisis completion, station identity, control changes, saved
+  handoffs, old records, missing patients, paused readers, staff and pointer
+  access, and walking routes to service desks. All 830 tests in 54 files pass;
+  TypeScript and production build pass. The existing Vite bundle size
+  advisory remains.
+- Native fixture walked from airlock (370,35) to the stores clerk near (135,75)
+  using held movement keys. E opened the complete stores record. Reading left
+  the whole world unchanged and returned to the same position.
+- A medical shortage fixture displayed twelve supplies still needed. The
+  player walked to the market and sold one unit, then the remaining stack of
+  eleven with Shift held across game frames. Actual market code moved stock
+  from zero to twelve, filled the existing crisis request and recorded its
+  normal reward. The promenade changed to recovery with 12/12 delivered.
+  F5/F9 and return to the same visit retained twelve delivered and 4036cr.
+- A twelve-handoff history fixture reached its oldest complete entry with End
+  at reader offset 196. Credits remained unchanged. A 120-frame draw sample
+  on this Mac averaged 0.334ms, p95 0.600ms, max 0.700ms, with twelve existing
+  walkers, two staff and two intake actors. These are draw CPU timings, not
+  a full device performance or physical touch/gamepad acceptance result.
+- No browser warnings/errors. Temporary tab closed; storage stayed in memory
+  and online requests were disabled. Real saves and identity were untouched.
+- Release CI, container and hosted checks are pending. M425-M427, M433-M435
+  and M421 uncoached acceptance remain open. Deadline remains unchanged.
+
+## Previous checkpoint: v0.275.0, M423 support continuity
 
 - Accepted repair, medical and fuel requests save a stable identity and minimal
   contact state. At most four requests remain active, with retained history

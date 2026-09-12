@@ -2330,7 +2330,7 @@ export const START_CREDITS = 600;
 
 // ---------- Economy ----------
 
-function baselineStock(type: StationType, id: string): number {
+export function baselineStock(type: StationType, id: string): number {
   const mult = ECONOMY[type][id] ?? 1;
   return mult < 1 ? 80 : mult > 1.1 ? 10 : 25;
 }

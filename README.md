@@ -146,7 +146,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Current release: v0.275.0. M416 through M423, mining and industry M428 through
+Current release: v0.276.0. M416 through M424, mining and industry M428 through
 M432, and quest locations M436 are implemented. M418 includes a scrolling roster, shared readers, bounded orbital lists,
 complete local quest details, letters that keep their position and paged
 settlement desks with explicit trade, hire and contract controls. Service and
@@ -173,6 +173,9 @@ Accepted aid requests retain their ship, delivered supplies and repair progress.
 Repair, medical transfer and fuel or tow routes explain their costs and crew
 requirements. Maps and the briefing retain the next action. Hospital and tow
 handoffs use the existing port settlement and record one completion receipt.
+The promenade shows current shortages and recovery from the same stock, crisis
+and aid records. I opens full port records; stores and clinic staff read their
+local handoffs. These displays neither restock the market nor pay rewards.
 The [milestone plan](docs/NEXT-MILESTONES.md) and
 [menu inventory](docs/MENU-INVENTORY.md) record the remaining work.
 
