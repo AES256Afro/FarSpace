@@ -146,7 +146,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Current release: v0.271.0. M416 through M419, mining and industry M428 through
+Current release: v0.272.0. M416 through M420, mining and industry M428 through
 M432, and quest locations M436 are implemented. M418 includes a scrolling roster, shared readers, bounded orbital lists,
 complete local quest details, letters that keep their position and paged
 settlement desks with explicit trade, hire and contract controls. Service and
@@ -160,6 +160,9 @@ stable twelve row pages and complete system/objective readers. Text entry and
 rebinding own their keys. Native caller checks preserve flight and title state. The flight display keeps
 heading, drift, aim, route and condition in fixed regions. Urgent status takes
 priority over chatter; L opens complete flight records and pauses the voyage.
+Contact identity, distance, relationship and present task share the E selection.
+The flight record explains aid requirements, law settlements and corsair passage
+separately. Rescue answers recheck their recipient and cannot pay twice.
 The [milestone plan](docs/NEXT-MILESTONES.md) and
 [menu inventory](docs/MENU-INVENTORY.md) record the remaining work.
 

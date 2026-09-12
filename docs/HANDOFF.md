@@ -8,9 +8,47 @@ UTC, or 06:31:03 America/Chicago. The task continuation uses the existing id
 farspace-six-hour-development, renamed FarSpace nine hour milestones, and is
 active every ten minutes. Read WORKLOG-2026-09-12.md on each continuation.
 At the deadline, stop new implementation, finish a safe checkpoint and pause.
-M420 through M427 and M433 through M435 remain open in NEXT-MILESTONES.md.
+M421 through M427 and M433 through M435 remain open in NEXT-MILESTONES.md.
 
-## Current checkpoint: v0.271.0, M419 flight display
+## Current checkpoint: v0.272.0, M420 contact presentation
+
+- FlightContacts presents identity, distance, relationship, current task and
+  available help or location services. The first contact follows the same E
+  selection as FlightInteraction, then other live contacts within 1400m sort by
+  distance. The HUD keeps a compact contact line above messages; L reads every
+  nearby contact with complete names and requirements. Drawing changes no state.
+- Intent descriptions follow updateNpcs branch precedence: convoy formation,
+  pirate escape/platform avoidance/interception/prey, escort targets, port
+  defence, disabled or injured traders, transit runs and cargo destinations.
+  Missing destinations remain unknown. Customs checks are attributed to guarded
+  jumps, not invented as patrol activity. Tow and active repair details are shown.
+- Contact and passage terms name the jurisdiction, pursuit cause, free cooldown
+  distance/time, exact settlement quote and funds aboard. Corsair passage has its
+  own timer and explicitly leaves law pursuit intact. Expired passage, payment,
+  departed ships and obsolete actions update on the next flight frame. Existing
+  manual truce break notices and retained history explain the triggering hit.
+- Rescue answers revalidate world, system, selected live ship, range, condition,
+  crew, evacuees and current requirements before acting. Answered calls cannot
+  transfer supplies or pay again. Current record condition values now round up
+  consistently with the HUD. Save schema stays 16.
+- Fourteen new regressions cover interaction priority, AI behavior, cargo and
+  escort tasks, unknown destination, contact removal, full names, rounded values,
+  settlement, cooldown, passage expiry and break, obsolete aid and duplicate aid.
+  All 776 tests in 50 files pass; TypeScript and production build pass. The usual
+  Vite bundle size advisory remains.
+- Native isolated local fixture showed Hesperus at 30m, civilian, dry fuel tanks,
+  with the matching E offer. E opened Hesperus' mayday. L search showed exact fuel
+  requirements and payment. Serialized world stayed unchanged while reading.
+  Removing the ship cleared both contact and action. Separate law/passage terms
+  showed jurisdiction, 31s pursuit cooldown, 66s corsair passage and a 1000cr quote
+  against 600cr aboard. No app warnings/errors. Temporary tab closed; real saves
+  and identity protected with memory storage and disabled online calls.
+- Release CI, container publication, deployment and hosted acceptance pending.
+- M420 implementation and local acceptance complete. Next: M421 first useful
+  voyage. M421 through M427 and M433 through M435 remain open. Deadline remains
+  2026-09-12 11:31:03 UTC. No extension.
+
+## Previous checkpoint: v0.271.0, M419 flight display
 
 - Fixed regions retain ship name, nose, drift, aim, speed, course and numeric
   hull/shield/fuel/oxygen. Two ranked warning rows and a separate activity row

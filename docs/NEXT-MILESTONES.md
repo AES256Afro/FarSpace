@@ -20,8 +20,8 @@ menu keeps one layout across all three.
 
 ## Current milestone status
 
-v0.271.0 completes M419. M420 through M427 and M433 through M435 remain open.
-M428 through M432 and M436 are released. Next: M420 contact presentation. The existing nine hour deadline is unchanged.
+v0.272.0 implements M420. M421 through M427 and M433 through M435 remain open.
+M428 through M432 and M436 are released. Next: M421 first useful voyage. The existing nine hour deadline is unchanged.
 
 ## Nine hour work window and quest visibility
 
@@ -340,6 +340,9 @@ Acceptance:
 - Resizing and switching scenes preserve display priorities and input.
 
 ### M420: Know the contact
+
+Implemented and locally accepted in v0.272.0, with 776 passing tests.
+Release and hosted verification pending. HANDOFF.md records the fixtures.
 
 Create one contact presentation model from existing AI, law and interaction
 rules. Show identity, relationship, present intent, distance and available

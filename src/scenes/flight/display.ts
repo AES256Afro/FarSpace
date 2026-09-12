@@ -1,6 +1,7 @@
 import type { Game } from "../../game";
 import type { FlightScene } from "./index";
 import { bearing, flightDirections } from "../../core/flightdirections";
+import { flightContacts, contactLawTerms } from "./contacts";
 import { flightInteraction } from "./interaction";
 import { resolveLocalTarget } from "../systemmap";
 import { findStation, repLabel } from "../../world";
@@ -105,13 +106,15 @@ export function flightDisplay(fs: FlightScene, g: Game) {
     return `${m.title}: ${[progress, patient, custody, treaty, request, m.desc].filter(Boolean).join(" / ")}`;
   });
   const stage = tutorialStage(g), tutorial = stage >= 0 && stage < STEPS.length ? `FLIGHT SCHOOL ${stage + 1}/${STEPS.length}: ${STEPS[stage].text} / K SKIP` : null;
-  return { ship: (p.shipName ?? hull(p.hullId).name).toUpperCase(), system: sys.name, security, channel, standing, nose: degrees(p.angle), drift: directions.drift ? degrees(directions.drift.angle) : directions.speed >= .05 ? "<2 M/S" : "STOPPED", aim: degrees(fs.mouseAim ? fs.aim : p.angle), speed: Math.round(directions.speed), route, notices, activity, urgent, action, objectives, missions, tutorial };
+  return { contacts: flightContacts(fs, g), ship: (p.shipName ?? hull(p.hullId).name).toUpperCase(), system: sys.name, security, channel, standing, nose: degrees(p.angle), drift: directions.drift ? degrees(directions.drift.angle) : directions.speed >= .05 ? "<2 M/S" : "STOPPED", aim: degrees(fs.mouseAim ? fs.aim : p.angle), speed: Math.round(directions.speed), route, notices, activity, urgent, action, objectives, missions, tutorial };
 }
 
 export function flightRecordSections(fs: FlightScene, g: Game): [string, string[]][] {
   const d = flightDisplay(fs, g), p = g.world.player;
   return [
-    [d.ship, [`SYSTEM: ${d.system}`, d.security, d.standing, d.channel, `NOSE ${d.nose} / DRIFT ${d.drift} / AIM ${d.aim} / ${d.speed} M/S`, d.route, d.action, `HULL ${p.hull}/${p.hullMax} / SHIELD ${p.shield}/${p.shieldMax} / FUEL ${p.fuel}/${p.fuelMax} / OXYGEN ${p.oxygen}/${p.oxygenMax}`, `TORPEDOES ${p.torpedoes ?? 0} / SEISMIC CHARGES ${p.seismic ?? 0}${p.focus ? ` / FOCUS ${p.focus}` : ""}${fs.hardBurn ? " / HARD BURN" : ""}`]],
+    [d.ship, [`SYSTEM: ${d.system}`, d.security, d.standing, d.channel, `NOSE ${d.nose} / DRIFT ${d.drift} / AIM ${d.aim} / ${d.speed} M/S`, d.route, d.action, `HULL ${Math.ceil(p.hull)}/${p.hullMax} / SHIELD ${Math.ceil(p.shield)}/${p.shieldMax} / FUEL ${Math.ceil(p.fuel)}/${p.fuelMax} / OXYGEN ${Math.ceil(p.oxygen)}/${p.oxygenMax}`, `TORPEDOES ${p.torpedoes ?? 0} / SEISMIC CHARGES ${p.seismic ?? 0}${p.focus ? ` / FOCUS ${p.focus}` : ""}${fs.hardBurn ? " / HARD BURN" : ""}`]],
+    ["CONTACT AND PASSAGE TERMS", contactLawTerms(fs, g)],
+    ...d.contacts.map(c => [`${c.primary ? "CURRENT ACTION: " : "CONTACT: "}${c.name}`, [`${c.relationship} / ${Math.round(c.distance)}m`, c.intent, ...c.details]] as [string, string[]]),
     ["CURRENT STATUS", [...d.notices, ...d.activity].map(n => n.text)],
     ...(d.tutorial ? [["FLIGHT SCHOOL", [d.tutorial]] as [string, string[]]] : []),
     ["OBJECTIVES", d.objectives.length ? d.objectives : ["No active quest locations."]],

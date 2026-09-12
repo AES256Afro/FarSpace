@@ -1052,7 +1052,20 @@ export class FlightScene implements Scene {
   }
 
   offerHelp(g: Game, n: Npc): void {
-    const p = g.world.player;
+    const w = g.world, p = w.player, systemId = p.systemId;
+    const state = () => JSON.stringify([n.disabled, n.casualties, n.mayday, n.hull, p.crew, p.evacuees]);
+    const initial = state();
+    let used = false;
+    const open = (enc: Encounter) => {
+      enc.options = enc.options.map(option => ({ ...option, result: (g2, rng) => {
+        const selected = flightInteraction(this, g2);
+        if (used || g2.world !== w || p.systemId !== systemId || state() !== initial || selected?.kind !== "help" || selected.target !== n) return "THIS HELP CALL HAS CLOSED. HAIL AGAIN IF THE SHIP STILL NEEDS YOU.";
+        if (option.requires && !option.requires(g2)) return "THAT AID IS NO LONGER AVAILABLE. YOUR SUPPLIES STAY ABOARD.";
+        used = true;
+        return option.result(g2, rng);
+      } }));
+      (g.scenes["encounter"] as EncounterScene).open(g, enc, "flight", true);
+    };
     const eng = p.crew.find((c) => c.role === "engineer");
     const who = n.tag ? `[${n.tag}] CONVOY` : "FREIGHTER";
     const opts: Encounter["options"] = [];
@@ -1064,7 +1077,7 @@ export class FlightScene implements Scene {
       if (!p.evacuees) opts.push({ label: "TAKE THE WOUNDED ABOARD", hint: medic ? "Your medic keeps them alive to dock" : "Without a medic, not all of them will make it", result: (g2, rng) => { const n2 = 2; g2.world.player.evacuees = { n: medic ? n2 : (rng.chance(0.3) ? 1 : 2), from: "wounded" }; n.casualties = false; return medic ? "TWO STRETCHERS COME ACROSS. YOUR MEDIC TAKES OVER. DOCK SOON." : "TWO STRETCHERS COME ACROSS. NOBODY ABOARD KNOWS WHAT THEY'RE DOING. DOCK FAST."; } });
       opts.push({ label: "LEAVE THEM", result: () => "YOU BREAK OFF. THE CHANNEL STAYS OPEN A WHILE, THEN CLOSES." });
       const enc: Encounter = { id: "help-med", where: "space", title: `MEDICAL - ${who}`, weight: 0, text: "'WE HIT SOMETHING ON THE JUMP. THREE DOWN, ONE BAD. OUR MEDKIT IS A BOX OF PLASTERS. IS THERE A DOCTOR ON THAT SHIP?'", options: opts };
-      (g.scenes["encounter"] as import("../encounter").EncounterScene).open(g, enc, "flight", true);
+      open(enc);
       return;
     }
     if (n.mayday) {
@@ -1075,7 +1088,7 @@ export class FlightScene implements Scene {
         return `${(n.name ?? "THE PILOT").toUpperCase()}: 'YOU BEAUTIFUL PEOPLE. I'M NOT CRYING, IT'S THE RECYCLED AIR.' THE FUND WIRES 300CR. THEIR DRIVE LIGHTS UP AND THEY'RE GONE.`; } });
       opts.push({ label: "LEAVE THEM", result: () => "YOU BREAK OFF. THE MAYDAY STAYS ON THE WIRE FOR SOMEBODY ELSE." });
       const enc: Encounter = { id: "help-mayday", where: "space", title: `MAYDAY - ${(n.name ?? "PILOT").toUpperCase()} (ON THE WIRE)`, weight: 0, text: `'THIS IS ${(n.name ?? "A PILOT").toUpperCase()}. TANKS ARE DRY, DRIFTING, LIFE SUPPORT'S FINE FOR NOW. TEN UNITS WOULD GET ME TO THE STATION. I'LL OWE YOU ONE. I MEAN IT.'`, options: opts };
-      (g.scenes["encounter"] as import("../encounter").EncounterScene).open(g, enc, "flight", true);
+      open(enc);
       return;
     }
     if (n.disabled) {
@@ -1091,7 +1104,7 @@ export class FlightScene implements Scene {
     const enc: Encounter = { id: "help-ship", where: "space", title: n.disabled ? `MAYDAY - ${who} DISABLED` : `${who} - HULL ${Math.round(n.hull / n.hullMax * 100)}%`, weight: 0,
       text: n.disabled ? "'ENGINES ARE DEAD, LIFE SUPPORT IS ON BATTERIES, AND THE REACTOR IS MAKING A NOISE I DON'T LIKE. WE CAN'T FIX IT FROM IN HERE. CAN YOU?'" : "'WE TOOK A HIT COMING THROUGH THE BELT. HULL'S HOLDING, JUST. IF YOU'VE GOT A SPARE PART, WE'D PAY FOR IT.'",
       options: opts };
-    (g.scenes["encounter"] as import("../encounter").EncounterScene).open(g, enc, "flight", true);
+    open(enc);
   }
 
   updateRepairJob(g: Game, dt: number): void {

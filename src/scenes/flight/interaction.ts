@@ -11,9 +11,9 @@ export function flightInteraction(fs: FlightScene, g: Game) {
   const p = g.world.player, sys = g.world.systems[p.systemId];
   const near = (x: number, y: number, range: number) => dist(p.x, p.y, x, y) < range;
   if (atSingersBerth(g.world)) return { kind: "singers" as const, prompt: Math.hypot(p.vx, p.vy) > 45 ? "X BRAKE BELOW 45 M/S TO DOCK AT SINGERS' BERTH" : "E DOCK AT SINGERS' BERTH" };
-  const needy = fs.npcs.find(n => n.kind === "trader" && n.hull > 0 && near(n.x, n.y, 80) && (n.disabled || n.casualties || n.hull < n.hullMax * .5));
+  const needy = fs.npcs.find(n => n.kind === "trader" && n.hull > 0 && !n.docked && near(n.x, n.y, 80) && (n.disabled || n.casualties || n.hull < n.hullMax * .5));
   if (needy && !fs.repairJob) return { kind: "help" as const, target: needy, prompt: `E OFFER HELP TO ${needy.name ?? "FREIGHTER"}` };
-  const corsair = fs.npcs.find(n => !fs.piratesFriendly(g) && n.kind === "pirate" && n.hull > 0 && !n.fleeing && near(n.x, n.y, 260));
+  const corsair = fs.npcs.find(n => !fs.piratesFriendly(g) && n.kind === "pirate" && n.hull > 0 && !n.docked && !n.fleeing && near(n.x, n.y, 260));
   if (corsair) return { kind: "parley" as const, target: corsair, prompt: `E PARLEY WITH ${corsair.name ?? "CORSAIR"}` };
   const station = sys.stations.find(st => near(Math.cos(st.angle) * st.orbit, Math.sin(st.angle) * st.orbit, 110));
   if (station) return { kind: "station" as const, target: station, prompt: `E REQUEST DOCKING AT ${station.name}` };

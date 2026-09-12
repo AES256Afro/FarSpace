@@ -36,6 +36,8 @@ export function renderFlightHud(fs: FlightScene, g: Game, ctx: CanvasRenderingCo
   // The tow line is a world cue. Status text stays inside its assigned region.
   const tow = fs.towing ?? recoveryTow(g.world);
   if (tow) { ctx.strokeStyle = PAL.warn; ctx.globalAlpha = .7; ctx.beginPath(); ctx.moveTo(240, 135); ctx.lineTo(240 + (tow.x - p.x) * fs.zoom, 135 + (tow.y - p.y) * fs.zoom); ctx.stroke(); ctx.globalAlpha = 1; }
+  const contact = d.contacts[0];
+  if (contact) { panel(181, 10); text(`${contact.name} / ${Math.round(contact.distance)}M / ${contact.relationship} / ${contact.intent} / L RECORD`, 6, 183, 468, PAL.info); }
   if (d.urgent) {
     panel(203, 10); text(`MESSAGES AND LESSONS HELD / L RECORD (${fs.commsLog.length})`, 6, 205, 468, PAL.grey);
   } else {
