@@ -244,3 +244,11 @@ axis bounds, one payout at the research premium and no sale from the codex.
 The Survey text audit remains open.
 Native research sale paid 500CR for 400 data once. Outside and repeated clicks
 made no extra payment. The codex click was inert. No application errors.
+
+Release 82440cc, tag v0.268.1: CI 34677574050 including Cloudflare deployment
+and container publication 34677573971 passed. Hosted JS and CSS match the tested
+build; health returned ok. Fresh public title showed v0.268.1. Isolated hosted
+Provisions details changed no cargo or credits; Sell moved one unit for 25CR.
+The hosted Survey button paid 500CR for 400 data once, with no sale outside its
+bounds or on a repeat click. No application warnings/errors. Temporary tabs
+closed, with actual saves and identity unchanged. Dev5199 runs v0.268.1.

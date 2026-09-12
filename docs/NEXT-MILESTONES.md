@@ -68,7 +68,8 @@ The v0.268.1 station transaction slice adds stable selection and paging to the
 market, yard, fleet, missions, lounge, engineering, warehouse and base actions.
 Rows select; explicit controls execute. Full details and lounge replies use a
 reader that pauses voyage updates. P reaches the Record guestbook; V buys shares
-so I consistently reads details. 709 tests pass. Release verification is pending.
+so I consistently reads details. 709 tests pass. CI, container publication, Cloudflare deployment and hosted
+verification passed for v0.268.1.
 M418 remains open for News, Wire, Survey and Record text, galaxy selection/removal
 and the remaining input/caller audit. Physical touch/gamepad acceptance stays M426.
 
