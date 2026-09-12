@@ -31,11 +31,30 @@ M418 through M427 and M433 through M435 remain open in NEXT-MILESTONES.md.
   empty flight return all passed. Flight kept the same NPC objects and player
   position. No application warnings/errors. Memory storage and disabled online
   calls protected real saves and identity. Physical touch/gamepad stays M426.
-- 682 tests in 45 files pass. TypeScript and production build pass. Publication
-  and hosted verification pending. Save schema remains 16. M418 remains open.
+- 682 tests in 45 files pass. TypeScript and production build pass. Published
+  051cf0c0ee85aa6afff76240a6449fc6ac56a75c, tag v0.267.0. CI 34675595695
+  passed including Deploy to Cloudflare. Container workflow 34675595781 passed.
+  Hosted assets match the tested build: JS index-Ml57qqOe.js, SHA-256
+  05d9a3bbdc243b34a0570ed7557973ff02c9fa130473d20a42f92291d3b4617b;
+  CSS index-CwZdn5Vi.css, SHA-256
+  4f9ba0bcb103d7e5d276c53d483e014ca4cc6c86a417f6d91da0474ff6e1e085.
+  Health returned ok. A fresh public tab showed v0.267.0. Its isolated fixture
+  unlocked an option above the selected PAY 50CR answer without shifting that
+  selection. I read the complete terms without payment. Choose paid 50CR once;
+  a body click kept the outcome open, then Enter returned to flight. No app
+  warnings/errors. All temporary tabs are closed. Dev5199 is v0.267.0.
+  Save schema remains 16. Bigbox and its catalog PR remain unchanged.
+  The nine hour continuation is still active. M418 remains open.
 - Next: audit remaining StationScene tabs for stable selection, bounded text,
-  input ownership and caller returns. Then complete galaxy selection/removal
-  and the final M418 input audit. Continue M419 onward in dependency order.
+  input ownership and caller returns. Source inspection: station.ts update
+  still uses one numeric cursor and drawn row indices; a left row click also
+  executes a transaction. Page Up/Down and Home/End are absent there. The
+  Workshop pointer shortcut checks no upper X bound, and the global P shortcut
+  precedes the RECORD guestbook action. Reproduce and fix applicable gaps while
+  preserving current visit, fleet, mission, cargo and trade behavior. Then
+  complete galaxy selection/removal and the final M418 input audit. Continue
+  M419 onward in dependency order. Use curl for normal TLS hosted reads;
+  this Python 3.14 installation lacks a usable local issuer chain.
 
 ## Previous checkpoint: v0.266.0, M418 office records and returns
 

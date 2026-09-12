@@ -186,3 +186,11 @@ No application warnings/errors. Fixtures used memory storage and disabled
 online calls, preserving real saves and identity. 682 tests in 45 files pass.
 Physical touch/gamepad acceptance remains M426. M418 remains open for the
 remaining station tabs, galaxy selection/removal and final input/caller checks.
+
+Release 051cf0c, tag v0.267.0: CI 34675595695, Cloudflare deployment and
+container publication 34675595781 passed. Hosted assets match the tested build;
+health returned ok. A fresh public browser showed v0.267.0. Its isolated fixture
+kept PAY 50CR selected when a conditional option appeared above it. Reading
+terms spent nothing. Choose paid exactly 50CR, body click preserved the outcome,
+and Enter returned to flight with one callback invocation. No app warnings or
+errors. All temporary tabs closed; no actual saves or identity changed.
