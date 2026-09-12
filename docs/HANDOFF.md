@@ -43,7 +43,22 @@ M421 through M427 and M433 through M435 remain open in NEXT-MILESTONES.md.
   showed jurisdiction, 31s pursuit cooldown, 66s corsair passage and a 1000cr quote
   against 600cr aboard. No app warnings/errors. Temporary tab closed; real saves
   and identity protected with memory storage and disabled online calls.
-- Release CI, container publication, deployment and hosted acceptance pending.
+- Release 3af0c6d2b84bb29ec75d06e255b2d45c50020cbd, tag v0.272.0: CI
+  34683965123 passed including Cloudflare deployment. Container 34683965548
+  passed. Hosted assets match dist; health is ok and fresh title shows v0.272.0.
+  JS index-DIilBEh3.js SHA-256
+  0e28df4a98ed60c267fd5b9cdcca127b7b891fd4ae796e75c774c11b95dad8a6;
+  CSS index-CwZdn5Vi.css SHA-256
+  4f9ba0bcb103d7e5d276c53d483e014ca4cc6c86a417f6d91da0474ff6e1e085.
+- Hosted isolated check showed the Hesperus identity/task/distance, complete
+  searchable fuel requirements and matching native E mayday. Serialized world
+  stayed unchanged in the reader. No app warnings/errors. Temporary tabs closed.
+  Dev5199 restarted at v0.272.0. The earlier v0.271.0 docs CI 34683095875 passed.
+- M421 audit: core/tutorial.ts still lets stage zero pass after 45 world seconds,
+  and its module-level baselines can cross world changes. Revise around a real
+  thrust/stop, reachable first job and safe return. Use settings keymap for
+  physical key labels; station accept/complete paths and save confirmation must
+  supply truthful progress. Fresh-player observation remains separate acceptance.
 - M420 implementation and local acceptance complete. Next: M421 first useful
   voyage. M421 through M427 and M433 through M435 remain open. Deadline remains
   2026-09-12 11:31:03 UTC. No extension.
