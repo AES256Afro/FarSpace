@@ -40,7 +40,9 @@ describe("device input ownership",()=>{
   });
   it("releases held controls on focus loss and updates disconnected state",()=>{
     const {input,pad,key}=fixture();key("keydown","w");pad.buttons[0].pressed=true;input.pollGamepad("walk");
+    input.mousePressed=true;input.mouseRightPressed=true;input.mouseDown=true;input.mouseRight=true;input.wheel=2;input.textEvents=["a"];input.lastRawKey="a";
     window.dispatchEvent(new Event("blur"));input.pollGamepad("walk");expect(input.down.size).toBe(0);expect(input.pressed.size).toBe(0);
+    expect(input.mousePressed).toBe(false);expect(input.mouseRightPressed).toBe(false);expect(input.mouseDown).toBe(false);expect(input.mouseRight).toBe(false);expect(input.wheel).toBe(0);expect(input.textEvents).toEqual([]);expect(input.lastRawKey).toBeNull();
     window.dispatchEvent(new Event("focus"));pad.connected=false;input.pollGamepad("walk");expect(input.padConnected).toBe(false);
   });
 });

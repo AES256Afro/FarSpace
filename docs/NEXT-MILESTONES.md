@@ -1,12 +1,12 @@
 # FarSpace: next development plan
 
-Date: September 11, 2026. Status: approved implementation sequence.
+Date: September 12, 2026. Status: implementation and remaining acceptance.
 Baseline: v0.255.0, M415, release 9bef5b4540c4393de3654a710053bf6d0b66fb06.
 The preceding release has 404 passing tests and a verified hosted deployment.
 M416 and M417 are released through v0.257.1 with 473 passing tests and a verified hosted deployment.
 The v0.258.0 follow-up adds map navigation and generated boarding decks. It has 494 passing tests.
 The v0.259.0 and v0.260.0 follow-ups add exterior salvage and combat hull recovery, with 536 passing tests.
-M418-M427 remain planned; reconcile their map and interior scope against this follow-up. The user approved implementation after reviewing
+M418-M427 were the original planned sequence. Their current status is below. The user approved implementation after reviewing
 the three title concepts and choosing random selection between them.
 
 The next development cycle should make FarSpace easier to enter, understand
@@ -20,12 +20,39 @@ menu keeps one layout across all three.
 
 ## Current milestone status
 
-v0.278.0 adds a partial M426 input follow-up after the verified M425 release.
-All 853 tests, typecheck, build and local input checks pass. Hosted verification
-is pending. M426 still needs portrait canvas readability, physical touch and
+v0.278.1 adds a partial M426 input follow-up after the verified M425 release.
+All 853 tests, typecheck and build pass. The v0.278.0 input checks, CI,
+container and hosted checks passed. Final v0.278.1 publication checks are pending. M426 still needs portrait canvas readability, physical touch and
 pad use and the complete performance/accessibility matrix. M421 uncoached
 acceptance, M427 and M433-M435 remain open. M428-M432 and M436 are released.
 The existing nine hour deadline is unchanged.
+[Industry order implementation plan](INDUSTRY-ORDERS.md) details the next
+mining, logistics and technology work against the current source owners.
+
+| Milestone | Current result | Remaining acceptance |
+| --- | --- | --- |
+| M416-M417 title and saves | Released through v0.257.1 | No open implementation item in this cycle. |
+| M418 menus and complete records | Released through v0.270.0 | Physical device coverage belongs to M426. |
+| M419 flight display | Released v0.271.0 | Broader device readability belongs to M426. |
+| M420 contact identity and actions | Released v0.272.0 | Long journey coverage belongs to M427. |
+| M421 first voyage | Implemented v0.273.1 | An uncoached player must complete the introduction. |
+| M422 return briefing | Released v0.274.0 | Broader journey coverage belongs to M427. |
+| M423 support requests | Released v0.275.0 | Broader journey coverage belongs to M427. |
+| M424 port response | Released v0.276.0 | Physical device coverage belongs to M426. |
+| M425 interior navigation | Released v0.277.0 | Physical device coverage belongs to M426. |
+| M426 device comfort | Input fixes through v0.278.1 | Portrait canvas readability, physical touch/controller use, accessibility scope and measured performance matrix. |
+| M427 journey release gate | Open | Full journey matrix and a native two-hour session, separately from a deterministic soak. |
+| M428-M432 materials, mining, fabrication, research and production | Released v0.261.0 | New automation is scoped separately below. |
+| M433 mining orders | Open | Explicit approach, extraction, collection, return and cancellation against actual deposits. |
+| M434 cargo logistics | Open | Owned port storage, transfer orders and bounded repeat supply runs with exact inventory ownership. |
+| M435 experimental technology | Open | Specialist research, prototypes and larger recipes after logistics. |
+| M436 quest locations | Released v0.262.0 | Cross journey coverage belongs to M427. |
+
+Next work should close the known portrait readability issue and gather M421
+player acceptance, then run the M427 journey matrix. The next industry
+implementation is M433 mining orders, followed by M434 logistics and M435
+experimental technology. Keep each order explicit, inspectable and cancellable;
+capacity or danger must stop work without deleting or inventing materials.
 
 ## Nine hour work window and quest visibility
 
@@ -34,7 +61,10 @@ The user authorized work on every remaining milestone from September 12,
 in dependency order. At the deadline, finish a safe checkpoint and record
 which milestones remain open. WORKLOG-2026-09-12.md records this window.
 
-M436, Quest locations, is the first additional slice requested for this window.
+The following release history records status at each checkpoint. Use the
+current milestone table above for remaining work.
+
+M436, Quest locations, was the first additional slice requested for this window.
 It adds shared current destinations for contracts, stories, crew journeys,
 service orders and council journeys. Both maps show quest diamonds, Q labels,
 filters and next actions. Flight and orbit use the same destinations. Known

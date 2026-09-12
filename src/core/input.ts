@@ -43,7 +43,7 @@ export class Input {
       this.keyboardHeld.delete(raw);
       this.releaseUnowned(k);
     });
-    window.addEventListener("blur", () => {this.focused=false;this.padNeedsNeutral=true;this.keyboardHeld.clear();this.padHeld.clear();this.touchHeld.clear();this.down.clear();this.pressed.clear();this.mouseDown=false;this.mouseRight=false;});
+    window.addEventListener("blur", () => {this.focused=false;this.padNeedsNeutral=true;this.keyboardHeld.clear();this.padHeld.clear();this.touchHeld.clear();this.down.clear();this.flush();this.lastRawKey=null;this.mouseDown=false;this.mouseRight=false;});
     window.addEventListener("focus", () => {this.focused=true;});
     canvas.addEventListener("mousemove", (e) => {
       const { scale, ox, oy } = getScale();
