@@ -1,0 +1,26 @@
+#workshop-screen { position:fixed; inset:0; z-index:6; overflow:auto; overscroll-behavior:contain; touch-action:pan-y; color-scheme:dark; background:radial-gradient(ellipse at 90% 0%,#173440 0%,#080e18 55%); color:#dce8ed; font:15px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace; }
+#workshop-screen * { box-sizing:border-box; }
+#workshop-screen .workshop-shell { max-width:1260px; margin:auto; padding:32px; }
+#workshop-screen header { display:flex; align-items:center; justify-content:space-between; gap:20px; }
+#workshop-screen h1 { margin:3px 0 12px; font-size:38px; color:#98f0d1; }
+#workshop-screen .eyebrow { font-size:12px; letter-spacing:.14em; color:#9eafb9; }
+#workshop-screen nav { display:flex; flex-wrap:wrap; gap:8px; margin:20px 0; }
+#workshop-screen button { padding:10px 14px; margin:4px 6px 4px 0; min-height:44px; border:1px solid #48616f; border-radius:3px; background:#122633; color:#dce8ed; font:inherit; cursor:pointer; }
+#workshop-screen button:hover { background:#204151; border-color:#98f0d1; }
+#workshop-screen button[aria-current=true] { background:#98f0d1; color:#0b2520; border-color:#98f0d1; }
+#workshop-screen button:focus-visible { outline:3px solid #edc775; outline-offset:3px; }
+#workshop-screen button:disabled { opacity:.55; cursor:default; }
+#workshop-screen .workshop-grid, #workshop-screen .research-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; align-items:start; }
+#workshop-screen article { border:1px solid #334b5a; border-top:3px solid #41677a; border-radius:4px; padding:20px; background:#0f1c28; overflow-wrap:anywhere; }
+#workshop-screen article[data-complete=true] { border-top-color:#98f0d1; }
+#workshop-screen h2 { font-size:19px; line-height:1.35; margin:0 0 10px; color:#edf4f7; }
+#workshop-screen p { margin:10px 0; }
+#workshop-screen small { display:block; color:#aabbc5; font-size:12px; }
+#workshop-screen .workshop-intro { grid-column:1/-1; background:#152936; }
+#workshop-screen .workshop-status { min-height:24px; color:#f1cc84; }
+#workshop-screen .workshop-summary { color:#b9cbd5; }
+#workshop-screen footer { border-top:1px solid #334b5a; margin-top:26px; padding:20px 0; color:#99acb7; font-size:12px; }
+@media(max-width:900px) { #workshop-screen .workshop-grid, #workshop-screen .research-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:600px) { #workshop-screen .workshop-shell { padding:20px; } #workshop-screen header { align-items:start; flex-direction:column; gap:4px; } #workshop-screen .workshop-grid, #workshop-screen .research-grid { grid-template-columns:minmax(0,1fr); } #workshop-screen h1 { font-size:30px; } }
+
+#workshop-screen article[data-research=fabrication] { grid-column:1/-1; }

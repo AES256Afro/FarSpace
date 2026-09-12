@@ -22,7 +22,7 @@ export const MODULES: ModuleDef[] = [
   { id: "dock", name: "Docking Computer", price: 600, desc: "Hold near a bay at low speed and it brings you in." },
   { id: "collector", name: "Collector Limpets", price: 1500, desc: "Canisters and ore chunks within 240m drift into your hold." },
   { id: "prospector", name: "Prospector Limpets", price: 900, desc: "Aim at a rock to read its yield before you drill. Spots motherlodes." },
-  { id: "refinery", name: "Refinery", price: 1400, desc: "Refines a share of every cracked rock into metals on the spot." },
+  { id: "refinery", name: "Refinery", price: 1400, desc: "Recovers one refined metal from each asteroid cracked by your mining laser." },
   { id: "fss", name: "Discovery Scanner", price: 1100, desc: "Logs every system fully on arrival and marks its signals and derelicts." },
   { id: "dss", name: "Surface Scanner", price: 1600, desc: "Orbital surveys map a whole world in one pass and pay double." },
   { id: "thrusters", name: "Tuned Thrusters", price: 2200, desc: "+15% thrust and top speed." },

@@ -1,3 +1,4 @@
+import { openWorkshop } from "./workshop";
 import type { ReaderScene } from "./reader";
 import { deliverRecovery, hullSalePrice } from "../core/shiprecovery";
 import { recordOffence, closeLawCases } from "../core/law";
@@ -420,6 +421,7 @@ export class StationScene implements Scene {
   paTimer = 20;
   update(g: Game, dt: number): void {
     const inp = g.input;
+    if (inp.wasPressed("F2") || (inp.mousePressed && inp.mouseX >= 300 && inp.mouseY >= 227 && inp.mouseY < 242)) { openWorkshop(g); return; }
     music.setMood(this.station.factionId, 0);
     this.paTimer -= dt;
     if (this.paTimer <= 0) { this.paTimer = 25 + Math.random() * 35; sfx.pa(); }
@@ -1272,6 +1274,8 @@ export class StationScene implements Scene {
       case "ENGINEER": this.drawEngineer(g, ctx, top); break;
       case "BASE": this.drawBase(g, ctx, top); break;
     }
+    ctx.fillStyle = "#193542"; ctx.fillRect(300, 227, 174, 15);
+    drawText(ctx, "F2 WORKSHOP / MATERIALS & CRAFT", 306, 232, PAL.ui);
     if (g.toastTimer > 0) drawText(ctx, g.toastMsg, VW / 2 - textWidth(g.toastMsg) / 2, VH - 10, PAL.ui);
     if (g.hint) drawText(ctx, g.hint, VW / 2 - textWidth(g.hint) / 2, VH - 20, PAL.gold);
     drawTutorial(g, ctx, VH - 46);

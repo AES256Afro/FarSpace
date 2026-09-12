@@ -18,6 +18,54 @@ The user's title preference is explicit: randomly alternate between an
 orbital ship scene, station traffic and a bridge-window scene. The title
 menu keeps one layout across all three.
 
+## September 11 priority update: mining and industry
+
+The user requested better mining, clear material uses, crafting, research,
+technology progression, automation, and map actions that start travel and stop
+at the destination. M418 through M427 remain open. Their scope is retained;
+local fixes in later releases do not complete the entire earlier milestone.
+
+The v0.261.0 release implements M428 through M432 below. All 571 tests pass,
+the production build succeeds, and native browser acceptance is complete.
+Publication verification is pending. Route changes contribute to M419 and
+M420 but do not close those broader milestones.
+
+| Milestone | Deliverable | Dependency | Acceptance |
+| --- | --- | --- | --- |
+| M428: Materials with a purpose | Workshop inventory with per material capacity, sources, recipes and existing engineering grades. Direct access from flight, ports and salvage. | v0.260.0 | A full salvage material can be traced to a usable recipe without consulting documentation. Material storage and cargo capacity are visibly distinct. |
+| M429: Mining you can read | Target range, extraction progress, deterministic mineral composition and persistent mining remains. Map entries for nearby rocks and uncollected deposits. | M428 | Partial work and overflow survive saves. Mining, the displayed target and collection agree. A full hold pauses drilling and leaves remaining deposits recoverable. |
+| M430: Shipboard fabrication | Fourteen recipes consuming ore, minerals and salvage for parts, fuel, data, supplies, ammunition and mining equipment. | M428 | Inputs and output settle together once. Full holds, missing inputs and repeated actions cannot lose or duplicate stock. Existing upgrades remain usable. |
+| M431: Research branches | Seven technologies with explicit parents, costs, timed projects and useful unlocks. | M430 | Start with Fabrication, see the child branches, complete a project and use its result. Research and production cannot spend the same ingredients twice. |
+| M432: Production control | Single jobs initially; research unlocks five queued jobs and batches of up to twenty. Pause, cancel, shortages and completion are visible. | M430, M431 | A saved queue resumes accurately. A blocked job waits without consuming inputs or silently skipping to another job. No offline accrual or unbounded repeat jobs. |
+| M433: Mining orders | Assign an equipped ship to a selected deposit or belt. Show approach, extraction, collection and return states. | M429, M432; navigation acceptance | Explicit start and cancel. Stop for threats, low fuel, full storage or depleted deposits. Use actual local rocks and cargo; no abstract material generation. |
+| M434: Cargo logistics | Port material storage, transfer orders and repeat supply runs between owned storage and production sites. | M432, M433 | Reserve minimum fuel and supplies. Every unit has one owner and location. Full destinations and interrupted routes retain cargo. Show the last delivery and current blocker. |
+| M435: Experimental technology | Specialist research paths, prototype fittings and larger construction recipes using rare salvage, data and field trials. | M431, M434 | Show the complete bill of materials, prerequisite research and expected result. Existing equipment stays useful. Failed or cancelled work has an explicit recoverable state. |
+
+Implementation order after v0.261.0:
+
+1. Finish the shared menu and flight clarity work in M418 through M420. Include
+   consistent Workshop access, complete destination explanations and readable
+   mining orders before adding autonomous fleets.
+2. Complete M421 and M422 with a guided mine, craft, upgrade and travel loop,
+   plus a truthful recap of pending jobs and selected objectives.
+3. Implement M433 and M434. Keep mining and cargo automation bounded to orders
+   that the player can inspect and stop.
+4. Connect M423 and M424 support jobs and port changes to manufactured supplies.
+   Preserve their rescue and consequence work rather than replacing it.
+5. Combine M425 ship condition work with M435 research and prototype fittings.
+   Finish device coverage in M426 and cross system validation in M427.
+
+Navigation acceptance completed for v0.261.0:
+
+- Both maps separate inspecting, plotting and Fly there. Fly there starts
+  immediately, closes the map and retains the active local population.
+- A local target stops inside interaction range at zero velocity. A selected
+  galaxy system follows its route through gates and stops after the final jump.
+- Manual controls or N cancel navigation. An unavailable route, insufficient
+  fuel or a tow that cannot jump stops travel with a reason. Ordinary docking,
+  landing and boarding remain deliberate interactions after arrival.
+- Validate an actual approach through the frame loop in addition to unit tests.
+
 ## Findings that determine the order
 
 | Evidence in the current checkout | Consequence for the plan |

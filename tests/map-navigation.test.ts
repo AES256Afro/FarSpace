@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { MapCamera, MAP_RECT, PANEL_RECT, placeMapLabels, overlaps } from "../src/core/mapview";
-import { generateWorld } from "../src/world";
+import { generateWorld, navRoute } from "../src/world";
 import { GalaxyScene } from "../src/scenes/galaxy";
 import { SystemMap, systemContacts, resolveLocalTarget } from "../src/scenes/systemmap";
 import { FlightScene } from "../src/scenes/flight/index";
@@ -17,6 +17,44 @@ function fixture(realGalaxy=false) {
 }
 
 describe("map layout and navigation",()=>{
+  it("starts the selected local destination from the map and preserves the live flight",()=>{
+    const {g,flight}=fixture(), sys=g.world.systems[g.world.player.systemId], map=flight.systemMap;
+    flight.mapOpen=true; const contacts=[...flight.npcs]; map.selected=`station:${sys.stations[0].id}`;
+    map.fly(g); expect(flight.autopilot).toBe(true); expect(flight.mapOpen).toBe(false);
+    expect(flight.localTarget?.id).toBe(map.selected); expect(flight.npcs).toEqual(contacts);
+    const t=flight.apTarget(g)!; Object.assign(g.world.player,{x:t.x,y:t.y,vx:0,vy:0});
+    flight.updateAutopilot(g,0.05); expect(flight.autopilot).toBe(false); expect(g.world.player.vx).toBe(0); expect(g.world.player.vy).toBe(0);
+  });
+  it("flies a plotted galaxy route through its gate and stops in the chosen system",()=>{
+    const {g,flight,galaxy}=fixture(), p=g.world.player, sys=g.world.systems[p.systemId];
+    vi.spyOn(flight,"claimFirst").mockResolvedValue(); p.fuel=1000;
+    g.setScene("galaxy"); galaxy.selected=sys.links[0]; const destination=galaxy.selected;
+    galaxy.fly(g); expect(g.sceneName).toBe("flight"); expect(flight.autopilot).toBe(true); expect(flight.autoRoute).toBe(true);
+    const t=flight.apTarget(g)!; Object.assign(p,{x:t.x,y:t.y,vx:0,vy:0}); const before=p.fuel;
+    flight.updateAutopilot(g,0.05); expect(p.systemId).toBe(destination); expect(p.fuel).toBeLessThan(before);
+    expect(flight.autopilot).toBe(false); expect(flight.autoRoute).toBe(false); expect(p.navTarget).toBeNull(); expect([p.vx,p.vy]).toEqual([0,0]);
+  });
+  it("does not start a route without jump fuel and allows manual takeover",()=>{
+    const {g,flight,galaxy,held}=fixture(), p=g.world.player;
+    galaxy.selected=g.world.systems[p.systemId].links[0]; p.fuel=0; galaxy.fly(g);
+    expect(flight.autopilot).toBe(false); expect(p.navTarget).toBeFalsy();
+    p.fuel=100; flight.startAutopilot(g); held.add("w"); flight.updateAutopilot(g,0.05); expect(flight.autopilot).toBe(false);
+  });
+  it("continues across intermediate systems and stops only at the selected final system",()=>{
+    const {g,flight,galaxy}=fixture(), p=g.world.player;
+    vi.spyOn(flight,"claimFirst").mockResolvedValue(); p.fuel=1000;
+    const destination=Object.keys(g.world.systems).find(id=>(navRoute(g.world,p.systemId,id)?.length ?? 0)>2)!;
+    expect(destination).toBeDefined(); g.setScene("galaxy"); galaxy.selected=destination; galaxy.fly(g);
+    let jumps=0;
+    while(flight.autopilot && jumps<20){const t=flight.apTarget(g)!;Object.assign(p,{x:t.x,y:t.y,vx:0,vy:0});flight.updateAutopilot(g,.05);jumps++;}
+    expect(jumps).toBeGreaterThan(1);expect(p.systemId).toBe(destination);expect(flight.autopilot).toBe(false);expect(p.navTarget).toBeNull();
+  });
+  it("keeps a recovery tow out of automatic gate travel",()=>{
+    const {g,flight}=fixture(), p=g.world.player, sys=g.world.systems[p.systemId];
+    const wreck={id:"towed",name:"Towed",x:p.x,y:p.y,hazard:0,looted:false,loot:[],recovery:{hullId:"scout",hull:20,angle:0,status:"towing" as const}};
+    sys.wrecks.push(wreck); p.recoveryTow={systemId:sys.id,wreckId:wreck.id}; p.navTarget=sys.links[0];
+    expect(flight.startAutopilot(g,true)).toBe(false); expect(flight.autopilot).toBe(false);
+  });
   it("fits all 51 nearby stars within the map rather than under the details panel",()=>{
     const {g,galaxy}=fixture(true);galaxy.fit(g);
     for(const s of Object.values(g.world.systems)){const at=galaxy.camera.project({x:s.gx,y:s.gy});expect(at.x).toBeGreaterThan(MAP_RECT.x);expect(at.x).toBeLessThan(MAP_RECT.x+MAP_RECT.w);expect(at.y).toBeGreaterThan(MAP_RECT.y);expect(at.y).toBeLessThan(MAP_RECT.y+MAP_RECT.h);}

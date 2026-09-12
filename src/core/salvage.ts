@@ -1,7 +1,7 @@
 import { RNG, hashStr } from "./rng";
 import { prepareWreck } from "./derelicts";
 import { addCargo, cargoUsed, type PlayerState, type WreckDef } from "../world";
-import { addMaterials, MATERIAL_CAP } from "../data/engineering";
+import { addMaterials, materialCap } from "../data/engineering";
 
 export interface SalvagePart {
   id: "drive" | "electronics" | "plating" | "alloys";
@@ -60,7 +60,7 @@ export function salvageReason(wreck: WreckDef, part: SalvagePart, p: PlayerState
   if (wreck.boarding?.survivor && !wreck.boarding.rescued) return "SURVIVOR ABOARD. BOARD AND EVACUATE BEFORE CUTTING.";
   if (contestedWreck(wreck)) return "ANOTHER CREW HAS A CLAIM. BOARD TO SETTLE SALVAGE RIGHTS.";
   if (part.store === "cargo" && cargoUsed(p) + 1 > p.cargoMax) return "HOLD FULL. UNLOAD AND RETURN FOR THE REST.";
-  if (part.store === "materials" && (p.materials?.[part.resource] ?? 0) + 1 > MATERIAL_CAP) return "MATERIAL STORAGE FULL. THIS SECTION WILL STAY HERE.";
+  if (part.store === "materials" && (p.materials?.[part.resource] ?? 0) + 1 > materialCap(p)) return `MATERIAL STORAGE FULL (${materialCap(p)} EACH). F2 WORKSHOP: CRAFT OR UPGRADE. STOCK STAYS HERE.`;
   if (p.fuel <= 0) return "NO CUTTER FUEL. REFUEL AND RETURN TO FINISH.";
   return null;
 }

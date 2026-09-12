@@ -2233,3 +2233,21 @@ M416 and M417 are implemented through v0.257.1. M418-M427 remain planned.
 | M425: A ship you can read | Clear interior layout, hull identity and visible condition. |
 | M426: Comfortable across devices | Input, readability, motion and performance verified across devices. |
 | M427: A voyage that holds together | Full player journeys, save compatibility and long-session release checks. |
+
+
+## Mining and industry: M428-M435
+
+M428 through M432 are implemented in v0.261.0. The earlier M418 through M427
+remain open. The [next development plan](NEXT-MILESTONES.md) records their
+combined delivery order and acceptance criteria.
+
+| Milestone | Outcome |
+| --- | --- |
+| M428: Materials with a purpose | Workshop inventory explains capacity, sources, uses and recipes. |
+| M429: Mining you can read | Actual target and progress, mineral scans and persistent deposits. |
+| M430: Shipboard fabrication | Fourteen recipes turn cargo and salvage into useful supplies and equipment. |
+| M431: Research branches | Seven timed projects with visible prerequisites and functional unlocks. |
+| M432: Production control | Saved finite queues, batches, pause, cancellation and shortage handling. |
+| M433: Mining orders, planned | Inspectable approach, extraction, collection and return orders for equipped ships. |
+| M434: Cargo logistics, planned | Port storage, transfers and repeat supply routes with explicit resource ownership. |
+| M435: Experimental technology, planned | Specialist paths, prototype fittings and construction using rare salvage and trials. |

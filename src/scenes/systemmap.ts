@@ -1,3 +1,4 @@
+import { hasMiningRemains } from "../core/mining";
 import { wreckAvailable } from "../core/salvage";
 import type { Game } from "../game";
 import { drawText } from "../gfx/font";
@@ -17,6 +18,10 @@ export function systemContacts(g: Game, knownTarget?: string): SystemContact[] {
   for (const s of sys.stations) out.push({ id: `station:${s.id}`, name: s.name, kind: "STATION", x: Math.cos(s.angle)*s.orbit, y: Math.sin(s.angle)*s.orbit, color: s.military ? PAL.danger : PAL.ui, detail: s.military ? "MILITARY DOCK" : "DOCK / TRADE / REPAIR", range: 80 });
   sys.planets.forEach((pl,i) => out.push({ id: `planet:${i}`, name: pl.name, kind: "PLANET", x: Math.cos(pl.angle)*pl.orbit, y: Math.sin(pl.angle)*pl.orbit, color: PAL.grey, detail: "APPROACH TO ENTER ORBIT", range: pl.radius+70 }));
   for (const j of sys.jumpPoints) out.push({ id:`gate:${j.id}`, name:g.world.systems[j.targetSystemId].name, kind:"GATE", x:j.x,y:j.y,color:PAL.info,detail:`JUMP TO ${g.world.systems[j.targetSystemId].name.toUpperCase()}`,range:45 });
+  sys.asteroids.forEach((a, i) => {
+    if ((a.ore > 0 || hasMiningRemains(a)) && (Math.hypot(a.x-p.x,a.y-p.y)<1500 || knownTarget === `rock:${i}`))
+      out.push({id:`rock:${i}`,name:`${a.ore <= 0 ? "Mining remains" : a.core ? "Core asteroid" : a.rich ? "Rich asteroid" : "Asteroid"} ${i+1}`,kind:"ROCK",x:a.x,y:a.y,color:PAL.mining,detail:a.ore <= 0 ? "ORE AND MATERIALS / STORED HERE" : a.core ? "SEISMIC CHARGE REQUIRED" : "MINE / HOLD M WITHIN 90M",range:30});
+  });
   const wreckRange = hasModule(p,"fss") || hull(p.hullId).scanner ? Infinity : 1500;
   for (const w of sys.wrecks) if (wreckAvailable(w) && (Math.hypot(w.x-p.x,w.y-p.y)<wreckRange || knownTarget === `wreck:${w.id}`)) out.push({ id:`wreck:${w.id}`,name:w.name,kind:"WRECK",x:w.x,y:w.y,color:PAL.warn,detail:w.boarding?.survivor && !w.boarding.rescued ? "SURVIVOR ABOARD" : w.recovery && w.recovery.status !== "dismantled" ? "DISABLED / SALVAGE OR RECOVER HULL" : w.looted ? "INTERIOR CLEARED / EXTERIOR SALVAGE" : `BOARD / SALVAGE / HAZARD ${Math.round(w.hazard*100)}%`,range:35 });
   for (const a of sys.anomalies) if (a.discovered && !a.claimed) out.push({ id:`signal:${a.id}`,name:a.name,kind:"SIGNAL",x:a.x,y:a.y,color:PAL.info,detail:a.kind === "derelict" ? "DERELICT / BOARDABLE" : "APPROACH TO INVESTIGATE",range:35 });
@@ -31,7 +36,7 @@ export function resolveLocalTarget(g: Game, target: LocalMapTarget | null): Syst
   return systemContacts(g, target.id).find(c=>c.id===target.id) ?? null;
 }
 
-const FILTERS = ["ALL","STATION","WRECK","SIGNAL","GATE","PLANET"];
+const FILTERS = ["ALL","STATION","WRECK","SIGNAL","GATE","PLANET","ROCK"];
 export class SystemMap {
   camera = new MapCamera();
   selected: string | null = null;
@@ -44,6 +49,14 @@ export class SystemMap {
     this.camera.fit([{x:-SYSTEM_SIZE,y:-SYSTEM_SIZE},{x:SYSTEM_SIZE,y:SYSTEM_SIZE},{x:p.x,y:p.y},...systemContacts(g)]);
   }
   enter(g: Game): void { this.fit(g); this.selected = (g.scenes.flight as FlightScene).localTarget?.id ?? null; this.scroll=0; this.filter="ALL"; }
+  fly(g: Game): void {
+    const target = systemContacts(g).find(c => c.id === this.selected);
+    if (!target) { g.toast("SELECT A DESTINATION FIRST."); return; }
+    const fs = g.scenes.flight as FlightScene;
+    fs.localTarget = { systemId: g.world.player.systemId, id: target.id };
+    g.world.player.navTarget = null; delete g.world.player.navStationId; g.world.player.singersCourse = false;
+    if (fs.startAutopilot(g)) { fs.mapOpen = false; g.input.flush?.(); g.input.down?.clear(); }
+  }
   update(g: Game, dt: number): void {
     const inp=g.input, fs=g.scenes.flight as FlightScene;
     if (inp.wasPressed("Escape") || inp.wasPressed("Tab")) { fs.mapOpen=false; return; }
@@ -51,10 +64,11 @@ export class SystemMap {
     if (inp.wasPressed("F5")) g.save();
     if (inp.wasPressed("F9")) { g.load(); return; }
     if (stormBlind(g.world,g.world.player.systemId)) return;
+    if (inp.wasPressed("a") || (inp.mousePressed && contains({x:394,y:231,w:78,h:15},inp.mouseX,inp.mouseY))) { this.fly(g); return; }
     this.camera.update(inp,dt);
     if (inp.wasPressed("Home") || (inp.mousePressed && contains({x:8,y:231,w:50,h:15},inp.mouseX,inp.mouseY))) this.fit(g);
-    if (inp.mousePressed && inp.mouseY>=231 && inp.mouseY<246 && inp.mouseX>=62 && inp.mouseX<302) {
-      this.filter=FILTERS[Math.floor((inp.mouseX-62)/40)]; this.scroll=0;
+    if (inp.mousePressed && inp.mouseY>=231 && inp.mouseY<246 && inp.mouseX>=62 && inp.mouseX<300) {
+      this.filter=FILTERS[Math.floor((inp.mouseX-62)/34)]; this.scroll=0;
     }
     const contacts=this.contacts(g);
     if (inp.wheel && contains(PANEL_RECT,inp.mouseX,inp.mouseY)) this.scroll+=Math.sign(inp.wheel)*3;
@@ -76,7 +90,7 @@ export class SystemMap {
       const c=contacts[this.scroll+Math.floor((inp.mouseY-91)/12)];
       if (c) { this.selected=c.id; this.camera.x=c.x; this.camera.y=c.y; }
     }
-    if (inp.wasPressed("n") || inp.wasPressed("Enter") || (inp.mousePressed && contains({x:312,y:231,w:160,h:15},inp.mouseX,inp.mouseY))) {
+    if (inp.wasPressed("n") || inp.wasPressed("Enter") || (inp.mousePressed && contains({x:312,y:231,w:78,h:15},inp.mouseX,inp.mouseY))) {
       const target=systemContacts(g).find(c=>c.id===this.selected);
       if (!target) { g.toast("SELECT A DESTINATION FIRST."); return; }
       if (fs.localTarget?.id===target.id) { fs.localTarget=null; fs.autopilot=false; g.toast("LOCAL DESTINATION CLEARED."); }
@@ -111,8 +125,9 @@ export class SystemMap {
     contacts.slice(this.scroll,this.scroll+10).forEach((c,i)=>{const y=91+i*12;if(c.id===this.selected){ctx.fillStyle="#20374b";ctx.fillRect(316,y,152,12);}drawText(ctx,clippedText(c.name.toUpperCase(),140),320,y+3,c.color);});
     drawText(ctx,contacts.length ? `${this.scroll+1}..${Math.min(this.scroll+10,contacts.length)} / ${contacts.length} / SCROLL LIST` : "NO CONTACTS IN THIS CATEGORY",318,215,PAL.greyDark);
     mapButton(ctx,{x:8,y:231,w:50,h:15},"HOME FIT");
-    FILTERS.forEach((f,i)=>mapButton(ctx,{x:62+i*40,y:231,w:38,h:15},f==="STATION"?"PORTS":f==="PLANET"?"WORLDS":f.slice(0,5),this.filter===f));
-    mapButton(ctx,{x:312,y:231,w:160,h:15},fs.localTarget?.id===this.selected ? "N CLEAR DESTINATION" : "N SET DESTINATION",fs.localTarget?.id===this.selected);
+    FILTERS.forEach((f,i)=>mapButton(ctx,{x:62+i*34,y:231,w:32,h:15},f==="STATION"?"PORTS":f==="PLANET"?"WORLDS":f.slice(0,5),this.filter===f));
+    mapButton(ctx,{x:312,y:231,w:78,h:15},fs.localTarget?.id===this.selected ? "N CLEAR" : "N PLOT",fs.localTarget?.id===this.selected);
+    mapButton(ctx,{x:394,y:231,w:78,h:15},"A FLY THERE");
     drawText(ctx,"WHEEL ZOOM / RIGHT DRAG OR ARROWS PAN / [ ] SELECT",8,250,PAL.greyDark);
     drawText(ctx,"TAB OR ESC CLOSE / G GALAXY / TIME PAUSED",8,261,PAL.grey);
   }

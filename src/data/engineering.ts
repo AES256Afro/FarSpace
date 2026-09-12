@@ -13,6 +13,7 @@ export const MATERIALS: MaterialDef[] = [
   { id: "polonium", name: "Polonium", rarity: "rare" },
 ];
 export const MATERIAL_CAP = 60;
+export function materialCap(p: PlayerState): number { return p.workshop?.research.includes("storage") ? 120 : MATERIAL_CAP; }
 
 export interface Blueprint {
   id: string;
@@ -79,7 +80,7 @@ export function addMaterials(p: PlayerState, gains: Record<string, number>): Rec
   for (const [id, n] of Object.entries(gains)) {
     if (n <= 0) continue;
     const before = p.materials[id] ?? 0;
-    const after = Math.min(MATERIAL_CAP, before + n);
+    const after = Math.min(materialCap(p), before + n);
     if (after > before) { p.materials[id] = after; got[id] = after - before; }
   }
   return got;

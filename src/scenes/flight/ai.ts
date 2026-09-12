@@ -1,3 +1,4 @@
+import { aimedRock, crackRock, collectRock } from "../../core/mining";
 import { breakPiratePassage } from "../../core/piracy";
 import { recordOffence } from "../../core/law";
 import { disableCombatShip, type CombatWeapon } from "../../core/shiprecovery";
@@ -12,7 +13,7 @@ import { RNG, hashStr } from "../../core/rng";
 import { clamp, TAU, angDiff, dist } from "../../core/mathx";
 import { PAL } from "../../gfx/palette";
 import { sfx } from "../../core/sfx";
-import { addCargo, stationExports, adjustRep, passengersTookFire, noteLeg } from "../../world";
+import { cargoUsed, addCargo, stationExports, adjustRep, passengersTookFire, noteLeg } from "../../world";
 import { commodity } from "../../data/data";
 import * as wire from "../../core/wire";
 import { applyVariant, variantStats, fleeLine, captainDown } from "./combat";
@@ -286,13 +287,13 @@ export function updateParticles(fs: FlightScene, dt: number): void {
 // ---------- Mining & loot ----------
 
 export function mine(fs: FlightScene, g: Game, dt: number, rate: number, aim: number): void {
+  if (!Number.isFinite(dt) || dt <= 0 || !Number.isFinite(rate) || rate <= 0) return;
   const p = g.world.player;
   const sys = g.world.systems[p.systemId];
-  for (const a of sys.asteroids) {
-    if (a.ore <= 0) continue;
-    if (dist(p.x, p.y, a.x, a.y) >= 90) continue;
-    const ang = Math.atan2(a.y - p.y, a.x - p.x);
-    if (Math.abs(angDiff(aim, ang)) >= 0.5) continue;
+  const a = aimedRock(sys.asteroids, p, aim, 90);
+  if (a) {
+    if (cargoUsed(p) >= p.cargoMax) { if (fs.mineNotice <= 0) { g.toast("MINING PAUSED. HOLD FULL. F2 WORKSHOP CAN USE ORE AND MATERIALS."); fs.mineNotice = 3; } return; }
+    a.miningInitial = Math.max(a.miningInitial ?? a.ore, a.ore);
     if (a.core) {
       if (Math.random() < dt * 0.7) g.toast("CORE ROCK - LASERS WON'T CRACK IT - PLANT A SEISMIC CHARGE (C)");
       if (Math.random() < dt * 4) fs.particles.push({ x: a.x, y: a.y, vx: (Math.random() - 0.5) * 20, vy: (Math.random() - 0.5) * 20, life: 0.3, color: PAL.gold });
@@ -308,23 +309,11 @@ export function mine(fs: FlightScene, g: Game, dt: number, rate: number, aim: nu
       });
     }
     if (a.ore <= 0) {
-      const qty = a.rich ? 3 : 1;
-      p.mined = (p.mined ?? 0) + qty;
-      const refined = hasModule(p, "refinery") && Math.random() < 0.6 ? 1 : 0;
-      if (qty - refined > 0) fs.loot.push({ x: a.x, y: a.y, commodityId: "ore", qty: qty - refined, life: 60 });
-      if (refined) fs.loot.push({ x: a.x - 8, y: a.y + 6, commodityId: "metals", qty: 1, life: 60 });
-      if (a.rich && Math.random() < 0.25) {
-        fs.loot.push({ x: a.x + 8, y: a.y + 4, commodityId: "metals", qty: 1, life: 60 });
-      }
+      crackRock(p, a);
+      const got = collectRock(p, a);
       boom(fs, a.x, a.y, 12, PAL.mining);
-      g.toast("ASTEROID CRACKED");
-      const gains: Record<string, number> = {};
-      if (Math.random() < 0.55) gains.iron = 1;
-      if (Math.random() < 0.35) gains.nickel = 1;
-      if (Math.random() < 0.3) gains.carbon = 1;
-      if (Math.random() < 0.08) gains.germanium = 1;
-      if (a.rich && Math.random() < 0.3) gains.vanadium = 1;
-      if (Object.keys(gains).length) setTimeout(() => gainMaterials(g, gains), 900);
+      g.toast(`ROCK CRACKED. +${got.materials} MATERIALS. APPROACH WITHIN 35M FOR ORE. F2 WORKSHOP.`);
+
     }
     return;
   }
@@ -333,6 +322,9 @@ export function mine(fs: FlightScene, g: Game, dt: number, rate: number, aim: nu
 export function updateLoot(fs: FlightScene, g: Game, dt: number): void {
   const p = g.world.player;
   const collector = hasModule(p, "collector");
+  let ore = 0, minerals = 0;
+  for (const a of g.world.systems[p.systemId].asteroids) { const got = collectRock(p, a); ore += got.cargo; minerals += got.materials; }
+  if (ore || minerals) { g.toast(`MINING RECOVERY: ${ore} CARGO / ${minerals} MATERIALS. F2 WORKSHOP.`); sfx.pickup(); }
   for (const l of fs.loot) {
     l.life -= dt;
     if (collector) {

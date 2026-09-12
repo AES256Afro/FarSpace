@@ -1,3 +1,4 @@
+import { aimedRock, rockMaterials, hasMiningRemains } from "../../core/mining";
 import { piratePassageRemaining } from "../../core/piracy";
 import { wreckAvailable } from "../../core/salvage";
 import { recoveryTow } from "../../core/shiprecovery";
@@ -246,26 +247,27 @@ export function drawFlight(fs: FlightScene, g: Game, ctx: CanvasRenderingContext
     if (dist(p.x, p.y, c.ax, c.ay) < 120) drawText(ctx, "GET CLEAR", sx - 18, sy + 12, PAL.danger);
   }
 
-  // prospector limpets: read the rock you're pointing at
-  if (hasModule(p, "prospector")) {
-    let best: (typeof sys.asteroids)[number] | null = null; let bestD = 220;
-    for (const a of sys.asteroids) {
-      if (a.ore <= 0) continue;
-      const d = dist(p.x, p.y, a.x, a.y);
-      if (d < bestD && Math.abs(angDiff(fs.aim, Math.atan2(a.y - p.y, a.x - p.x))) < 0.35) { bestD = d; best = a; }
+  // Every mining target reports range and progress; prospectors add composition.
+  const miningTarget = aimedRock(sys.asteroids, p, fs.aim);
+  if (miningTarget) {
+    const a = miningTarget, [sx, sy] = toScreen(a.x, a.y), d = Math.hypot(a.x - p.x, a.y - p.y);
+    const label = a.core ? "CORE / C SEISMIC CHARGE" : `${a.rich ? "RICH ROCK" : "ROCK"} / ${Math.round(d)}M / ${d >= 90 ? "MOVE WITHIN 90M" : "HOLD M TO MINE"}`;
+    drawText(ctx, label, Math.max(4, Math.min(VW - textWidth(label) - 4, sx - textWidth(label) / 2)), Math.max(20, sy - a.radius * z - 15), PAL.mining);
+    if (a.miningInitial && !a.core) { ctx.fillStyle = "#173138"; ctx.fillRect(sx - 20, sy + a.radius * z + 5, 40, 3); ctx.fillStyle = PAL.mining; ctx.fillRect(sx - 20, sy + a.radius * z + 5, 40 * Math.max(0, 1 - a.ore / a.miningInitial), 3); }
+    if (hasModule(p, "prospector")) {
+      const text = Object.entries(rockMaterials(a)).map(([id,n]) => `${n} ${id.toUpperCase()}`).join(" / ");
+      drawText(ctx,text,Math.max(4, Math.min(VW - textWidth(text) - 4,sx-textWidth(text)/2)),Math.max(28,sy-a.radius*z-7),PAL.gold);
     }
-    if (best) {
-      const [sx, sy] = toScreen(best.x, best.y);
-      const label = best.core ? `CORE - SEISMIC CHARGE (C)` : `${best.rich ? "MOTHERLODE" : "ORE"} ${Math.ceil(best.ore)}${best.rich ? " - RICH" : ""}`;
-      ctx.strokeStyle = best.rich ? PAL.gold : PAL.mining;
-      ctx.strokeRect(Math.round(sx - best.radius * z) - 2.5, Math.round(sy - best.radius * z) - 2.5, Math.round(best.radius * z * 2) + 5, Math.round(best.radius * z * 2) + 5);
-      drawText(ctx, label, sx - textWidth(label) / 2, sy - best.radius * z - 10, best.rich ? PAL.gold : PAL.mining);
-    }
+  }
+  for (const a of sys.asteroids) if (hasMiningRemains(a)) {
+    const [sx,sy] = toScreen(a.x,a.y); if (sx < -10 || sx > VW+10 || sy < -10 || sy > VH+10) continue;
+    ctx.fillStyle = PAL.gold; ctx.fillRect(sx-2,sy-2,4,4);
+    if (Math.hypot(p.x-a.x,p.y-a.y) < 160) drawText(ctx,"ORE / MATERIALS",Math.max(4,Math.min(VW-70,sx-30)),sy+7,PAL.gold);
   }
 
   // mining beam
   if (fs.mining) {
-    for (const a of sys.asteroids) {
+    for (const a of miningTarget ? [miningTarget] : []) {
       if (a.ore <= 0) continue;
       if (dist(p.x, p.y, a.x, a.y) < 90 && Math.abs(angDiff(fs.aim, Math.atan2(a.y - p.y, a.x - p.x))) < 0.5) {
         const [x1, y1] = toScreen(p.x, p.y);

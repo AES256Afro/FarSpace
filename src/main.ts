@@ -1,3 +1,4 @@
+import { WorkshopScene } from "./scenes/workshop";
 // FarSpace entry point: boot the game, register scenes, run the loop.
 
 import { Game, VW, VH } from "./game";
@@ -54,6 +55,7 @@ game.scenes["servicefile"] = new ServiceFileScene();
 game.scenes["missionlog"] = new ReaderScene("MISSION LOG", []);
 game.scenes["wreck"] = new WreckScene();
 game.scenes["salvage"] = new SalvageScene();
+game.scenes["workshop"] = new WorkshopScene();
 game.scenes["orbit"] = new OrbitScene();
 game.scenes["outpost"] = new OutpostScene();
 game.scenes["waystation"] = new WaystationScene();
@@ -96,7 +98,7 @@ function frame(now: number): void {
   // one bad frame must not kill the loop: log it, toast it, carry on
   try {
     game.scene.update(game, dt);
-    updateVoyageSystems(game);
+    updateVoyageSystems(game, dt);
   } catch (err) {
     console.error(err);
     if (!game.toastMsg.startsWith("GLITCH")) game.toast("GLITCH LOGGED - CARRYING ON");

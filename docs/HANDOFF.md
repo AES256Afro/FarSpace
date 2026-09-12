@@ -1,6 +1,51 @@
 # FarSpace handoff, September 11, 2026
 
-## Current checkpoint: v0.260.0
+## Current checkpoint: v0.261.0
+
+The user requested clearer material uses, better mining, crafting, research,
+production automation and map travel that starts and stops automatically.
+
+- F2 opens the Workshop from flight, stations or salvage. The station also
+  has a pointer control. Materials & loot shows each material's source, uses,
+  current stock and separate capacity. Craft, Research tree, Production and
+  Ship upgrades share a scrollable HTML interface with preserved focus.
+- Fourteen recipes consume minerals and cargo for parts, metals, fuel, data,
+  medical supplies, ammunition and mining fittings. Basic recipes work from
+  the start. Inputs are spent with output settlement; capacity or shortages
+  retain unfinished work. Mining equipment requires docking before fitting.
+- Fabrication opens Metallurgy, Field supplies and Production control.
+  Further research unlocks Mining systems, Material storage and Reactor
+  chemistry. Storage rises from 60 to 120 of each material. Production control
+  allows five queued jobs with up to twenty batches each. Work pauses on
+  title, maps and pause screens; there is no offline production.
+- Mining shows its actual target, range and extraction progress. Prospectors
+  reveal deterministic mineral yields. Laser and core deposits retain cargo
+  and material overflow on the asteroid, including across saves. A full hold
+  pauses drilling. Collectors recover nearby deposits; refineries convert one
+  ore from each ordinary or rich rock into a refined metal.
+- Both maps offer Fly there or A. Local travel stops inside interaction range;
+  galaxy travel follows gates through intermediate systems and stops after
+  the last jump. Manual controls or N cancel. Fuel and tow checks give a
+  reason when travel cannot start. Docking, landing and boarding still use E.
+- Save schema 16 validates research and production. Schema 15 saves migrate
+  without changing existing materials or cargo. New optional asteroid state
+  records partial extraction and remaining stock. Older clients reject v16.
+- 571 tests in 36 files pass. TypeScript and production build pass. Native
+  browser checks completed research, five batches, mining, local arrival and
+  a galaxy gate approach. The local ship stopped 24.09 metres from a wreck
+  with zero velocity. At 390px width the final research node was reachable
+  without horizontal overflow. Browser warnings and errors: none.
+- Fixtures used memory storage and disabled online requests. Actual saves,
+  callsign, cloud codes and the user's public tab were not changed. Physical
+  touch and gamepad checks remain unperformed.
+- M428 through M432 are implemented and locally verified. M418 through M427
+  remain open; M433 through M435 cover mining orders, cargo logistics and
+  experimental technology. See NEXT-MILESTONES.md for order and acceptance.
+- Publication verification is pending. The final build references
+  index-B0OQn4Xt.js and index-CwZdn5Vi.css. Bigbox and the BoxPilot catalog PR
+  are outside this release's host changes.
+
+## Previous checkpoint: v0.260.0
 
 The user requested a chance to disable combat ships and either salvage their
 parts or recover the hull for keeping or selling.

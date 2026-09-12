@@ -85,6 +85,8 @@ export interface StationDef {
 }
 
 export interface AsteroidDef {
+  miningInitial?: number;
+  miningRemains?: import("./core/mining").MiningRemains;
   x: number; y: number;
   radius: number;
   rich: boolean;
@@ -270,6 +272,7 @@ export interface PlayerState {
   lawStandDown?: Record<string, boolean>;
   piratePassage?: Record<string, number>;
   recoveryTow?: import("./core/shiprecovery").RecoveryTow;
+  workshop?: import("./core/workshop").WorkshopState;
   navTarget?: string | null;
   navStationId?: string; // an exact station at the end of the plotted route
   hullId: string;

@@ -1,9 +1,10 @@
+import { openWorkshop } from "./workshop";
 import type { Game, Scene } from "../game";
 import { VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
 import { commodity } from "../data/data";
-import { MATERIALS, MATERIAL_CAP } from "../data/engineering";
+import { MATERIALS, materialCap } from "../data/engineering";
 import { cargoUsed, logEntry, type WreckDef } from "../world";
 import { prepareWreck } from "../core/derelicts";
 import { CUT_FUEL, CUT_SECONDS, cutSalvage, prepareSalvage, salvageReason, type SalvagePart } from "../core/salvage";
@@ -79,6 +80,7 @@ export class SalvageScene implements Scene {
     }
   }
   update(g: Game, dt: number): void {
+    if (g.input.wasPressed("F2")) { this.active = null; openWorkshop(g); return; }
     this.time += dt;
     const inp = g.input;
     if (inp.wasPressed("Escape") || (inp.mousePressed && inp.mouseY >= 248 && inp.mouseX >= 385)) { this.leave(g); return; }
@@ -118,7 +120,7 @@ export class SalvageScene implements Scene {
     ctx.fillStyle = "#132435"; ctx.fillRect(12, 39, VW - 24, 1);
     this.drawHull(ctx);
     const survivor = boarding.survivor && !boarding.rescued;
-    const details = survivor ? ["LIFE SIGN DETECTED", "BOARD TO EVACUATE", "CUTTER LOCKED"] : ["NO ONE LEFT ABOARD", this.wreck.looted ? "INTERIOR CLEARED" : "INTERIOR ACCESSIBLE", "UNFINISHED WORK SAVED"];
+    const details = survivor ? ["LIFE SIGN DETECTED", "BOARD TO EVACUATE", "CUTTER LOCKED"] : ["NO ONE LEFT ABOARD", this.wreck.looted ? "INTERIOR CLEARED" : "INTERIOR ACCESSIBLE", "F2 WORKSHOP / MATERIALS"];
     details.forEach((line, i) => drawText(ctx, line, 16, 167 + i * 11, survivor ? PAL.warn : PAL.grey));
     const recovery = this.wreck.recovery;
     drawText(ctx, recovery ? fit(hull(recovery.hullId).name.toUpperCase(), 145) : `${CUT_FUEL} FUEL PER UNIT`, 16, 207, PAL.gold);
@@ -146,7 +148,7 @@ export class SalvageScene implements Scene {
     const note = this.message || reason || (recovery && this.cursor === 1 ? "CONTENTS LEFT ABOARD GO TO THE YARD WITH THE HULL. RECOVER CARGO FIRST."
       : recovery && part ? `CUT: ${seconds}S / 0.5 FUEL PER UNIT. CUTTING PREVENTS WHOLE HULL RECOVERY.`
       : part?.store === "materials"
-      ? `MATERIAL STORAGE: ${p.materials?.[part.resource] ?? 0}/${MATERIAL_CAP}. NO HOLD SPACE NEEDED.`
+      ? `MATERIAL STORAGE: ${p.materials?.[part.resource] ?? 0}/${materialCap(p)}. NO HOLD SPACE NEEDED.`
       : "CUTTING CONTINUES UNTIL PAUSED, FULL OR OUT OF FUEL.");
     wrap(note, 112).slice(0, 2).forEach((line, i) => drawText(ctx, line, 12, 235 + i * 8, reason ? PAL.warn : PAL.grey));
     drawText(ctx, "ARROWS CHOOSE / ENTER CUT OR PAUSE / B BOARD", 12, 258, PAL.ui);

@@ -14,6 +14,7 @@ import * as wire from "../core/wire";
 
 const PLOT = { x: 312, y: 231, w: 104, h: 15 };
 const MARK = { x: 420, y: 231, w: 52, h: 15 };
+const FLY = { x: 202, y: 231, w: 100, h: 15 };
 const FIT = { x: 8, y: 231, w: 48, h: 15 };
 const FIND = { x: 60, y: 231, w: 58, h: 15 };
 const LAYERS = { x: 122, y: 231, w: 72, h: 15 };
@@ -45,16 +46,26 @@ export class GalaxyScene implements Scene {
     this.selected = id;
     if (center) { const s = g.world.systems[id]; this.camera.x = s.gx; this.camera.y = s.gy; }
   }
-  clearLocal(g: Game): void { const flight = g.scenes.flight as FlightScene | undefined; if (flight) flight.localTarget = null; }
+  clearLocal(g: Game): void { const flight = g.scenes.flight as FlightScene | undefined; if (flight) { flight.localTarget = null; flight.autopilot = false; flight.autoRoute = false; } }
   plot(g: Game): void {
     const p = g.world.player, id = this.selected;
     if (!id || id === p.systemId) { g.toast("YOU ARE ALREADY IN THIS SYSTEM."); return; }
-    if (p.navTarget === id) { p.navTarget = null; p.singersCourse = false; delete p.navStationId; g.toast("COURSE CLEARED."); return; }
+    if (p.navTarget === id) { p.navTarget = null; p.singersCourse = false; delete p.navStationId; this.clearLocal(g); g.toast("COURSE CLEARED."); return; }
     const route = navRoute(g.world, p.systemId, id);
     if (!route || route.length < 2) { g.toast("NO OPEN ROUTE TO THIS SYSTEM."); return; }
     p.navTarget = id; p.singersCourse = false; delete p.navStationId;
     this.clearLocal(g);
     g.toast("COURSE SET. RETURN TO FLIGHT AND PRESS N."); sfx.select();
+  }
+  fly(g: Game): void {
+    const p = g.world.player, id = this.selected;
+    if (!id || id === p.systemId) { g.toast("YOU ARE HERE. USE THE SYSTEM MAP FOR A LOCAL DESTINATION."); return; }
+    const route = navRoute(g.world, p.systemId, id);
+    if (!route || route.length < 2) { g.toast("NO OPEN ROUTE TO THIS SYSTEM."); return; }
+    const fs = g.scenes.flight as FlightScene;
+    if (routeFuel(g.world, route) > p.fuel) { g.toast("NOT ENOUGH FUEL FOR THIS ROUTE. REFUEL BEFORE DEPARTURE."); return; }
+    p.navTarget = id; delete p.navStationId; p.singersCourse = false; fs.localTarget = null;
+    if (fs.startAutopilot(g, true)) { fs.resumeNext = true; g.input.flush?.(); g.input.down?.clear(); g.setScene("flight"); }
   }
   results(g: Game) { return Object.values(g.world.systems).filter(s => s.name.toLowerCase().includes(this.query.toLowerCase())).sort((a,b) => a.name.localeCompare(b.name)); }
   update(g: Game, dt: number): void {
@@ -78,6 +89,7 @@ export class GalaxyScene implements Scene {
     if (inp.wasPressed("Escape") || inp.wasPressed("g")) { (g.scenes.flight as FlightScene).resumeNext = true; g.setScene("flight"); return; }
     if (inp.wasPressed("F5")) g.save();
     if (inp.wasPressed("F9")) { g.load(); return; }
+    if (inp.wasPressed("a") || (inp.mousePressed && contains(FLY, inp.mouseX, inp.mouseY))) { this.fly(g); return; }
     if (inp.wasPressed("f") || (inp.mousePressed && contains(FIND, inp.mouseX, inp.mouseY))) { this.searching = true; this.query = ""; this.searchIndex = 0; return; }
     if (inp.wasPressed("u") && p.service?.order) {
       if (plotServiceOrder(g.world)) { this.select(g, p.navTarget!, true); this.clearLocal(g); g.autosave(); }
@@ -225,6 +237,7 @@ export class GalaxyScene implements Scene {
     }
     mapButton(ctx,FIT,"HOME FIT");mapButton(ctx,FIND,"F FIND");mapButton(ctx,LAYERS,`V LANES ${this.layers ? "ON" : "OFF"}`,this.layers);
     mapButton(ctx,PLOT,p.navTarget===this.selected ? "N CLEAR COURSE" : "N PLOT COURSE",p.navTarget===this.selected);
+    mapButton(ctx,FLY,"A FLY THERE");
     mapButton(ctx,MARK,"B MARK",!!p.bookmarks?.includes(sys.id));
     const fuel = planned ? routeFuel(w,planned) : 0;
     const status = sys.id===cur.id ? "YOU ARE HERE" : !planned ? "NO OPEN ROUTE" : `${planned.length-1} JUMPS / ${fuel} FUEL / ${Math.round(p.fuel)} ABOARD${fuel>p.fuel ? " / REFUEL NEEDED" : ""}`;

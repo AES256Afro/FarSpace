@@ -1,3 +1,6 @@
+import { crackRock } from "../../core/mining";
+import { openWorkshop } from "../workshop";
+import { researched } from "../../core/workshop";
 import { SystemMap, resolveLocalTarget, type LocalMapTarget } from "../systemmap";
 import { wreckAvailable } from "../../core/salvage";
 import { recoveryTow, updateRecoveryTow, detachRecoveryTow } from "../../core/shiprecovery";
@@ -107,7 +110,7 @@ export class FlightScene implements Scene {
     this.localTarget = null;
     const population = this.resetPopulation(g);
     this.mapOpen = false;
-    this.cruise = false; this.autopilot = false;
+    this.cruise = false; this.autopilot = false; this.autoRoute = false;
     this.paused = false; this.logOpen = false; this.hardBurn = false;
     this.scanMsg = ""; this.scanTimer = 0; this.arrivalLog = ""; this.arrivalTimer = 0;
     this.alert = 0; this.alertT = 0; this.autoAlertT = 0; this.klaxonT = 0;
@@ -175,6 +178,7 @@ export class FlightScene implements Scene {
     return [
       { label: "RESUME", act: () => { this.paused = false; } },
       { label: "TRAFFIC CONTROL (U)", act: () => { this.paused = false; this.contactTrafficControl(g); } },
+      { label: "WORKSHOP / MATERIALS (F2)", act: () => openWorkshop(g) },
       { label: "SAVE (F5)", act: () => { g.save(); this.paused = false; } },
       { label: "SETTINGS", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("settings"); } },
       { label: "CONTROLS", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("help"); } },
@@ -250,10 +254,12 @@ export class FlightScene implements Scene {
 
   update(g: Game, dt: number): void {
     this.engineBurn = false; this.retroBurn = false;
+    this.mineNotice = Math.max(0, this.mineNotice - dt);
     const w = g.world;
     const p = w.player;
     const sys = w.systems[p.systemId];
     if (this.mapOpen) { this.systemMap.update(g, dt); return; }
+    if (!this.docking && this.launching <= 0 && g.input.wasPressed("F2")) { openWorkshop(g); return; }
     if (!this.paused && !this.logOpen && !this.docking && this.launching <= 0 && g.input.wasPressed("Tab")) {
       this.mapOpen = true; this.systemMap.enter(g); return;
     }
@@ -324,6 +330,7 @@ export class FlightScene implements Scene {
     const ROT = h.rotSpeed * pilot * (this.cruise ? 0.6 : 1);
     const MAXS = h.maxSpeed * tuned * cruiseMul;
     this.updateAutopilot(g, dt);
+    if (p.systemId !== sys.id) return;
 
     if (lifeSys.health < 50) {
       p.oxygen = Math.max(0, p.oxygen - dt * (50 - lifeSys.health) * 0.02);
@@ -425,7 +432,7 @@ export class FlightScene implements Scene {
     if (g.input.wasPressed("r") && weaponsSys.health > 5) fireTorpedo(this, g);
     this.mining = g.input.isDown("m") || (this.mouseAim && g.input.mouseRight);
     if (this.cruise) this.mining = false;
-    if (this.mining) mine(this, g, dt, h.miningRate * (1 + 0.2 * engGrade(p, "mining")), this.aim);
+    if (this.mining) mine(this, g, dt, h.miningRate * (1 + 0.2 * engGrade(p, "mining")) * (researched(p, "mining") ? 1.2 : 1), this.aim);
     if (g.input.wasPressed("c")) this.plantCharge(g);
     this.updateCharges(g, dt);
 
@@ -549,6 +556,7 @@ export class FlightScene implements Scene {
   }
   turretCd?: number;
   mining = false;
+  mineNotice = 0;
 
   lawContact(g: Game): boolean {
     const p = g.world.player, level = this.lawLevel(g);
@@ -1445,6 +1453,7 @@ export class FlightScene implements Scene {
   // ---------- Cruise & autopilot ----------
   cruise = false;
   autopilot = false;
+  autoRoute = false;
   apAngle = 0; apThrust = false; apBrake = false; apLabel = "";
 
   massLocked(g: Game): boolean {
@@ -1489,7 +1498,8 @@ export class FlightScene implements Scene {
       const route = navRoute(g.world, p.systemId, p.navTarget);
       const next = route && route[1];
       const jp = next ? sys.jumpPoints.find((j) => j.targetSystemId === next) : null;
-      if (jp) return { x: jp.x, y: jp.y, label: `GATE ${g.world.systems[jp.targetSystemId].name.toUpperCase()}` };
+      if (jp) return { x: jp.x, y: jp.y, label: `GATE ${g.world.systems[jp.targetSystemId].name.toUpperCase()}`, range: this.autoRoute ? 40 : 140 };
+      if (this.autoRoute) { this.autopilot = false; this.autoRoute = false; g.toast("AUTOPILOT STOPPED. THE ROUTE IS NO LONGER OPEN."); return null; }
     }
     let best: { x: number; y: number; label: string } | null = null; let bd = Infinity;
     for (const st of sys.stations) {
@@ -1498,6 +1508,15 @@ export class FlightScene implements Scene {
       if (d < bd) { bd = d; best = { x, y, label: st.name.toUpperCase() }; }
     }
     return best;
+  }
+
+  startAutopilot(g: Game, route = false): boolean {
+    if (g.world.player.fuel <= 0) { g.toast("REFUEL BEFORE ENGAGING AUTOPILOT."); return false; }
+    if (route && (this.towing || recoveryTow(g.world))) { g.toast("DETACH THE TOW BEFORE STARTING A ROUTE WITH JUMPS."); return false; }
+    const target = this.apTarget(g); if (!target) { g.toast("DESTINATION UNAVAILABLE."); return false; }
+    this.autopilot = true; this.autoRoute = route; this.apLabel = target.label;
+    this.apThrust = false; this.apBrake = false;
+    g.toast(`FLYING TO ${target.label}. AUTOMATIC STOP ON ARRIVAL. N CANCELS.`); return true;
   }
 
   updateAutopilot(g: Game, dt: number): void {
@@ -1514,7 +1533,8 @@ export class FlightScene implements Scene {
         sfx.select();
       }
     }
-    if (!this.autopilot) return;
+    if (!this.autopilot) { this.autoRoute = false; return; }
+    if (g.world.player.fuel <= 0) { this.autopilot = false; this.autoRoute = false; this.cruise = false; g.toast("AUTOPILOT STOPPED. NO FUEL."); return; }
     if (inp.isDown("w") || inp.isDown("s") || inp.isDown("a") || inp.isDown("d") || inp.isDown("x")) { this.autopilot = false; g.toast("MANUAL CONTROL"); return; }
     const p = g.world.player;
     const t = this.apTarget(g);
@@ -1526,7 +1546,7 @@ export class FlightScene implements Scene {
     this.apThrust = false; this.apBrake = false;
     if (d > (t.range ?? 140)) {
       // point along the desired velocity, correcting for drift
-      const wantSpd = Math.min(d > 900 ? 2000 : 180, d * 0.9);
+      const wantSpd = Math.min(d > 900 ? 2000 : 180, Math.sqrt(2 * hull(p.hullId).accel * Math.max(0, d - (t.range ?? 140) * 0.6)) * 0.65);
       const dvx = Math.cos(toward) * wantSpd - p.vx, dvy = Math.sin(toward) * wantSpd - p.vy;
       this.apAngle = Math.atan2(dvy, dvx);
       this.apThrust = Math.hypot(dvx, dvy) > 12 && Math.abs(angDiff(p.angle, this.apAngle)) < 0.5;
@@ -1536,7 +1556,15 @@ export class FlightScene implements Scene {
       // arrival: kill velocity
       this.cruise = false;
       if (spd > 6) { this.apAngle = Math.atan2(-p.vy, -p.vx); this.apThrust = Math.abs(angDiff(p.angle, this.apAngle)) < 0.4; }
-      else { p.vx = 0; p.vy = 0; this.autopilot = false; g.toast(`AUTOPILOT: ARRIVED AT ${t.label} - PRESS E`); sfx.dock(); }
+      else {
+        p.vx = 0; p.vy = 0;
+        if (this.autoRoute && p.navTarget && p.navTarget !== p.systemId) {
+          const sys = g.world.systems[p.systemId], route = navRoute(g.world, p.systemId, p.navTarget);
+          const gate = sys.jumpPoints.find(j => j.targetSystemId === route?.[1]);
+          if (gate && d < 70) { const from = p.systemId; this.doJump(g, gate.targetSystemId, gate.guarded); if (from === p.systemId) { this.autopilot = false; this.autoRoute = false; } return; }
+        }
+        this.autopilot = false; this.autoRoute = false; g.toast(`AUTOPILOT: STOPPED AT ${t.label}. PRESS E TO INTERACT.`); sfx.dock();
+      }
     }
   }
 
@@ -1547,7 +1575,7 @@ export class FlightScene implements Scene {
     const sys = g.world.systems[p.systemId];
     const a = sys.asteroids.find((x) => x.core && x.ore > 0 && dist(p.x, p.y, x.x, x.y) < 90);
     if (!a) { g.toast("NO CORE ROCK IN REACH - PROSPECT THE BELT FOR MOTHERLODES"); return; }
-    if ((p.seismic ?? 0) <= 0) { g.toast("NO SEISMIC CHARGES - SHIPYARDS SELL THEM"); return; }
+    if ((p.seismic ?? 0) <= 0) { g.toast("NO SEISMIC CHARGES. BUILD THEM IN F2 WORKSHOP OR BUY AT A SHIPYARD."); return; }
     if (this.charges.some((c) => c.ax === a.x && c.ay === a.y)) return;
     p.seismic = (p.seismic ?? 0) - 1;
     this.charges.push({ ax: a.x, ay: a.y, t: 4 });
@@ -1565,13 +1593,8 @@ export class FlightScene implements Scene {
       boom(this, c.ax, c.ay, 36, PAL.gold);
       sfx.boom(true);
       if (a) {
-        a.ore = 0;
-        const ore = 6 + Math.floor(Math.random() * 4), metals = 2 + Math.floor(Math.random() * 3);
-        this.loot.push({ x: a.x, y: a.y, commodityId: "ore", qty: ore, life: 90 });
-        this.loot.push({ x: a.x + 14, y: a.y - 8, commodityId: "metals", qty: metals, life: 90 });
-        if (Math.random() < 0.3) this.loot.push({ x: a.x - 12, y: a.y + 10, commodityId: "relics", qty: 1, life: 90 });
-        p.mined = (p.mined ?? 0) + ore;
-        gainMaterials(g, { vanadium: 1 + Math.floor(Math.random() * 2), polonium: Math.random() < 0.4 ? 1 : 0, germanium: Math.random() < 0.5 ? 1 : 0 });
+        crackRock(p, a);
+        g.toast("CORE OPEN. ORE AND MATERIALS REMAIN HERE UNTIL COLLECTED.");
         flag(g, "coreCutter");
       }
       if (dist(p.x, p.y, c.ax, c.ay) < 120) { damagePlayer(this, g, 28); this.hitFlash = 0.4; }
@@ -1771,7 +1794,10 @@ export class FlightScene implements Scene {
     this.launchDrones(g);
     this.startEscortIfNeeded(g);
     g.autosave();
-    g.toast(`JUMPED TO ${tsys.name.toUpperCase()}`);
+    if (this.autoRoute && p.navTarget === p.systemId) {
+      this.autopilot = false; this.autoRoute = false; this.cruise = false;
+      p.navTarget = null; g.autosave(); g.toast(`ARRIVED IN ${tsys.name.toUpperCase()}. SHIP STOPPED.`);
+    } else g.toast(`JUMPED TO ${tsys.name.toUpperCase()}`);
     g.showHint("jump", "PRESS G FOR THE GALAXY MAP - CLICK A SYSTEM TWICE TO PLOT A COURSE");
   }
 
