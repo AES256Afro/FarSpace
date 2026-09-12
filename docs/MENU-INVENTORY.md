@@ -282,11 +282,26 @@ closed, with actual saves and identity unchanged. Dev5199 runs v0.268.1.
   online calls protected actual saves and identity. A synthetic large survey
   log triggered its normal story card before the fixture disabled story
   progression; this was not a reader failure.
-- 731 tests in 47 files pass. TypeScript and production build pass.
-  Publication and hosted verification pending. Physical touch and
-  gamepad acceptance remain M426. M418 is still open.
+- 731 tests in 47 files pass. TypeScript and production build pass. Published
+  92e62c94b95762f0649b0592705036bd9d3beab2, tag v0.269.0. CI 34679057292
+  passed including Deploy to Cloudflare. Container workflow 34679057384 passed.
+  Hosted assets match the tested build: JS index-DbyOs6ct.js, SHA-256
+  0b3c943f53e095d99f1e4342a81b4b8932a80c4c05e53616e996838d08f7ccf0;
+  CSS index-CwZdn5Vi.css, SHA-256
+  4f9ba0bcb103d7e5d276c53d483e014ca4cc6c86a417f6d91da0474ff6e1e085.
+  Health returned ok. Fresh public title showed v0.269.0. Its isolated fixture
+  reached Passenger 0 from thirty messages, read FINAL MESSAGE 0 at the bottom,
+  retained the selected row and offset 25, and opened all 31 guestbook sections.
+  Credits stayed at 50000 and the reader pause was active. No application
+  warnings/errors. All temporary tabs closed. Dev5199 runs v0.269.0.
+  Physical touch/gamepad acceptance remain M426. M418 is still open.
 - Next: finish galaxy selection/removal, then the final global input/caller
   inventory. Station transaction and text migrations are complete for M418.
+  Source audit: GalaxyScene search still uses numeric searchIndex and has no
+  page or Home/End controls while searching; pointer results use current indices
+  rather than drawn ids. infoLines dereferences a missing selected system and
+  its local wrapper does not break long unspaced words. Reproduce these with
+  quest filtering, changed results, empty results and full destination terms.
   Check Workshop, Settings, title child returns and map ownership using the
   existing models. Then continue M419 flight priorities and M420 contacts,
   followed by the documented dependency order. The nine hour continuation

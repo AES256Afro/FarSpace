@@ -75,8 +75,8 @@ Six row pages retain stable entry identity, with selected details and searchable
 Read all. Each Record subview keeps its position. Explicit controls retain the
 existing votes, replies and sales. Survey quotes the final payment. All current
 nested readers, standalone readers and letters pause voyage updates while open.
-731 tests pass; native records acceptance is in the menu inventory. Publication
-and hosted verification pending. M418 remains open for galaxy selection/removal
+731 tests pass; native records acceptance is in the menu inventory. CI,
+container publication, Cloudflare deployment and hosted verification passed. M418 remains open for galaxy selection/removal
 and the final global input/caller inventory. Physical touch/gamepad stays M426.
 
 
