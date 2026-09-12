@@ -32,10 +32,29 @@ M418 through M427 and M433 through M435 remain open in NEXT-MILESTONES.md.
 - 646 tests in 43 files pass. TypeScript and production build pass. Native
   fixtures used memory storage and disabled online calls. No application
   errors. Actual saves and identity unchanged. Save schema stays 16.
-- Release and hosted verification pending. M418 remains open. Next audit
+- Published 6ebdc2482abc1c1256afa743c481d0af86b7b484, tag v0.265.0.
+  CI 34673030263 passed, including Deploy to Cloudflare. Container workflow
+  34673030030 passed. Hosted assets match the tested production build:
+  JS index-CfFWItQP.js, SHA-256
+  e75f8175a4afcd730a5d798fe6d1220e744dd57b46aa5986445c640ddc52d4ae;
+  CSS index-CwZdn5Vi.css, SHA-256
+  4f9ba0bcb103d7e5d276c53d483e014ca4cc6c86a417f6d91da0474ff6e1e085.
+  Health returned ok. A fresh public tab showed v0.265.0. Its isolated city
+  fixture selected Luxuries with End, bought one for 79CR, and returned from
+  details with Luxuries still selected. No application warnings/errors.
+  All temporary tabs are closed. Dev5199 restarted at v0.265.0. Bigbox and
+  the catalog PR are unchanged. The nine hour continuation remains ACTIVE.
+- M418 remains open. Next audit
   ServiceScene and CouncilScene, then remaining station tabs, galaxy removal,
   waystation and final input/caller returns. Include outpost foreman return:
   it enters the parent again after an encounter, unlike ReaderOverlay.
+- ServiceScene actions need stable explicit ids, selected row retention and
+  complete details. ServiceFileScene.open currently sets settingsReturn and
+  enters a separate reader; its return calls ServiceScene.enter and resets
+  cursor/scroll. Service fare encounters do the same. Preserve its actual
+  order, fare and cutter rules while fixing return state. Council already
+  has a world/station guarded resumeNext for agenda encounters; preserve it.
+  Council action rows and response text are truncated without a full reader.
 
 ## Previous checkpoint: v0.264.0, M418 locations and objectives
 

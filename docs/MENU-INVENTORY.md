@@ -108,3 +108,8 @@ Fixture storage was in memory and online calls were disabled.
 controller and touch acceptance remain scheduled for M426. M418 still needs
 service/council, remaining station tabs, galaxy selection/removal and the final
 caller audit. Outpost foreman return is included in that audit.
+
+Release CI 34673030263, container publication and Cloudflare deployment passed.
+Hosted assets match the tested build. Production v0.265.0 accepted a pointer
+purchase of the selected Luxuries row for 79CR and retained selection across
+full details. No application warnings/errors. Temporary tabs are closed.

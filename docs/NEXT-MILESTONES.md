@@ -52,7 +52,8 @@ work is the other station and location menus plus the final input/return audit.
 The v0.265.0 settlement slice adds six row city and outpost desks, stable goods,
 crew and contract selection, explicit transactions and complete entry readers.
 646 tests pass and native settlement acceptance is in MENU-INVENTORY.md.
-Release and hosted verification are pending. Service/council, other station
+CI, container publication, Cloudflare deployment and hosted checks passed.
+Service/council, other station
 tabs, galaxy removal and final caller checks keep M418 open.
 
 ## September 11 priority update: mining and industry
