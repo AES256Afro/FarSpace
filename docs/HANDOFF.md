@@ -10,7 +10,45 @@ active every ten minutes. Read WORKLOG-2026-09-12.md on each continuation.
 At the deadline, stop new implementation, finish a safe checkpoint and pause.
 M418 through M427 and M433 through M435 remain open in NEXT-MILESTONES.md.
 
-## Current checkpoint: v0.268.1, M418 station transactions
+## Current checkpoint: v0.269.0, M418 complete station records
+
+- News, Wire, Survey and Record use six row pages and stable record identities.
+  All retained text is available through I selected details or F3 Read all,
+  including search and section navigation. Rows select; Enter reads an entry
+  except Cartographics, where its existing data sale is retained and named.
+  Record subviews and information tabs preserve separate selections/viewports.
+  Arrivals retain the selected record; a removed entry needs fresh input.
+- Complete sources replace the former display limits: all news and letters,
+  museum donations, serial parts, Wire transmissions, board rankings, squadron
+  records, survey logs, codex groups, achievements, log entries, ledger sources,
+  guestbook messages, weekly records and harbour notices. Full reader snapshots
+  remain stable while open. No save schema change.
+- Voting, letters, newest reply, callsign and Record subviews have bounded
+  buttons. Survey now quotes the final payment including the research bonus.
+  Readers pause voyage systems through every current nested ReaderOverlay
+  parent, plus standalone ReaderScene and LettersScene. The flight owner
+  exposes its local map reader pause. Existing caller cleanup stays in place.
+- Native: 30 guestbook messages and 40 log entries, independent viewports,
+  complete Guest 0 message, 217 section achievement search, all 24 dispatches,
+  FINAL DISPATCH 23, letter return to the same dispatch, explicit vote and reply,
+  50 logged systems, 35 species and ten squadron records. The last system,
+  species and squadron were readable. Survey displayed and paid 500CR for 400
+  data. Readers consumed action keys without voting or selling. No application
+  warnings/errors. All temporary tabs closed; memory storage and disabled
+  online calls protected actual saves and identity. A synthetic large survey
+  log triggered its normal story card before the fixture disabled story
+  progression; this was not a reader failure.
+- 731 tests in 47 files pass. TypeScript and production build pass.
+  Publication and hosted verification pending. Physical touch and
+  gamepad acceptance remain M426. M418 is still open.
+- Next: finish galaxy selection/removal, then the final global input/caller
+  inventory. Station transaction and text migrations are complete for M418.
+  Check Workshop, Settings, title child returns and map ownership using the
+  existing models. Then continue M419 flight priorities and M420 contacts,
+  followed by the documented dependency order. The nine hour continuation
+  remains active until 2026-09-12 11:31:03 UTC. Do not extend it.
+
+## Previous checkpoint: v0.268.1, M418 station transactions
 
 - Station transaction tabs use stable keys, page controls and Home/End. Row
   clicks, including right click, select without transacting. Explicit buttons

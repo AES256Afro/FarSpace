@@ -18,6 +18,7 @@ export class CouncilScene implements Scene {
   get cursor(): number { return this.menu.view.index; }
   set cursor(index: number) { this.menu.view.select(index); }
   info?: ReaderOverlay;
+  get pausesVoyage(): boolean { return !!this.info; }
   lastReply = "";
   seated = false;
   message = "";

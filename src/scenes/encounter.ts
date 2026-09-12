@@ -42,6 +42,7 @@ export class EncounterScene implements Scene {
   set cursor(index: number) { this.view.select(index); }
   outcome: string | null = null;
   info?: ReaderOverlay;
+  get pausesVoyage(): boolean { return !!this.info; }
   textScroll = 0;
   story = false;
   private drawn: EncounterOption[] = [];

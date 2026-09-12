@@ -12,6 +12,7 @@ const VISIBLE_LINES = 18;
 
 export class LettersScene implements Scene {
   touchMode = "menu" as const;
+  readonly pausesVoyage = true;
   mail: Letter[] = [];
   view = new ListView<Letter>(1);
   get cursor(): number { return this.view.index; }

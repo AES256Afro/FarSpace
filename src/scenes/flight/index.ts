@@ -72,6 +72,7 @@ export class FlightScene implements Scene {
   fireCd = 0;
   mapOpen = false;
   systemMap = new SystemMap();
+  get pausesVoyage(): boolean { return this.mapOpen && !!this.systemMap.info; }
   localTarget: LocalMapTarget | null = null;
   zoom = 1;
   scanTimer = 0;

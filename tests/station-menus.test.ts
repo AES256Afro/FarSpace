@@ -142,3 +142,64 @@ describe("station readers and shortcut ownership", () => {
     const f = fixture(2); f.p.tutorial = 2; const buy = vi.spyOn(f.station, "buyHull").mockImplementation(() => {}); f.press("k"); expect(buy).not.toHaveBeenCalled();
   });
 });
+
+describe("complete station records", () => {
+  it("retains every news item and full letter, serial and bulletin text without changing the voyage", () => {
+    const f = fixture(9); f.world.news = Array.from({ length: 30 }, (_, i) => ({ headline: `NEWS ${i}`, body: "Complete report. ".repeat(80) + `FINAL NEWS ${i}` }));
+    f.p.mail = [{ from: "A distant friend", text: "A complete letter. ".repeat(90) + "LAST LETTER LINE", dueT: 1 }];
+    const before = JSON.stringify(f.world); f.draw(); f.press("End"); f.press("i"); expect(f.station.info!.sections[0][1].join(" ")).toContain("FINAL NEWS 29"); f.press("Escape");
+    f.press("F3"); const text = JSON.stringify(f.station.info!.sections); expect(text).toContain("LAST LETTER LINE"); expect(text).toContain("FINAL NEWS 0"); expect(text).toContain("FINAL NEWS 29"); expect(JSON.stringify(f.world)).toBe(before);
+  });
+  it("follows a selected news item across insertions and guards a removed entry", () => {
+    const f = fixture(9); f.world.news = Array.from({ length: 12 }, (_, i) => ({ headline: `NEWS ${i}`, body: `BODY ${i}` })); f.draw(); f.press("End"); const selected = f.station.list.view.selected;
+    f.world.news.unshift({ headline: "NEW", body: "JUST ARRIVED" }); f.press("i"); expect(f.station.info!.sections[0][0]).toBe("NEWS 11"); f.press("Escape"); expect(f.station.list.view.selected).toBe(selected);
+    f.world.news.pop(); f.press("Enter"); expect(f.station.info).toBeUndefined(); f.press("Enter"); expect(f.station.info!.sections[0][0]).toBe("NEWS 10");
+  });
+  it("reads all wire transmissions, complete names, board rankings and squadron records", () => {
+    const f = fixture(10); f.station.wireLoaded = true;
+    f.station.wireEvents = Array.from({ length: 20 }, (_, i) => ({ t: i, callsign: `LONG PILOT NAME ${i}`, kind: "discovery", text: "MESSAGE ".repeat(100) + `END ${i}`, system: `LONG SYSTEM ${i}` }));
+    f.station.boards = { discoveries: Array.from({ length: 30 }, (_, i) => ({ callsign: `RANKED PILOT ${i}`, score: 999999 + i, t: i })) };
+    f.station.squadrons = Array.from({ length: 10 }, (_, i) => ({ tag: `SQ${i}`, members: 12, credits: 500, discoveries: 99, kills: 2, score: 100, base: { stationName: "Complete base name", systemName: "Complete system name", treasury: 777 } }));
+    f.draw(); f.press("End"); f.press("i"); expect(f.station.info!.sections[0][0]).toContain("SQ9"); expect(f.station.info!.sections[0][1].join(" ")).toContain("Complete system name"); f.press("Escape"); f.press("F3");
+    const text = JSON.stringify(f.station.info!.sections); expect(text).toContain("LONG PILOT NAME 19"); expect(text).toContain("END 19"); expect(text).toContain("RANKED PILOT 29: 1000028");
+  });
+  it("keeps the selected wire event when a refreshed response replaces its object", () => {
+    const f = fixture(10); f.station.wireLoaded = true; f.station.wireEvents = [0, 1, 2].map(i => ({ t: i, callsign: "PILOT", kind: "discovery", text: `EVENT ${i}`, system: "Sol" }));
+    f.draw(); f.station.cursor = 2; f.draw(); const selected = f.station.list.view.selected;
+    f.station.wireEvents = [{ t: 3, callsign: "NEW", kind: "discovery", text: "NEW", system: "Sol" }, ...f.station.wireEvents.map(e => ({ ...e }))]; f.press("i"); expect(f.station.list.view.selected).toBe(selected); expect(f.station.info!.sections[0][1][0]).toBe("EVENT 1");
+  });
+  it("retains all surveyed systems and every item in a large codex group", () => {
+    const f = fixture(5); f.p.expLog = Object.fromEntries(Array.from({ length: 50 }, (_, i) => [`long-system-${i}`, 2])); f.p.codex = Object.fromEntries(Array.from({ length: 35 }, (_, i) => [`flora:species-${i}`, i + 1]));
+    f.p.expData = 400; f.draw(); f.press("F3"); expect(JSON.stringify(f.station.info!.sections)).toContain("long-system-49"); f.press("Escape"); expect(f.p.expData).toBe(400);
+    f.press("c"); f.draw(); f.press("i"); expect(JSON.stringify(f.station.info!.sections)).toContain("species-34: 35"); f.press("End"); expect(f.station.info!.scroll).toBe(f.station.info!.maxScroll());
+  });
+  it("keeps separate page positions for record subviews and station tabs", () => {
+    const f = fixture(11); f.p.log = Array.from({ length: 40 }, (_, i) => ({ t: i, text: `LOG ${i}` })); f.p.guestbook = Array.from({ length: 25 }, (_, i) => ({ name: `GUEST ${i}`, kind: "tourist", from: "A", to: "B", mood: 80, line: `MESSAGE ${i}`, t: i }));
+    f.press("l"); f.draw(); f.press("End"); const logKey = f.station.list.view.selected, logOffset = f.station.list.view.offset;
+    f.press("p"); f.draw(); f.press("PageDown"); const guestKey = f.station.list.view.selected, guestOffset = f.station.list.view.offset;
+    f.press("l"); f.draw(); expect(f.station.list.view.selected).toBe(logKey); expect(f.station.list.view.offset).toBe(logOffset);
+    f.press("p"); f.draw(); expect(f.station.list.view.selected).toBe(guestKey); expect(f.station.list.view.offset).toBe(guestOffset);
+    f.press("ArrowLeft"); f.draw(); f.press("ArrowRight"); f.draw(); expect(f.station.list.view.selected).toBe(guestKey); expect(f.station.list.view.offset).toBe(guestOffset);
+  });
+  it.each(["log", "guestbook", "ledger", "achievements", "week", "harbour"] as const)("reaches complete %s records with bounded rows and no voyage changes", view => {
+    const f = fixture(11); f.station.recordView = view;
+    f.p.log = Array.from({ length: 30 }, (_, i) => ({ t: i, text: `LOG ${i} ` + "TEXT ".repeat(100) + "END OF LOG" }));
+    f.p.guestbook = Array.from({ length: 30 }, (_, i) => ({ name: `GUEST ${i}`, kind: "tourist", from: "A", to: "B", mood: 80, line: "THANKS ".repeat(100) + "FINAL THANKS", t: i }));
+    f.p.ledger = Object.fromEntries(Array.from({ length: 30 }, (_, i) => [`source-${i}`, i % 2 ? i + 1 : -i - 1])); f.p.keepsakes = Array.from({ length: 30 }, (_, i) => `KEEPSAKE ${i}`);
+    const before = JSON.stringify(f.world); f.draw(); f.press("End"); f.draw(); const bounds = f.station.rowBoxes[f.station.cursor]; expect(bounds[0]).toBeGreaterThanOrEqual(90); expect(bounds[1]).toBeLessThanOrEqual(223);
+    f.click(100, bounds[0] + 12); expect(f.station.info).toBeUndefined(); f.click(40, 250); expect(f.station.info).toBeDefined(); f.press("End"); f.press("Escape"); f.press("F3");
+    const text = JSON.stringify(f.station.info!.sections); if (view === "log") expect(text).toContain("END OF LOG"); if (view === "guestbook") expect(text).toContain("FINAL THANKS"); if (view === "ledger") expect(text).toContain("source-29"); if (view === "harbour") expect(text).toContain("KEEPSAKE 29");
+    expect(JSON.stringify(f.world)).toBe(before);
+  });
+  it("does not cast a vote from a record row or reader and settles an explicit vote once", () => {
+    const f = fixture(9); f.st.military = false; f.st.factionId = "tsc"; f.draw(); const votes = f.p.votes, before = f.p.rep.tsc;
+    f.click(100, 100); f.press("i"); f.press("y"); expect(f.p.votes).toBe(votes); expect(f.p.rep.tsc).toBe(before); f.press("Escape");
+    const button = f.station.documentButtons().find(b => b.key === "y")!; f.click(button.rect.x + 4, button.rect.y + 4); const voted = JSON.stringify(f.p.votes), rep = f.p.rep.tsc; expect(voted).toContain("yes"); f.press("y"); expect(JSON.stringify(f.p.votes)).toBe(voted); expect(f.p.rep.tsc).toBe(rep);
+  });
+  it("cleans document viewports on a new world and retains a paused reader snapshot across arrivals", () => {
+    const f = fixture(9); f.world.news = [{ headline: "BEFORE", body: "COMPLETE BEFORE" }]; f.draw(); f.press("End"); f.press("F3"); const before = JSON.stringify(f.station.info!.sections);
+    f.world.news.unshift({ headline: "AFTER", body: "ARRIVED LATER" }); expect(JSON.stringify(f.station.info!.sections)).toBe(before); f.press("Escape"); f.draw(); expect(f.station.documentRows(f.g).some(row => row.title === "AFTER")).toBe(true);
+    const world = generateWorld(419), st = world.systems[world.player.systemId].stations[0]; world.player.dockedAt = st.id; world.player.dockVisit = { stationId: st.id, startedAt: 0, settled: true, portAudiencePending: false }; f.g.world = world;
+    vi.spyOn(f.station, "loadPortData").mockImplementation(() => {}); f.station.enter(f.g); expect(f.station.documentLists.size).toBe(0); expect(f.station.activeDocument).toBe("");
+  });
+});

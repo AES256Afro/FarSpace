@@ -1,5 +1,6 @@
 import { openWorkshop } from "./workshop";
 import { ReaderOverlay, type ReaderScene } from "./reader";
+import { stationRecords, type StationRecord } from "./stationrecords";
 import { StationList } from "./stationlist";
 import { clippedText, contains, mapButton, type Rect } from "../core/mapview";
 import { deliverRecovery, hullSalePrice } from "../core/shiprecovery";
@@ -57,7 +58,7 @@ const PREV = { x: 8, y: 227, w: 48, h: 15 }, NEXT = { x: 62, y: 227, w: 48, h: 1
 const DETAILS = { x: 200, y: 227, w: 94, h: 15 }, WORKSHOP = { x: 300, y: 227, w: 174, h: 15 };
 const RUN = { x: 8, y: 245, w: 132, h: 14 };
 const SELL_DATA = { x: 8, y: 66, w: 464, h: 15 };
-const LIST_PAGES: Record<string, number> = { MARKET: 12, SHIPYARD: 18, SHIPS: 7, MISSIONS: 7, BAR: 7, STORAGE: 12, ENGINEER: 9, BASE: 10 };
+const LIST_PAGES: Record<string, number> = { MARKET: 12, SHIPYARD: 18, SHIPS: 7, MISSIONS: 7, BAR: 7, STORAGE: 12, ENGINEER: 9, BASE: 10, NEWS: 6, WIRE: 6, SURVEY: 6, RECORD: 6 };
 const TABS = ["MARKET", "SHIPYARD", "SHIPS", "MISSIONS", "BAR", "SURVEY", "ENGINEER", "STORAGE", "BASE", "NEWS", "WIRE", "RECORD"] as const;
 
 export class StationScene implements Scene {
@@ -65,6 +66,10 @@ export class StationScene implements Scene {
   tab = 0;
   cursor = 0;
   list = new StationList();
+  transactionList = this.list;
+  documentLists = new Map<string, StationList>();
+  documentIdentity = new StationList();
+  activeDocument = "";
   info?: ReaderOverlay;
   get pausesVoyage(): boolean { return !!this.info; }
   boardMissions: Mission[] = [];
@@ -74,7 +79,6 @@ export class StationScene implements Scene {
   station!: StationDef;
   returnTo: "flight" | "stationwalk" = "flight";
   rowBoxes: [number, number][] = [];
-  mailRows: { y0: number; y1: number; index: number }[] = [];
   visit: DockVisit | null = null;
   visitWorld: World | null = null;
   wireEvents: wire.WireEvent[] = [];
@@ -89,7 +93,7 @@ export class StationScene implements Scene {
       if (this.presentPortAudience(g)) g.autosave();
       return;
     }
-    this.list = new StationList(); this.onSceneLeave();
+    this.list = new StationList(); this.transactionList = this.list; this.documentLists.clear(); this.documentIdentity = new StationList(); this.activeDocument = ""; this.onSceneLeave();
     this.visitWorld = g.world; this.visit = visit;
     this.station = found.st;
     { const recovered = deliverRecovery(g.world, this.station.id); if (recovered) { g.toast(`HULL RECOVERED. SHIPS TAB: KEEP IT OR X TO SELL FOR ${hullSalePrice(recovered)}CR.`); g.autosave(); } }
@@ -443,11 +447,19 @@ export class StationScene implements Scene {
       case "STORAGE": return this.storageRows(g).map(row => `${row.kind}:${row.id}`);
       case "ENGINEER": return BLUEPRINTS.map(row => row.id);
       case "BASE": return this.baseRows(g).map(row => `${row.kind}:${row.id ?? ""}:${row.treaty ?? ""}`);
-      default: return null;
+      default: return this.documentKey() ? this.documentRows(g).map(row => row.id) : null;
     }
   }
 
   syncList(g: Game): boolean {
+    const document = this.documentKey();
+    if (document !== this.activeDocument) {
+      if (this.activeDocument) this.documentLists.set(this.activeDocument, this.list);
+      else this.transactionList = this.list;
+      this.list = document ? this.documentLists.get(document) ?? new StationList() : this.transactionList;
+      if (document) this.cursor = this.list.view.index;
+      this.activeDocument = document;
+    }
     const keys = this.listKeys(g);
     if (keys === null) { this.list.tab = -1; return false; }
     this.cursor = this.list.sync(this.tab, keys, this.cursor, LIST_PAGES[TABS[this.tab]]);
@@ -458,6 +470,7 @@ export class StationScene implements Scene {
 
   extraButtons(g: Game): { key: string; label: string; rect: Rect }[] {
     const p = g.world.player;
+    if (this.documentKey()) return [{ key: "F3", label: "F3 READ ALL", rect: { x: 148, y: 245, w: 104, h: 14 } }];
     let buttons: [string, string][] = [];
     switch (TABS[this.tab]) {
       case "MARKET": buttons = [["b", "B BUY ONE"], ["s", "S SELL ONE"], ["v", "V BUY SHARE"]]; break;
@@ -476,6 +489,7 @@ export class StationScene implements Scene {
 
   actionLabel(g: Game): string {
     const p = g.world.player;
+    if (this.documentKey()) return this.tab === 5 && this.surveyView === "data" ? "ENTER SELL DATA" : "ENTER READ ENTRY";
     switch (TABS[this.tab]) {
       case "MARKET": return (p.cargo[this.marketRows(g)[this.cursor]] ?? 0) > 0 ? "ENTER SELL ONE" : "ENTER BUY ONE";
       case "SHIPYARD": return "ENTER DO THIS";
@@ -535,6 +549,7 @@ export class StationScene implements Scene {
   }
 
   openDetails(g: Game): void {
+    if (this.documentKey()) { this.openDocument(g, false); return; }
     const p = g.world.player, st = this.station;
     let sections: [string, string[]][] = [];
     switch (TABS[this.tab]) {
@@ -598,6 +613,50 @@ export class StationScene implements Scene {
     this.info = new ReaderOverlay("STATION DETAILS", sections, () => { this.info = undefined; });
   }
 
+  documentKey(): string {
+    return this.tab === 5 ? `survey:${this.surveyView}` : this.tab === 11 ? `record:${this.recordView}` : this.tab === 9 ? "news" : this.tab === 10 ? "wire" : "";
+  }
+
+  documentRows(g: Game): StationRecord[] {
+    return stationRecords(g, this, object => this.documentIdentity.objectKey(object));
+  }
+
+  documentButtons(): { key: string; label: string; rect: Rect }[] {
+    if (this.tab === 5) return [{ key: "c", label: this.surveyView === "data" ? "C CODEX" : "C CARTOGRAPHICS", rect: { x: 300, y: 52, w: 174, h: 12 } }];
+    const buttons: [string, string][] = this.tab === 9 ? [["l", "L LETTERS"], ["r", "R REPLY NEWEST"], ...(!this.station.military && this.station.factionId !== "vex" ? [["y", "Y VOTE FOR"], ["n", "N AGAINST"]] as [string, string][] : [])]
+      : this.tab === 10 ? [["c", "C CALL SIGN"]]
+      : this.tab === 11 ? [["l", "L LOG"], ["b", "B LEDGER"], ["p", "P GUESTBOOK"], ["w", "W WEEK"], ["o", "O HARBOUR"], ["c", "C CHRONICLE"], ["x", "X EXPORT"]] : [];
+    const width = this.tab === 11 ? 66 : 116;
+    return buttons.map(([key, label], i) => ({ key, label, rect: { x: 8 + i * width, y: 56, w: width - 4, h: 15 } }));
+  }
+
+  openDocument(g: Game, all: boolean): void {
+    const rows = this.documentRows(g), selected = rows.find(row => row.id === this.list.view.selected);
+    const sections = (all ? rows : selected ? [selected] : []).map(row => [row.title, row.lines.length ? row.lines : ["No entries yet."]] as [string, string[]]);
+    if (!sections.length) return;
+    this.info = new ReaderOverlay(all ? "STATION RECORDS" : "RECORD DETAILS", sections, () => { this.info = undefined; });
+  }
+
+  drawDocuments(g: Game, ctx: CanvasRenderingContext2D): void {
+    this.prepareListDraw(g);
+    for (const button of this.documentButtons()) mapButton(ctx, button.rect, button.label);
+    if (this.tab === 5) {
+      drawText(ctx, this.surveyView === "data" ? "UNIVERSAL CARTOGRAPHICS" : "CODEX", 8, 56, PAL.info);
+      if (this.surveyView === "data") {
+        const worth = Math.round(g.world.player.expData ?? 0), paid = Math.round(worth * (this.station.type === "research" ? 1.25 : 1));
+        mapButton(ctx, SELL_DATA, `ENTER SELL DATA: ${paid}CR${this.station.type === "research" ? " INCLUDING BONUS" : ""}`, worth > 0);
+      } else drawText(ctx, "EVERY RETAINED ENTRY IS AVAILABLE IN DETAILS", 8, 76, PAL.greyDark);
+    } else drawText(ctx, `${this.documentKey().replace(":", " / ").toUpperCase()}   I READ ENTRY   F3 READ ALL AND SEARCH`, 8, 76, PAL.info);
+    const rows = this.documentRows(g), offset = this.list.view.offset;
+    rows.slice(offset, this.list.view.end).forEach((row, i) => {
+      const index = offset + i, y = 92 + i * 21;
+      this.row(ctx, y, index === this.cursor, index, 19);
+      drawText(ctx, clippedText(row.title, 444), 12, y, index === this.cursor ? PAL.white : PAL.ui);
+      drawText(ctx, clippedText(row.lines[0] || "No entries yet.", 444), 12, y + 9, PAL.grey);
+    });
+    if (!rows.length) drawText(ctx, "NO RECORDS HERE YET.", 12, 96, PAL.grey);
+  }
+
   paTimer = 20;
   update(g: Game, dt: number): void {
     if (this.info) { this.info.update(g); return; }
@@ -605,6 +664,7 @@ export class StationScene implements Scene {
     let pointerAction: string | undefined;
     const pressed = (key: string) => pointerAction === key || (!(key === "k" && tutorialActive(g)) && inp.wasPressed(key));
     const click = (rect: Rect) => inp.mousePressed && contains(rect, inp.mouseX, inp.mouseY);
+    for (const button of this.documentButtons()) if (click(button.rect)) { pointerAction = button.key; break; }
     if (pressed("F2") || click(WORKSHOP)) { openWorkshop(g); return; }
     music.setMood(this.station.factionId, 0);
     this.paTimer -= dt;
@@ -654,6 +714,7 @@ export class StationScene implements Scene {
         }
       }
       if (removed) return;
+      if (this.documentKey() && (pressed("F3") || this.extraButtons(g).some(button => button.key === "F3" && click(button.rect)))) { this.openDocument(g, true); return; }
       if (pressed("i") || click(DETAILS)) { this.openDetails(g); return; }
       if (click(RUN) && this.list.view.selected !== undefined) pointerAction = TABS[this.tab] === "SHIPS" && this.shipRows(g)[this.cursor]?.kind === "working" ? "r" : "Enter";
       for (const button of this.extraButtons(g)) if (click(button.rect)) { pointerAction = button.key; break; }
@@ -862,22 +923,20 @@ export class StationScene implements Scene {
         break;
       }
       case "NEWS":
-        this.cursor = clamp(this.cursor, 0, g.world.news.length - 1);
-        if (pressed("l") || (inp.mousePressed && inp.mouseX >= 8 && inp.mouseX < 476 && this.mailRows.some(row => inp.mouseY >= row.y0 && inp.mouseY < row.y1))) {
-          const row = inp.mousePressed ? this.mailRows.find(row => inp.mouseY >= row.y0 && inp.mouseY < row.y1) : null;
-          (g.scenes.letters as LettersScene).open(g, row?.index ?? 0); return;
-        }
+        if (enter) { this.openDocument(g, false); return; }
+        if (pressed("l")) { (g.scenes.letters as LettersScene).open(g, 0); return; }
         if (!st.military && st.factionId !== "vex" && (pressed("y") || pressed("n"))) { g.toast(castVote(g.world, st.factionId, pressed("y"))); sfx.select(); }
         if (pressed("r")) { const m = [...(p.mail ?? [])].reverse().find((x) => !x.replied); if (!m) g.toast("NO LETTERS WAITING FOR AN ANSWER"); else { g.toast(replyToLetter(g.world, m)); sfx.letter(); } }
         break;
       case "WIRE":
+        if (enter) { this.openDocument(g, false); return; }
         if (!this.wireLoaded) { this.wireLoaded = true; void this.loadWire(); }
         if (pressed("c")) { void this.chooseCallsign(g); }
         break;
       case "SURVEY":
-        this.cursor = 0;
         if (pressed("c")) { this.surveyView = this.surveyView === "codex" ? "data" : "codex"; sfx.blip(); }
         if ((enter || click(SELL_DATA)) && this.surveyView === "data") this.sellExploration(g);
+        else if (enter) this.openDocument(g, false);
         break;
       case "BASE": {
         const p2 = g.world.player;
@@ -936,6 +995,7 @@ export class StationScene implements Scene {
         break;
       }
       case "RECORD":
+        if (enter) { this.openDocument(g, false); return; }
         if (pressed("l")) { this.recordView = this.recordView === "log" ? "achievements" : "log"; this.cursor = 0; sfx.blip(); }
         if (pressed("b")) { this.recordView = this.recordView === "ledger" ? "achievements" : "ledger"; this.cursor = 0; sfx.blip(); }
         if (pressed("p")) { this.recordView = this.recordView === "guestbook" ? "achievements" : "guestbook"; this.cursor = 0; sfx.blip(); }
@@ -952,7 +1012,6 @@ export class StationScene implements Scene {
             g.toast("CHRONICLE SAVED AS A TEXT FILE"); sfx.pickup(); flag(g, "chronicle");
           } catch { g.toast("CHRONICLE EXPORT FAILED"); }
         }
-        this.cursor = clamp(this.cursor, 0, this.recordView === "log" ? Math.max(0, (p.log?.length ?? 0) - 16) : Math.max(0, Math.ceil(ACHIEVEMENTS.length / 2) - 12));
         break;
     }
   }
@@ -1425,7 +1484,6 @@ export class StationScene implements Scene {
   draw(g: Game, ctx: CanvasRenderingContext2D): void {
     if (this.info) { this.info.draw(g, ctx); return; }
     this.rowBoxes = [];
-    this.mailRows = [];
     const p = g.world.player;
     const st = this.station;
     const fac = faction(st.factionId);
@@ -1477,10 +1535,10 @@ export class StationScene implements Scene {
       case "MISSIONS": this.drawMissions(g, ctx, top); break;
       case "BAR": this.drawBar(g, ctx, top); break;
       case "STORAGE": this.drawStorage(g, ctx, top); break;
-      case "NEWS": this.drawNews(g, ctx, top); break;
-      case "WIRE": this.drawWire(g, ctx, top); break;
-      case "RECORD": this.drawRecord(g, ctx, top); break;
-      case "SURVEY": this.drawSurvey(g, ctx, top); break;
+      case "NEWS": this.drawDocuments(g, ctx); break;
+      case "WIRE": this.drawDocuments(g, ctx); break;
+      case "RECORD": this.drawDocuments(g, ctx); break;
+      case "SURVEY": this.drawDocuments(g, ctx); break;
       case "ENGINEER": this.drawEngineer(g, ctx, top); break;
       case "BASE": this.drawBase(g, ctx, top); break;
     }
@@ -1873,44 +1931,6 @@ export class StationScene implements Scene {
     }
   }
 
-  drawWire(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
-    const cs = wire.getCallsign();
-    drawText(ctx, `FLEET WIRE - EVERY PILOT, LIVE.  CALL SIGN: ${cs ?? "NONE (PRESS C)"}`, 8, top, PAL.info);
-    let y = top + 12;
-    if (!this.wireEvents.length) drawText(ctx, this.wireLoaded ? "NOTHING ON THE WIRE YET - BE THE FIRST." : "TUNING...", 8, y, PAL.greyDark);
-    for (const e of this.wireEvents.slice(0, 9)) {
-      drawText(ctx, `${wire.ageLabel(e.t).padStart(3)} ${e.callsign}`, 8, y, PAL.gold);
-      drawText(ctx, `${e.tag ? `[${e.tag}] ` : ""}${e.text} - ${e.system}`.slice(0, 96), 84, y, PAL.grey);
-      y += 9;
-    }
-    y = top + 12 + 9 * 9 + 6;
-    drawText(ctx, "LEADERBOARDS", 8, y, PAL.greyDark); y += 9;
-    const cols = [["discoveries", "DISCOVERIES"], ["arcs", "ARCS"], ["credits", "CREDITS"], ["kills", "KILLS"], ["explorers", "EXPLORERS"], ["traders", "TRADERS"]];
-    cols.forEach(([id, label], ci) => {
-      const x = 8 + ci * 79;
-      drawText(ctx, label, x, y, PAL.ui);
-      const rows = this.boards[id] ?? [];
-      for (let i = 0; i < Math.min(5, rows.length); i++) {
-        const r = rows[i];
-        drawText(ctx, `${i + 1}. ${r.callsign.slice(0, 8)}`, x, y + 9 + i * 8, r.callsign === cs ? PAL.gold : PAL.grey);
-        drawText(ctx, `${r.score >= 100000 ? Math.round(r.score / 1000) + "K" : r.score}`, x + 52, y + 9 + i * 8, PAL.greyDark);
-      }
-      if (!rows.length) drawText(ctx, "-", x, y + 9, PAL.greyDark);
-    });
-    const sy = y + 9 + 5 * 8 + 4;
-    const mine = wire.getSquadron();
-    const nearby = [...presence.ghosts.values()].map((gh) => `${gh.tag ? `[${gh.tag}] ` : ""}${gh.callsign}`);
-    drawText(ctx, nearby.length ? `IN THIS SYSTEM NOW: ${nearby.join(", ")}`.slice(0, 110) : presence.status === "on" ? "NO OTHER PILOTS IN THIS SYSTEM RIGHT NOW" : "", 8, sy - 10, PAL.info);
-    drawText(ctx, `SQUADRONS${mine ? ` - YOURS: [${mine}]` : " - JOIN ONE ON THE TITLE SCREEN"}`, 8, sy, PAL.ui);
-    if (!this.squadrons.length) drawText(ctx, "NONE RANKED YET", 8, sy + 9, PAL.greyDark);
-    this.squadrons.slice(0, 6).forEach((sq, i) => {
-      const x = 8 + (i % 3) * 158, yy = sy + 9 + Math.floor(i / 3) * 8;
-      const top = Object.entries(sq.standing ?? {}).sort((a, b) => b[1] - a[1])[0];
-      const patronOfs = Object.entries(this.patrons).filter(([, t]) => t === sq.tag).map(([f]) => f.toUpperCase());
-      drawText(ctx, `${i + 1}. [${sq.tag}] ${sq.members} PILOT${sq.members === 1 ? "" : "S"}  ${sq.score} PTS${sq.base ? `  BASE ${sq.base.stationName.toUpperCase().slice(0, 12)} ${sq.base.treasury}CR` : patronOfs.length ? `  PATRON OF ${patronOfs.join("/")}` : top ? `  ${top[0].toUpperCase()} ${top[1] >= 0 ? "+" : ""}${top[1]}` : ""}`.slice(0, 52), x, yy, sq.tag === mine ? PAL.gold : PAL.grey);
-    });
-  }
-
   sellExploration(g: Game): void {
     const p = g.world.player;
     const st = this.station;
@@ -2083,113 +2103,6 @@ export class StationScene implements Scene {
     drawText(ctx, "GRADES ARE YOURS, NOT THE HULL'S", mx, top + 84, PAL.greyDark);
   }
 
-  drawCodex(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
-    const p = g.world.player;
-    const cx = Object.entries(p.codex ?? {});
-    drawText(ctx, `CODEX (${cx.length} ENTRIES) - C FOR CARTOGRAPHICS`, 8, top, PAL.info);
-    const groups: [string, string, string][] = [["flora:", "FLORA", "SCANNED WITH THE ROVER (HOLD V). EACH NEW SPECIES PAYS 120 DATA."], ["fauna:", "FAUNA", "MET ON THE GROUND. WATCH, DON'T POKE."], ["biome:", "BIOMES", "WORLDS DRIVEN ON. A NEW BIOME PAYS 120 DATA."], ["signal:", "SIGNALS", "HEARD ON NO KNOWN BAND."], ["wonder:", "WONDERS", "SEEN WITH YOUR OWN EYES. A FIRST SIGHT PAYS 400 DATA."], ["contact:", "CONTACTS", "MET ON THE LANES. ANSWERED, GUIDED, GIVEN: THE NUMBER IS HOW FAR IT WENT."]];
-    let y = top + 12;
-    for (const [prefix, title, blurb] of groups) {
-      const items = cx.filter(([k]) => k.startsWith(prefix));
-      drawText(ctx, `${title} (${items.length})${items.length ? "" : " - NONE YET"}`, 8, y, PAL.ui);
-      drawText(ctx, blurb, 110, y, PAL.greyDark); y += 9;
-      if (!items.length) { y += 3; continue; }
-      items.slice(0, 6).forEach(([k, n], i) => { drawText(ctx, `${k.slice(prefix.length).toUpperCase()} x${n}`, 14 + (i % 3) * 156, y + Math.floor(i / 3) * 9, PAL.grey); });
-      y += 9 * Math.max(1, Math.ceil(Math.min(6, items.length) / 3)) + 4;
-      if (items.length > 6) { drawText(ctx, `+${items.length - 6} MORE`, 14, y - 4, PAL.greyDark); }
-    }
-    {
-      // people: the captains you've met, the notables you've carried, the old hands, the families
-      const caps = (g.world.captains ?? []).filter((c) => c.met > 0);
-      const friends = caps.filter((c) => isFriend(c)).length, rivals = caps.filter((c) => isRival(c)).length;
-      const notables = (g.world.notables ?? []).filter((n) => n.carried > 0).length;
-      const families = Object.keys(p.flags ?? {}).filter((k) => k.startsWith("family:")).length;
-      drawText(ctx, `PEOPLE (${caps.length + notables + (p.alumni ?? []).length})`, 8, y, PAL.ui);
-      drawText(ctx, "CAPTAINS MET ON THE LANES, NOTABLES CARRIED, OLD SHIPMATES, FAMILIES VISITED.", 110, y, PAL.greyDark); y += 9;
-      drawText(ctx, `CAPTAINS ${caps.length} (${friends} FRIENDS, ${rivals} RIVALS)   NOTABLES ${notables}/${(g.world.notables ?? []).length}   OLD HANDS ${(p.alumni ?? []).length}   FAMILIES ${families}   ENVOYS ${p.envoys ?? 0}   PATIENTS ${p.patients ?? 0}`, 14, y, PAL.grey); y += 9;
-      const named = caps.slice(0, 3).map((c) => `${c.name.toUpperCase()} (${c.ship.toUpperCase()}, MET ${c.met})`).join("; ");
-      if (named) { drawText(ctx, named.slice(0, 104), 14, y, PAL.greyDark); y += 9; }
-      y += 4;
-    }
-    const firsts = Object.values(p.firsts ?? {}).filter((c) => c === wire.getCallsign()).length;
-    drawText(ctx, `FIRST DISCOVERIES ${firsts}   REGIONS CHARTED ${Object.values(p.ground ?? {}).filter((s) => s.charted).length}   ENCOUNTERS ${Object.values(p.encounters ?? {}).reduce((a, b) => a + b, 0)}   LIVES SAVED ${p.lives ?? 0}`, 8, y + 2, PAL.gold);
-  }
-
-  drawSurvey(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
-    if (this.surveyView === "codex") { this.drawCodex(g, ctx, top); return; }
-    const p = g.world.player;
-    const w = g.world;
-    const st = this.station;
-    drawText(ctx, "UNIVERSAL CARTOGRAPHICS - C FOR THE CODEX", 8, top, PAL.info);
-    const worth = Math.round(p.expData ?? 0);
-    mapButton(ctx, SELL_DATA, `ENTER SELL EXPLORATION DATA: ${worth}CR${st.type === "research" ? " x1.25 HERE" : ""}`, worth > 0);
-    let y = top + 28;
-    drawText(ctx, "CAREERS:", 8, y, PAL.greyDark); y += 10;
-    for (const kind of ["explorer", "trader", "miner", "rescuer"] as const) {
-      const r = rankOf(p, kind);
-      const v = rankValue(p, kind);
-      const unit = kind === "miner" ? " UNITS" : kind === "rescuer" ? " PTS" : "CR";
-      drawText(ctx, `${kind.toUpperCase()}`, 8, y, PAL.grey);
-      drawText(ctx, r.title, 60, y, r.idx >= 8 ? PAL.gold : PAL.ui);
-      drawText(ctx, r.next ? `${Math.round(v)}${unit} / NEXT ${r.next}${unit}` : `${Math.round(v)}${unit} - TOP OF THE LADDER`, 130, y, PAL.greyDark);
-      y += 9;
-    }
-    y += 4;
-    drawText(ctx, "HOW DATA IS EARNED: ARRIVE (NAV LOG) - HOLD V IN-SYSTEM (DETAILED) - SURVEY WORLDS FROM ORBIT - FIRST DISCOVERIES", 8, y, PAL.greyDark); y += 9;
-    drawText(ctx, "DISCOVERY SCANNER LOGS FULLY ON ARRIVAL. SURFACE SCANNER DOUBLES SURVEY PAY. RESEARCH POSTS PAY 25% MORE.", 8, y, PAL.greyDark); y += 9;
-    {
-      const cx = Object.keys(p.codex ?? {});
-      const species = cx.filter((k) => k.startsWith("flora:")).length, biomes = cx.filter((k) => k.startsWith("biome:")).length;
-      const regions = Object.values(p.ground ?? {}).filter((s) => s.charted).length;
-      const firsts = Object.values(p.firsts ?? {}).filter((c) => c === wire.getCallsign()).length;
-      drawText(ctx, `CODEX: ${species} SPECIES, ${biomes} BIOMES, ${regions} REGIONS CHARTED, ${firsts} FIRST DISCOVERIES`, 8, y, PAL.gold); y += 12;
-    }
-    const log = Object.entries(p.expLog ?? {});
-    drawText(ctx, `LOGGED SYSTEMS (${log.length}/${Object.keys(w.systems).length}):`, 8, y, PAL.greyDark); y += 10;
-    const cols = 3;
-    log.slice(0, 27).forEach(([id, lvl], i) => {
-      const sys = w.systems[id];
-        if (!sys) return;
-      const first = p.firsts?.[id];
-      const x = 8 + (i % cols) * 156;
-      const yy = y + Math.floor(i / cols) * 9;
-      drawText(ctx, `${sys.name.slice(0, 16)} ${lvl === 2 ? "DETAILED" : "BASIC"}`, x, yy, lvl === 2 ? PAL.ui : PAL.grey);
-      if (first) drawText(ctx, `1ST ${first}`.slice(0, 20), x + 96, yy, first === wire.getCallsign() ? PAL.gold : PAL.greyDark);
-    });
-  }
-
-  drawLog(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
-    const p = g.world.player;
-    const log = [...(p.log ?? [])].reverse();
-    drawText(ctx, `CAPTAIN'S LOG, STARDATE ${stardate(g.world)} (${log.length}) - L FOR ACHIEVEMENTS - X EXPORTS - UP/DOWN`, 8, top, PAL.info);
-    if (!log.length) { drawText(ctx, "NOTHING WORTH WRITING DOWN YET. FLY SOMEWHERE. HELP SOMEONE.", 8, top + 12, PAL.greyDark); return; }
-    const first = Math.min(this.cursor, Math.max(0, log.length - 16));
-    log.slice(first, first + 16).forEach((e, i) => {
-      const y = top + 12 + i * 10;
-      drawText(ctx, `SD ${(41000 + e.t / 360).toFixed(1)}`, 8, y, PAL.greyDark);
-      drawText(ctx, e.text.toUpperCase().slice(0, 84), 64, y, i === 0 && first === 0 ? PAL.white : PAL.grey);
-    });
-  }
-
-  drawLedger(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
-    const p = g.world.player;
-    const rows = Object.entries(p.ledger ?? {}).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
-    drawText(ctx, "THE LEDGER - LIFETIME, BY SOURCE - B FOR THE SERVICE RECORD", 8, top, PAL.info);
-    const income = rows.filter(([, v]) => v > 0).reduce((a, [, v]) => a + v, 0);
-    const outgo = rows.filter(([, v]) => v < 0).reduce((a, [, v]) => a + v, 0);
-    drawText(ctx, `IN ${income}CR   OUT ${outgo}CR   NET ${income + outgo}CR   ABOARD NOW ${p.credits}CR`, 8, top + 10, PAL.gold);
-    let y = top + 24;
-    if (!rows.length) drawText(ctx, "NOTHING ON THE BOOKS YET. FLY, TRADE, HELP SOMEBODY.", 12, y, PAL.greyDark);
-    const maxAbs = Math.max(1, ...rows.map(([, v]) => Math.abs(v)));
-    for (const [k, v] of rows.slice(0, 14)) {
-      drawText(ctx, LEDGER_LABELS[k] ?? k.toUpperCase(), 12, y, PAL.grey);
-      const w2 = Math.round(180 * Math.abs(v) / maxAbs);
-      ctx.fillStyle = v >= 0 ? PAL.good : PAL.danger; ctx.fillRect(200, y + 1, w2, 4);
-      drawText(ctx, `${v >= 0 ? "+" : ""}${v}CR`, 390, y, v >= 0 ? PAL.good : PAL.danger);
-      y += 10;
-    }
-    drawText(ctx, "WAGES, FUEL, YARD WORK, TRADE, FARES, TOLLS, CHARTERS, LETTERS: THE WHOLE STORY OF THE MONEY.", 8, VH - 32, PAL.greyDark);
-  }
   // The week: the strategy layer on one page. Votes, the border, the regatta, holdings, your name.
   // the harbour view: what this port knows about you and your ship right now, without walking the deck
   // the clinic is overrun: a medical crisis at the clamp, and a medic aboard is worth more than a crate
@@ -2392,161 +2305,6 @@ export class StationScene implements Scene {
     (g.scenes["encounter"] as EncounterScene).open(g, enc, "station", true);
   }
 
-  drawHarbour(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
-    const w = g.world; const p = w.player; const st = this.station;
-    const t = stationHour(st); const hr = hoursRate(st);
-    drawText(ctx, `${st.name.toUpperCase()} HARBOUR - ${registry(w)}, ${commandRank(p)} - O FOR THE SERVICE RECORD`, 8, top, PAL.info);
-    let y = top + 12;
-    drawText(ctx, "THE CLOCK", 8, y, PAL.gold); y += 9;
-    drawText(ctx, `${clockText(t)} STATION TIME, ${t.label}. YARD: ${hr.label || "STANDARD RATE"}${hr.mul !== 1 ? ` (${hr.mul > 1 ? "+" : ""}${Math.round((hr.mul - 1) * 100)}%)` : ""}. THE LOUNGE IS ${hr.lounge >= 0.75 ? "FULL" : hr.lounge <= 0.35 ? "QUIET" : "BUSY ENOUGH"}.`, 8, y, PAL.grey); y += 9;
-    y += 3;
-    drawText(ctx, "IN THE BAYS", 8, y, PAL.gold); y += 9;
-    const caps = berthedCaptains(w, st.id);
-    drawText(ctx, caps.length ? caps.map((c) => `${c.name.toUpperCase()} OFF THE ${c.ship.toUpperCase()}${isRival(c) ? " (RIVAL)" : isFriend(c) ? " (FRIEND)" : ""}`).join("; ").slice(0, 104) : "NOBODY YOU KNOW IS BERTHED THIS WEEK.", 8, y, PAL.grey); y += 9;
-    { const parked = (p.fleet ?? []).filter((f) => f.stationId === st.id); drawText(ctx, `${(p.shipName ?? hull(p.hullId).name).toUpperCase()} IN BAY 4${parked.length ? `; YOURS ACROSS THE DECK: ${parked.map((f) => (f.name ?? hull(f.hullId).name).toUpperCase()).join(", ")}` : ""}. `.slice(0, 104), 8, y, PAL.grey); y += 9; }
-    drawText(ctx, `THE DOCK-HAND: ${dockhandLines(w, st, new RNG(hashStr(`dh:${st.id}:${weekKey()}`)))[0].replace(/^'/, "").split(/[.!?]/)[0].toUpperCase()}.`.slice(0, 92), 8, y, PAL.grey); y += 9;
-    y += 3;
-    drawText(ctx, "ON YOUR SHIP", 8, y, PAL.gold); y += 9;
-    const lost = p.lostProperty ?? [];
-    drawText(ctx, lost.length ? `LOST PROPERTY: ${lost.map((it) => `${it.name.toUpperCase().split(",")[0]} (${it.owner.toUpperCase()}${it.stationId === st.id ? ", GOT OFF HERE" : ""})`).join("; ")}`.slice(0, 104) : "LOST PROPERTY: NOTHING LEFT IN THE CABIN.", 8, y, PAL.grey); y += 9;
-    if (isBeltStation(st) || (p.beltStanding ?? 0) > 0) { drawText(ctx, `BELT STANDING ${Math.min(BELT_FREEMAN_AT, p.beltStanding ?? 0)}/${BELT_FREEMAN_AT}${(p.beltStanding ?? 0) >= BELT_FREEMAN_AT ? " - FREEMAN OF THE BELT" : ""}: HOPPERS, SPINS, REGISTERS AND RUNS COUNT.`, 8, y, PAL.grey); y += 9; }
-    if ((p.waterToBelt ?? 0) > 0) { drawText(ctx, `WATER TO THE BELT: ${p.waterToBelt} UNITS${(p.waterToBelt ?? 0) >= 50 ? " - WATERBEARER" : ""}. THE ROCKS KEEP COUNT.`, 8, y, PAL.grey); y += 9; }
-    { const bits: string[] = []; const cadet = p.crew.find((c) => (c.docks ?? 0) === 0); if (cadet) bits.push(`CADET ${cadet.name.split(" ")[0].toUpperCase()} (NO DOCKINGS YET)`); const pr = p.missions.find((m) => m.passengerKind === "prisoner" && m.accepted && !m.done); if (pr) bits.push(`A PRISONER IN IRONS${p.crew.some((c) => c.role === "gunner" && !c.sick) ? ", GUARDED" : ", NO GUARD"}`); if (p.numberOne) bits.push(`NUMBER ONE ${p.numberOne.split(" ")[0].toUpperCase()}`); if (p.catchphrase) bits.push(`THE WORD: '${p.catchphrase.toUpperCase()}'`); if (bits.length) { drawText(ctx, `ABOARD: ${bits.join("; ")}.`.slice(0, 104), 8, y, PAL.grey); y += 9; } }
-    if ((p.ruleKept ?? 0) + (p.ruleBroken ?? 0) > 0) { drawText(ctx, `THE RULE: KEPT ${p.ruleKept ?? 0}, BROKEN ${p.ruleBroken ?? 0}${(p.ruleBroken ?? 0) > (p.ruleKept ?? 0) ? " - THE BOARD OF ETHICS HAS A FILE" : " - THE BOARD OF ETHICS APPROVES, SILENTLY"}.`, 8, y, PAL.grey); y += 9; }
-    { const low = p.systems.filter((s) => s.health < 60); if (low.length) { drawText(ctx, `THE YARD WOULD LIKE A WORD ABOUT: ${low.map((s) => `${s.name.toUpperCase()} ${Math.round(s.health)}%`).join(", ")}`.slice(0, 104), 8, y, PAL.warn); y += 9; } }
-    drawText(ctx, (p.keepsakes ?? []).length ? `KEPT ABOARD: ${(p.keepsakes ?? []).slice(-3).map((k) => k.toUpperCase().split(",")[0]).join(", ")}`.slice(0, 104) : "KEPT ABOARD: NOTHING YET.", 8, y, PAL.grey); y += 9;
-    const open = passengersAboard(p).filter((m) => m.request && !m.requestSettled);
-    drawText(ctx, open.length ? `FARES ASKING: ${open.map((m) => `${(m.passengerName ?? "A FARE").toUpperCase()} WANTS ${m.request === "meal" ? "A HOT MEAL" : m.request === "quiet" ? "A QUIET RUN" : m.request === "star" ? "THE STAR UP CLOSE" : "A VIEW"}${m.requestMet ? " (DONE)" : ""}`).join("; ")}`.slice(0, 104) : "FARES ASKING: NOTHING OPEN.", 8, y, PAL.grey); y += 9;
-    y += 3;
-    drawText(ctx, "PAGING", 8, y, PAL.gold); y += 9;
-    const pages: string[] = [];
-    if ((p.mail ?? []).some((m) => !m.replied)) pages.push("A LETTER WAITS FOR AN ANSWER (NEWS, R)");
-    if (p.cat && p.catAway === st.id) pages.push(`${p.cat.name.toUpperCase()} IS ON THE PROMENADE`);
-    for (const c of p.crew.filter((c) => c.home === st.id && !c.sick && !(p.flags ?? {})[`family:${st.id}:${c.name}:${weekKey()}`])) pages.push(`${c.name.split(" ")[0].toUpperCase()}'S PEOPLE ARE ON THE PROMENADE`);
-    if (p.missions.some((m) => m.accepted && !m.done && m.targetStationId === st.id)) pages.push("A CONSIGNMENT IS DUE HERE (MISSIONS)");
-    if (p.hull < p.hullMax * 0.4) pages.push("THE HULL IS TRAILING SOMETHING (SHIPYARD)");
-    if (p.fuel < p.fuelMax * 0.15) pages.push("THE TANK CAME IN ON FUMES (SHIPYARD)");
-    if (!pages.length) drawText(ctx, "NOTHING FOR YOU ON THE TANNOY. ENJOY THE QUIET.", 8, y, PAL.grey);
-    for (const l of pages.slice(0, 5)) { drawText(ctx, `- ${l}`, 8, y, PAL.grey); y += 9; }
-  }
-
-  drawWeek(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
-    const w = g.world; const p = w.player;
-    drawText(ctx, `THE WEEK OF ${weekKey()} - W FOR THE SERVICE RECORD`, 8, top, PAL.info);
-    let y = top + 12;
-    const facs = [...new Set(Object.values(w.systems).map((s) => s.factionId).filter((f): f is string => !!f && f !== "vex"))];
-    drawText(ctx, "THE VOTES", 8, y, PAL.gold); y += 9;
-    for (const f of facs.slice(0, 5)) {
-      const issue = weeklyIssue(w, f); const mine = myVote(w, f); const r = voteResult(w, f);
-      drawText(ctx, `${faction(f).name.toUpperCase()}: ${issue.title} - ${mine ? `YOU: ${mine.toUpperCase()}, ${r.passed ? "PASSES" : "FAILS"}` : `NOT VOTED (HOUSE ${r.lean >= 0.5 ? "FOR" : "AGAINST"})`}`.slice(0, 104), 8, y, mine ? PAL.ui : PAL.grey); y += 8;
-    }
-    y += 3;
-    const bs = borderStanding(w);
-    drawText(ctx, "THE BORDER", 8, y, PAL.gold); y += 9;
-    if (bs) { drawText(ctx, `${w.systems[bs.c.systemId].name.toUpperCase()}: ${faction(bs.c.incumbent).name.toUpperCase()} ${bs.inc} V ${faction(bs.c.challenger).name.toUpperCase()} ${bs.chal}${bs.yoursInc || bs.yoursChal ? ` - YOUR PUSH: ${bs.yoursInc ? `+${bs.yoursInc} HOLD ` : ""}${bs.yoursChal ? `+${bs.yoursChal} FLIP` : ""}` : " - NO PUSH FROM YOU YET"}`.slice(0, 104), 8, y, PAL.ui); y += 8; }
-    for (const b of (w.borderLog ?? []).slice(-3).reverse()) { drawText(ctx, `${b.week}: ${w.systems[b.systemId]?.name.toUpperCase() ?? "?"} ${b.flipped ? `FELL TO THE ${faction(b.to).name.toUpperCase()}` : `HELD FOR THE ${faction(b.from).name.toUpperCase()}`}${b.yours ? ` (YOUR PUSH ${b.yours})` : ""}`.slice(0, 104), 8, y, PAL.grey); y += 8; }
-    y += 3;
-    drawText(ctx, "THE LANES", 8, y, PAL.gold); y += 9;
-    { const ro = regattaObjective(w); drawText(ctx, `${ro ? ro : p.regatta === 3 ? "THE REGATTA: CHAMPION" : "THE REGATTA: NOT ENTERED - FINISH ANY RING RACE"}${p.marshalWager ? "  -  MARSHAL'S WAGER ON: NEXT RUN UNDER PAR PAYS DOUBLE" : ""}`.slice(0, 104), 8, y, PAL.ui); y += 8; }
-    { const best = Object.entries(p.raceBest ?? {}).slice(0, 3).map(([id, t]) => `${(findStation(w, id)?.st.name ?? "?").toUpperCase()} ${t.toFixed(1)}S`).join(", "); drawText(ctx, best ? `BEST TIMES: ${best}` : "BEST TIMES: NONE YET", 8, y, PAL.grey); y += 8; }
-    { const nick = captainNickname(w); drawText(ctx, `${nick ? `THE LANES CALL YOU ${nick}. ` : ""}${p.postRuns ?? 0} MAIL BAGS, ${p.fares ?? 0} FARES, ${p.rescues ?? 0} RESCUES, ${p.races ?? 0} RACES`, 8, y, PAL.grey); y += 8; }
-    y += 3;
-    drawText(ctx, "THE LEDGER", 8, y, PAL.gold); y += 9;
-    drawText(ctx, totalShares(p) ? `HOLDINGS: ${Object.entries(p.stakes ?? {}).map(([id, n]) => `${(findStation(w, id)?.st.name ?? "?").toUpperCase()} ${n}`).join(", ")}`.slice(0, 104) : "HOLDINGS: NONE - I ON A MARKET TAB BUYS A SHARE", 8, y, PAL.grey); y += 8;
-    drawText(ctx, `CHARTERS: ${(p.haulers ?? []).length ? (p.haulers ?? []).map((c) => `${c.name.toUpperCase()} (${c.trips} TRIPS, TILL ${Math.round(c.till)}CR)`).join("; ") : "NONE"}`.slice(0, 104), 8, y, PAL.grey); y += 8;
-    drawText(ctx, `FLEET: ${(p.fleet ?? []).length ? (p.fleet ?? []).map((f) => `${(f.name ?? hull(f.hullId).name).toUpperCase()} AT ${(findStation(w, f.stationId)?.st.name ?? "?").toUpperCase()}`).join("; ") : "JUST THIS ONE"}`.slice(0, 104), 8, y, PAL.grey); y += 8;
-  }
-
-  drawGuestbook(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
-    const p = g.world.player;
-    const book = (p.guestbook ?? []).slice().reverse();
-    drawText(ctx, `THE GUESTBOOK (${p.fares ?? 0} FARES LANDED) - P FOR THE SERVICE RECORD`, 8, top, PAL.info);
-    if (!book.length) { drawText(ctx, "NOBODY HAS SIGNED IT YET. THE LOUNGE AT ANY STATION HAS PEOPLE WHO NEED A RIDE.", 8, top + 12, PAL.greyDark); return; }
-    let y = top + 12;
-    for (const e of book) {
-      const col = e.mood >= 75 ? PAL.gold : e.mood >= 35 ? PAL.ui : PAL.danger;
-      drawText(ctx, `${e.name.toUpperCase()} (${e.kind.toUpperCase()}) - ${e.from.toUpperCase()} TO ${e.to.toUpperCase()} - MOOD ${e.mood}`.slice(0, 100), 8, y, col);
-      drawText(ctx, `"${e.line.toUpperCase()}"`, 16, y + 8, PAL.grey);
-      y += 19;
-      if (y > VH - 20) break;
-    }
-  }
-
-  drawRecord(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
-    if (this.recordView === "log") { this.drawLog(g, ctx, top); return; }
-    if (this.recordView === "ledger") { this.drawLedger(g, ctx, top); return; }
-    if (this.recordView === "guestbook") { this.drawGuestbook(g, ctx, top); return; }
-    if (this.recordView === "week") { this.drawWeek(g, ctx, top); return; }
-    if (this.recordView === "harbour") { this.drawHarbour(g, ctx, top); return; }
-    const p = g.world.player;
-    const w = g.world;
-    const have = new Set(p.achievements ?? []);
-    drawText(ctx, `SERVICE RECORD${w.hardcore ? " - HARDCORE" : ""} - L LOG - B LEDGER - P GUESTBOOK - W WEEK - O HARBOUR - C CHRONICLE - X EXPORT`, 8, top, PAL.info);
-    const stats = [
-      `KILLS ${p.kills}`, `DISCOVERIES ${p.discoveries}`, `ARCS ${Object.values(p.arcs).reduce((a, b) => a + b, 0)}/25`,
-      `CREDITS ${p.credits}`, `CREW ${p.crew.length}`, `HULL ${hull(p.hullId).name.toUpperCase()}`,
-      `TIME ${Math.floor(w.time / 60)}M`, `ACHIEVEMENTS ${have.size}/${ACHIEVEMENTS.length}`,
-      `EXPLORER ${rankOf(p, "explorer").title}`, `TRADER ${rankOf(p, "trader").title}`, `MINER ${rankOf(p, "miner").title}`, `RESCUER ${rankOf(p, "rescuer").title} (${rescuePoints(p)})`,
-    ];
-    stats.forEach((t, i) => drawText(ctx, t, 8 + (i % 4) * 118, top + 12 + Math.floor(i / 4) * 9, PAL.grey));
-    const rowsTotal = Math.ceil(ACHIEVEMENTS.length / 2);
-    const first = Math.min(this.cursor, Math.max(0, rowsTotal - 12));
-    let y = top + 45;
-    ACHIEVEMENTS.forEach((a, i) => {
-      const r = Math.floor(i / 2) - first;
-      if (r < 0 || r >= 12) return;
-      const x = 8 + (i % 2) * 236;
-      const yy = y + r * 10;
-      const got = have.has(a.id);
-      drawText(ctx, (got ? "* " : "- ") + a.title, x, yy, got ? PAL.gold : PAL.greyDark);
-      drawText(ctx, a.desc, x + 86, yy, got ? PAL.grey : PAL.greyDark);
-    });
-    if (rowsTotal > 12) drawText(ctx, `ROWS ${first + 1}-${Math.min(rowsTotal, first + 12)} OF ${rowsTotal} - UP/DOWN TO SCROLL`, 8, y + 12 * 10 + 2, PAL.greyDark);
-    y += 12 * 10;
-  }
-
-  drawNews(g: Game, ctx: CanvasRenderingContext2D, top: number): void {
-    {
-      const pr = stationProfile(g.world, this.station);
-      { const t = stationHour(this.station); drawText(ctx, `${this.station.name.toUpperCase()} - POP. ${pr.population.toLocaleString()} - FOUNDED ${pr.founded} - ${clockText(t)} STATION TIME, ${t.label}`, 8, top, PAL.grey); }
-      drawText(ctx, `KNOWN FOR ${pr.knownFor.toUpperCase()}. ALSO: ${pr.quirk.toUpperCase()}.`.slice(0, 112), 8, top + 9, PAL.greyDark);
-      const bl = stationBulletin(g.world, this.station);
-      drawText(ctx, "LOCAL BULLETIN", 8, top + 20, PAL.greyDark);
-      bl.slice(0, 4).forEach((l, i) => drawText(ctx, l.toUpperCase().slice(0, 112), 8, top + 29 + i * 8, l.startsWith("URGENT") || l.startsWith("STRIKE") ? PAL.danger : l.startsWith("FESTIVAL") ? PAL.gold : PAL.grey));
-      top += 29 + Math.min(4, bl.length) * 8 + 6;
-    }
-    { const oc = occasionFor(); drawText(ctx, `TODAY: ${oc.name} - ${oc.effect}`, 8, top, PAL.gold); top += 9; }
-    if (!this.station.military && this.station.factionId !== "vex") {
-      const issue = weeklyIssue(g.world, this.station.factionId); const mine = myVote(g.world, this.station.factionId); const r = voteResult(g.world, this.station.factionId);
-      drawText(ctx, `THE WEEK'S VOTE - ${issue.title}: ${issue.text}`.slice(0, 112).toUpperCase(), 8, top, PAL.info); top += 9;
-      drawText(ctx, mine ? `YOU VOTED ${mine.toUpperCase()}. ${r.passed ? "PASSED" : "FAILED"}: ${(r.passed ? issue.yes : issue.no).toUpperCase()}`.slice(0, 112) : `Y FOR, N AGAINST. YOUR WEIGHT: ${Math.round(r.weight * 100)}% OF THE HOUSE. THE HOUSE LEANS ${r.lean >= 0.5 ? "FOR" : "AGAINST"}.`, 8, top, mine ? PAL.gold : PAL.grey); top += 9;
-    }
-    if (totalShares(g.world.player)) { const p2 = g.world.player; drawText(ctx, `YOUR HOLDINGS: ${Object.entries(p2.stakes ?? {}).map(([id, n]) => `${(findStation(g.world, id)?.st.name ?? "?").toUpperCase()} ${n}`).join(", ")} (${totalShares(p2)} SHARES)`.slice(0, 112), 8, top, PAL.gold); top += 9; }
-    if (this.station.museum?.length) { const m = this.station.museum[this.station.museum.length - 1]; drawText(ctx, `MUSEUM: ${this.station.museum.length} PIECE${this.station.museum.length > 1 ? "S" : ""} - LATEST ${m.item.toUpperCase()}, DONATED BY ${m.by.toUpperCase()}`.slice(0, 112), 8, top, PAL.gold); top += 9; }
-    const mail = g.world.player.mail ?? [];
-    if (mail.length) {
-      drawText(ctx, `LETTERS (${mail.length}) - L READ ALL - R WRITES BACK${mail.some((x) => !x.replied) ? "" : " (ALL ANSWERED)"}`, 8, top, PAL.gold);
-      this.mailRows.push({ y0: top - 2, y1: top + 8, index: 0 });
-      let ly = top + 9;
-      for (const [index, m] of mail.slice(-2).reverse().entries()) { drawText(ctx, `FROM ${m.from.toUpperCase()}: ${m.text.toUpperCase()}`.slice(0, 112), 8, ly, PAL.grey); this.mailRows.push({ y0: ly, y1: ly + 8, index }); ly += 8; }
-      top = ly + 4;
-    }
-    const serial = serialLines(g.world);
-    if (serial) {
-      drawText(ctx, `GALNET SERIAL: ${serial.title} - ${serial.where.toUpperCase()}`, 8, top, PAL.gold);
-      let sy = top + 9;
-      const parts = serial.parts.length ? serial.parts : ["(THE FIRST PART IS ON ITS WAY)"];
-      parts.forEach((l, i) => { drawText(ctx, `${i + 1}. ${l.toUpperCase()}`.slice(0, 112), 8, sy, PAL.grey); sy += 8; });
-      if (serial.hook) { drawText(ctx, `> ${serial.hook.toUpperCase()}`.slice(0, 112), 8, sy, PAL.gold); sy += 8; }
-      top = sy + 5;
-    }
-    drawText(ctx, "GALNET NEWS FEED", 8, top, PAL.info);
-    let y = top + 14;
-    for (const n of g.world.news.slice(0, serial ? 3 : 7)) {
-      drawText(ctx, n.headline.slice(0, 60), 8, y, PAL.white); y += 9;
-      drawText(ctx, n.body.slice(0, 112), 8, y, PAL.greyDark); y += 13;
-    }
-  }
 }
 
 import * as spriteMod from "../gfx/sprites";

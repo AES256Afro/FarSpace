@@ -45,6 +45,7 @@ export class CityScene implements Scene {
   bar = new DeskMenu<CrewMember>();
   contracts = new DeskMenu<string>();
   info?: ReaderOverlay;
+  get pausesVoyage(): boolean { return !!this.info; }
   rows: { id: string; buy: number; sell: number }[] = [];
   candidates: CrewMember[] = [];
   board: Mission[] = [];

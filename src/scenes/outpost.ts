@@ -41,6 +41,7 @@ export class OutpostScene implements Scene {
   msg = ""; msgTimer = 0;
   market = new DeskMenu<string>();
   info?: ReaderOverlay;
+  get pausesVoyage(): boolean { return !!this.info; }
   resumeNext = false;
   private world?: World;
 

@@ -37,6 +37,7 @@ export class OrbitScene implements Scene {
   regions = new ListView<Region>(6);
   pane: "sites" | "regions" = "sites";
   info?: ReaderOverlay;
+  get pausesVoyage(): boolean { return !!this.info; }
   private planet?: Planet;
   private drawnRows: (string | Region)[] = [];
   private drawnPane: "sites" | "regions" = "sites";

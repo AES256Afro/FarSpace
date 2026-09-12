@@ -1,13 +1,14 @@
 # M418 menu inventory
 
-Baseline: v0.268.1, inspected September 12, 2026. Native acceptance is recorded
+Baseline: v0.269.0, inspected September 12, 2026. Native acceptance is recorded
 per migration. M418 is still open.
 
 | Surface | Current behavior | Remaining work | Acceptance state |
 | --- | --- | --- | --- |
 | Title and save library | Native HTML pages retain page, focus and scroll; save operations are explicit. The former slots scene is absent. | Preserve M416/M417 regressions; audit long names and child returns when shared rules change. | Previous release checks; current regression suite passes. |
 | Workshop | Native HTML inventory, research and jobs preserve scroll and action focus on stock changes. | Include in shared key ownership and return checks. | v0.261 native checks; current regression suite passes. |
-| Station transaction tabs | Stable goods, yard actions, hulls, missions, crew, fares, warehouse entries, blueprints and base actions. Page controls, Home/End, full details and explicit execution. | Preserve domain and reader tests; finish the separate News, Wire, Survey and Record text audit. | Native market sale, exact yard purchase, owned hull boarding, mission acceptance, crew hire, warehouse transfer and engineering upgrade passed. Base viewport and absence of requests covered by an isolated unit fixture. |
+| Station transaction tabs | Stable goods, yard actions, hulls, missions, crew, fares, warehouse entries, blueprints and base actions. Page controls, Home/End, full details and explicit execution. | Preserve domain and reader tests. | Native market sale, exact yard purchase, owned hull boarding, mission acceptance, crew hire, warehouse transfer and engineering upgrade passed. Base viewport and absence of requests covered by an isolated unit fixture. |
+| Station records | Six row pages for News, Wire, Survey and every Record subview. Stable ids, separate viewports, full selected readers and searchable Read all. Existing votes, replies and sales use explicit controls. | Preserve caller and input tests. | Native complete guestbook, logs, achievements search, dispatches, letters, Survey, codex and squadron records passed. |
 | Settings | Existing full option and binding scrolling. | Preserve binding input ownership and caller return during later menu work. | Existing regression suite passes. |
 | Roster | Stable member identity, eight visible rows, full wrapped details, pointer actions, wheel and page navigation. Crew on leave are readable but cannot receive aboard actions. | Preserve this model while migrating other lists. | Native empty and 21 member fixtures; full details, page and wheel controls, insertion, exact bonus recipient, review return and leave restrictions passed. |
 | Chronicle | Shared ReaderScene, complete export text grouped by its existing headings. Explicit Back, search, section navigation and paging. | Preserve read-only behavior. | Native body click, End at log entry 99 and complete matching sections passed. |
@@ -252,3 +253,41 @@ Provisions details changed no cargo or credits; Sell moved one unit for 25CR.
 The hosted Survey button paid 500CR for 400 data once, with no sale outside its
 bounds or on a repeat click. No application warnings/errors. Temporary tabs
 closed, with actual saves and identity unchanged. Dev5199 runs v0.268.1.
+
+## v0.269.0 implementation evidence
+
+- News, Wire, Survey and Record use six row pages and stable record identities.
+  All retained text is available through I selected details or F3 Read all,
+  including search and section navigation. Rows select; Enter reads an entry
+  except Cartographics, where its existing data sale is retained and named.
+  Record subviews and information tabs preserve separate selections/viewports.
+  Arrivals retain the selected record; a removed entry needs fresh input.
+- Complete sources replace the former display limits: all news and letters,
+  museum donations, serial parts, Wire transmissions, board rankings, squadron
+  records, survey logs, codex groups, achievements, log entries, ledger sources,
+  guestbook messages, weekly records and harbour notices. Full reader snapshots
+  remain stable while open. No save schema change.
+- Voting, letters, newest reply, callsign and Record subviews have bounded
+  buttons. Survey now quotes the final payment including the research bonus.
+  Readers pause voyage systems through every current nested ReaderOverlay
+  parent, plus standalone ReaderScene and LettersScene. The flight owner
+  exposes its local map reader pause. Existing caller cleanup stays in place.
+- Native: 30 guestbook messages and 40 log entries, independent viewports,
+  complete Guest 0 message, 217 section achievement search, all 24 dispatches,
+  FINAL DISPATCH 23, letter return to the same dispatch, explicit vote and reply,
+  50 logged systems, 35 species and ten squadron records. The last system,
+  species and squadron were readable. Survey displayed and paid 500CR for 400
+  data. Readers consumed action keys without voting or selling. No application
+  warnings/errors. All temporary tabs closed; memory storage and disabled
+  online calls protected actual saves and identity. A synthetic large survey
+  log triggered its normal story card before the fixture disabled story
+  progression; this was not a reader failure.
+- 731 tests in 47 files pass. TypeScript and production build pass.
+  Publication and hosted verification pending. Physical touch and
+  gamepad acceptance remain M426. M418 is still open.
+- Next: finish galaxy selection/removal, then the final global input/caller
+  inventory. Station transaction and text migrations are complete for M418.
+  Check Workshop, Settings, title child returns and map ownership using the
+  existing models. Then continue M419 flight priorities and M420 contacts,
+  followed by the documented dependency order. The nine hour continuation
+  remains active until 2026-09-12 11:31:03 UTC. Do not extend it.

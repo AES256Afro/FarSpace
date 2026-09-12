@@ -23,6 +23,7 @@ export class ServiceScene implements Scene {
   set cursor(index: number) { this.menu.view.select(index); }
   get scroll(): number { return this.menu.view.offset; }
   info?: ReaderOverlay;
+  get pausesVoyage(): boolean { return !!this.info; }
   resumeNext = false;
   private world?: World;
   lastReply = "";

@@ -12,6 +12,7 @@ const TOP = 34, HEIGHT = 192;
 // Keep complete matching sections so a search result includes its context.
 export class ReaderScene implements Scene {
   touchMode = "menu" as const;
+  readonly pausesVoyage = true;
   scroll = 0;
   query = "";
   blocks: { title: string; headings: string[]; lines: string[]; top: number; height: number }[] = [];
