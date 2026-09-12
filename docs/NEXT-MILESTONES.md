@@ -46,7 +46,8 @@ recorded in MENU-INVENTORY.md. CI, container publication, Cloudflare deployment
 and hosted asset verification passed. The v0.264.0 follow-up adds bounded
 orbital site and territory lists, complete local objective readers, stable
 contact selection and letters that retain position across arrivals. It has
-622 passing tests and native acceptance in MENU-INVENTORY.md. Remaining M418
+622 passing tests and native acceptance in MENU-INVENTORY.md. Release CI,
+container publication, Cloudflare deployment and hosted verification passed. Remaining M418
 work is the other station and location menus plus the final input/return audit.
 
 ## September 11 priority update: mining and industry

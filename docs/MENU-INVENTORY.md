@@ -17,7 +17,7 @@ per migration. M418 is still open.
 | Orbit | Separate six row Site and Territory lists, stable keys and fixed landing controls. Full details and all objectives use a nested reader. | Preserve domain landing and Q focus tests. | Native 25 sites and 20 territories; Q selected site 24 on the last page; Land entered that ruin; Rover entered territory 19. Details retained selection and globe rotation. |
 | Galaxy and system maps | Bounded maps and explicit navigation. Local I reads all destination quests; O reads every system objective. Contact updates retain selection and top row. | Finish galaxy selection/removal and other map acceptance checks alongside M419/M420. | Native 12 shared station quests, final material requirement, search, and exact camera/selection/course/time preservation. Contact insertion/removal tests pass. |
 | Service and council desks | Dedicated action menus. Service history uses ReaderScene. | Audit dynamic rows, scrolling and all action hit areas against current state. | Needs focused audit. |
-| City, outpost and waystation | Dedicated location menus. | Inventory long lists, return paths and empty states before migration. | Needs focused audit. |
+| City, outpost and waystation | City and outpost use list panels; waystation has fixed walking interactions and at most three visitors. | Fix city/outpost hover overriding selection and clicks outside panel X bounds. Bound lists and verify transactions, empty states and caller return. | Concrete source issues identified for the next slice. Waystation needs return acceptance. |
 
 ## Implementation sequence
 

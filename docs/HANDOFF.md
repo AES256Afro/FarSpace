@@ -10,7 +10,7 @@ active every ten minutes. Read WORKLOG-2026-09-12.md on each continuation.
 At the deadline, stop new implementation, finish a safe checkpoint and pause.
 M418 through M427 and M433 through M435 remain open in NEXT-MILESTONES.md.
 
-## Current implementation: v0.264.0, M418 locations and objectives
+## Current checkpoint: v0.264.0, M418 locations and objectives
 
 - Orbit now separates Sites and Territories into six row pages. Tab switches
   lists; arrows/wheel/pointer select; Page Up/Down and Home/End reach all rows.
@@ -41,7 +41,31 @@ M418 through M427 and M433 through M435 remain open in NEXT-MILESTONES.md.
 - 622 tests in 42 files pass; TypeScript passes. Fixture writes use memory
   storage with online calls disabled. No actual save or identity changed.
   Save schema remains 16. M418 remains open for the station/location audits.
-- Release build, publication and hosted verification follow this checkpoint.
+- Production build and browser acceptance passed. Published
+  c99035a3756da1509c8fcb1258b984d07f3da7c7, tag v0.264.0. CI 34671740188
+  passed including Deploy to Cloudflare. Container workflow 34671740324 passed.
+  Hosted assets match the build, health returned ok, and a fresh public tab
+  showed v0.264.0 with no application warnings/errors. Assets:
+  index-sHWv4-dA.js, SHA-256
+  7fcc2a5deea9fc02537ae02c1b0076a6aba54cfc4ff7ddc8f24c4ae53f18add6;
+  index-CwZdn5Vi.css, SHA-256
+  4f9ba0bcb103d7e5d276c53d483e014ca4cc6c86a417f6d91da0474ff6e1e085.
+- Production Q selected release-site-24, I showed its full quest instructions,
+  pointer Land entered that same ruin, and Escape returned to orbit with the
+  site still selected and the stale hint cleared. All temporary tabs and
+  preview5198 are closed. Dev5199 was restarted at v0.264.0. Bigbox and the
+  catalog PR are unchanged. The original nine hour continuation stays active.
+- Next: CityScene.updatePanel and OutpostScene.update still move selection
+  under a hovering pointer every frame. Their click transaction checks use a
+  matching Y row without requiring the click's X coordinate inside the panel.
+  Fix those concrete cases, empty lists and scrolling first. City market,
+  candidates and mission rows need distinct stable identities. Preserve
+  purchases, hiring, mission settlement and outpost growth behavior.
+- Then audit ServiceScene and CouncilScene: service actions reset cursor/scroll
+  after running; council draws every action without a viewport. Waystation
+  uses fixed walking interactions and at most three visitors, rather than a
+  list menu. Finish the remaining station tab, input and return checks before
+  marking M418 complete.
 
 ## Previous checkpoint: v0.263.0, M418 first slice
 
