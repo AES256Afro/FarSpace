@@ -78,8 +78,8 @@ export class SystemMap {
     }
     const contacts=this.contacts(g);
     if (inp.wheel && contains(PANEL_RECT,inp.mouseX,inp.mouseY)) this.scroll+=Math.sign(inp.wheel)*3;
-    if (inp.wasPressed("PageDown")) this.scroll+=10;
-    if (inp.wasPressed("PageUp")) this.scroll-=10;
+    if (inp.wasPressed("PageDown")) this.scroll+=7;
+    if (inp.wasPressed("PageUp")) this.scroll-=7;
     this.scroll=Math.max(0,Math.min(this.scroll,Math.max(0,contacts.length-7)));
     if (inp.wasPressed("[") || inp.wasPressed("]")) {
       const i=contacts.findIndex(c=>c.id===this.selected);

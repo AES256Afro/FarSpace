@@ -4,7 +4,7 @@ import { openSearchBox } from "../core/searchbox";
 import { clamp } from "../core/mathx";
 import { drawText } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { wrap } from "./encounter";
+import { wrapText } from "../core/text";
 
 type Section = [string, string[]];
 const TOP = 34, HEIGHT = 192;
@@ -14,7 +14,7 @@ export class ReaderScene implements Scene {
   touchMode = "menu" as const;
   scroll = 0;
   query = "";
-  blocks: { title: string; lines: string[]; top: number; height: number }[] = [];
+  blocks: { title: string; headings: string[]; lines: string[]; top: number; height: number }[] = [];
   total = 0;
   closeSearchBox?: () => void;
 
@@ -22,14 +22,16 @@ export class ReaderScene implements Scene {
 
   enter(_g?: Game): void { this.closeSearchBox?.(); this.search(""); }
 
+  onSceneLeave(): void { this.closeSearchBox?.(); this.closeSearchBox = undefined; }
+
   search(query: string): void {
     this.query = query.trim().slice(0, 48).toUpperCase();
     this.scroll = 0; this.total = 0;
     this.blocks = this.sections.filter(([title, lines]) =>
       !this.query || [title, ...lines].some(line => line.toUpperCase().includes(this.query)))
       .map(([title, source]) => {
-        const lines = source.flatMap(line => wrap(line, 111));
-        const block = { title, lines, top: this.total, height: 15 + lines.length * 8 };
+        const headings = wrapText(title, 111), lines = source.flatMap(line => wrapText(line, 111));
+        const block = { title, headings, lines, top: this.total, height: 7 + (headings.length + lines.length) * 8 };
         this.total += block.height;
         return block;
       });
@@ -47,9 +49,11 @@ export class ReaderScene implements Scene {
     if (this.closeSearchBox) return;
     const inp = g.input;
     const click = (x0: number, x1: number) => inp.mousePressed && inp.mouseY >= 245 && inp.mouseY < 264 && inp.mouseX >= x0 && inp.mouseX < x1;
-    const back = inp.mousePressed && inp.mouseY >= 3 && inp.mouseY < 17 && inp.mouseX >= 414;
+    const back = inp.mousePressed && inp.mouseY >= 3 && inp.mouseY < 17 && inp.mouseX >= 414 && inp.mouseX < VW;
     if (inp.wasPressed("Escape") || inp.wasPressed("Enter") || back) {
-      const returnTo = g.settingsReturn; g.settingsReturn = "title"; g.setScene(returnTo); return;
+      const returnTo = g.settingsReturn; g.settingsReturn = "title";
+      if (returnTo === "flight" && g.scenes?.flight) (g.scenes.flight as unknown as { resumeNext: boolean }).resumeNext = true;
+      g.setScene(returnTo); return;
     }
     if (inp.wasPressed("/") || inp.wasPressed("s") || click(308, 376)) {
       this.closeSearchBox = openSearchBox(this.title, this.query, query => {
@@ -81,8 +85,8 @@ export class ReaderScene implements Scene {
       const y = TOP + block.top - this.scroll;
       if (y > TOP + HEIGHT) break;
       if (y + block.height < TOP) continue;
-      drawText(ctx, block.title, 12, y, PAL.ui);
-      block.lines.forEach((line, i) => drawText(ctx, line, 12, y + 9 + i * 8,
+      block.headings.forEach((line, i) => drawText(ctx, line, 12, y + i * 8, PAL.ui));
+      block.lines.forEach((line, i) => drawText(ctx, line, 12, y + 1 + (block.headings.length + i) * 8,
         this.query && line.toUpperCase().includes(this.query) ? PAL.white : PAL.grey));
     }
     ctx.restore();

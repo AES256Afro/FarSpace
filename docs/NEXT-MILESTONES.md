@@ -39,7 +39,11 @@ there; an exact orbital quest site can be selected with Q and entered with E.
 M436 is released in v0.262.0 with 587 passing tests and production browser
 checks. CI, container publication and Cloudflare deployment passed; hosted
 assets match the tested build. M418 through M427 and M433 through M435 remain
-open. MENU-INVENTORY.md starts M418 with the roster and shared readers.
+open. M418's first slice is implemented in v0.263.0: stable roster selection,
+eight visible crew rows, full details, explicit transactions, and shared
+Chronicle and What's new readers. All 603 tests pass and native acceptance is
+recorded in MENU-INVENTORY.md. Remaining M418 work starts with orbit, letters
+and local map objectives, then the other station and location menus.
 
 ## September 11 priority update: mining and industry
 

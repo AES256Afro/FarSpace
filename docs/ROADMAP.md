@@ -2261,3 +2261,13 @@ combined delivery order and acceptance criteria.
   the work and return journey. Keep undiscovered signals as search areas.
 - Select exact orbital quest sites with Q and preserve their view for reading.
 - M418 through M427 and M433 through M435 remain in the active work window.
+
+### M418 progress: v0.263.0
+
+- Roster selection follows the same crew member through insertions, removals
+  and reviews. Eight visible rows, separate complete details and explicit
+  actions keep the entire crew list usable.
+- Chronicle and What's new use shared paging, section navigation and search.
+  Body clicks stay in the reader. Search owns typing and the first Escape.
+- M418 remains open. MENU-INVENTORY.md records accepted surfaces and the
+  remaining orbit, letters, map and station/location audits.

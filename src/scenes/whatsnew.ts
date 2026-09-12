@@ -1,11 +1,16 @@
 // What's new: a short changelog for returning pilots, reachable from the title.
 
-import { Game, Scene, VW, VH } from "../game";
-import { drawText, textWidth } from "../gfx/font";
-import { PAL } from "../gfx/palette";
+import type { Game } from "../game";
+import { ReaderScene } from "./reader";
 import { saveSettings } from "../core/settings";
 
 const NOTES: [string, string[]][] = [
+  ["0.263 / CREW AND RECORDS", [
+    "THE ROSTER HAS A SCROLLING CREW LIST, COMPLETE PERSONAL DETAILS AND SEPARATE BONUS, REVIEW AND COURSE BUTTONS.",
+    "SELECTION FOLLOWS THE SAME PERSON WHEN CREW JOIN OR LEAVE. RETURNING FROM A REVIEW KEEPS YOUR PLACE.",
+    "CHRONICLE AND WHAT'S NEW NOW HAVE SEARCH, SECTION NAVIGATION AND PAGE CONTROLS. CLICKING THE TEXT KEEPS THE PAGE OPEN.",
+    "ESCAPE CLOSES A SEARCH DIALOG FIRST. HOME AND END REACH THE FIRST AND LAST CREW ENTRIES OR THE ENDS OF A RECORD.",
+  ]],
   ["0.262 / QUEST LOCATIONS", [
     "QUEST LOCATIONS HAVE DIAMONDS AND Q LABELS ON MAPS AND IN FLIGHT. Q FILTERS BOTH MAPS TO ACTIVE OBJECTIVES.",
     "GALAXY DETAILS PUT QUEST TITLES, LOCATIONS AND NEXT ACTIONS FIRST. GREEN DIAMONDS MEAN READY TO HAND IN.",
@@ -963,47 +968,10 @@ const NOTES: [string, string[]][] = [
   ]],
 ];
 
-// Long notes wrap to the screen width instead of running off the right edge
-const WRAP_AT = 92;
-function wrapLine(l: string): string[] {
-  const out: string[] = []; let cur = "";
-  for (const wd of l.split(" ")) { if ((cur + " " + wd).trim().length > WRAP_AT && cur) { out.push(cur); cur = wd; } else cur = cur ? cur + " " + wd : wd; }
-  if (cur) out.push(cur);
-  return out;
-}
-// each entry reflows as one paragraph, so a long line never leaves an orphan word on its own row
-const WRAPPED: [string, string[]][] = NOTES.map(([t, lines]) => [t, wrapLine(lines.join(" "))]);
-
-export class WhatsNewScene implements Scene {
-  touchMode = "menu" as const;
-  scroll = 0;
-  enter(): void { this.scroll = 0; saveSettings({ whatsNewSeen: typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "?" }); }
-  update(g: Game, dt: number): void {
-    void dt;
-    if (g.input.wasPressed("Escape") || g.input.wasPressed("Enter") || g.input.mousePressed) { g.setScene("title"); return; }
-    const total = WRAPPED.reduce((a, [, lines]) => a + 9 + lines.length * 8 + 6, 0);
-    const max = Math.max(0, total - (VH - 44));
-    if (g.input.wasPressed("ArrowDown")) this.scroll = Math.min(max, this.scroll + 24);
-    if (g.input.wasPressed("ArrowUp")) this.scroll = Math.max(0, this.scroll - 24);
-    if (g.input.wheel) this.scroll = Math.max(0, Math.min(max, this.scroll + g.input.wheel * 24));
-  }
-  draw(g: Game, ctx: CanvasRenderingContext2D): void {
-    void g;
-    ctx.fillStyle = PAL.uiPanel; ctx.fillRect(0, 0, VW, VH);
-    ctx.save(); ctx.beginPath(); ctx.rect(0, 18, VW, VH - 34); ctx.clip();
-    let y = 24 - this.scroll;
-    for (const [title, lines] of WRAPPED) {
-      if (y > VH) break;
-      if (y + 9 + lines.length * 8 > 18) {
-        drawText(ctx, title, 12, y, PAL.ui);
-        lines.forEach((l, i) => drawText(ctx, l, 12, y + 9 + i * 8, PAL.grey));
-      }
-      y += 9 + lines.length * 8 + 6;
-    }
-    ctx.restore();
-    ctx.fillStyle = PAL.uiPanel; ctx.fillRect(0, 0, VW, 18); ctx.fillRect(0, VH - 16, VW, 16);
-    drawText(ctx, "WHAT'S NEW - UP/DOWN OR WHEEL TO SCROLL", 12, 8, PAL.white);
-    drawText(ctx, "ESC BACK", VW - textWidth("ESC BACK") - 12, 8, PAL.greyDark);
-    drawText(ctx, "FULL ROADMAP: GITHUB.COM/AES256AFRO/FARSPACE", 12, VH - 12, PAL.greyDark);
+export class WhatsNewScene extends ReaderScene {
+  constructor() { super("WHAT'S NEW", NOTES); }
+  enter(g?: Game): void {
+    saveSettings({ whatsNewSeen: typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "?" });
+    super.enter(g);
   }
 }

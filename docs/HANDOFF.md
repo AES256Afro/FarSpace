@@ -10,7 +10,35 @@ active every ten minutes. Read WORKLOG-2026-09-12.md on each continuation.
 At the deadline, stop new implementation, finish a safe checkpoint and pause.
 M418 through M427 and M433 through M435 remain open in NEXT-MILESTONES.md.
 
-## Current checkpoint: v0.262.0, M436
+## Current implementation: v0.263.0, M418 first slice
+
+- Roster uses a small ListView model keyed by live CrewMember identity. It
+  shows eight rows and a separate scrollable record. Pointer rows only select;
+  Bonus, Review and Course buttons perform the existing domain actions.
+  Bonuses autosave. Crew on leave remain readable with aboard actions blocked.
+- Selection survives insertions, removal of earlier entries and review return.
+  If the selected person disappears, use the old index or the last remaining
+  person. A replaced world resets selection. Details retain their position.
+- Chronicle and What's new now extend ReaderScene. Complete text and release
+  history remain present. Search includes whole sections; long headings and
+  names wrap. Explicit Back replaces accidental closure on body clicks.
+- First Escape cancels a populated search input immediately. External scene
+  changes remove a pending dialog. Returning to flight sets resumeNext.
+  The local system list pages seven rows to match its actual visible count.
+- 603 tests in 40 files pass. TypeScript and production build pass. Native
+  fixtures verified empty and long rosters, detail paging, wheel selection,
+  page movement, leave restrictions, exact bonus recipient after insertion,
+  review return, reader body clicks, the last Chronicle entry, historical
+  notes, search submission and one Escape cancellation. No browser errors.
+- All fixture storage writes stayed in memory and online calls were disabled.
+  No actual save, identity or cloud state changed. Physical touch and gamepad
+  checks remain for M426. Save schema remains 16.
+- M418 is still open. Continue MENU-INVENTORY.md with orbit, letters and all
+  objectives at shared local contacts, then station and other location menus.
+  The nine hour window and deadline above remain unchanged.
+- Publication verification will be added after release workflows complete.
+
+## Previous checkpoint: v0.262.0, M436
 
 - Quest destinations come from a shared read-only projection of active
   contracts, stories, crew journeys, service orders and council journeys.

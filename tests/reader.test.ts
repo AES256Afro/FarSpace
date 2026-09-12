@@ -3,6 +3,10 @@ import { Game } from "../src/game";
 import { ReaderScene } from "../src/scenes/reader";
 import { HelpScene } from "../src/scenes/help";
 import { AlmanacScene } from "../src/scenes/almanac";
+import { ChronicleScene } from "../src/scenes/chronicle";
+import { WhatsNewScene } from "../src/scenes/whatsnew";
+import { chronicleText, generateWorld } from "../src/world";
+import * as wire from "../src/core/wire";
 import * as searchbox from "../src/core/searchbox";
 
 function fixture(reader = new ReaderScene("TEST", [
@@ -68,4 +72,37 @@ describe("reference readers", () => {
     reader.search("60 SECONDS"); expect(reader.blocks.some(b => b.lines.some(l => l.includes("U ")))).toBe(true);
     reader.enter(); expect(reader.query).toBe(""); expect(reader.blocks).toHaveLength(reader.sections.length);
   });
+  it("closes a pending search when another scene takes over", () => {
+    const { reader, press, g } = fixture(); reader.search("long section"); press("PageDown"); const before = reader.scroll;
+    const close = vi.fn();
+    vi.spyOn(searchbox, "openSearchBox").mockImplementation((_title, _value, callback) => () => { close(); callback(null); });
+    press("/"); reader.onSceneLeave();
+    expect(close).toHaveBeenCalledOnce(); expect(reader.closeSearchBox).toBeUndefined(); expect(g.input.flush).toHaveBeenCalledOnce(); expect(reader.scroll).toBe(before);
+  });
+  it("restores an existing flight on return", () => {
+    const { g, press } = fixture(); const flight = { resumeNext: false }; g.scenes = { flight } as unknown as Game["scenes"];
+    press("Escape"); expect(flight.resumeNext).toBe(true);
+  });
+  it("keeps complete chronicle text searchable and leaves body clicks inert", () => {
+    vi.spyOn(wire, "getCallsign").mockReturnValue(null);
+    const reader = new ChronicleScene(), { g, press } = fixture(reader); g.world = generateWorld(418);
+    g.world.player.log = Array.from({ length: 100 }, (_, i) => ({ t: i, text: `LOG ENTRY ${i}` }));
+    reader.enter(g);
+    const flat = reader.sections.flatMap(([title, lines]) => [title, ...lines]).join(" ").replace(/\s+/g, " ");
+    expect(flat).toContain(chronicleText(g.world, null).toUpperCase().replace(/\s+/g, " "));
+    g.input.mousePressed = true; g.input.mouseX = 80; g.input.mouseY = 70; reader.update(g); expect(g.setScene).not.toHaveBeenCalled(); g.input.mousePressed = false;
+    press("End"); expect(reader.scroll).toBe(reader.maxScroll()); expect(reader.blocks.at(-1)?.lines.at(-1)).toContain("LOG ENTRY 99");
+    reader.search("log entry 99"); expect(reader.blocks.some(b => b.title === "CAPTAIN'S LOG:")).toBe(true);
+  });
+  it("keeps old release notes reachable and searchable", () => {
+    const reader = new WhatsNewScene(), { press } = fixture(reader); press("End");
+    expect(reader.blocks.at(-1)?.title).toBe("0.10 - DEPTH"); expect(reader.scroll).toBe(reader.maxScroll());
+    reader.search("0.261"); expect(reader.blocks[0].lines.join(" ")).toContain("FOURTEEN RECIPES");
+  });
+  it("wraps long headings and uninterrupted names without losing characters", () => {
+    const word = "X".repeat(260), reader = new ReaderScene("TEST", [[word, [word]]]); reader.enter();
+    expect(reader.blocks[0].headings.every(l => l.length <= 111)).toBe(true); expect(reader.blocks[0].lines.every(l => l.length <= 111)).toBe(true);
+    expect(reader.blocks[0].lines.join("")).toBe(word); expect(reader.blocks[0].headings.join("")).toBe(word);
+  });
+
 });

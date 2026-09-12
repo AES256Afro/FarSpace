@@ -144,9 +144,11 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Milestones 1-417 are live (v0.257.1). See the [roadmap](docs/ROADMAP.md) for what's next.
-The [approved M416-M427 plan](docs/NEXT-MILESTONES.md) starts with randomized
-title scenes, clearer menus and saves, then support jobs and visible port changes.
+Current release: v0.263.0. M416 and M417, mining and industry M428 through
+M432, and quest locations M436 are implemented. M418 has its first menu slice:
+a scrolling crew roster and shared Chronicle and What's new readers.
+The [milestone plan](docs/NEXT-MILESTONES.md) and
+[menu inventory](docs/MENU-INVENTORY.md) record the remaining work.
 
 ```bash
 npm test         # vitest: world-gen, routing, economy, law, missions, save migrations

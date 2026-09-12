@@ -18,7 +18,10 @@ export function openSearchBox(title: string, value: string, done: (query: string
   form.onsubmit = e => { e.preventDefault(); finish(input.value); };
   cancel.onclick = () => finish(null);
   dialog.oncancel = e => { e.preventDefault(); finish(null); };
-  dialog.onkeydown = e => e.stopPropagation();
+  dialog.onkeydown = e => {
+    e.stopPropagation();
+    if (e.key === "Escape") { e.preventDefault(); finish(null); }
+  };
   dialog.onkeyup = e => e.stopPropagation();
   form.append(label, hint, find, cancel); dialog.append(form); document.body.append(dialog);
   dialog.showModal(); input.focus(); input.select();

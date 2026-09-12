@@ -1307,7 +1307,17 @@ CLOUD: CREATE SAVE CODE lets you continue on another machine.
 - R aboard your ship, R in a station lounge, or THE ROSTER from the pause
   menu: everyone aboard, their morale and loyalty, progress to the next skill,
   who they get on with, what they've asked for, where their story stands.
-  Enter pays a 100-credit bonus.
+  Enter or the Bonus button pays 100 credits to the selected person.
+- Up/Down, the wheel over the list, or a row click selects a crew member.
+  Page Up/Down moves a page; Home/End selects the first or last entry.
+  Selection stays with the same person when the crew list changes.
+- Left/Right, the detail page buttons, or the wheel over the detail panel
+  reads their complete record. Returning from a review keeps your place.
+  Crew on leave remain visible; bonuses and reviews wait until they return.
+- Chronicle and What's new use the same reader controls as the handbook.
+  Page Up/Down scrolls a page, Home/End reaches either end, and Left/Right
+  moves between sections. `/` or S opens search. Escape closes the search
+  first, then returns from the reader. Clicking the text keeps the page open.
 
 ## The dock-hand
 
