@@ -20,7 +20,7 @@ menu keeps one layout across all three.
 
 ## Current milestone status
 
-v0.274.0 implements M422; release checks are pending. M421 uncoached player
+v0.274.0 releases M422 with CI, container and hosted checks passed. M421 uncoached player
 acceptance remains pending. M423 through M427 and M433 through M435 remain
 open. M428 through M432 and M436 are released. Next implementation: M423
 support job continuity.
@@ -392,7 +392,8 @@ Acceptance:
 
 Implemented in v0.274.0 with 801 passing tests. Native checks cover long
 objective lists, retained selection, complete terms, paused state, map and HUD
-focus, real port payment and saved receipt restoration. Release checks pending.
+focus, real port payment and saved receipt restoration. CI, container and
+hosted checks passed; hosted assets match the tested build.
 
 Build a short return briefing from existing event history, missions, passenger
 manifest, service orders and ship condition. Let the player focus one existing
