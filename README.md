@@ -146,7 +146,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Current release: v0.272.0. M416 through M420, mining and industry M428 through
+Current release: v0.273.0. M416 through M421, mining and industry M428 through
 M432, and quest locations M436 are implemented. M418 includes a scrolling roster, shared readers, bounded orbital lists,
 complete local quest details, letters that keep their position and paged
 settlement desks with explicit trade, hire and contract controls. Service and
@@ -163,6 +163,9 @@ priority over chatter; L opens complete flight records and pauses the voyage.
 Contact identity, distance, relationship and present task share the E selection.
 The flight record explains aid requirements, law settlements and corsair passage
 separately. Rescue answers recheck their recipient and cannot pay twice.
+New voyages follow a postal job from controlled flight through delivery, return
+and manual save. School progress belongs to each save; older voyages stay opted
+out. A complete scripted voyage passed, while uncoached player review is pending.
 The [milestone plan](docs/NEXT-MILESTONES.md) and
 [menu inventory](docs/MENU-INVENTORY.md) record the remaining work.
 

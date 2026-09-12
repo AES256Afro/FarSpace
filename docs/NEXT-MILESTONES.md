@@ -20,8 +20,10 @@ menu keeps one layout across all three.
 
 ## Current milestone status
 
-v0.272.0 completes M420. M421 through M427 and M433 through M435 remain open.
-M428 through M432 and M436 are released. Next: M421 first useful voyage. The existing nine hour deadline is unchanged.
+v0.273.0 implements M421. Uncoached player acceptance remains pending.
+M422 through M427 and M433 through M435 remain open. M428 through M432 and
+M436 are released. Next implementation: M422 return briefing and focus.
+The existing nine hour deadline is unchanged.
 
 ## Nine hour work window and quest visibility
 
@@ -363,6 +365,10 @@ Acceptance:
   stale actions. A manual truce-breaking hit is explained after it happens.
 
 ### M421: The first useful voyage
+
+Implemented in v0.273.0 with 787 passing tests and a complete native scripted
+postal round trip, return and save/load check. Uncoached new-player observation
+is unavailable and remains pending. Release verification is pending.
 
 Revise Flight School around a complete first job and safe return: understand
 nose/drift, stop, choose a reachable port, dock, trade or accept suitable work,

@@ -2092,9 +2092,10 @@ describe("rhythms", () => {
 });
 
 describe("flight school", () => {
-  it("has ten lessons, each with a reward", () => {
-    expect(STEPS.length).toBe(10);
-    expect(STEPS.every((s) => s.reward > 0 && s.text.length < 92)).toBe(true);
+  it("has six lessons ending in a save without an extra payment", () => {
+    expect(STEPS.length).toBe(6);
+    expect(STEPS.at(-1)?.reward).toBe(0);
+    expect(STEPS.every((s) => s.reward >= 0 && s.text.length < 92)).toBe(true);
   });
 });
 

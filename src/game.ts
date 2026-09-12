@@ -1,5 +1,6 @@
 // Game shell: canvas, scaling, scene management, sprite cache, save/load, hints.
 
+import { prepareTutorialSave } from "./core/tutorial";
 import { Input } from "./core/input";
 import { drawText as drawTextTo } from "./gfx/font";
 import { findStation, photoTaken, captainNickname } from "./world";
@@ -83,8 +84,9 @@ export class Game {
   settingsReturn = "title"; // where SETTINGS and the HANDBOOK go back to
 
   save(): boolean {
-    if (!this.autosave()) return false;
-    this.toast(cloud.getCode() ? "GAME SAVED - SYNCING" : "GAME SAVED");
+    const rollbackSchool = prepareTutorialSave(this);
+    if (!this.autosave()) { rollbackSchool?.(); return false; }
+    this.toast(rollbackSchool ? "GAME SAVED / FLIGHT SCHOOL COMPLETE" : cloud.getCode() ? "GAME SAVED - SYNCING" : "GAME SAVED");
     return true;
   }
 

@@ -5,9 +5,10 @@ import type { World, SystemDef } from "./world";
 import { assignRares, assignSyndicates, assignWonders, assignCaptains, assignNotables } from "./world";
 import { RNG } from "./core/rng";
 import { HULLS, SERVICE_CUTTER } from "./data/hulls";
+import { validFlightSchool } from "./core/flightschool";
 import { validWorkshopState } from "./core/workshop";
 
-export const SAVE_VERSION = 16;
+export const SAVE_VERSION = 17;
 export const SAVE_KEY = "farspace-save";
 export const SLOTS = 3;
 const SLOT_KEY = "farspace-slot";
@@ -165,6 +166,12 @@ MIGRATIONS[15] = () => {
   // Old clients must not discard production progress or uncollected resources.
 };
 
+MIGRATIONS[16] = (w) => {
+  // 16 to 17: saved first-voyage progress. Existing pilots stay out of school.
+  const p = w.player as Record<string, unknown>;
+  if (!p.flightSchool) p.tutorial = -1;
+};
+
 export function migrateSave(raw: unknown): World | null {
   if (!raw || typeof raw !== "object") return null;
   const w = raw as Record<string, unknown>;
@@ -201,6 +208,8 @@ export function decodeSave(raw: string): SaveRead {
       return { world: null, error: "This save was made by a newer FarSpace version. Update the game before loading it." };
     const w = migrateSave(parsed), p = w?.player;
     if (!w || !p || (![...HULLS, SERVICE_CUTTER].some(h => h.id === p.hullId)) || !w.systems?.[p.systemId]) return invalid;
+    if (!validFlightSchool(p.flightSchool)) return invalid;
+    if (p.flightSchool && (!Number.isInteger(p.tutorial) || p.tutorial! < -1 || p.tutorial! > 6)) return invalid;
     if (!validWorkshopState(p.workshop)) return invalid;
     if (![w.seed, w.time, w.econTick, w.shockTick, w.warTick, w.missionCounter,
       p.x, p.y, p.vx, p.vy, p.angle, p.credits, p.hull, p.hullMax, p.shield, p.shieldMax,

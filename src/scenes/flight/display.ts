@@ -12,7 +12,7 @@ import { aimedRock } from "../../core/mining";
 import { piratePassageRemaining } from "../../core/piracy";
 import { recoveryTow } from "../../core/shiprecovery";
 import { questLocations } from "../../core/questlocations";
-import { STEPS, tutorialStage } from "../../core/tutorial";
+import { STEPS, tutorialStage, tutorialText, tutorialDetails } from "../../core/tutorial";
 import { hull } from "../../data/hulls";
 import { systemLabel, infraLit, ALERT_NAME, firstOfficer, patientDeadline } from "../../world";
 import * as wire from "../../core/wire";
@@ -105,7 +105,7 @@ export function flightDisplay(fs: FlightScene, g: Game) {
     const request = m.request && !m.requestSettled ? `${m.request}: ${m.requestMet ? "DONE" : m.tookFire && m.request === "quiet" ? "BROKEN" : "PENDING"}` : "";
     return `${m.title}: ${[progress, patient, custody, treaty, request, m.desc].filter(Boolean).join(" / ")}`;
   });
-  const stage = tutorialStage(g), tutorial = stage >= 0 && stage < STEPS.length ? `FLIGHT SCHOOL ${stage + 1}/${STEPS.length}: ${STEPS[stage].text} / K SKIP` : null;
+  const stage = tutorialStage(g), tutorial = stage >= 0 && stage < STEPS.length ? `FLIGHT SCHOOL ${stage + 1}/${STEPS.length}: ${tutorialText(g)} / K SKIP` : null;
   return { contacts: flightContacts(fs, g), ship: (p.shipName ?? hull(p.hullId).name).toUpperCase(), system: sys.name, security, channel, standing, nose: degrees(p.angle), drift: directions.drift ? degrees(directions.drift.angle) : directions.speed >= .05 ? "<2 M/S" : "STOPPED", aim: degrees(fs.mouseAim ? fs.aim : p.angle), speed: Math.round(directions.speed), route, notices, activity, urgent, action, objectives, missions, tutorial };
 }
 
@@ -116,7 +116,7 @@ export function flightRecordSections(fs: FlightScene, g: Game): [string, string[
     ["CONTACT AND PASSAGE TERMS", contactLawTerms(fs, g)],
     ...d.contacts.map(c => [`${c.primary ? "CURRENT ACTION: " : "CONTACT: "}${c.name}`, [`${c.relationship} / ${Math.round(c.distance)}m`, c.intent, ...c.details]] as [string, string[]]),
     ["CURRENT STATUS", [...d.notices, ...d.activity].map(n => n.text)],
-    ...(d.tutorial ? [["FLIGHT SCHOOL", [d.tutorial]] as [string, string[]]] : []),
+    ...(d.tutorial ? [["FLIGHT SCHOOL", [d.tutorial, ...tutorialDetails(g)]] as [string, string[]]] : []),
     ["OBJECTIVES", d.objectives.length ? d.objectives : ["No active quest locations."]],
     ["CONTRACT TERMS", d.missions.length ? d.missions : ["No active contracts."]],
     ...fs.commsLog.map(c => [`${Math.floor(c.t / 3600)}H${String(Math.floor(c.t % 3600 / 60)).padStart(2, "0")} ${c.from}`, [c.text]] as [string, string[]]),

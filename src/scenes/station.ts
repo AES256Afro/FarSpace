@@ -48,7 +48,8 @@ import * as wire from "../core/wire";
 import { stationHour, clockText, tannoyLines, hoursRate } from "../data/tannoy";
 import { dockhandLines } from "../data/dockhand";
 import { weeklyIssue, myVote, voteResult, castVote, voteMods } from "../data/votes";
-import { drawTutorial, tutorialActive, STEPS } from "../core/tutorial";
+import { schoolOffer, schoolAccepted } from "../core/flightschool";
+import { drawTutorial, tutorialActive, tutorialText, tutorialDetails } from "../core/tutorial";
 import { music } from "../core/music";
 
 type ShipRow = { kind: "market"; hull: HullDef } | { kind: "parked"; ship: StoredShip } | { kind: "remote"; ship: StoredShip } | { kind: "working"; charter: Charter };
@@ -110,6 +111,7 @@ export class StationScene implements Scene {
     const daily = dailyContract(g.world);
     if (p.dailyDone !== dailyKey() && !p.missions.some((m) => m.id === daily.id)) this.boardMissions.unshift(daily);
     { const sm = serialMissionFor(g.world, this.station.id); if (sm) this.boardMissions.unshift(sm); }
+    { const offer = schoolOffer(g.world, this.station.id); if (offer) this.boardMissions.unshift(offer); }
     this.candidates = [];
     for (let i = 0; i < rng.int(1, 3); i++) this.candidates.push(genCrewCandidate(rng.fork(i + 1)));
     { const role = serialRecruitFor(g.world, this.station.id); if (role && !p.flags?.[`serialHire:${this.station.id}`]) { const c = genCrewCandidate(rng.fork(99)); c.role = role; c.skill = 3; c.loyalty = 2; c.wage = ROLE_INFO[role].baseWage * 3; c.trait = "tells stories about the Steady Hand"; this.candidates.unshift(c); } }
@@ -515,7 +517,7 @@ export class StationScene implements Scene {
     const hint = TABS[this.tab] === "MARKET" ? "SHIFT: BUY TEN / SELL STACK  N: PLOT BEST KNOWN MARKET"
       : TABS[this.tab] === "SHIPS" ? "N NAME  O PAINT  ROWS SELECT; USE THE ACTION CONTROLS"
       : "ARROWS/WHEEL SELECT  PAGE UP/DOWN PAGE  HOME/END FIRST/LAST";
-    const lesson = tutorialActive(g) ? `SCHOOL ${g.world.player.tutorial! + 1}: ${STEPS[g.world.player.tutorial!].text}  K SKIPS` : g.hint || hint;
+    const lesson = tutorialActive(g) ? `SCHOOL ${g.world.player.tutorial! + 1}: ${tutorialText(g)}  K SKIPS` : g.hint || hint;
     drawText(ctx, clippedText(g.toastTimer > 0 ? g.toastMsg : lesson, 464), 8, 262, g.toastTimer > 0 ? PAL.ui : PAL.greyDark);
   }
 
@@ -609,7 +611,7 @@ export class StationScene implements Scene {
     if (!sections.length) sections = [["NO SELECTION", ["No action is available in this list."]]];
     sections.push(["PORT", [st.name, `${st.type} station. ${faction(st.factionId).name}.`]]);
     if (g.hint) sections.push(["PORT NOTE", [g.hint]]);
-    if (tutorialActive(g)) sections.push(["FLIGHT SCHOOL", [STEPS[g.world.player.tutorial!].text, "K SKIPS FLIGHT SCHOOL AFTER CLOSING THIS READER."]]);
+    if (tutorialActive(g)) sections.push(["FLIGHT SCHOOL", tutorialDetails(g)]);
     this.info = new ReaderOverlay("STATION DETAILS", sections, () => { this.info = undefined; });
   }
 
@@ -1081,6 +1083,7 @@ export class StationScene implements Scene {
     let impressed = "";
     if (m.kind === "passenger" && m.mood !== undefined && p.raceBeaten?.[st.id]) { m.mood = Math.min(100, m.mood + 5); impressed = `${(m.passengerName ?? "YOUR FARE").toUpperCase()} HAS HEARD YOU HOLD THE RINGS HERE. THEY BOARD IMPRESSED.`; }
     p.missions.push(m);
+    schoolAccepted(g.world, m);
     this.fares = this.fares.filter((f) => f !== m);
     if (m.passengerKind === "singer") {
       this.fares = this.fares.filter(f => f.passengerKind !== "singer");
@@ -1099,7 +1102,9 @@ export class StationScene implements Scene {
 
   completeMission(g: Game, m: Mission): void {
     const p = g.world.player;
+    const schoolDelivery = p.flightSchool?.missionId === m.id && p.dockedAt === this.station.id && missionDeliverable(g.world, m, this.station);
     ledgerAround(p, m.kind === "passenger" ? "fares" : "contracts", () => this.completeMissionInner(g, m));
+    if (schoolDelivery && m.done && p.flightSchool) p.flightSchool.delivered = true;
   }
   completeMissionInner(g: Game, m: Mission): void {
     if (m.done || m.passengerKind === "singer") return;
