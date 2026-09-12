@@ -10,7 +10,7 @@ active every ten minutes. Read WORKLOG-2026-09-12.md on each continuation.
 At the deadline, stop new implementation, finish a safe checkpoint and pause.
 M418 through M427 and M433 through M435 remain open in NEXT-MILESTONES.md.
 
-## Current implementation: v0.263.0, M418 first slice
+## Current checkpoint: v0.263.0, M418 first slice
 
 - Roster uses a small ListView model keyed by live CrewMember identity. It
   shows eight rows and a separate scrollable record. Pointer rows only select;
@@ -36,7 +36,22 @@ M418 through M427 and M433 through M435 remain open in NEXT-MILESTONES.md.
 - M418 is still open. Continue MENU-INVENTORY.md with orbit, letters and all
   objectives at shared local contacts, then station and other location menus.
   The nine hour window and deadline above remain unchanged.
-- Publication verification will be added after release workflows complete.
+- Published a32ec7d5ae9bdbfe5cf00ecdc5241e19f31abb97, tag v0.263.0.
+  CI 34670112694 passed, including Deploy to Cloudflare. Container workflow
+  34670112707 passed. A fresh hosted tab showed v0.263.0 with no warnings or
+  errors, and /api/health returned ok. Hosted assets match the tested build:
+  index-DbUZBtX6.js, SHA-256
+  49f7ce1b45185c6fab2adcfe7df5964e60dac3fea2f313d3058443c35196d07f;
+  index-CwZdn5Vi.css, SHA-256
+  4f9ba0bcb103d7e5d276c53d483e014ca4cc6c86a417f6d91da0474ff6e1e085.
+- Temporary tabs and preview5198 are closed. Dev5199 was restarted at
+  v0.263.0. Bigbox and its catalog PR are unchanged. The continuation remains
+  active through the original deadline.
+- Next source findings: OrbitScene uses unbounded territory and POI arrays,
+  adjacent inclusive hit rows, and index selection. Empty POIs can produce
+  invalid arrow selection. Its landing and rover controls follow the lists
+  downward. Bound those panels, preserve actual POI ids in pointer rows,
+  retain the M436 Q focus behavior and keep both landing controls visible.
 
 ## Previous checkpoint: v0.262.0, M436
 
