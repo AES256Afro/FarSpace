@@ -53,8 +53,11 @@ The v0.265.0 settlement slice adds six row city and outpost desks, stable goods,
 crew and contract selection, explicit transactions and complete entry readers.
 646 tests pass and native settlement acceptance is in MENU-INVENTORY.md.
 CI, container publication, Cloudflare deployment and hosted checks passed.
-Service/council, other station
-tabs, galaxy removal and final caller checks keep M418 open.
+The v0.266.0 office slice adds stable service/council action lists, complete
+records, service file and conversation returns, and foreman return state.
+667 tests pass. Native office and waystation checks are in MENU-INVENTORY.md.
+Release and hosted verification are pending. Conversation lists, remaining
+station tabs, galaxy removal and final caller checks keep M418 open.
 
 ## September 11 priority update: mining and industry
 

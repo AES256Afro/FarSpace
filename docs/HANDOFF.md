@@ -10,7 +10,48 @@ active every ten minutes. Read WORKLOG-2026-09-12.md on each continuation.
 At the deadline, stop new implementation, finish a safe checkpoint and pause.
 M418 through M427 and M433 through M435 remain open in NEXT-MILESTONES.md.
 
-## Current checkpoint: v0.265.0, M418 settlement desks
+## Current checkpoint: v0.266.0, M418 office records and returns
+
+- Service and council desks use six visible action rows with stable explicit
+  ids, drawn row identity, arrows/wheel, paging and Home/End. Rows select;
+  Enter/Do this executes. Removing a selected action requires fresh input
+  before executing its adjacent replacement. Domain rules remain in scenes.
+- I reads complete selected terms; O opens full office records and the latest
+  reply. Service records include all retained reports and current orders.
+  Council records include all minutes, the current sitting, mandate and reply.
+  Readers preserve parent state and close pending search on scene changes.
+- Service file and fare conversations retain action/viewport on return using
+  a world/station guarded resume. Council retains its guarded chair return.
+  File, fare and agenda callbacks preserve the latest reply for O.
+- Foreman return preserves position and the selected good, refreshes newly
+  constructed facilities and skips repeated clinic/chapel/oxygen effects.
+  Plant repair follows that return state and still pays once. A queued plant
+  repair cannot start after loading another world.
+- Native service fixture: eight actions, return order and cutter loan; End
+  and Page Down reached the depot action. Service archive End reached receipt
+  49 of report 0; return retained history selection and viewport offset two.
+  Reporting paid the displayed 950CR once. Declining a fare retained its offer.
+  Council chair and cancelled agenda returned correctly; O read 20 minutes,
+  the final paragraph and the last reply. Search found FINAL MINUTE 19.
+  Escape returned to promenade 145,35. Two foreman conversations kept player
+  position 165,35, morale 50 and oxygen eight. Waystation E and Escape kept
+  all nine NPC objects and player position 3000,3000. Compare NPC objects,
+  not the containing array, which AI filters each tick. No application errors.
+- 667 tests in 44 files pass. The cutter pointer test was updated for explicit
+  execution. Plant settlement and queued load cancellation are unit tested.
+  Fixtures used memory storage and disabled online calls. No actual saves or
+  identity changed. Save schema remains 16. Physical touch/gamepad stays M426.
+- Release build and hosted verification pending. M418 remains open.
+- Next: EncounterScene still sizes its dialog from all text/options without
+  bounding to the screen. Long bodies/outcomes and many choices can overflow.
+  Its click action checks row Y without checking X, and numeric selection can
+  shift when requires filters change. Migrate those concrete cases while
+  preserving its one-time outcome handling, domain callbacks and caller.
+  Then audit remaining station tabs, galaxy selection/removal and final
+  input/caller checks. Service, council, city, outpost and waystation acceptance
+  is recorded in MENU-INVENTORY.md.
+
+## Previous checkpoint: v0.265.0, M418 settlement desks
 
 - City markets, cantina crew offers, contracts and outpost goods use six row
   pages with arrows, wheel, Page Up/Down and Home/End. Pointer rows select;

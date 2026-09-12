@@ -1,6 +1,6 @@
 # M418 menu inventory
 
-Baseline: v0.265.0, inspected September 12, 2026. Native acceptance is recorded
+Baseline: v0.266.0, inspected September 12, 2026. Native acceptance is recorded
 per migration. M418 is still open.
 
 | Surface | Current behavior | Remaining work | Acceptance state |
@@ -16,9 +16,10 @@ per migration. M418 is still open.
 | Letters | Newest first live list with stable message identity, paging, Home/End and complete text wrapping. | Preserve station caller and read-state regressions. | Native new arrival kept Ari Sen at paragraph 18, left new mail unread, and End reached paragraph 129. Home returned to the top. |
 | Orbit | Separate six row Site and Territory lists, stable keys and fixed landing controls. Full details and all objectives use a nested reader. | Preserve domain landing and Q focus tests. | Native 25 sites and 20 territories; Q selected site 24 on the last page; Land entered that ruin; Rover entered territory 19. Details retained selection and globe rotation. |
 | Galaxy and system maps | Bounded maps and explicit navigation. Local I reads all destination quests; O reads every system objective. Contact updates retain selection and top row. | Finish galaxy selection/removal and other map acceptance checks alongside M419/M420. | Native 12 shared station quests, final material requirement, search, and exact camera/selection/course/time preservation. Contact insertion/removal tests pass. |
-| Service and council desks | Dedicated action menus. Service history uses ReaderScene. | Audit dynamic rows, scrolling and all action hit areas against current state. | Needs focused audit. |
-| City and outpost desks | Six visible rows, stable selection, full details and explicit transactions. Desk input switches to menu controls while open. | Preserve domain trade, hiring, mission and growth tests. Audit the outpost foreman encounter return with the remaining caller checks. | Native 20 goods, 15 crew offers and 15 long contracts; exact trade/hire/accept, wanted premium, reader return and orbit return passed. |
-| Waystation | Fixed walking interactions and at most three visitors. | Finish caller return acceptance. | Needs focused return check. |
+| Service and council desks | Six row action pages with explicit execution, stable ids, full terms and complete office records. Service file and conversation returns retain selection. | Preserve service, fare, cutter and council domain tests. | Native eight action service fixture, exact 950CR report, complete archive and fare return; council chair, agenda return, 20 minutes, search and promenade return passed. |
+| City and outpost desks | Six visible rows, stable selection, full details and explicit transactions. Desk input switches to menu controls while open. | Preserve domain trade, hiring, mission and growth tests. Foreman and plant repair returns now retain position, refresh facilities and avoid repeated arrival effects. | Native 20 goods, 15 crew offers and 15 long contracts; exact trade/hire/accept, wanted premium, reader return and orbit return passed. |
+| Waystation | Fixed walking interactions and at most three visitors. | Preserve flight resume behavior. | Native airlock E and Escape retained all nine NPC objects and the player position at 3000,3000. AI rebuilds the containing array each tick. |
+| Conversations | Shared EncounterScene with conditional options. | Bound long text and options; stabilize selection as requirements change; fix pointer actions outside panel X bounds; preserve one-time outcomes. | Source gaps identified during the office return audit. Ordinary service/council/foreman conversations passed native checks. |
 
 ## Implementation sequence
 
@@ -113,3 +114,36 @@ Release CI 34673030263, container publication and Cloudflare deployment passed.
 Hosted assets match the tested build. Production v0.265.0 accepted a pointer
 purchase of the selected Luxuries row for 79CR and retained selection across
 full details. No application warnings/errors. Temporary tabs are closed.
+
+## v0.266.0 implementation evidence
+
+OfficeMenu uses six visible action rows and explicit execution. Stable ids
+include service order destinations, loan serials and council weeks where the
+underlying action can change. Drawn row identity survives insertion; removal
+requires fresh execution input for the adjacent replacement. Hover is inert.
+I reads full action terms; O includes current journeys, all retained reports
+or minutes, and the latest reply. Search and closing keep parent state.
+
+Service file and fare conversation returns use a world/station guarded resume.
+Council keeps its existing guarded agenda return and records the latest reply.
+Outpost foreman return retains walk position and selection while refreshing
+constructed facilities. It does not repeat clinic, chapel or oxygen arrival
+benefits. Plant repair retains that return state and pays once. A queued repair
+cannot open after loading another world.
+
+Native service acceptance reached all eight actions with an active return
+order and cutter loan. Full archive End reached receipt 49 of report 0, and
+return retained the history action at viewport offset two. Reporting paid
+950CR once. A declined fare conversation retained its offer. Council seating
+and agenda cancellation retained the chair. O included 20 minutes; End reached
+the final minute and last reply; search found the complete requested minute.
+Escape returned to promenade position 145,35. Two foreman conversations
+retained position 165,35, morale 50 and oxygen eight. Waystation E and Escape
+retained all nine individual flight ships and player position. No application
+warnings/errors. Fixtures used memory storage and disabled online calls.
+
+667 tests in 44 files pass. The cutter pointer test now selects its row and
+uses the explicit action control. Plant repair settlement and queued load
+cancellation are tested. Physical controller/touch acceptance remains M426.
+M418 stays open for conversation lists, remaining station tabs, galaxy
+selection/removal and final input/caller checks.

@@ -1,11 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import type { Game } from "../src/game";
+import { Game } from "../src/game";
 import { generateWorld, genCrewCandidate, type Mission, type Poi } from "../src/world";
 import { COMMODITIES } from "../src/data/data";
 import { hull } from "../src/data/hulls";
 import { RNG } from "../src/core/rng";
 import { CityScene } from "../src/scenes/city";
 import { OutpostScene } from "../src/scenes/outpost";
+import { EncounterScene } from "../src/scenes/encounter";
 
 function fixture(kind: "city" | "outpost" = "city") {
   const world = generateWorld(418), p = world.player, keys = new Set<string>();
@@ -147,4 +148,41 @@ it("empty cantina actions are inert and preserve the city caller", () => {
 it("desk input applies only one trade when buy and sell arrive together", () => {
   const { keys, scene, g, p } = fixture(); keys.add("b"); keys.add("s"); scene.update(g, .05);
   expect(p.cargo.ore).toBe(1); expect(p.credits).toBe(9990); expect(g.autosave).toHaveBeenCalledOnce();
+});
+
+function foremanFixture() {
+  const f = fixture("outpost"), scene = f.scene as OutpostScene, encounter = new EncounterScene();
+  Object.assign(f.g, { scene, scenes: { outpost: scene, encounter, repair: { enter: vi.fn() } }, setScene: Game.prototype.setScene });
+  scene.trade.open = false; scene.px = 123; scene.py = 54; f.poi.projects = ["chapel"];
+  f.p.crew = [genCrewCandidate(new RNG(1))]; f.p.crew[0].morale = 50; f.p.oxygen = 8;
+  return { ...f, scene, encounter };
+}
+it("foreman return keeps the walk position and does not repeat arrival benefits", () => {
+  const { scene, g, p, encounter } = foremanFixture();
+  scene.foreman(g); expect(g.sceneName).toBe("encounter"); encounter.back(g);
+  expect(g.sceneName).toBe("outpost"); expect([scene.px, scene.py]).toEqual([123, 54]); expect(p.crew[0].morale).toBe(50); expect(p.oxygen).toBe(8);
+  scene.foreman(g); encounter.back(g); expect(p.crew[0].morale).toBe(50);
+});
+it("foreman return refreshes constructed facilities while retaining the selected good", () => {
+  const { scene, g, poi, encounter } = foremanFixture();
+  scene.market.view.select(scene.market.view.keys.indexOf("parts")); scene.foreman(g); poi.projects!.push("pad"); encounter.back(g);
+  expect(scene.trade.rows.some(r => r.id === "water")).toBe(true); expect(scene.market.view.selected).toBe("parts"); expect([scene.px, scene.py]).toEqual([123, 54]);
+});
+it("plant repair return pays once and keeps arrival effects from repeating", () => {
+  vi.useFakeTimers();
+  try {
+    const { scene, g, p, encounter } = foremanFixture(); scene.foreman(g);
+    encounter.enc.options.find(option => option.label.startsWith("FIX THE PLANT"))!.result(g, new RNG(1)); encounter.back(g);
+    vi.runOnlyPendingTimers(); expect(g.sceneName).toBe("repair"); const mission = g.tenderMission!; mission.tenderDone = true;
+    g.setScene("outpost"); expect(mission.done).toBe(true); expect(p.credits).toBe(10400); expect(p.crew[0].morale).toBe(50); expect(p.oxygen).toBe(8); expect([scene.px, scene.py]).toEqual([123, 54]);
+    scene.foreman(g); encounter.back(g); expect(p.credits).toBe(10400);
+  } finally { vi.useRealTimers(); }
+});
+it("a queued plant repair cannot reopen after the player loads another world", () => {
+  vi.useFakeTimers();
+  try {
+    const { scene, g, encounter } = foremanFixture(); scene.foreman(g);
+    encounter.enc.options.find(option => option.label.startsWith("FIX THE PLANT"))!.result(g, new RNG(1)); encounter.back(g);
+    g.world = generateWorld(419); g.sceneName = "flight"; vi.runOnlyPendingTimers(); expect(g.sceneName).toBe("flight"); expect(scene.resumeNext).toBe(false);
+  } finally { vi.useRealTimers(); }
 });

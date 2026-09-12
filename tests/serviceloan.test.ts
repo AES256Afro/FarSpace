@@ -137,9 +137,12 @@ describe("service cutter custody", () => {
     for (let i = 0; i < borrowIndex; i++) { keys.add("ArrowDown"); office.update(g, 0); keys.clear(); }
     keys.add("Enter"); office.update(g, 0); keys.clear(); expect(f.p.hullId).toBe(SERVICE_CUTTER.id);
     const retIndex = office.actions(g).findIndex(a => a.label === "RETURN THE SERVICE CUTTER");
+    keys.add("Home"); office.update(g, 0); keys.clear();
     for (let i = 0; i < retIndex; i++) { keys.add("ArrowDown"); office.update(g, 0); keys.clear(); }
-    g.input.mouseX = 300; g.input.mouseY = 48 + (retIndex - office.scroll) * 25 + 5; g.input.mousePressed = true;
-    office.update(g, 0); expect(f.p.hullId).toBe("scout"); expect(f.p.service!.loansReturned).toBe(1);
+    const ctx = new Proxy({}, { get: () => () => {}, set: () => true }) as CanvasRenderingContext2D; office.draw(g, ctx);
+    g.input.mouseX = 300; g.input.mouseY = 43 + (retIndex - office.scroll) * 24 + 5; g.input.mousePressed = true;
+    office.update(g, 0); expect(f.p.hullId).toBe(SERVICE_CUTTER.id);
+    g.input.mouseY = 220; office.update(g, 0); expect(f.p.hullId).toBe("scout"); expect(f.p.service!.loansReturned).toBe(1);
   });
   it("checks fitted capacity without mutating the current ship or its systems", () => {
     const { p } = fixture(); p.modules = ["rack"]; p.engineering = { cargo: 2 }; p.cargo = { ore: 75 };

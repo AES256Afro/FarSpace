@@ -1,3 +1,4 @@
+import type { ServiceScene } from "./service";
 import type { Game } from "../game";
 import { findStation, stardate, type World } from "../world";
 import { serviceFareReport, serviceObjective, serviceOffice, serviceRank } from "../core/service";
@@ -37,6 +38,7 @@ export class ServiceFileScene extends ReaderScene {
 
   open(g: Game, history = false): void {
     if (!serviceOffice(g.world)) return;
+    if (g.sceneName === "service") (g.scenes.service as ServiceScene).resumeNext = true;
     g.settingsReturn = "service"; g.setScene("servicefile");
     const block = this.blocks.find(b => history ? b.title.startsWith("REPORT ") : b.title === "CURRENT ORDERS");
     if (block) this.scroll = Math.min(this.maxScroll(), block.top);
