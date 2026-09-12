@@ -1,3 +1,7 @@
+import { flightRecordSections, FLIGHT_RECORD } from "./display";
+import { ReaderOverlay } from "../reader";
+import { contains } from "../../core/mapview";
+import { flightInteraction } from "./interaction";
 import { crackRock } from "../../core/mining";
 import { openWorkshop } from "../workshop";
 import { researched } from "../../core/workshop";
@@ -15,7 +19,7 @@ import { FACTIONS } from "../../data/data";
 // Simulation lives in ./ai, rendering in ./render.
 
 import { ask, confirmBox } from "../../core/dialog";
-import { atSingersBerth, singersBerth } from "../../core/singers";
+import { singersBerth } from "../../core/singers";
 import { stationCourseTarget } from "../../core/lastleg";
 import { Game, Scene } from "../../game";
 import { PAL } from "../../gfx/palette";
@@ -63,7 +67,7 @@ import type { Torpedo, Floater, Comms } from "./types";
 import { fireTorpedo, updateTorpedoes, updateFloaters, updateSmoke, updateComms, escortLine } from "./combat";
 
 export class FlightScene implements Scene {
-  touchMode = "flight" as const;
+  get touchMode(): "flight" | "menu" { return this.paused || this.mapOpen || this.logReader ? "menu" : "flight"; }
   bullets: Bullet[] = [];
   npcs: Npc[] = [];
   particles: Particle[] = [];
@@ -72,7 +76,8 @@ export class FlightScene implements Scene {
   fireCd = 0;
   mapOpen = false;
   systemMap = new SystemMap();
-  get pausesVoyage(): boolean { return this.mapOpen && !!this.systemMap.info; }
+  get pausesVoyage(): boolean { return !!this.logReader || this.mapOpen && !!this.systemMap.info; }
+  get capturesKeys(): boolean { return !!this.logReader?.closeSearchBox || !!this.systemMap.info?.closeSearchBox; }
   localTarget: LocalMapTarget | null = null;
   zoom = 1;
   scanTimer = 0;
@@ -96,7 +101,7 @@ export class FlightScene implements Scene {
   hitFlash = 0;
 
   private population: { world: World; systemId: string } | null = null;
-  onSceneLeave(): void { this.systemMap.closeInfo(); }
+  onSceneLeave(): void { this.systemMap.closeInfo(); this.logReader?.onSceneLeave(); this.logReader = undefined; this.logOpen = false; }
   resumeNext = false; // Temporary visits return to the same flight population.
   enter(g: Game): void {
     const resume = this.resumeNext && this.population?.world === g.world
@@ -106,7 +111,7 @@ export class FlightScene implements Scene {
     if (resume) { this.mapOpen = false; return; }
     if (this.population?.world !== g.world) {
       this.loreSeen.clear(); this.ghostsSeen.clear(); this.commsLog = [];
-      this.logged = new WeakSet(); this.lastWatch = -1;
+      this.logged = new WeakSet(); this.lastNotice = ""; this.lastHint = ""; this.lastWatch = -1;
       this.addressed = false; this.reported = false; this.readyRoom = false; this.cutterSpoke = false;
     }
     this.localTarget = null;
@@ -260,7 +265,14 @@ export class FlightScene implements Scene {
     const w = g.world;
     const p = w.player;
     const sys = w.systems[p.systemId];
+    if (this.logReader) {
+      if (g.input.wasPressed("l") && !this.logReader.closeSearchBox) { this.logReader.onSceneLeave(); this.logReader = undefined; this.logOpen = false; g.input.flush(); g.input.down.clear(); }
+      else this.logReader.update(g);
+      return;
+    }
+    this.recordNotices(g); this.recordComms(w.time);
     if (this.mapOpen) { this.systemMap.update(g, dt); return; }
+    if (!this.paused && !this.docking && this.launching <= 0 && (g.input.wasPressed("l") || g.input.mousePressed && contains(FLIGHT_RECORD, g.input.mouseX, g.input.mouseY))) { this.openFlightRecord(g); return; }
     if (!this.docking && this.launching <= 0 && g.input.wasPressed("F2")) { openWorkshop(g); return; }
     if (!this.paused && !this.logOpen && !this.docking && this.launching <= 0 && g.input.wasPressed("Tab")) {
       this.mapOpen = true; this.systemMap.enter(g); return;
@@ -277,7 +289,6 @@ export class FlightScene implements Scene {
       if (this.launching <= 0) { this.comms.push({ from: "CONTROL", text: "YOU'RE CLEAR. SAFE FLYING.", life: 5, color: PAL.ui }); }
       return;
     }
-    this.recordComms(w.time);
     // pause: the galaxy holds its breath; save, settings, the handbook, or home
     if (g.input.wasPressed("Escape") && !this.logOpen && !this.mapOpen && !this.docking) { this.paused = !this.paused; this.pauseCursor = 0; this.pausePointerX = g.input.mouseX; this.pausePointerY = g.input.mouseY; sfx.blip(); }
     if (this.paused) {
@@ -297,8 +308,6 @@ export class FlightScene implements Scene {
       if (g.input.wasPressed("Enter") || g.input.wasPressed(" ")) { sfx.select(); opts[this.pauseCursor].act(); }
       return;
     }
-    if (g.input.wasPressed("l")) { this.logOpen = !this.logOpen; sfx.blip(); }
-    if (this.logOpen) { if (g.input.wasPressed("Escape")) this.logOpen = false; this.updateAmbient(g, dt); return; }
     if (g.input.wasPressed("g")) { g.setScene("galaxy"); return; }
     if (g.input.wasPressed("i")) { g.setScene("interior"); return; }
     if (g.input.wasPressed("u")) { this.contactTrafficControl(g); return; }
@@ -1227,6 +1236,21 @@ export class FlightScene implements Scene {
   commsLog: { from: string; text: string; t: number }[] = [];
   logged = new WeakSet<object>();
   logOpen = false;
+  logReader?: ReaderOverlay;
+  private lastNotice = "";
+  private lastHint = "";
+  recordNotices(g: Game): void {
+    const message = g.toastTimer > 0 ? g.toastMsg : "";
+    const add = (from: string, text: string) => { this.commsLog.push({ from, text, t: g.world.time }); if (this.commsLog.length > 60) this.commsLog.shift(); };
+    if (message && message !== this.lastNotice) add("SHIP", message);
+    if (g.hint && g.hint !== this.lastHint) add("GUIDANCE", g.hint);
+    this.lastNotice = message; this.lastHint = g.hint;
+  }
+  openFlightRecord(g: Game): void {
+    this.recordNotices(g); this.recordComms(g.world.time); this.logOpen = true;
+    this.logReader = new ReaderOverlay("FLIGHT RECORD", flightRecordSections(this, g), () => { this.logReader = undefined; this.logOpen = false; });
+    g.input.flush(); g.input.down.clear(); sfx.blip();
+  }
   recordComms(now: number): void {
     for (const c of this.comms) { if (this.logged.has(c)) continue; this.logged.add(c); this.commsLog.push({ from: c.from, text: c.text, t: now }); if (this.commsLog.length > 60) this.commsLog.shift(); }
   }
@@ -1638,85 +1662,62 @@ export class FlightScene implements Scene {
   tryInteract(g: Game): void {
     const p = g.world.player;
     const sys = g.world.systems[p.systemId];
-    if (atSingersBerth(g.world)) {
+    const pick = flightInteraction(this, g);
+    if (pick?.kind === "singers") {
       if (Math.hypot(p.vx, p.vy) > 45) { g.toast("SINGERS' BERTH: BRAKE BELOW 45 TO DOCK."); return; }
       this.autopilot = false; this.cruise = false;
       g.setScene("singers"); return;
     }
     // a ship that needs a hand
-    const needy = this.npcs.find((n) => n.kind === "trader" && n.hull > 0 && dist(p.x, p.y, n.x, n.y) < 80 && (n.disabled || n.casualties || n.hull < n.hullMax * 0.5));
-    if (needy && !this.repairJob) { this.offerHelp(g, needy); return; }
-    // a corsair close enough to talk to
-    const corsair = this.npcs.find((n) => !this.piratesFriendly(g) && n.kind === "pirate" && n.hull > 0 && !n.fleeing && dist(p.x, p.y, n.x, n.y) < 260);
-    if (corsair) { this.parley(g, corsair); return; }
-    for (const st of sys.stations) {
-      const sx = Math.cos(st.angle) * st.orbit;
-      const sy = Math.sin(st.angle) * st.orbit;
-      if (dist(p.x, p.y, sx, sy) < 110) { this.dockAt(g, st); return; } // the glide covers the rest
-    }
-    for (const jp of sys.jumpPoints) {
-      if (dist(p.x, p.y, jp.x, jp.y) < 70) { this.doJump(g, jp.targetSystemId, jp.guarded); return; }
-    }
-    for (const wd of wondersIn(g.world, sys.id)) {
-      if (wd.kind !== "ark" || dist(p.x, p.y, wd.x, wd.y) > 160) continue;
+    if (pick?.kind === "help") { this.offerHelp(g, pick.target); return; }
+    if (pick?.kind === "parley") { this.parley(g, pick.target); return; }
+    if (pick?.kind === "station") { this.dockAt(g, pick.target); return; }
+    if (pick?.kind === "gate") { this.doJump(g, pick.target.targetSystemId, pick.target.guarded); return; }
+    if (pick?.kind === "ark") {
+      const wd = pick.target;
       let wk = sys.wrecks.find((x) => x.id === `ark-${wd.id}`);
       if (!wk) { wk = { id: `ark-${wd.id}`, x: wd.x, y: wd.y, looted: false, loot: [{ id: "relics", qty: 3 }, { id: "data", qty: 2 }, { id: "parts", qty: 2 }], hazard: 0.2, name: wd.name }; sys.wrecks.push(wk); }
       if (wk.looted) { g.toast(`${wd.name.toUpperCase()}: YOU'VE WALKED ITS CORRIDORS ALREADY. IT TURNS ON, SLOWLY, WITHOUT YOU.`); return; }
       p.vx = 0; p.vy = 0; g.wreckTarget = wk; (g.scenes.wreck as WreckScene).returnToSalvage = false; g.setScene("wreck"); return;
     }
-    for (const w of sys.wrecks) {
-      if (wreckAvailable(w) && dist(p.x, p.y, w.x, w.y) < 60) {
-        p.vx = 0; p.vy = 0;
-        g.wreckTarget = w;
-        g.setScene("salvage");
-        return;
-      }
+    if (pick?.kind === "wreck") {
+      p.vx = 0; p.vy = 0; g.wreckTarget = pick.target; g.setScene("salvage"); return;
     }
-    for (const an of sys.anomalies) {
-      if (an.discovered && !an.claimed && dist(p.x, p.y, an.x, an.y) < 60) {
-        if (an.kind === "derelict") {
-          const wreck = sys.wrecks.find(w => w.id === `derelict:${an.id}`) ?? wreckFromSignal(an);
-          if (!sys.wrecks.includes(wreck)) sys.wrecks.push(wreck);
-          an.claimed = true; p.discoveries = (p.discoveries ?? 0) + 1;
-          logEntry(g.world, `Located the derelict ${an.name}`);
-          p.vx = 0; p.vy = 0; g.wreckTarget = wreck; g.setScene("salvage"); return;
-        }
-        an.claimed = true;
-        const reward = an.reward;
-        gainMaterials(g, { polonium: 1, germanium: Math.random() < 0.6 ? 1 : 0 });
-        if (an.kind === "data") {
-          g.toast(`${an.name}: DATA CORE RECOVERED`);
-          this.loot.push({ x: an.x, y: an.y, commodityId: "data", qty: 2, life: 60 });
-        } else if (an.kind === "fold" || an.kind === "lens" || an.kind === "echo") {
-          const line = strangeReading(g.world, an, new RNG((g.world.seed ^ Math.floor(g.world.time * 13)) >>> 0));
-          if (line) { g.toast(line); this.comms.push({ from: shipVoiceName(p), text: line, life: 9, color: PAL.info }); }
-          flag(g, "strange");
-        } else {
-          p.credits += reward;
-          g.toast(`${an.name}: SURVEY BOUNTY +${reward}CR`);
-        }
-        adjustRep(g.world, sys.factionId, 2);
-        g.world.events.push({ t: g.world.time, kind: "discovery", systemId: p.systemId, text: `An anomaly (${an.name}) was surveyed by an independent pilot` });
-        g.world.player.discoveries = (g.world.player.discoveries ?? 0) + 1;
-        sfx.pickup();
-        void wire.post("discovery", `surveyed anomaly ${an.name}`, sys.name);
-        return;
+    if (pick?.kind === "signal") {
+      const an = pick.target;
+      if (an.kind === "derelict") {
+        const wreck = sys.wrecks.find(w => w.id === `derelict:${an.id}`) ?? wreckFromSignal(an);
+        if (!sys.wrecks.includes(wreck)) sys.wrecks.push(wreck);
+        an.claimed = true; p.discoveries = (p.discoveries ?? 0) + 1;
+        logEntry(g.world, `Located the derelict ${an.name}`);
+        p.vx = 0; p.vy = 0; g.wreckTarget = wreck; g.setScene("salvage"); return;
       }
-    }
-    for (const pl of sys.planets) {
-      const px = Math.cos(pl.angle) * pl.orbit, py = Math.sin(pl.angle) * pl.orbit;
-      if (dist(p.x, p.y, px, py) < pl.radius + 90) {
-        p.vx = 0; p.vy = 0;
-        g.orbitPlanetIdx = sys.planets.indexOf(pl);
-        g.setScene("orbit");
-        return;
+      an.claimed = true;
+      const reward = an.reward;
+      gainMaterials(g, { polonium: 1, germanium: Math.random() < 0.6 ? 1 : 0 });
+      if (an.kind === "data") {
+        g.toast(`${an.name}: DATA CORE RECOVERED`);
+        this.loot.push({ x: an.x, y: an.y, commodityId: "data", qty: 2, life: 60 });
+      } else if (an.kind === "fold" || an.kind === "lens" || an.kind === "echo") {
+        const line = strangeReading(g.world, an, new RNG((g.world.seed ^ Math.floor(g.world.time * 13)) >>> 0));
+        if (line) { g.toast(line); this.comms.push({ from: shipVoiceName(p), text: line, life: 9, color: PAL.info }); }
+        flag(g, "strange");
+      } else {
+        p.credits += reward;
+        g.toast(`${an.name}: SURVEY BOUNTY +${reward}CR`);
       }
+      adjustRep(g.world, sys.factionId, 2);
+      g.world.events.push({ t: g.world.time, kind: "discovery", systemId: p.systemId, text: `An anomaly (${an.name}) was surveyed by an independent pilot` });
+      g.world.player.discoveries = (g.world.player.discoveries ?? 0) + 1;
+      sfx.pickup();
+      void wire.post("discovery", `surveyed anomaly ${an.name}`, sys.name);
+      return;
     }
-    // your lighthouse: tend it
-    const inf = infraAt(g.world, sys.id).find((i) => dist(p.x, p.y, i.x, i.y) < 90);
-    if (inf) { this.tendInfra(g, inf); return; }
-    // a dead system and a kit aboard: build
-    const kit = (["beacon", "depot"] as const).find((k) => ((p.kits ?? {})[k] ?? 0) > 0);
+    if (pick?.kind === "planet") {
+      p.vx = 0; p.vy = 0; g.orbitPlanetIdx = sys.planets.indexOf(pick.target); g.setScene("orbit"); return;
+    }
+    if (pick?.kind === "structure") { this.tendInfra(g, pick.target); return; }
+    const kit = pick?.kind === "kit" ? pick.target : null;
     if (kit && !canBuildInfra(g.world, sys.id)) {
       if (dist(p.x, p.y, 0, 0) < 500) { g.toast("TOO CLOSE TO THE STAR TO PLANT ANYTHING - FLY OUT PAST 500M"); return; }
       if (confirmBox(`PLANT THE ${INFRA_KITS[kit].name.toUpperCase()} HERE, IN ${sys.name.toUpperCase()}?\n\n${INFRA_KITS[kit].desc}`)) {

@@ -20,9 +20,8 @@ menu keeps one layout across all three.
 
 ## Current milestone status
 
-v0.270.0 completes M418. M419 through M427 and M433 through M435 remain open.
-M428 through M432 and M436 are released. Next: M419 flight display priorities,
-then M420 contact presentation. The existing nine hour deadline is unchanged.
+v0.271.0 completes M419. M420 through M427 and M433 through M435 remain open.
+M428 through M432 and M436 are released. Next: M420 contact presentation. The existing nine hour deadline is unchanged.
 
 ## Nine hour work window and quest visibility
 
@@ -319,6 +318,9 @@ Acceptance:
 - Maintain a scene inventory with each migration and native check recorded.
 
 ### M419: A readable flight deck
+
+Implemented and natively accepted in v0.271.0 with 762 passing tests.
+Release verification is pending. HANDOFF.md records the acceptance fixtures.
 
 Give the HUD explicit display regions and priorities. Always retain hull
 heading, actual drift, essential condition, current destination and urgent

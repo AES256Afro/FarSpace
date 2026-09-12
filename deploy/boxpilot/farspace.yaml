@@ -7,8 +7,8 @@ description: "Explore star systems, trade cargo, and build your fleet."
 website: https://farspace.fsociety.work
 risk: low
 image:
-  reference: ghcr.io/aes256afro/farspace:0.270.1
-  version: "0.270.1"
+  reference: ghcr.io/aes256afro/farspace:0.271.0
+  version: "0.271.0"
 ports:
   - id: web
     label: Game

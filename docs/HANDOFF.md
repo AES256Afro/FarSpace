@@ -8,9 +8,53 @@ UTC, or 06:31:03 America/Chicago. The task continuation uses the existing id
 farspace-six-hour-development, renamed FarSpace nine hour milestones, and is
 active every ten minutes. Read WORKLOG-2026-09-12.md on each continuation.
 At the deadline, stop new implementation, finish a safe checkpoint and pause.
-M419 through M427 and M433 through M435 remain open in NEXT-MILESTONES.md.
+M420 through M427 and M433 through M435 remain open in NEXT-MILESTONES.md.
 
-## Current checkpoint: v0.270.1, city arrival collision fix
+## Current checkpoint: v0.271.0, M419 flight display
+
+- Fixed regions retain ship name, nose, drift, aim, speed, course and numeric
+  hull/shield/fuel/oxygen. Two ranked warning rows and a separate activity row
+  keep pursuit, fuel and rescue visible together. Additional current state is
+  counted and fully readable in the flight record. Ordinary messages and lesson
+  text yield their display space during urgent states. Condition bars remain.
+- FlightDisplay reads current state without cleaning or changing navigation.
+  Missing assignments are reported without cancelling autopilot during draw.
+  Near seismic charges take priority and replace the action with escape advice.
+  Mining instructions account for range, cruise and charge inventory. Bearings
+  remain independent of zoom; stopped drift does not invent a bearing.
+- FlightInteraction selects the same actor/location in the existing E order:
+  singers, rescue, parley, station, gate, ark, wreck, signal, planet, structure,
+  construction. tryInteract consumes that selection. Duplicated world E labels
+  are removed, leaving one current action line. Existing settlement and combat
+  consequences remain in their original handlers. M420 will extend contact
+  identity, intent and hostility explanations using this selection.
+- L or the bounded Record button opens complete current status, objectives,
+  contract terms, lesson and all retained comms. Notices and guidance are also
+  retained, with repeated held notices coalesced. The existing sixty message
+  limit remains. Search and Home/End retain complete text. Reader input runs
+  before world/AI updates; runtime production also pauses. Closing keeps the
+  same flight objects and course; external scene changes clean pending search.
+  Flight map, pause and record modes now advertise menu input.
+- Native isolated fixture combined low fuel, law cooldown, a disabled freighter,
+  Flight School and chatter. Nose/drift/aim stayed distinct and all urgent rows
+  were readable. At 800x600 with zoom .25 and 1920x1080 with zoom 2, the layout
+  remained bounded. Adding a patrol changed cooldown to BREAK CONTACT; native E
+  opened the displayed freighter rescue conversation. The viewport was reset.
+- Forty messages with 35 paragraphs each reached FINAL MESSAGE 39 at the end.
+  Search returned its single complete section. The entire serialized world and
+  NPC references stayed unchanged while reading, then returned to flight.
+  No app errors or warnings. Fixture storage was in memory, online calls were
+  disabled and all temporary tabs closed, preserving real saves and identity.
+- 762 tests in 49 files pass. TypeScript and production build pass. Coverage
+  includes interaction order, occupied repair, jump limits, read-only drawing,
+  expired state, record cleanup, full text, pause and pixel bounds. Save schema
+  remains 16. Physical controller/touch acceptance remains M426. Release CI,
+  container publication, deployment and hosted acceptance are pending.
+- M419 implementation and native acceptance are complete. Next is M420 contact
+  presentation, then the remaining documented sequence. The authorized deadline
+  remains 2026-09-12 11:31:03 UTC. Do not extend it.
+
+## Previous checkpoint: v0.270.1, city arrival collision fix
 
 - User reported that the Delphi Landing city template prevented all walking.
   CityScene placed the character at 320,75, overlapping the solid A kiosk at
