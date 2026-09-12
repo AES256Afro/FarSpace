@@ -162,7 +162,7 @@ describe("the rock's council", () => {
     const f = fixture(), { g, keys } = game(f), scene = g.scenes.council as CouncilScene;
     g.input.mouseX = 160; g.input.mouseY = 150; g.setScene("council");
     scene.actions(g)[0].run(); scene.actions(g)[0].run();
-    const enc = g.scenes.encounter as EncounterScene; enc.rowBoxes = [[100, 116], [140, 156], [180, 196], [220, 236]];
+    const enc = g.scenes.encounter as EncounterScene;
     keys.add("ArrowDown"); enc.update(g, 0); keys.clear(); expect(enc.cursor).toBe(1);
     keys.add("ArrowDown"); enc.update(g, 0); keys.clear(); expect(enc.cursor).toBe(2);
     keys.add("Enter"); enc.update(g, 0); keys.clear(); expect(f.p.council!.ballots[0].choice).toBe(2);

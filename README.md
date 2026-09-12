@@ -146,11 +146,12 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Current release: v0.266.0. M416 and M417, mining and industry M428 through
+Current release: v0.267.0. M416 and M417, mining and industry M428 through
 M432, and quest locations M436 are implemented. M418 now includes a scrolling roster, shared readers, bounded orbital lists,
 complete local quest details, letters that keep their position and paged
 settlement desks with explicit trade, hire and contract controls. Service and
 council desks preserve action selection and provide complete office records.
+Conversations have bounded text, paged answers, full terms and explicit choices.
 The [milestone plan](docs/NEXT-MILESTONES.md) and
 [menu inventory](docs/MENU-INVENTORY.md) record the remaining work.
 

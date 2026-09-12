@@ -1,6 +1,6 @@
 # M418 menu inventory
 
-Baseline: v0.266.0, inspected September 12, 2026. Native acceptance is recorded
+Baseline: v0.267.0, inspected September 12, 2026. Native acceptance is recorded
 per migration. M418 is still open.
 
 | Surface | Current behavior | Remaining work | Acceptance state |
@@ -19,7 +19,7 @@ per migration. M418 is still open.
 | Service and council desks | Six row action pages with explicit execution, stable ids, full terms and complete office records. Service file and conversation returns retain selection. | Preserve service, fare, cutter and council domain tests. | Native eight action service fixture, exact 950CR report, complete archive and fare return; council chair, agenda return, 20 minutes, search and promenade return passed. |
 | City and outpost desks | Six visible rows, stable selection, full details and explicit transactions. Desk input switches to menu controls while open. | Preserve domain trade, hiring, mission and growth tests. Foreman and plant repair returns now retain position, refresh facilities and avoid repeated arrival effects. | Native 20 goods, 15 crew offers and 15 long contracts; exact trade/hire/accept, wanted premium, reader return and orbit return passed. |
 | Waystation | Fixed walking interactions and at most three visitors. | Preserve flight resume behavior. | Native airlock E and Escape retained all nine NPC objects and the player position at 3000,3000. AI rebuilds the containing array each tick. |
-| Conversations | Shared EncounterScene with conditional options. | Bound long text and options; stabilize selection as requirements change; fix pointer actions outside panel X bounds; preserve one-time outcomes. | Source gaps identified during the office return audit. Ordinary service/council/foreman conversations passed native checks. |
+| Conversations | Fixed text area, four answer rows, stable option identity, explicit choice and complete text readers. | Preserve consequence, callback and caller tests. Physical touch/gamepad remains M426. | Native 13 answers, full final terms, complete 30 paragraph story, 40 paragraph outcome, inert margins/body, exact answer 10 and empty flight return passed. |
 
 ## Implementation sequence
 
@@ -152,3 +152,37 @@ Release CI 34674411003, container publication and Cloudflare deployment passed.
 Hosted v0.266.0 matches the tested build. Its isolated service fixture read the
 full 750CR report terms, retained selection on return, collected that amount
 and showed the full reply in O. No application warnings/errors.
+
+## v0.267.0 implementation evidence
+
+EncounterScene uses a fixed card with eight story lines and four answer rows.
+Outcomes use twenty lines. Left/right, text controls and wheel over the text
+scroll the story; answer paging and Home/End keep every choice reachable.
+I opens complete selected terms; O opens the complete story and outcome in
+ReaderOverlay. Closing a reader retains selection and text position. Pending
+search is cleaned on scene changes. The existing exported wrap helper remains
+unchanged for other scenes.
+
+Option objects provide identity across conditional filtering, including duplicate
+labels. Pointer lookup uses drawn option identity and both X and Y bounds. Rows
+select only. A removed selection requires another input before choosing its
+replacement. Empty answers permit a return without choosing or producing NaN.
+An unresolved conversation with available answers still requires a choice.
+Outcome body and margin clicks are inert; Continue, Enter or Escape returns.
+
+Resolution guards prevent reentrant execution and stale replies after a callback
+opens a child conversation, changes scenes or replaces the world. The original
+encounter supplies its log entry. SurfaceScene still consumes rover damage on
+return exactly once. Flight returns preserve the existing flight scene.
+
+Native isolated fixture: 13 answers and long labels/terms; Page Down reached
+answer four and End reached answer 12 at offset nine. I showed FINAL TERM 12;
+closing retained answer 12. O and End showed paragraph 29 and FINAL BODY.
+A click beside the choices did nothing. Clicking answer 10 selected it without
+execution; Choose executed answer 10 once. Body click kept its outcome open,
+and End reached result 39 with FINAL RESULT 10. An empty conversation returned
+to flight through Escape with the same NPC objects and player position.
+No application warnings/errors. Fixtures used memory storage and disabled
+online calls, preserving real saves and identity. 682 tests in 45 files pass.
+Physical touch/gamepad acceptance remains M426. M418 remains open for the
+remaining station tabs, galaxy selection/removal and final input/caller checks.

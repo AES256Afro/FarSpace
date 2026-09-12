@@ -57,8 +57,13 @@ The v0.266.0 office slice adds stable service/council action lists, complete
 records, service file and conversation returns, and foreman return state.
 667 tests pass. Native office and waystation checks are in MENU-INVENTORY.md.
 CI, container publication, Cloudflare deployment and hosted checks passed.
-Conversation lists, remaining
-station tabs, galaxy removal and final caller checks keep M418 open.
+The v0.267.0 conversation slice bounds story and outcome text, pages four
+answers, preserves conditional answer identity and adds full readers. Answer
+rows select; Choose executes. Callback and caller guards preserve one-time
+outcomes and rover damage. 682 tests pass; native evidence is recorded in the
+menu inventory. Release and hosted verification are pending. M418 remains
+open for remaining station tabs, galaxy selection/removal and final input checks.
+
 
 ## September 11 priority update: mining and industry
 

@@ -10,7 +10,34 @@ active every ten minutes. Read WORKLOG-2026-09-12.md on each continuation.
 At the deadline, stop new implementation, finish a safe checkpoint and pause.
 M418 through M427 and M433 through M435 remain open in NEXT-MILESTONES.md.
 
-## Current checkpoint: v0.266.0, M418 office records and returns
+## Current checkpoint: v0.267.0, M418 conversations
+
+- Conversation cards fit within the canvas. Eight story lines and four visible
+  answers have separate paging. Outcomes show twenty lines with scroll and
+  Home/End. I reads full answer terms; O reads the complete story and outcome.
+  Nested readers retain selection and text position and clean pending search.
+- Stable EncounterOption object identity survives conditional filtering and
+  duplicate labels. Drawn row identity prevents stale pointer targeting. Rows
+  select; Enter/Choose executes. Removed answers require fresh input before
+  choosing a replacement. Both pointer axes are bounded; outcome text and
+  margins are inert. Empty choices allow return; available choices still require
+  an answer, preserving existing consequences.
+- A resolution guard prevents reentrant callbacks. Parent results cannot replace
+  a newly opened child conversation or reopen a caller after a scene/world
+  change. SurfaceScene continues to consume rover damage once on return.
+  The exported legacy wrap helper remains unchanged for other scenes.
+- Native fixture: 13 answers, long label and terms, page navigation, final term
+  and paragraph, exact answer 10 chosen once, forty paragraph outcome and
+  empty flight return all passed. Flight kept the same NPC objects and player
+  position. No application warnings/errors. Memory storage and disabled online
+  calls protected real saves and identity. Physical touch/gamepad stays M426.
+- 682 tests in 45 files pass. TypeScript and production build pass. Publication
+  and hosted verification pending. Save schema remains 16. M418 remains open.
+- Next: audit remaining StationScene tabs for stable selection, bounded text,
+  input ownership and caller returns. Then complete galaxy selection/removal
+  and the final M418 input audit. Continue M419 onward in dependency order.
+
+## Previous checkpoint: v0.266.0, M418 office records and returns
 
 - Service and council desks use six visible action rows with stable explicit
   ids, drawn row identity, arrows/wheel, paging and Home/End. Rows select;
