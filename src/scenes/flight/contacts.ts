@@ -1,3 +1,4 @@
+import { supportAtShip, supportTerms } from "../../core/supportjobs";
 import type { Game } from "../../game";
 import type { FlightScene } from "./index";
 import type { Npc } from "./types";
@@ -85,11 +86,13 @@ export function flightContacts(fs: FlightScene, g: Game): FlightContact[] {
     }
     if (n.kind === "pirate") details.push(fs.piratesFriendly(g) ? "Passage protects your ship; other freighters can still be attacked." : "Corsairs attack unprotected ships. Leave their 700m intercept range, reach protected space, or approach within 260m and use parley.");
     if (n.kind === "trader" && (n.disabled || n.casualties || n.hull < n.hullMax * .5)) {
-      if (fs.repairJob?.npc === n) details.push(`${fs.repairJob.crewName} is ${fs.repairJob.kind === "medic" ? "treating casualties" : "repairing the ship"}. Stay close.`);
+      const aid=supportAtShip(g.world,n);
+      if(aid)details.push(...supportTerms(g.world,aid));
+      else if (fs.repairJob?.npc === n) details.push(`${fs.repairJob.crewName} is ${fs.repairJob.kind === "medic" ? "treating casualties" : "repairing the ship"}. Stay close.`);
       else if (fs.repairJob) details.push("Your crew already has a rescue job. Finish it before opening another help call.");
-      else if (n.casualties) details.push(`Medical aid: send ${p.crew.some(c => c.role === "medic") ? "your medic" : "a medic after hiring one"}, transfer 2 medical supplies (aboard: ${p.cargo.med ?? 0}), or take wounded aboard if you have no evacuees.`);
+      else if (n.casualties) details.push(`Medical aid: two medical supplies (${p.cargo.med??0} aboard) and a fit medic. Transfer the critical patient afterward with a medic and one free passenger berth. You can accept and return with supplies.`);
       else if (n.mayday) details.push(`Fuel aid: transfer 10 fuel; at least 15 must be aboard. You have ${Math.ceil(p.fuel)}. The Pilots' Fund pays 300cr.`);
-      else if (n.disabled) details.push(`Repair aid: board and repair it yourself${p.crew.some(c => c.role === "engineer") ? ", send your engineer" : " (no engineer aboard to send)"}, or tow it to a station if no recovered hull is attached.`);
+      else if (n.disabled) details.push(`Repair aid: deliver two spare parts (${p.cargo.parts??0} aboard), then send a fit engineer or board and repair it yourself for 400cr. Tow delivery pays 550cr. You can accept and return with supplies.`);
       else details.push(`Hull aid: transfer a spare part. Parts aboard: ${p.cargo.parts ?? 0}.`);
       if (!primary && !fs.repairJob) details.push(distance >= 80 ? "Approach within 80m to offer help." : "Another contact has priority on E. Its current action is shown on the flight display.");
     }

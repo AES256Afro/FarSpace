@@ -1,3 +1,4 @@
+import { activeSupport, supportAction } from "../core/supportjobs";
 import { questLocations, type QuestLocation } from "../core/questlocations";
 import { drawQuestMarker } from "../gfx/questmarkers";
 import { hasMiningRemains } from "../core/mining";
@@ -33,6 +34,7 @@ export function systemContacts(g: Game, knownTarget?: string): SystemContact[] {
   for (const w of wondersIn(g.world,sys.id)) if (w.seen || p.flags?.[`rumour:${w.id}`]) out.push({ id:`wonder:${w.id}`,name:w.seen ? w.name : "RUMOURED SITE",kind:"SIGNAL",x:w.x,y:w.y,color:PAL.gold,detail:w.kind.toUpperCase(),range:100 });
   const berth = singersBerth(g.world);
   if (berth) out.push({ id:"singers",name:"SINGERS' BERTH",kind:"STATION",...berth,color:PAL.ui,detail:"APPROACH TO VISIT",range:60 });
+  for(const j of p.support?.jobs??[]) if(activeSupport(j)&&j.phase!=="report"&&j.systemId===sys.id)out.push({id:`support:${j.id}`,name:j.name,kind:"SHIP",x:j.ship.x,y:j.ship.y,color:PAL.good,detail:supportAction(g.world,j),range:45});
   for (const c of out) c.quests = quests.filter(q => q.contactId === c.id).sort((a,b) => Number(!!b.focused) - Number(!!a.focused));
   return out;
 }

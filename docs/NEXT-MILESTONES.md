@@ -20,10 +20,10 @@ menu keeps one layout across all three.
 
 ## Current milestone status
 
-v0.274.0 releases M422 with CI, container and hosted checks passed. M421 uncoached player
-acceptance remains pending. M423 through M427 and M433 through M435 remain
-open. M428 through M432 and M436 are released. Next implementation: M423
-support job continuity.
+v0.275.0 implements M423 support continuity. Local checks pass; release CI and
+hosted checks are pending. M421 uncoached player acceptance remains pending.
+M424 through M427 and M433 through M435 remain open. M428 through M432 and
+M436 are released. Next implementation: M424 visible port response.
 The existing nine hour deadline is unchanged.
 
 ## Nine hour work window and quest visibility
@@ -412,6 +412,15 @@ Acceptance:
   Older saves get a conservative reconstruction, without invented history.
 
 ### M423: Work worth answering
+
+Implemented in v0.275.0. Accepted repair, medical and fuel/tow requests keep
+minimal saved ship identity, delivered supplies and phase progress. The maps
+and F4 briefing read this state. Actual aid and DockVisit completion pay once.
+Twenty one new tests cover persistence, partial help, loss, requirements and
+settlement; all 822 tests pass. Native isolated checks completed repair after
+F5/F9, medical treatment and patient delivery, fuel transfer, and a saved tow
+through actual map flight and docking. Loaded station visits did not repeat
+payments. Release CI and hosted verification are pending.
 
 Build three bounded job chains using existing services: a disabled freighter
 needing parts and an engineer, a casualty transfer needing a medic and berth,

@@ -1,3 +1,4 @@
+import { supportTerms } from "./supportjobs";
 import { cargoUsed, findStation, passengersAboard, systemLabel, type World } from "../world";
 import { commodity } from "../data/data";
 import { hull } from "../data/hulls";
@@ -31,6 +32,7 @@ export function objectiveDetails(w: World, q: QuestLocation): string[] {
     `SOURCE: ${q.source}. ${q.focused ? "YOUR CHOSEN OBJECTIVE." : ""}`,
     `DESTINATION: ${st ? `${st.st.name}, ` : ""}${sys?.name ?? "Destination unavailable"}.`, q.action,
     ...(m ? [m.desc, `CONTRACT PAYMENT: ${m.reward}cr. Collect it after completing the work.`] : []),
+    ...(q.source === "AID" ? (w.player.support?.jobs.filter(j=>j.id===q.id).flatMap(j=>supportTerms(w,j))??[]) : []),
     ...(q.source === "SERVICE" && w.player.service?.order ? [w.player.service.order.description] : []),
     q.systemId === w.player.systemId ? "TAB opens the system map during flight. Select the destination, then choose Fly there to travel." : "G opens the galaxy map during flight. Select the destination system, then choose Fly there to travel.",
     "Pinning keeps this objective visible. It does not change your course or start flight.",
@@ -48,7 +50,7 @@ export function journeyBriefing(w: World) {
     location: st ? `Docked at ${st.st.name}, ${sys.name}` : `In flight in ${sys.name}`,
     aboard: `${cargoUsed(p)}/${p.cargoMax} cargo, ${materialCount} materials, ${p.crew.length} crew, ${passengers} passengers${p.evacuees?.n ? `, ${p.evacuees.n} survivors` : ""}`,
     condition: `Hull ${Math.ceil(p.hull)}/${p.hullMax}, fuel ${Math.ceil(p.fuel)}/${p.fuelMax}, oxygen ${Math.ceil(p.oxygen)}/${p.oxygenMax}`,
-    completed: receipt ? `Latest recorded port contract: ${receipt.title}` : "No completed port contract recorded in this save.",
+    completed: p.lastSupportReceipt && (!receipt || p.lastSupportReceipt.time >= receipt.time) ? `Latest support: ${p.lastSupportReceipt.title}` : receipt ? `Latest recorded port contract: ${receipt.title}` : "No completed port contract recorded in this save.",
     focus,
     next: focus ? `${focus.title}: ${focus.action}` : p.objectiveFocusId ? "The chosen objective is no longer available. Choose current work below." : "Choose an objective below, or continue your voyage.",
   };
@@ -59,6 +61,7 @@ export function journeyRecordSections(w: World): [string, string[]][] {
   const p = w.player, b = journeyBriefing(w), receipt = p.lastContractReceipt;
   return [
     [b.ship, [b.location, b.aboard, b.condition, `${p.credits}cr aboard.`, ...p.systems.map(s => `${systemLabel(p, s)}: ${Math.ceil(s.health)}%`)]],
+    ["LATEST SUPPORT RECEIPT", p.lastSupportReceipt ? [p.lastSupportReceipt.title, `Voyage time ${Math.floor(p.lastSupportReceipt.time/60)} minutes.`] : ["No completed support report recorded."]],
     ["LATEST RECORDED PORT CONTRACT", receipt ? [receipt.title, `Completed at ${findStation(w, receipt.stationId)?.st.name ?? receipt.stationId}, voyage time ${Math.floor(receipt.time / 60)} minutes.`] : [b.completed, "Older completions are not inferred from credits or counters. Other outcomes may appear in the captain's log below."]],
     ["CHOSEN OBJECTIVE", b.focus ? [b.focus.title, ...objectiveDetails(w, b.focus)] : [b.next]],
     ["CARGO MANIFEST", Object.entries(p.cargo).filter(([, n]) => n > 0).map(([id, n]) => `${commodity(id).name}: ${n}`)],

@@ -1,3 +1,4 @@
+import { activeSupport, supportAction } from "./supportjobs";
 import { findStation, missionDeliverable, type World, type Mission } from "../world";
 import { schoolDestination } from "./flightschool";
 import { commodity } from "../data/data";
@@ -6,7 +7,7 @@ import { serviceDestination } from "./service";
 export interface QuestLocation {
   id: string;
   title: string;
-  source: "CONTRACT" | "STORY" | "CREW" | "SERVICE" | "COUNCIL" | "SCHOOL";
+  source: "CONTRACT" | "STORY" | "CREW" | "SERVICE" | "COUNCIL" | "SCHOOL" | "AID";
   systemId: string;
   contactId?: string;
   poiId?: string;
@@ -36,6 +37,11 @@ export function questLocations(w: World): QuestLocation[] {
     const an = w.systems[q.systemId]?.anomalies.find(a => a.id === id && a.discovered && !a.claimed);
     add({ ...q, contactId: an ? `signal:${an.id}` : undefined, action: an ? "APPROACH SIGNAL. E TO INVESTIGATE." : "SEARCH THIS SYSTEM. HOLD V TO SCAN." });
   };
+  for(const j of p.support?.jobs??[]) if(activeSupport(j)) {
+    const q={id:j.id,title:`${j.name}: ${j.kind} aid`,source:"AID" as const,action:supportAction(w,j)};
+    if(j.phase==="report"||j.phase==="tow")station(q,j.stationId);
+    else add({...q,systemId:j.systemId,contactId:`support:${j.id}`});
+  }
   const school = schoolDestination(w);
   if (school && !(p.tutorial === 3 && p.missions.some(m => m.id === p.flightSchool?.missionId && m.accepted && !m.done))) station({ id: "school:port", title: "Flight School", source: "SCHOOL", action: p.tutorial === 3 ? "DOCK. COLLECT FIRST POST PAYMENT IN MISSIONS." : p.tutorial === 5 ? "F5 SAVES AND COMPLETES THE LESSON." : "DOCK AT THIS PORT FOR YOUR FLIGHT LESSON." }, school.st.id);
   for (const m of p.missions) {

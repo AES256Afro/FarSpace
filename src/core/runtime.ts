@@ -1,3 +1,4 @@
+import { reconcileSupport } from "./supportjobs";
 import { reconcileObjective } from "./journey";
 import { tickWorkshop } from "./workshop";
 import type { FlightScene } from "../scenes/flight/index";
@@ -15,6 +16,7 @@ export function updateVoyageSystems(g: Game, dt = 0): void {
     || (g.sceneName === "flight" && flight && !flight.paused && !flight.mapOpen && !flight.logOpen);
   if (working) { const events = tickWorkshop(g.world.player, dt); if (events.length) { g.toast(events.join(" ")); g.autosave(); } }
   tutorialUpdate(g); storyUpdate(g); convoyUpdate(g); crewArcUpdate(g); keeperUpdate(g);
+  reconcileSupport(g.world);
   reconcileObjective(g.world);
   checkAchievements(g);
 }

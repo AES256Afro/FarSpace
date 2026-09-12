@@ -1,3 +1,4 @@
+import { activeSupport } from "../../core/supportjobs";
 import { aimedRock, crackRock, collectRock } from "../../core/mining";
 import { breakPiratePassage } from "../../core/piracy";
 import { recordOffence } from "../../core/law";
@@ -167,7 +168,8 @@ export function spawnTrader(fs: FlightScene, g: Game, rng: RNG): void {
   const id = exports.length ? rng.pick(exports) : "food";
   const sx = Math.cos(from.angle) * from.orbit, sy = Math.sin(from.angle) * from.orbit;
   const a = rng.range(0, TAU);
-  const cap = pickCaptainFor(g.world, sys.id, rng);
+  const candidate = pickCaptainFor(g.world, sys.id, rng);
+  const cap = candidate && !g.world.player.support?.jobs.some(j=>activeSupport(j)&&j.name===candidate.name) ? candidate : undefined;
   const p = g.world.player;
   if (dist(sx, sy, p.x, p.y) < 1400 && fs.comms.length < 4) fs.comms.push({ from: `${from.name.toUpperCase()} CONTROL`, text: `${(cap?.name ?? "HAULER").toUpperCase()} DEPARTING BAY ${rng.int(1, 6)}. TRAFFIC ON THE APPROACH, MIND YOUR SPACING.`, life: 6, color: PAL.greyDark });
   fs.npcs.push({
@@ -791,12 +793,17 @@ export function updateSos(fs: FlightScene, g: Game, dt: number): void {
   fs.sosTimer -= dt;
   if (fs.sosTimer > 0) return;
   fs.sosTimer = 70 + Math.random() * 60;
-  if (sys.pirateActivity < 0.1) return;
   const a = Math.random() * TAU;
   const r = 700 + Math.random() * 500;
   const tx = p.x + Math.cos(a) * r, ty = p.y + Math.sin(a) * r;
   const trader: Npc = { kind: "trader", x: tx, y: ty, vx: 0, vy: 0, angle: 0, hull: 50, hullMax: 50, fireCd: 0, targetIdx: 0, cargo: { id: "lux", qty: 3 } };
-  if (Math.random() < 0.25) {
+  const incident=Math.random();
+  if(incident<0.25) {
+    trader.disabled=true;trader.mayday=true;fs.npcs.push(trader);
+    fs.sos={trader,pirates:[],reward:300,ttl:240,kind:"disabled"};
+    g.toast("FUEL REQUEST: STRANDED TRANSPORT. APPROACH AND PRESS E TO HELP OR ACCEPT FOR LATER.");sfx.alarm();return;
+  }
+  if (incident < 0.5) {
     // wounded aboard after a bad jump: a job for a medic
     trader.casualties = true; trader.hull = 45;
     fs.npcs.push(trader);
@@ -805,7 +812,7 @@ export function updateSos(fs: FlightScene, g: Game, dt: number): void {
     sfx.alarm();
     return;
   }
-  if (Math.random() < 0.45) {
+  if (incident < 0.8 || sys.pirateActivity < 0.1) {
     // engines dead, nobody shooting yet: a job for a wrench, not a gun
     trader.disabled = true; trader.hull = 30; trader.angle = a;
     fs.npcs.push(trader);

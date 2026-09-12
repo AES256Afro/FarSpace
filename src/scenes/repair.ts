@@ -1,3 +1,4 @@
+import { snapshotSupport } from "../core/supportjobs";
 // Aboard a disabled ship: three dead systems, a suit clock, and the odd fire.
 // Hold E beside a system to bring it back. Spare parts make it quicker.
 
@@ -40,6 +41,7 @@ export class RepairScene implements Scene {
     this.health = this.progress.health;
     for (const system of this.layout.systems) this.health[system.ch] ??= this.rng.int(0, 25);
     this.fires = this.progress.fires;
+    if(g.repairTarget)snapshotSupport(g.world,g.repairTarget);
     this.say(this.tender ? "THE YARD CHIEF POINTS AT THREE RED PANELS AND LEAVES. HOLD E AT EACH." : "ENGINES DEAD, AIR THIN, REACTOR TICKING. HOLD E AT EACH SYSTEM.");
     sfx.alarm();
   }
@@ -65,15 +67,20 @@ export class RepairScene implements Scene {
     const fs = g.scenes.flight as FlightScene;
     if (success && g.repairTarget) fs.finishRepair(g, g.repairTarget, "you");
     else if (g.repairTarget) g.toast("REPAIR PROGRESS KEPT ABOARD THIS SHIP.");
+    const tracked=!!g.repairTarget?.supportId;
+    if(g.repairTarget)snapshotSupport(g.world,g.repairTarget);
+    if(tracked)g.autosave?.();
     g.repairTarget = null;
     fs.resumeNext = true;
     g.setScene("flight");
-    if (success && Math.random() < 0.1 + g.world.systems[g.world.player.systemId].pirateActivity * 0.4) { fs.spawnRaidersNearPlayer(g, 2); g.toast("CORSAIRS ARRIVED WHILE YOU WERE ABOARD"); }
+    if (success && !tracked && Math.random() < 0.1 + g.world.systems[g.world.player.systemId].pirateActivity * 0.4) { fs.spawnRaidersNearPlayer(g, 2); g.toast("CORSAIRS ARRIVED WHILE YOU WERE ABOARD"); }
   }
 
   update(g: Game, dt: number): void {
     const inp = g.input;
     const p = g.world.player;
+    if (inp.wasPressed("F5")) g.save();
+    if (inp.wasPressed("F9")) {g.load();return;}
     if (inp.wasPressed("Escape")) { this.leave(g, this.done()); return; }
     moveWalker(g, this, dt, (tx, ty) => this.solid(tx, ty));
     const ptx = Math.floor(this.px / T), pty = Math.floor(this.py / T);
@@ -92,7 +99,7 @@ export class RepairScene implements Scene {
     if (fire && inp.wasPressed("e")) { this.fires = this.progress.fires = this.fires.filter((f) => f !== fire); this.say("FIRE OUT"); sfx.repair(); }
     else if (sys && inp.isDown("e") && this.health[sys.ch] < 100) {
       let rate = 22 * (1 + 0.35 * crewBonus(p, "engineer") + 0.15 * (p.skills?.engineering ?? 0));
-      if ((p.cargo.parts ?? 0) > 0 && this.health[sys.ch] < 5) { p.cargo.parts--; if (!p.cargo.parts) delete p.cargo.parts; this.health[sys.ch] = 40; this.say(`SPARE PART FITTED TO THE ${sys.name}`); sfx.repair(); }
+      if (!g.repairTarget?.supportId && (p.cargo.parts ?? 0) > 0 && this.health[sys.ch] < 5) { p.cargo.parts--; if (!p.cargo.parts) delete p.cargo.parts; this.health[sys.ch] = 40; this.say(`SPARE PART FITTED TO THE ${sys.name}`); sfx.repair(); }
       this.health[sys.ch] = Math.min(100, this.health[sys.ch] + rate * dt);
       if (this.health[sys.ch] >= 100) { this.say(`${sys.name} BACK ONLINE`); sfx.repair(); p.skills.engineering = Math.min(20, (p.skills.engineering ?? 0) + 0.5); }
       void rate;

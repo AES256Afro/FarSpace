@@ -1,3 +1,5 @@
+import { offerSupport, restoreSupport, syncSupport, pauseSupportWork } from "./support";
+import { supportAtShip, snapshotSupport } from "../../core/supportjobs";
 import { openJourney } from "../journey";
 import { flightRecordSections, FLIGHT_RECORD } from "./display";
 import { ReaderOverlay } from "../reader";
@@ -102,7 +104,7 @@ export class FlightScene implements Scene {
   hitFlash = 0;
 
   private population: { world: World; systemId: string } | null = null;
-  onSceneLeave(): void { this.systemMap.closeInfo(); this.logReader?.onSceneLeave(); this.logReader = undefined; this.logOpen = false; }
+  onSceneLeave(g?: Game): void { if(g&&this.population?.world===g.world) for(const n of this.npcs) snapshotSupport(g.world,n); this.systemMap.closeInfo(); this.logReader?.onSceneLeave(); this.logReader = undefined; this.logOpen = false; }
   resumeNext = false; // Temporary visits return to the same flight population.
   enter(g: Game): void {
     const resume = this.resumeNext && this.population?.world === g.world
@@ -145,6 +147,7 @@ export class FlightScene implements Scene {
       }
     }
     populate(this, g);
+    restoreSupport(this, g);
     this.spawnDrifters(g);
     this.launchDrones(g);
     if (g.world.player.companion) {
@@ -522,6 +525,7 @@ export class FlightScene implements Scene {
 
     updateBullets(this, g, dt);
     updateNpcs(this, g, dt);
+    syncSupport(this, g);
     updatePlatforms(this, g, dt);
     updateParticles(this, dt);
     updateLoot(this, g, dt);
@@ -1055,6 +1059,7 @@ export class FlightScene implements Scene {
   }
 
   offerHelp(g: Game, n: Npc): void {
+    if(n.disabled||n.casualties||n.mayday||n.supportId){offerSupport(this,g,n);return;}
     const w = g.world, p = w.player, systemId = p.systemId;
     const state = () => JSON.stringify([n.disabled, n.casualties, n.mayday, n.hull, p.crew, p.evacuees]);
     const initial = state();
@@ -1069,45 +1074,18 @@ export class FlightScene implements Scene {
       } }));
       (g.scenes["encounter"] as EncounterScene).open(g, enc, "flight", true);
     };
-    const eng = p.crew.find((c) => c.role === "engineer");
-    const who = n.tag ? `[${n.tag}] CONVOY` : "FREIGHTER";
-    const opts: Encounter["options"] = [];
-    const medic = p.crew.find((c) => c.role === "medic");
-    if (n.casualties) {
-      if (medic) opts.push({ label: `SEND ${medic.name.toUpperCase()} ACROSS (MEDIC ${medic.skill})`, hint: "Triage takes a while; stay close", result: () => { this.repairJob = { npc: n, crewName: medic.name, progress: 0, need: 30 / (0.6 + 0.4 * medic.skill), wave: 9, kind: "medic" }; return `${medic.name.toUpperCase()} GRABS THE KIT AND CROSSES.`; } });
-      else opts.push({ label: "NO MEDIC ABOARD TO SEND", hint: "Hire one at a station bar", requires: () => false, result: () => "" });
-      opts.push({ label: "TRANSFER 2 MED SUPPLIES", hint: "They treat their own", requires: (g2) => (g2.world.player.cargo.med ?? 0) >= 2, result: (g2) => { removeCargo(g2.world.player, "med", 2); n.casualties = false; this.thankYou(g2, n, 160); g2.world.player.lives = (g2.world.player.lives ?? 0) + 2; return "THE CRATES GO ACROSS ON A LINE. 'THAT'LL DO IT. THANK YOU. TRULY.'"; } });
-      if (!p.evacuees) opts.push({ label: "TAKE THE WOUNDED ABOARD", hint: medic ? "Your medic keeps them alive to dock" : "Without a medic, not all of them will make it", result: (g2, rng) => { const n2 = 2; g2.world.player.evacuees = { n: medic ? n2 : (rng.chance(0.3) ? 1 : 2), from: "wounded" }; n.casualties = false; return medic ? "TWO STRETCHERS COME ACROSS. YOUR MEDIC TAKES OVER. DOCK SOON." : "TWO STRETCHERS COME ACROSS. NOBODY ABOARD KNOWS WHAT THEY'RE DOING. DOCK FAST."; } });
-      opts.push({ label: "LEAVE THEM", result: () => "YOU BREAK OFF. THE CHANNEL STAYS OPEN A WHILE, THEN CLOSES." });
-      const enc: Encounter = { id: "help-med", where: "space", title: `MEDICAL - ${who}`, weight: 0, text: "'WE HIT SOMETHING ON THE JUMP. THREE DOWN, ONE BAD. OUR MEDKIT IS A BOX OF PLASTERS. IS THERE A DOCTOR ON THAT SHIP?'", options: opts };
-      open(enc);
-      return;
-    }
-    if (n.mayday) {
-      opts.push({ label: "PASS TEN UNITS OF FUEL ON A LINE", hint: "The Pilots' Fund pays 300cr for an answered mayday", requires: (g2) => g2.world.player.fuel >= 15, result: (g2) => {
-        const p2 = g2.world.player; p2.fuel -= 10; p2.credits += 300; ledger(p2, "rescues", 300); p2.rescues = (p2.rescues ?? 0) + 1; adjustRep(g2.world, g2.world.systems[p2.systemId].factionId, 3);
-        void wire.post("rescue", `answered ${n.name}'s mayday with fuel`, g2.world.systems[p2.systemId].name); flag(g2, "fuelrat"); logEntry(g2.world, `Answered ${n.name}'s mayday with fuel`);
-        this.npcs = this.npcs.filter((x) => x !== n);
-        return `${(n.name ?? "THE PILOT").toUpperCase()}: 'YOU BEAUTIFUL PEOPLE. I'M NOT CRYING, IT'S THE RECYCLED AIR.' THE FUND WIRES 300CR. THEIR DRIVE LIGHTS UP AND THEY'RE GONE.`; } });
-      opts.push({ label: "LEAVE THEM", result: () => "YOU BREAK OFF. THE MAYDAY STAYS ON THE WIRE FOR SOMEBODY ELSE." });
-      const enc: Encounter = { id: "help-mayday", where: "space", title: `MAYDAY - ${(n.name ?? "PILOT").toUpperCase()} (ON THE WIRE)`, weight: 0, text: `'THIS IS ${(n.name ?? "A PILOT").toUpperCase()}. TANKS ARE DRY, DRIFTING, LIFE SUPPORT'S FINE FOR NOW. TEN UNITS WOULD GET ME TO THE STATION. I'LL OWE YOU ONE. I MEAN IT.'`, options: opts };
-      open(enc);
-      return;
-    }
-    if (n.disabled) {
-      opts.push({ label: "BOARD AND REPAIR IT YOURSELF", hint: "Board their ship, find the damaged systems, and restore them", result: (g2) => { g2.repairTarget = n; setTimeout(() => g2.setScene("repair"), 0); return ""; } });
-      if (eng) opts.push({ label: `SEND ${eng.name.toUpperCase()} ACROSS (ENGINEER ${eng.skill})`, hint: g.world.systems[p.systemId].pirateActivity > 0.4 ? "You stand guard; corsairs work this system" : "You stand guard; it's usually quiet out here", result: () => { this.repairJob = { npc: n, crewName: eng.name, progress: 0, need: 45 / (0.6 + 0.4 * eng.skill), wave: 0, kind: "repair" }; return `${eng.name.toUpperCase()} SUITS UP AND CROSSES. KEEP THEM SAFE.`; } });
-      else opts.push({ label: "NO ENGINEER ABOARD TO SEND", hint: "Hire one at a station bar", requires: () => false, result: () => "" });
-      opts.push({ label: "TOW THEM TO A STATION", hint: "They follow you; top speed drops; dock anywhere", requires: () => !recoveryTow(g.world), result: () => { this.towing = n; n.disabled = true; return "TOW LINE ATTACHED. TAKE IT SLOW - THE LINE WON'T SURVIVE A JUMP OR A FIREFIGHT AT SPEED."; } });
-      if (!p.evacuees) opts.push({ label: "TAKE THEIR CREW ABOARD", hint: "Three survivors, paid out at your next dock", result: (g2) => { g2.world.player.evacuees = { n: 3, from: who.toLowerCase() }; this.npcs = this.npcs.filter((x) => x !== n); if (this.sos?.trader === n) this.sos = null; return "THREE OF THEM CROSS IN SUITS AND CRAM INTO THE GALLEY. THE FREIGHTER STAYS DARK BEHIND YOU."; } });
-    } else {
-      opts.push({ label: "PASS THEM A SPARE PART", hint: "Patches their hull; they remember", requires: (g2) => (g2.world.player.cargo.parts ?? 0) >= 1, result: (g2) => { g2.world.player.cargo.parts!--; if (!g2.world.player.cargo.parts) delete g2.world.player.cargo.parts; n.hull = n.hullMax; this.thankYou(g2, n, 120); const l = helpCaptain(g2.world, n.name, "part", new RNG((g2.world.seed ^ Math.floor(g2.world.time * 53)) >>> 0)); if (l) g2.toast(l); return `THEY TAKE THE PART AND PATCH THE BREACH. '${who}, WE OWE YOU ONE.'`; } });
-    }
-    opts.push({ label: "LEAVE THEM", result: () => "YOU BREAK OFF. THE CHANNEL STAYS OPEN A WHILE, THEN CLOSES." });
-    const enc: Encounter = { id: "help-ship", where: "space", title: n.disabled ? `MAYDAY - ${who} DISABLED` : `${who} - HULL ${Math.round(n.hull / n.hullMax * 100)}%`, weight: 0,
-      text: n.disabled ? "'ENGINES ARE DEAD, LIFE SUPPORT IS ON BATTERIES, AND THE REACTOR IS MAKING A NOISE I DON'T LIKE. WE CAN'T FIX IT FROM IN HERE. CAN YOU?'" : "'WE TOOK A HIT COMING THROUGH THE BELT. HULL'S HOLDING, JUST. IF YOU'VE GOT A SPARE PART, WE'D PAY FOR IT.'",
-      options: opts };
-    open(enc);
+    const who = n.tag ? `[${n.tag}] CONVOY` : n.name ?? "FREIGHTER";
+    open({ id: "help-hull", where: "space", title: `${who} / HULL ${Math.round(n.hull/n.hullMax*100)}%`, weight: 0,
+      text: "We took a hit in the belt. One spare part will patch the breach. We can pay 120cr.",
+      options: [
+        { label: "PASS THEM A SPARE PART", hint: "One part for a hull patch and 120cr", requires: g2 => (g2.world.player.cargo.parts??0)>=1, result: g2 => {
+          removeCargo(g2.world.player,"parts",1);n.hull=n.hullMax;this.thankYou(g2,n,120);
+          const line=helpCaptain(g2.world,n.name,"part",new RNG((g2.world.seed^Math.floor(g2.world.time*53))>>>0));if(line)g2.toast(line);
+          return "PART DELIVERED. THE BREACH IS PATCHED. +120CR.";
+        } },
+        { label: "LEAVE THEM", result: () => "YOU BREAK OFF. NO SUPPLIES TRANSFERRED." },
+      ],
+    });
   }
 
   updateRepairJob(g: Game, dt: number): void {
@@ -1121,7 +1099,15 @@ export class FlightScene implements Scene {
       g.toast(`THE FREIGHTER IS GONE. ${job.crewName.toUpperCase()} GETS BACK IN A LIFEPOD, SHAKEN.`);
       return;
     }
-    job.progress += dt / job.need;
+    const support=supportAtShip(g.world,job.npc);
+    if(support) {
+      const role=job.kind==="medic"?"medic":"engineer";
+      if(!p.crew.some(c=>c.name===job.crewName&&c.role===role&&!c.sick)||Math.hypot(job.npc.x-p.x,job.npc.y-p.y)>200) {
+        pauseSupportWork(this,g);g.toast("AID PAUSED. CREW RETURNED ABOARD. PROGRESS AND SUPPLIES KEPT.");g.autosave?.();return;
+      }
+    }
+    job.progress = Math.min(1,job.progress + dt / job.need);
+    if(support)support.progress=job.progress;
     // corsairs are a risk of standing still in rough space, not a certainty
     const piracy = g.world.systems[p.systemId].pirateActivity;
     if (job.wave === 0 && job.progress > 0.3) { job.wave = 1; if (Math.random() < 0.15 + piracy * 0.5) { this.spawnRaidersNearPlayer(g, 2); g.toast("CORSAIRS ON THE SCOPE - THEY WANT THE FREIGHTER"); } }
@@ -1150,12 +1136,14 @@ export class FlightScene implements Scene {
   }
 
   finishMedic(g: Game, n: Npc, by: string): void {
-    const p = g.world.player;
-    n.casualties = false;
-    const reward = (this.sos && this.sos.trader === n ? this.sos.reward : 250) + Math.floor(Math.random() * 150);
+    const p = g.world.player, support=supportAtShip(g.world,n);
+    if(support&&(support.paid||support.phase!=="working"))return;
+    if(support){support.paid=true;support.phase="transfer";support.progress=1;delete support.worker;}
+    n.casualties = !!support;
+    const reward = support ? 300 : (this.sos && this.sos.trader === n ? this.sos.reward : 250) + Math.floor(Math.random() * 150);
     this.thankYou(g, n, reward);
     { const l = helpCaptain(g.world, n.kind === "trader" ? n.name : undefined, "medic", new RNG((g.world.seed ^ Math.floor(g.world.time * 43)) >>> 0)); if (l) g.toast(l); }
-    p.lives = (p.lives ?? 0) + 3;
+    p.lives = (p.lives ?? 0) + (support ? 2 : 3);
     { const up = crewXp(p, "medic", 4); if (up) g.toast(up); }
     flag(g, "fieldMedic");
     if ((p.lives ?? 0) >= 12) flag(g, "surgeon");
@@ -1163,17 +1151,21 @@ export class FlightScene implements Scene {
     this.comms.push({ from: n.tag ? `[${n.tag}] CONVOY` : "FREIGHTER", text: `ALL THREE STABLE. ${by.toUpperCase()} IS WELCOME ABOARD ANY TIME. +${reward}CR`, life: 12, color: PAL.gold });
     if (this.comms.length > 5) this.comms.shift();
     g.toast(`CASUALTIES STABILISED +${reward}CR`);
-    void wire.post("rescue", `sent ${by} across to a freighter with casualties and saved three lives`, sys.name);
+    void wire.post("rescue", support ? `stabilised casualties aboard ${n.name}; the critical patient awaits port transfer` : `sent ${by} across to a freighter with casualties and saved three lives`, sys.name);
     if (this.sos && this.sos.trader === n) this.sos = null;
     logEntry(g.world, `${by} stabilised three casualties aboard a freighter in ${sys.name}`);
+    if(support){snapshotSupport(g.world,n);g.toast("CASUALTIES STABLE +300CR. E TRANSFER THE CRITICAL PATIENT WITH A MEDIC AND ONE FREE BERTH.");g.autosave?.();}
   }
 
   // A ship brought back to life, by you or by your engineer
   finishRepair(g: Game, n: Npc, by: string): void {
-    const p = g.world.player;
+    const p = g.world.player, support=supportAtShip(g.world,n);
+    if(support&&(support.paid||!["working","waiting"].includes(support.phase)))return;
+    if(support){support.paid=true;support.phase="report";support.progress=1;delete support.worker;}
+    if(this.towing===n)this.towing=null;
     n.disabled = false; n.hull = n.hullMax;
     if (n.repairInterior) { n.repairInterior.health = {}; n.repairInterior.fires = []; }
-    const reward = (this.sos && this.sos.trader === n ? this.sos.reward : 300) + Math.floor(Math.random() * 200);
+    const reward = support ? 400 : (this.sos && this.sos.trader === n ? this.sos.reward : 300) + Math.floor(Math.random() * 200);
     this.thankYou(g, n, reward);
     { const l = helpCaptain(g.world, n.kind === "trader" ? n.name : undefined, "repair", new RNG((g.world.seed ^ Math.floor(g.world.time * 41)) >>> 0)); if (l) g.toast(l); }
     p.repairs = (p.repairs ?? 0) + 1;
@@ -1183,8 +1175,8 @@ export class FlightScene implements Scene {
     const sys = g.world.systems[p.systemId];
     const rng = new RNG((g.world.seed ^ Math.floor(g.world.time * 17)) >>> 0);
     let extra = "";
-    if (rng.chance(0.3)) { addCargoW(p, "parts", 2); extra = " THEY THROW IN TWO SPARE PARTS."; }
-    else if (rng.chance(0.3)) { const c = genCrewCandidate(rng); if (p.crew.length < hull(p.hullId).crewSlots) { p.crew.push(c); extra = ` THEIR ${c.role.toUpperCase()} ${c.name.toUpperCase()} ASKS FOR A BERTH WITH YOU INSTEAD, AND GETS ONE.`; } }
+    if (!support && rng.chance(0.3)) { addCargoW(p, "parts", 2); extra = " THEY THROW IN TWO SPARE PARTS."; }
+    else if (!support && rng.chance(0.3)) { const c = genCrewCandidate(rng); if (p.crew.length < hull(p.hullId).crewSlots) { p.crew.push(c); extra = ` THEIR ${c.role.toUpperCase()} ${c.name.toUpperCase()} ASKS FOR A BERTH WITH YOU INSTEAD, AND GETS ONE.`; } }
     this.comms.push({ from: n.tag ? `[${n.tag}] CONVOY` : "FREIGHTER", text: `ENGINES LIT. ${by === "you" ? "WE WON'T FORGET THIS" : `TELL ${by.toUpperCase()} THEY'RE A WIZARD`}. +${reward}CR${extra}`, life: 12, color: PAL.gold });
     if (this.comms.length > 5) this.comms.shift();
     g.toast(`FREIGHTER REPAIRED +${reward}CR${extra ? " - " + extra.trim() : ""}`);
@@ -1192,6 +1184,7 @@ export class FlightScene implements Scene {
     void wire.post("rescue", by === "you" ? "boarded a disabled freighter and brought its engines back" : `sent ${by} across to fix a disabled freighter`, sys.name);
     if (this.sos && this.sos.trader === n) this.sos = null;
     logEntry(g.world, `Brought a disabled freighter back to life (${by === "you" ? "by hand" : by}) in ${sys.name}`);
+    if(support){g.toast("ENGINES RESTORED +400CR. DOCK TO CLOSE THE AID REPORT.");g.autosave?.();}
   }
 
   // ---------- Ambient life ----------
@@ -1790,6 +1783,7 @@ export class FlightScene implements Scene {
     sfx.jump();
     if (this.npcs.some((n) => n.naval)) { this.npcs = this.npcs.filter((n) => !n.naval); g.toast("SERVICE CUTTER: THAT'S THE GATE. THE SERVICE HAS YOU NO FURTHER. FLY WELL, SIR."); }
     if (this.towing) { this.towing = null; g.toast("THE TOW LINE DOESN'T SURVIVE THE JUMP"); }
+    pauseSupportWork(this,g);syncSupport(this,g);
     const fromId = p.systemId;
     p.lawCases = lawCases(g.world);
     p.systemId = targetId;
@@ -1809,6 +1803,7 @@ export class FlightScene implements Scene {
     p.vx = 0; p.vy = 0;
     this.resetPopulation(g);
     populate(this, g);
+    restoreSupport(this, g);
     this.spawnDrifters(g);
     this.launchDrones(g);
     this.startEscortIfNeeded(g);

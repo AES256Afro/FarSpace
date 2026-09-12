@@ -286,6 +286,8 @@ export interface PlayerState {
   fires: { tx: number; ty: number }[];
   arcs: Record<string, number>; // faction id → completed stage count
   tutorial?: number; // flight school step; -1 = off/done
+  support?: import("./core/supportjobs").SupportState;
+  lastSupportReceipt?: import("./core/journey").ContractReceipt;
   objectiveFocusId?: string;
   lastContractReceipt?: import("./core/journey").ContractReceipt;
   flightSchool?: import("./core/flightschool").FlightSchoolState;
@@ -324,7 +326,7 @@ export interface PlayerState {
   envoySeen?: Record<string, number>;                 // faction → world time of the last envoy card
   log?: { t: number; text: string }[];                // captain's log: things worth remembering
   tows?: number;
-  evacuees?: { n: number; from: string } | null;      // survivors aboard, paid out at the next dock
+  evacuees?: { n: number; from: string; supportId?: string } | null;      // survivors aboard, paid out at the next dock
   story?: number;                                     // The Signal: stage index; -1 = declined
   story2?: number;                                    // The Missing Convoy: stage index
   convoyTrack?: { tag: string; rivalTag: string; partnerStationId: string; laneSystemId: string } | null;
@@ -1005,7 +1007,7 @@ export function retireCaptain(w: World, name: string, successor: CrewMember | nu
 export type SightKind = "planet" | "drifter" | "comet" | "festival" | "wonder";
 export const PASSENGER_BASE_CAP = 1;
 export function passengerCap(p: PlayerState): number {
-  return PASSENGER_BASE_CAP + ((p.modules ?? []).includes("cabins") ? 2 : 0);
+  return Math.max(0, PASSENGER_BASE_CAP + ((p.modules ?? []).includes("cabins") ? 2 : 0) - (p.evacuees?.n ?? 0));
 }
 export function passengersAboard(p: PlayerState): Mission[] {
   return p.missions.filter((m) => m.kind === "passenger" && m.accepted && !m.done);

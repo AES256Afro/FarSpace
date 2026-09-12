@@ -1,3 +1,4 @@
+import { closeSupportAtPort, supportShip } from "../core/supportjobs";
 import { openJourney } from "./journey";
 import { openWorkshop } from "./workshop";
 import { ReaderOverlay, type ReaderScene } from "./reader";
@@ -92,7 +93,8 @@ export class StationScene implements Scene {
     const visit = currentDockVisit(g.world);
     if (!found || !visit) { g.setScene("flight"); return; }
     if (this.visitWorld === g.world && this.visit === visit && this.station === found.st) {
-      if (this.presentPortAudience(g)) g.autosave();
+      const closed=closeSupportAtPort(g.world,this.station.id), audience=this.presentPortAudience(g);
+      if (closed || audience) g.autosave();
       return;
     }
     this.list = new StationList(); this.transactionList = this.list; this.documentLists.clear(); this.documentIdentity = new StationList(); this.activeDocument = ""; this.onSceneLeave();
@@ -124,7 +126,7 @@ export class StationScene implements Scene {
     refreshPrices(this.station);
     void wire.fetchSquadronData();
     this.loadPortData(g);
-    if (visit.settled) { if (this.presentPortAudience(g)) g.autosave(); return; }
+    if (visit.settled) { const closed=closeSupportAtPort(g.world,this.station.id), audience=this.presentPortAudience(g); if (closed || audience) g.autosave(); return; }
     visit.settled = true; visit.portAudiencePending = true;
     if (p.ious?.length) { for (const iou of p.ious) { p.credits += iou.credits; g.toast(iou.text); } p.ious = []; sfx.pickup(); }
     { const bl = resolveBorder(g.world); if (bl) { g.toast(bl); sfx.select(); const last = (g.world.borderLog ?? []).slice(-1)[0]; if (last && last.yours > 0) void wire.post("politics", `${last.flipped ? "helped flip" : "helped hold"} ${g.world.systems[last.systemId]?.name ?? "a system"} on the border (push ${last.yours})`, g.world.systems[p.systemId].name); } }
@@ -132,13 +134,18 @@ export class StationScene implements Scene {
     { const d = collectStake(g.world, this.station); if (d) { g.toast(`DIVIDEND ON YOUR ${p.stakes?.[this.station.id]} SHARES IN ${this.station.name.toUpperCase()}: +${d}CR`); sfx.pickup(); } }
     { const r = collectRemoteStakes(g.world, this.station.id); if (r.total) { g.toast(`THE POST BRINGS DIVIDEND CHEQUES FROM ${r.n} OTHER STATION${r.n > 1 ? "S" : ""}: +${r.total}CR`); } }
 
-    if (p.evacuees && p.evacuees.n > 0) { const pay = p.evacuees.n * (p.evacuees.from === "wounded" ? 200 : 150); if (p.evacuees.from === "wounded") p.lives = (p.lives ?? 0) + p.evacuees.n; logEntry(g.world, `Handed ${p.evacuees.n} survivors over at ${this.station.name}`); p.credits += pay; adjustRep(g.world, this.station.factionId, 4); g.toast(`${p.evacuees.n} SURVIVORS FROM THE ${p.evacuees.from.toUpperCase()} HANDED OVER +${pay}CR`); p.evacuees = null; flag(g, "lifeboat"); sfx.pickup(); }
+    if (p.evacuees && p.evacuees.n > 0) { const pay = p.evacuees.n * (p.evacuees.from === "wounded" ? 200 : 150); if (p.evacuees.from === "wounded") p.lives = (p.lives ?? 0) + p.evacuees.n; logEntry(g.world, `Handed ${p.evacuees.n} survivors over at ${this.station.name}`); p.credits += pay; adjustRep(g.world, this.station.factionId, 4); g.toast(`${p.evacuees.n} SURVIVORS FROM THE ${p.evacuees.from.toUpperCase()} HANDED OVER +${pay}CR`); if(p.evacuees.supportId){const aid=p.support?.jobs.find(j=>j.id===p.evacuees!.supportId&&j.phase==="report");if(aid)aid.patientDelivered=true;} p.evacuees = null; flag(g, "lifeboat"); sfx.pickup(); }
+    const trackedTow=p.support?.jobs.find(j=>j.phase==="tow"&&j.systemId===p.systemId&&!j.paid);
+    if(g.scenes.flight&&!trackedTow&&(g.scenes.flight as unknown as {towing?:{supportId?:string}}).towing?.supportId)(g.scenes.flight as unknown as {towing:unknown}).towing=null;
+    if(g.scenes.flight&&trackedTow)(g.scenes.flight as unknown as {towing:unknown}).towing=supportShip(g.world,trackedTow);
     if (g.scenes.flight && (g.scenes.flight as unknown as { towing: unknown }).towing) {
       const fs = g.scenes.flight as unknown as { towing: { x: number; y: number; hull: number } | null };
       const st = this.station; const sx = Math.cos(st.angle) * st.orbit, sy = Math.sin(st.angle) * st.orbit;
-      if (fs.towing && fs.towing.hull > 0 && Math.hypot(fs.towing.x - sx, fs.towing.y - sy) < 260) { p.credits += 550; adjustRep(g.world, st.factionId, 6); p.tows = (p.tows ?? 0) + 1; { const l = helpCaptain(g.world, (fs.towing as { name?: string }).name, "tow", new RNG((g.world.seed ^ Math.floor(g.world.time * 59)) >>> 0)); if (l) g.toast(l); } g.toast("TOW COMPLETE - THE YARD TAKES THE FREIGHTER +550CR"); flag(g, "tug"); void wire.post("rescue", "towed a disabled freighter into dock", g.world.systems[p.systemId].name); }
+      if (fs.towing && fs.towing.hull > 0 && Math.hypot(fs.towing.x - sx, fs.towing.y - sy) < 260) { if(trackedTow){trackedTow.paid=true;trackedTow.phase="report";} p.credits += 550; adjustRep(g.world, st.factionId, 6); p.tows = (p.tows ?? 0) + 1; { const l = helpCaptain(g.world, (fs.towing as { name?: string }).name, "tow", new RNG((g.world.seed ^ Math.floor(g.world.time * 59)) >>> 0)); if (l) g.toast(l); } g.toast("TOW COMPLETE - THE YARD TAKES THE FREIGHTER +550CR"); flag(g, "tug"); void wire.post("rescue", "towed a disabled freighter into dock", g.world.systems[p.systemId].name); }
+      if(trackedTow?.phase==="tow"){trackedTow.phase="waiting";g.toast("TOW NOT DELIVERED. THE SHIP STAYS AT ITS LAST POSITION.");}
       fs.towing = null;
     }
+    closeSupportAtPort(g.world,this.station.id);
     if (p.warPayout && p.warPayout.value > 0) {
       const wp = p.warPayout; p.warPayout = null;
       void wire.baseActionFor(wp.tag, "war", { value: wp.value }).then((ok) => { if (ok) g.toast(`WAR SPOILS: +${wp.value}CR TO THE [${wp.tag}] TREASURY`); });

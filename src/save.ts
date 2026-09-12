@@ -1,3 +1,4 @@
+import { validSupport } from "./core/supportjobs";
 // Save schema versioning. Every model change bumps SAVE_VERSION and adds a
 // migration step so no player loses a game to an update.
 
@@ -8,7 +9,7 @@ import { HULLS, SERVICE_CUTTER } from "./data/hulls";
 import { validFlightSchool } from "./core/flightschool";
 import { validWorkshopState } from "./core/workshop";
 
-export const SAVE_VERSION = 18;
+export const SAVE_VERSION = 19;
 export const SAVE_KEY = "farspace-save";
 export const SLOTS = 3;
 const SLOT_KEY = "farspace-slot";
@@ -176,6 +177,10 @@ MIGRATIONS[17] = () => {
   // 17 to 18: optional objective identity and actual port contract receipt.
 };
 
+MIGRATIONS[18] = () => {
+  // 18 to 19: accepted aid ships, delivered supplies and progress survive reload.
+};
+
 export function migrateSave(raw: unknown): World | null {
   if (!raw || typeof raw !== "object") return null;
   const w = raw as Record<string, unknown>;
@@ -213,8 +218,8 @@ export function decodeSave(raw: string): SaveRead {
     const w = migrateSave(parsed), p = w?.player;
     if (!w || !p || (![...HULLS, SERVICE_CUTTER].some(h => h.id === p.hullId)) || !w.systems?.[p.systemId]) return invalid;
     if (p.objectiveFocusId !== undefined && (typeof p.objectiveFocusId !== "string" || !p.objectiveFocusId.length || p.objectiveFocusId.length > 2048)) return invalid;
-    const receipt = p.lastContractReceipt;
-    if (receipt !== undefined && (!receipt || typeof receipt !== "object" || ![receipt.id, receipt.title, receipt.stationId].every(v => typeof v === "string" && v.length > 0 && v.length <= 4096) || !Number.isFinite(receipt.time) || receipt.time < 0)) return invalid;
+    if (!validSupport(p.support)) return invalid;
+    for (const receipt of [p.lastContractReceipt, p.lastSupportReceipt]) if (receipt !== undefined && (!receipt || typeof receipt !== "object" || ![receipt.id, receipt.title, receipt.stationId].every(v => typeof v === "string" && v.length > 0 && v.length <= 4096) || !Number.isFinite(receipt.time) || receipt.time < 0)) return invalid;
     if (!validFlightSchool(p.flightSchool)) return invalid;
     if (p.flightSchool && (!Number.isInteger(p.tutorial) || p.tutorial! < -1 || p.tutorial! > 6)) return invalid;
     if (!validWorkshopState(p.workshop)) return invalid;

@@ -93,7 +93,7 @@ describe("help call validity", () => {
     const f = fixture(), n = f.npc("trader", { disabled: true, mayday: true }); let enc: Encounter;
     f.g.scenes.encounter = { open: (_g: Game, e: Encounter) => { enc = e; } } as never;
     f.fs.offerHelp(f.g, n);
-    return { ...f, n, answer: () => enc.options[0].result(f.g, new RNG(1)) };
+    return { ...f, n, answer: () => enc.options.find(o=>o.label.startsWith("PASS TEN"))!.result(f.g, new RNG(1)) };
   }
   it.each(["departed", "range", "repaired", "new rescue"])("rejects an obsolete aid action after %s", reason => {
     const f = callFixture(), fuel = f.p.fuel, credits = f.p.credits;
