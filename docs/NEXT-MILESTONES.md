@@ -20,11 +20,10 @@ menu keeps one layout across all three.
 
 ## Current milestone status
 
-v0.276.0 releases M424 visible port response. Local, CI, container and hosted
-checks pass. M421 uncoached acceptance remains
-pending. M425 through M427 and M433 through M435 remain open. M428 through
-M432 and M436 are released. Next implementation: M425 interior readability.
-The existing nine hour deadline is unchanged.
+v0.277.0 implements M425 interior navigation. All 843 tests, typecheck,
+build and local walking/repair checks pass. Publication verification is
+pending. M421 uncoached acceptance, M426-M427 and M433-M435 remain open.
+M428-M432 and M436 are released. The existing nine hour deadline is unchanged.
 
 ## Nine hour work window and quest visibility
 

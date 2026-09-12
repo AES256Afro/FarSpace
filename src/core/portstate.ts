@@ -40,7 +40,7 @@ export function portState(w: World, st: StationDef): PortState {
   const clinicLine = patient ? `CLINIC: The patient from ${patient.name} was registered here. Your ship's berth was released at handoff.`
     : crisis?.commodityId === "med" ? `CLINIC: We still need ${crisis.need-crisis.delivered} medical supplies. The market handles intake.` : "CLINIC: No patient transfer from your ship is recorded here.";
   const sections: [string,string[]][] = [
-    [st.name, [title,summary,`Your ship has docked here ${dockingsAt(w.player,st.id)} times.`,"The promenade reads the same stock and crisis request as the market. Reading or walking does not restock stores or pay rewards."]],
+    [st.name, [title,summary,`Your visits here: ${dockingsAt(w.player,st.id)}.`,"Sell requested supplies at the market. I reads the full stores and clinic records."]],
     ["STORES",[storesLine,...stocks.map(s=>`${commodity(s.id).name}: ${s.count} in stock; usual stock ${s.baseline}.`)]],
     ["CLINIC",[clinicLine]],
     ["YOUR AID HANDOFFS",aid.length ? aid.map(j=>`${j.name}: ${j.outcome ?? "aid received"}. Recorded at voyage time ${Math.floor(j.ended??0)}s. Payment settled during the aid or arrival; no further payment is due.`) : ["No completed aid handoff from your ship is recorded at this port."]],

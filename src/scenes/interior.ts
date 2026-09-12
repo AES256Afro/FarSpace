@@ -7,7 +7,7 @@ import type { SimRigScene } from "./simrig";
 import { Game, Scene, VW, VH } from "../game";
 import { drawText, textWidth } from "../gfx/font";
 import { PAL } from "../gfx/palette";
-import { ShipSystemId, removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond, onWatch, watchIndex, captainNickname, borderStanding, passengersFed, cookMeal, briefingReports, setFocus, nameTheShip, weekKey, dedication, MOTTOS, stardate, birthdaysDue, shipNewsletter, shiftBond, shipVoiceName } from "../world";
+import { removeCargo, cargoUsed, crewBonus, tickWorld, passengersAboard, crewXp, FURNISHINGS, bond, onWatch, watchIndex, captainNickname, borderStanding, passengersFed, cookMeal, briefingReports, setFocus, nameTheShip, weekKey, dedication, MOTTOS, stardate, birthdaysDue, shipNewsletter, shiftBond, shipVoiceName } from "../world";
 import { commodity, faction } from "../data/data";
 import { crewChatter, soloChatter, MESS_LINES, passengerChatter } from "../data/chatter";
 import { RNG } from "../core/rng";
@@ -41,7 +41,7 @@ const PASSENGER_LINES: Record<string, { high: string[]; mid: string[]; low: stri
     mid: ["I have a meeting. You understand.", "What's our ETA. Precisely.", "I'll be working, don't mind me."],
     low: ["The meeting is gone. You realise that.", "I'll be asking for a refund.", "Speed, Captain. It was the whole point."] },
 };
-import { hull, HullDef } from "../data/hulls";
+import { hull } from "../data/hulls";
 import { CREW_LINES, ROLE_INFO, roleLabel, SPECIALTIES } from "../data/crew";
 import { clamp, dist } from "../core/mathx";
 import { sfx } from "../core/sfx";
@@ -55,97 +55,24 @@ import { serialLines } from "../data/serials";
 import type { Encounter } from "../data/encounters";
 import type { EncounterScene } from "./encounter";
 import { ACHIEVEMENTS } from "../data/achievements";
-import { T, moveWalker, deckOrigin, drawTiles, drawPerson, nearestTile, tooltip, footer, computeRooms } from "./walkbase";
+import { T, moveWalker, deckOrigin, drawTiles, drawPerson, nearestTile, footer, computeRooms } from "./walkbase";
 
-// Deck layouts per hull. # wall . floor D door C cockpit E engines L scrubbers
-// W weapons G cargo R reactor M comms B bunk K galley S study c crew spot p passenger seat
-const DECKS: Record<HullDef["deck"], string[]> = {
-  scout: [
-    "##############################",
-    "#..........##........#....M..#",
-    "#..B.......##...R....#.......#",
-    "#..........D.........D....C..#",
-    "#..K..S....##........#.......#",
-    "#..p.......##...L....#..c....#",
-    "######D#######D###############",
-    "#........#..........#....W...#",
-    "#..G.....D..........D........#",
-    "#........#....E.....#........#",
-    "#........#..........#........#",
-    "##############################",
-  ],
-  prospector: [
-    "################################",
-    "#....G.....#........#.....M....#",
-    "#..........#...R....#..........#",
-    "#....G.....D........D.....C....#",
-    "#..........#........#..........#",
-    "#....G.....#...L....#..c..c....#",
-    "#####D#######D##########D#######",
-    "#.........#.........#..........#",
-    "#..B..K...D....E....D...S..p...#",
-    "#.........#.........#....W.....#",
-    "################################",
-  ],
-  freighter: [
-    "######################################",
-    "#....G....G....#........#.....M......#",
-    "#..............#...R....#............#",
-    "#....G....G....D........D.....C......#",
-    "#..............#........#............#",
-    "#....G....G....#...L....#..c..c..c...#",
-    "#######D#########D##########D#########",
-    "#.......#..........#..........#......#",
-    "#..B.B..D....E.....D..K...S...D..p...#",
-    "#.......#..........#..........#..W...#",
-    "######################################",
-  ],
-  carrier: [
-    "##########################################",
-    "#....G....G....#.........#......M........#",
-    "#..............#....R....#...............#",
-    "#....G....G....D.........D.......C.......#",
-    "#..............#.........#...............#",
-    "#..B..B..B.....#....L....#..c..c..c..c..c#",
-    "#######D###########D###########D##########",
-    "#.......#.............#........#.........#",
-    "#..K..S.D......E......D..H..H..D...p.....#",
-    "#.......#.............#........#....W....#",
-    "#.......#.............#..H..H..#.........#",
-    "##########################################",
-  ],
-  interceptor: [
-    "##########################",
-    "#....M....#.....#....C...#",
-    "#.........D..R..D........#",
-    "#..W......#.....#..c.....#",
-    "####D#######D#####D#######",
-    "#......#........#........#",
-    "#..B...D...E....D..K..S..#",
-    "#..G...#...L....#..p..c..#",
-    "##########################",
-  ],
-};
-
-interface PanelDef { ch: string; sysId: ShipSystemId | null; label: string; desc: string }
-const PANELS: PanelDef[] = [
-  { ch: "C", sysId: null, label: "COCKPIT", desc: "Take the helm" },
-  { ch: "E", sysId: "engines", label: "MAIN ENGINES", desc: "Thrust output" },
-  { ch: "L", sysId: "life", label: "AIR SCRUBBERS", desc: "O2 recycling" },
-  { ch: "R", sysId: "reactor", label: "REACTOR CORE", desc: "Ship power" },
-  { ch: "W", sysId: "weapons", label: "WEAPON MOUNTS", desc: "Cannon feeds" },
-  { ch: "G", sysId: "cargo", label: "CARGO BAY", desc: "Stowed goods" },
-  { ch: "M", sysId: "comms", label: "COMMS ARRAY", desc: "Listen to the band" },
-  { ch: "B", sysId: null, label: "BUNK", desc: "Sleep (skips 60s)" },
-  { ch: "K", sysId: null, label: "GALLEY", desc: "Eat (needs provisions)" },
-  { ch: "S", sysId: null, label: "STUDY TERMINAL", desc: "Senior staff briefing once a leg; train a skill" },
-  { ch: "H", sysId: null, label: "HANGAR BAY", desc: "Escort drones" },
-];
+import { PANELS, shipDeck } from "../data/decks";
+import { ReaderOverlay } from "./reader";
+import { clippedText, contains, mapButton } from "../core/mapview";
 
 export class InteriorScene implements Scene {
   touchMode = "walk" as const;
+  info?: ReaderOverlay;
+  get pausesVoyage(): boolean { return !!this.info; }
+  get capturesKeys(): boolean { return !!this.info?.closeSearchBox; }
+  guide = "C";
+  reducedMotion = false;
+  layoutWorld?: import("../world").World;
+  layoutHull = "";
+  compartments: {id:number;x:number;y:number;w:number;name:string;color:string}[] = [];
   px = 3 * T; py = 3 * T;
-  deck: string[] = DECKS.scout;
+  deck: string[] = shipDeck("scout");
   rooms: number[][] = [];
   roomO2: number[] = [];
   msg = ""; msgTimer = 0;
@@ -402,7 +329,7 @@ export class InteriorScene implements Scene {
     return c ? { x: c.x, y: c.y } : { x: sp.tx * T + T / 2, y: sp.ty * T + T / 2 };
   }
   // Breadth-first path across the deck, door to door. Returns the tiles to walk, goal last.
-  findPath(fx: number, fy: number, tx: number, ty: number): { tx: number; ty: number }[] {
+  findPath(fx: number, fy: number, tx: number, ty: number, avoid?: Set<string>): { tx: number; ty: number }[] {
     if (fx === tx && fy === ty) return [];
     const w = this.deck[0].length, h = this.deck.length;
     const prev = new Int32Array(w * h).fill(-1);
@@ -416,7 +343,7 @@ export class InteriorScene implements Scene {
       }
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
         const nx = cx + dx, ny = cy + dy; if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
-        const ni = ny * w + nx; if (prev[ni] !== -1 || this.solid(nx, ny)) continue;
+        const ni = ny * w + nx; if (prev[ni] !== -1 || this.solid(nx, ny) || avoid?.has(`${nx},${ny}`)) continue;
         prev[ni] = cur; q.push(ni);
       }
     }
@@ -462,21 +389,73 @@ export class InteriorScene implements Scene {
   }
 
   enter(g: Game): void {
+    this.onSceneLeave();
     const p = g.world.player;
+    if(this.layoutWorld!==g.world||this.layoutHull!==p.hullId){this.crewPos=[];this.paxPos={};this.cat={x:0,y:0,tx:0,ty:0,pause:1,sat:false};}
+    this.layoutWorld=g.world;this.layoutHull=p.hullId;
+    this.reducedMotion=typeof window!=="undefined"&&(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches??false);
     this.bubbles = []; this.lastMessSlot = Math.floor(g.world.time / 300); this.watch = watchIndex(g.world.time);
     if (g.world.realGalaxy) void wire.fetchWire().then((e) => { this.wireItems = e; });
     for (const l of birthdaysDue(g.world)) g.toast(l);
-    this.deck = DECKS[hull(p.hullId).deck];
+    this.deck = shipDeck(hull(p.hullId).deck, hull(p.hullId).crewSlots);
     this.rooms = computeRooms(this.deck, (ch) => ch !== "#");
+    this.compartments=this.describeCompartments();
     const nRooms = Math.max(...this.rooms.flat()) + 1;
     this.roomO2 = Array(nRooms).fill(100);
     // spawn near cockpit
     const c = nearestTile(this.deck, 0, 0, "C", 1e9)!;
-    this.px = c.tx * T - T; this.py = c.ty * T + T / 2;
+    this.px = c.tx * T - T / 2; this.py = c.ty * T + T / 2;
+    this.guide=this.damageTargets(g)[0]?.id??"C";
     this.msg = "YOUR SHIP. WASD WALK - E INTERACT - V LOOK OUT";
     this.msgTimer = 4;
     this.repairing = null;
-    g.showHint("interior", "DAMAGED PANELS BLINK RED - HOLD E TO REPAIR (SPARE PARTS FOR HEAVY DAMAGE)");
+    g.showHint("interior", "Q FINDS DAMAGE. HOLD E TO REPAIR. HEAVY DAMAGE NEEDS SPARE PARTS.");
+  }
+
+  onSceneLeave(): void {this.info?.onSceneLeave();this.info=undefined;}
+  describeCompartments(): {id:number;x:number;y:number;w:number;name:string;color:string}[] {
+    const out=[];
+    for(let id=0;id<=Math.max(...this.rooms.flat());id++){
+      const cells:{x:number;y:number;ch:string}[]=[];
+      this.rooms.forEach((row,y)=>row.forEach((r,x)=>{if(r===id)cells.push({x,y,ch:this.tileAt(x,y)});}));
+      if(!cells.length)continue;
+      const has=(chars:string)=>cells.some(c=>chars.includes(c.ch));
+      const [name,color]=has("C")?["BRIDGE",PAL.info]:has("R")?["POWER / AIR",PAL.warn]:has("E")?["ENGINES",PAL.warn]:has("G")?["HOLD",PAL.gold]:has("H")?["HANGAR",PAL.info]:has("B")?["CREW / AID",PAL.good]:has("K")?["MESS",PAL.ui]:has("W")?["WEAPONS",PAL.danger]:["CABINS",PAL.grey];
+      const x=Math.min(...cells.map(c=>c.x)),y=Math.min(...cells.map(c=>c.y)),right=Math.max(...cells.map(c=>c.x));
+      out.push({id,x,y,w:right-x+1,name,color});
+    }
+    return out;
+  }
+  guideTargets(g: Game): {id:string;label:string;tx:number;ty:number;health?:number}[] {
+    const p=g.world.player;
+    const out:{id:string;label:string;tx:number;ty:number;health?:number}[]=[];
+    for(const panel of PANELS){const at=nearestTile(this.deck,this.px,this.py,panel.ch,1e9);if(at)out.push({id:panel.ch,label:panel.ch==="C"?"BRIDGE":panel.label,tx:at.tx,ty:at.ty,health:panel.sysId?p.systems.find(s=>s.id===panel.sysId)?.health:undefined});}
+    for(const f of p.fires)out.unshift({id:`fire:${f.tx}:${f.ty}`,label:"FIRE",tx:f.tx,ty:f.ty,health:0});
+    for(const b of p.breaches)out.unshift({id:`breach:${b.tx}:${b.ty}`,label:"HULL BREACH",tx:b.tx,ty:b.ty,health:0});
+    return out;
+  }
+  damageTargets(g: Game){return this.guideTargets(g).filter(t=>t.health!==undefined&&t.health<100);}
+  guidePath(g: Game): {tx:number;ty:number}[] {
+    const t=this.guideTargets(g).find(t=>t.id===this.guide);if(!t)return[];
+    const from={tx:Math.floor(this.px/T),ty:Math.floor(this.py/T)};
+    const choices=this.seatsAround(t).filter(s=>{
+      if(Math.abs(s.tx-t.tx)+Math.abs(s.ty-t.ty)>1)return false;
+      if(g.world.player.fires.some(f=>f.tx===s.tx&&f.ty===s.ty))return false;
+      if(t.id.length>1)return true;
+      const near=nearestTile(this.deck,s.tx*T+T/2,s.ty*T+T/2,"ACELRWGMBKSHp");
+      return near?.tx===t.tx&&near?.ty===t.ty;
+    });
+    if(choices.some(c=>c.tx===from.tx&&c.ty===from.ty))return[];
+    const avoid=new Set(g.world.player.fires.map(f=>`${f.tx},${f.ty}`));
+    return choices.map(c=>this.findPath(from.tx,from.ty,c.tx,c.ty,avoid)).filter(p=>p.length).sort((a,b)=>a.length-b.length)[0]??[];
+  }
+  openDeckGuide(g: Game): void {
+    const p=g.world.player;
+    this.info=new ReaderOverlay("SHIP DECK GUIDE",[
+      [hull(p.hullId).name,["B guides you to the bridge. G guides you to the airlock. Q selects the next damaged system, fire or breach. Click a panel to guide to it. Follow the floor dots with WASD; the guide never moves your character.","Bright door edges mark passages. Labelled panels are equipment; floor props and the first aid locker beside the bunks are decoration. Hold E near damaged equipment to repair it. Major repairs below 60 percent need a spare part for each repair step."]],
+      ["CONDITION",[`Hull ${Math.round(p.hull)}/${p.hullMax}. Wear ${Math.round(p.wear??0)} percent. ${p.breaches.length} breaches, ${p.fires.length} fires.`,...this.guideTargets(g).map(t=>`${t.label}: ${t.health===undefined?"available":`${Math.round(t.health)} percent`}.`)]],
+      ["PEOPLE AND OWNED ITEMS",[`Crew ${p.crew.length}/${hull(p.hullId).crewSlots}. Passenger parties ${passengersAboard(p).length}.`,...(p.keepsakes??[]).map(k=>`Keepsake: ${k}`),...(p.furnishings??[]).map(f=>`Furnishing: ${f}`)]],
+    ],()=>{this.info=undefined;});
   }
 
   tileAt(tx: number, ty: number): string {
@@ -559,13 +538,21 @@ export class InteriorScene implements Scene {
   }
 
   update(g: Game, dt: number): void {
+    if(this.info){this.info.update(g);return;}
     music.setMood("ship", g.world.player.fires.length ? 0.4 : 0);
     const inp = g.input;
     const p = g.world.player;
+    const click=(x:number)=>inp.mousePressed&&contains({x,y:42,w:108,h:15},inp.mouseX,inp.mouseY);
+    if(inp.wasPressed("Tab")||click(8)){this.openDeckGuide(g);return;}
+    if(inp.wasPressed("b")||click(232))this.guide="C";
+    if(inp.wasPressed("g")||click(344))this.guide="A";
+    if(inp.wasPressed("q")||click(120)){const list=this.damageTargets(g),idx=list.findIndex(t=>t.id===this.guide);this.guide=list[(idx+1)%list.length]?.id??"C";sfx.select();}
+    if(inp.mousePressed){const [ox,oy]=deckOrigin(this.deck,8),tx=Math.floor((inp.mouseX-ox)/T),ty=Math.floor((inp.mouseY-oy)/T),target=this.guideTargets(g).find(t=>t.tx===tx&&t.ty===ty);if(target)this.guide=target.id;}
     if (inp.wasPressed("Escape") || inp.wasPressed("i")) { (g.scenes.flight as FlightScene).resumeNext = true; g.setScene("flight"); return; }
     if (inp.wasPressed("v")) { g.setScene("vista"); return; }
     if (inp.wasPressed("r")) { g.settingsReturn = "interior"; g.setScene("roster"); return; }
     if (inp.wasPressed("F5")) g.save();
+    if (inp.wasPressed("F9")) {g.load();return;}
     const moved = moveWalker(g, this, dt, (tx, ty) => this.solid(tx, ty));
     if (moved) this.repairing = null;
     const ptx = Math.floor(this.px / T), pty = Math.floor(this.py / T);
@@ -602,7 +589,7 @@ export class InteriorScene implements Scene {
     const eng = crewBonus(p, "engineer");
     if (eng > 0) for (const s of p.systems) if (s.health < 100) s.health = Math.min(100, s.health + dt * 0.4 * eng);
 
-    const near = nearestTile(this.deck, this.px, this.py, "CELRWGMBKSHp");
+    const near = nearestTile(this.deck, this.px, this.py, "ACELRWGMBKSHp");
     const fire = p.fires.find((f) => dist(f.tx * T + T / 2, f.ty * T + T / 2, this.px, this.py) < 16);
     const breach = p.breaches.find((b) => dist(b.tx * T + T / 2, b.ty * T + T / 2, this.px, this.py) < 16);
     this.watchTime = g.world.time;
@@ -642,15 +629,19 @@ export class InteriorScene implements Scene {
     } else this.repairing = null;
 
     // ---- tap E: verbs
-    if (inp.wasPressed("e") && dist(1 * T + T / 2, 1 * T + T / 2, this.px, this.py) < 14) { this.readWall(g); return; }
+    const tapped = inp.wasPressed("e") && !this.repairing;
+    if(tapped && near && (near.ch==="A"||near.ch==="C") && this.guide===near.ch){
+      (g.scenes.flight as FlightScene).resumeNext=true;g.setScene("flight");return;
+    }
+    if (tapped && dist(1 * T + T / 2, 1 * T + T / 2, this.px, this.py) < 14) { this.readWall(g); return; }
     const catNear = !!p.cat && !p.catAway && dist(this.cat.x, this.cat.y, this.px, this.py) < 14;
-    if (inp.wasPressed("e") && catNear && !crewNear && !fire && !breach) {
+    if (tapped && catNear && !crewNear && !fire && !breach) {
       const lines = [`${p.cat!.name.toUpperCase()} PURRS LIKE A SMALL REACTOR.`, `${p.cat!.name.toUpperCase()} ALLOWS ONE PAT. EXACTLY ONE.`, `${p.cat!.name.toUpperCase()} LOOKS AT YOU, THEN AT THE GALLEY, THEN AT YOU.`, `${p.cat!.name.toUpperCase()} IS ASLEEP ON THE WARM BIT. THE WARM BIT IS THE REACTOR HOUSING.`];
       this.talk = lines[Math.floor(Math.random() * lines.length)]; this.talkTimer = 4;
       for (const c of p.crew) c.morale = Math.min(100, c.morale + 1);
       this.cat.pause = 3;
       sfx.purr();
-    } else if (inp.wasPressed("e")) {
+    } else if (tapped) {
       if (crewNear && crewNear.c.skill >= 3 && !crewNear.c.specialty && !crewNear.c.sick && !crewNear.c.lastLeg) { this.offerSpecialty(g, crewNear.c); return; }
       if (crewNear) {
         const c = crewNear.c;
@@ -685,7 +676,7 @@ export class InteriorScene implements Scene {
         px.mood = Math.min(100, mood + 2);
         this.talkTimer = 5;
       } else if (near && !fire && !breach) {
-        if (near.ch === "C") { (g.scenes.flight as FlightScene).resumeNext = true; g.setScene("flight"); return; }
+        if (near.ch === "C"||near.ch==="A") { (g.scenes.flight as FlightScene).resumeNext = true; g.setScene("flight"); return; }
         if (near.ch === "B") {
           // sleep: skip a minute of world time, fully restore
           for (let i = 0; i < 60; i++) tickWorld(g.world, 1);
@@ -797,10 +788,12 @@ export class InteriorScene implements Scene {
   }
 
   draw(g: Game, ctx: CanvasRenderingContext2D): void {
+    if(this.info){this.info.draw(g,ctx);return;}
     ctx.fillStyle = PAL.bg;
     ctx.fillRect(0, 0, VW, VH);
     const [ox, oy] = deckOrigin(this.deck, 8);
     const p = g.world.player;
+    const visualTime=this.reducedMotion?0:g.world.time;
     drawTiles(ctx, this.deck, ox, oy, (ch, x, y, tx, ty) => {
       const def = PANELS.find((pn) => pn.ch === ch);
       if (def) {
@@ -814,7 +807,7 @@ export class InteriorScene implements Scene {
         ctx.fillStyle = col; ctx.fillRect(x + 2, y + 4, T - 4, 3);
         if (def.sysId) {
           const sys = p.systems.find((s) => s.id === def.sysId)!;
-          if (sys.health < 50 && Math.floor(g.world.time * 3) % 2 === 0) { ctx.fillStyle = PAL.danger; ctx.fillRect(x + T - 3, y + 1, 2, 2); }
+          if (sys.health < 50 && Math.floor(visualTime * 3) % 2 === 0) { ctx.fillStyle = PAL.danger; ctx.fillRect(x + T - 3, y + 1, 2, 2); }
         }
       } else if (ch === "c" || ch === "p") {
         ctx.fillStyle = "#1a2236"; ctx.fillRect(x + 2, y + 6, T - 4, 3); // seat
@@ -824,6 +817,26 @@ export class InteriorScene implements Scene {
       if (r >= 0 && this.roomO2[r] < 40) { ctx.globalAlpha = 0.25 * (1 - this.roomO2[r] / 40); ctx.fillStyle = PAL.info; ctx.fillRect(x, y, T, T); ctx.globalAlpha = 1; }
       return true;
     });
+    for(let ty=0;ty<this.deck.length;ty++)for(let tx=0;tx<this.deck[0].length;tx++){
+      const ch=this.tileAt(tx,ty),x=ox+tx*T,y=oy+ty*T,room=this.compartments.find(r=>r.id===this.rooms[ty][tx]);
+      if(ch==="."){ctx.globalAlpha=.13;ctx.fillStyle=room?.color??PAL.grey;ctx.fillRect(x,y,T,T);ctx.globalAlpha=1;}
+      if(ch==="#"){ctx.globalAlpha=.35;ctx.fillStyle=p.paint??hull(p.hullId).color;ctx.fillRect(x,y,T,1);ctx.globalAlpha=1;}
+      if(ch==="D"){
+        ctx.fillStyle=PAL.ui;
+        if(this.tileAt(tx-1,ty)==="#"&&this.tileAt(tx+1,ty)==="#"){ctx.fillRect(x+1,y,1,T);ctx.fillRect(x+T-2,y,1,T);}
+        else{ctx.fillRect(x,y+1,T,1);ctx.fillRect(x,y+T-2,T,1);}
+      }
+      if(ch==="B"&&this.tileAt(tx+1,ty)==="."){ctx.fillStyle="#224738";ctx.fillRect(x+T+1,y+2,7,7);ctx.fillStyle=PAL.white;ctx.fillRect(x+T+4,y+3,1,5);ctx.fillRect(x+T+2,y+5,5,1);}
+    }
+    for(const room of this.compartments)drawText(ctx,clippedText(room.name,room.w*T-6),ox+room.x*T+3,oy+room.y*T+1,room.color);
+    const targets=this.guideTargets(g),target=targets.find(t=>t.id===this.guide),path=this.guidePath(g);
+    ctx.fillStyle=PAL.ui;for(const tile of path)ctx.fillRect(ox+tile.tx*T+4,oy+tile.ty*T+4,2,2);
+    for(const t of targets){
+      const x=ox+t.tx*T,y=oy+t.ty*T;
+      if(t.health!==undefined&&t.health<100)drawText(ctx,"!",x+T-3,y-4,t.health<40?PAL.danger:PAL.warn);
+      if(t.id==="A"||t.id==="C")drawText(ctx,t.id,x+3,y+3,PAL.white);
+      if(t===target){ctx.strokeStyle=t.health!==undefined&&t.health<100?PAL.warn:PAL.ui;ctx.strokeRect(x-2,y-2,T+4,T+4);}
+    }
     for (const b of p.breaches) {
       const x = ox + b.tx * T, y = oy + b.ty * T;
       ctx.fillStyle = "#05070f"; ctx.fillRect(x + 1, y + 1, T - 2, T - 2);
@@ -831,7 +844,7 @@ export class InteriorScene implements Scene {
     }
     for (const f of p.fires) {
       const x = ox + f.tx * T, y = oy + f.ty * T;
-      const fl = Math.floor(g.world.time * 8 + f.tx) % 3;
+      const fl = Math.floor(visualTime * 8 + f.tx) % 3;
       ctx.fillStyle = fl === 0 ? "#ff5a5a" : fl === 1 ? "#ffb347" : "#ffd75a";
       ctx.fillRect(x + 2, y + 3 + fl, T - 4, T - 4 - fl);
     }
@@ -842,7 +855,7 @@ export class InteriorScene implements Scene {
       if (!at) return;
       drawPerson(ctx, Math.round(ox + at.x), Math.round(oy + at.y), "#c78a5a", c.role === "engineer" ? "#c7a54a" : c.role === "gunner" ? "#a53a3a" : c.role === "pilot" ? "#3a6ea5" : "#3aa55e");
       if (c.sick) { ctx.fillStyle = "#9fd8a0"; ctx.fillRect(Math.round(ox + at.x) + 3, Math.round(oy + at.y) - 5, 2, 2); }
-      else if (c.morale < 30 && Math.floor(g.world.time * 2) % 2 === 0) { ctx.fillStyle = PAL.warn; ctx.fillRect(Math.round(ox + at.x) + 3, Math.round(oy + at.y) - 5, 2, 2); }
+      else if (c.morale < 30 && Math.floor(visualTime * 2) % 2 === 0) { ctx.fillStyle = PAL.warn; ctx.fillRect(Math.round(ox + at.x) + 3, Math.round(oy + at.y) - 5, 2, 2); }
     });
     // the hold: crates for what you carry, a stack per ten units
     { const gt = nearestTile(this.deck, 0, 0, "G", 1e9); if (gt) { const n = Math.min(6, Math.ceil(cargoUsed(p) / 10)); for (let i = 0; i < n; i++) { const cx = ox + gt.tx * T + (i % 3) * 3 + 1 + (this.tileAt(gt.tx + 1, gt.ty) === "." ? T : 0), cy = oy + gt.ty * T + Math.floor(i / 3) * 4 + 2; ctx.fillStyle = i % 2 ? "#6a4a2a" : "#7a5a3a"; ctx.fillRect(cx, cy, 3, 3); ctx.fillStyle = "#c7a54a"; ctx.fillRect(cx + 1, cy, 1, 1); } } }
@@ -868,19 +881,19 @@ export class InteriorScene implements Scene {
       const x = ox + tx * T, y = oy + t.ty * T;
       if (id === "plant") { ctx.fillStyle = "#6a4a2a"; ctx.fillRect(x + 3, y + 6, 4, 3); ctx.fillStyle = "#3aa55e"; ctx.fillRect(x + 2, y + 2, 2, 3); ctx.fillRect(x + 5, y + 1, 2, 4); ctx.fillRect(x + 4, y + 4, 2, 2); }
       else if (id === "rug") { ctx.fillStyle = "#7a3a3a"; ctx.fillRect(x + 1, y + 2, 8, 6); ctx.fillStyle = "#c7a54a"; ctx.fillRect(x + 2, y + 3, 6, 4); ctx.fillStyle = "#7a3a3a"; ctx.fillRect(x + 3, y + 4, 4, 2); }
-      else if (id === "jukebox") { ctx.fillStyle = "#5d6680"; ctx.fillRect(x + 2, y + 1, 6, 8); ctx.fillStyle = Math.floor(g.world.time * 3) % 2 ? "#e060ff" : "#63f2c8"; ctx.fillRect(x + 3, y + 2, 4, 2); ctx.fillStyle = "#ffd75a"; ctx.fillRect(x + 4, y + 6, 2, 1); }
-      else if (id === "viewport") { ctx.fillStyle = "#0b1020"; ctx.fillRect(x + 1, y + 1, 8, 8); ctx.fillStyle = "#9aa5bd"; ctx.fillRect(x + 1, y + 1, 8, 1); ctx.fillRect(x + 1, y + 8, 8, 1); for (let i = 0; i < 4; i++) { ctx.fillStyle = i % 2 ? "#ffffff" : "#5ab3ff"; ctx.fillRect(x + 2 + ((i * 3 + Math.floor(g.world.time)) % 6), y + 2 + (i * 2) % 5, 1, 1); } }
-      else if (id === "hammock") { ctx.fillStyle = "#c7a54a"; ctx.fillRect(x + 1, y + 3, 1, 4); ctx.fillRect(x + 8, y + 3, 1, 4); ctx.fillStyle = "#7a5aa5"; ctx.fillRect(x + 2, y + 5, 6, 2); if (Math.floor(g.world.time / 7) % 2 === 0) { ctx.fillStyle = "#e8b48c"; ctx.fillRect(x + 4, y + 4, 2, 1); } }
+      else if (id === "jukebox") { ctx.fillStyle = "#5d6680"; ctx.fillRect(x + 2, y + 1, 6, 8); ctx.fillStyle = Math.floor(visualTime * 3) % 2 ? "#e060ff" : "#63f2c8"; ctx.fillRect(x + 3, y + 2, 4, 2); ctx.fillStyle = "#ffd75a"; ctx.fillRect(x + 4, y + 6, 2, 1); }
+      else if (id === "viewport") { ctx.fillStyle = "#0b1020"; ctx.fillRect(x + 1, y + 1, 8, 8); ctx.fillStyle = "#9aa5bd"; ctx.fillRect(x + 1, y + 1, 8, 1); ctx.fillRect(x + 1, y + 8, 8, 1); for (let i = 0; i < 4; i++) { ctx.fillStyle = i % 2 ? "#ffffff" : "#5ab3ff"; ctx.fillRect(x + 2 + ((i * 3 + Math.floor(visualTime)) % 6), y + 2 + (i * 2) % 5, 1, 1); } }
+      else if (id === "hammock") { ctx.fillStyle = "#c7a54a"; ctx.fillRect(x + 1, y + 3, 1, 4); ctx.fillRect(x + 8, y + 3, 1, 4); ctx.fillStyle = "#7a5aa5"; ctx.fillRect(x + 2, y + 5, 6, 2); if (Math.floor(visualTime / 7) % 2 === 0) { ctx.fillStyle = "#e8b48c"; ctx.fillRect(x + 4, y + 4, 2, 1); } }
       else if (id === "mural") { const cols = ["#5ab3ff", "#ffd75a", "#3aa55e", "#e060ff", "#ff9a3a"]; const n = Math.min(5, 1 + Math.floor(Object.keys(p.expLog ?? {}).length / 3)); for (let i = 0; i < n; i++) { ctx.fillStyle = cols[i]; ctx.fillRect(x + 1 + i * 2, y + 2 + (i % 2), 2, 5 - (i % 2)); } }
       else if (id === "chair") { ctx.fillStyle = "#6a4a2a"; ctx.fillRect(x + 2, y + 2, 6, 1); ctx.fillRect(x + 2, y + 2, 1, 6); ctx.fillRect(x + 7, y + 2, 1, 6); ctx.fillStyle = "#c7a54a"; ctx.fillRect(x + 3, y + 5, 4, 2); ctx.fillStyle = "#3a4a6c"; ctx.fillRect(x + 2, y + 7, 6, 1); }
-      else if (id === "simrig") { ctx.fillStyle = "#5d6680"; ctx.fillRect(x + 1, y + 1, 8, 8); const ph = Math.floor(g.world.time * 2) % 4; ctx.fillStyle = ["#5ab3ff", "#ffd75a", "#3aa55e", "#e060ff"][ph]; ctx.fillRect(x + 2, y + 2, 6, 6); ctx.fillStyle = "#0b1020"; ctx.fillRect(x + 4, y + 4, 2, 4); }
+      else if (id === "simrig") { ctx.fillStyle = "#5d6680"; ctx.fillRect(x + 1, y + 1, 8, 8); const ph = Math.floor(visualTime * 2) % 4; ctx.fillStyle = ["#5ab3ff", "#ffd75a", "#3aa55e", "#e060ff"][ph]; ctx.fillRect(x + 2, y + 2, 6, 6); ctx.fillStyle = "#0b1020"; ctx.fillRect(x + 4, y + 4, 2, 4); }
       else if (id === "shelf") { ctx.fillStyle = "#6a4a2a"; ctx.fillRect(x + 1, y + 4, 8, 1); ctx.fillRect(x + 1, y + 7, 8, 1); const n = Math.min(4, Math.floor(((p.codex ? Object.keys(p.codex).length : 0) + (p.cargo.relics ?? 0) + (p.achievements ?? []).length) / 3)); for (let i = 0; i < n; i++) { ctx.fillStyle = ["#e060ff", "#ffd75a", "#63f2c8", "#ff9a3a"][i]; ctx.fillRect(x + 2 + i * 2, y + 2, 1, 2); } }
     }
     if (p.cat && !p.catAway && (this.cat.x || this.cat.y)) {
       const cx = Math.round(ox + this.cat.x), cy = Math.round(oy + this.cat.y);
       ctx.fillStyle = "#e0b070"; ctx.fillRect(cx - 2, cy - 1, 4, 2); ctx.fillRect(cx + 1, cy - 3, 2, 2); // body, head
       ctx.fillStyle = "#3a2a1a"; ctx.fillRect(cx - 3, cy - 2, 1, 1); // tail tip
-      if (Math.floor(g.world.time * 2) % 4 === 0) { ctx.fillStyle = "#63f2c8"; ctx.fillRect(cx + 2, cy - 3, 1, 1); } // an eye
+      if (Math.floor(visualTime * 2) % 4 === 0) { ctx.fillStyle = "#63f2c8"; ctx.fillRect(cx + 2, cy - 3, 1, 1); } // an eye
     }
     // corridor talk over their heads
     const placed: { x: number; y: number; w: number }[] = [];
@@ -907,7 +920,7 @@ export class InteriorScene implements Scene {
           ctx.fillStyle = "#63f2c8"; ctx.fillRect(Math.round(x) - 2, Math.round(y) - 9, 4, 3);
           ctx.fillStyle = "#d6bcff"; ctx.fillRect(Math.round(x) + 4, Math.round(y) - 3, 3, 2);
         } else drawPerson(ctx, Math.round(x), Math.round(y), "#f0d0b0", px.passengerKind === "vip" ? "#c7a54a" : px.passengerKind === "refugee" ? "#6a7a9c" : px.passengerKind === "tourist" ? "#5ab3ff" : "#7a5aa5");
-        if ((px.mood ?? 60) < 35 && Math.floor(g.world.time * 2) % 2 === 0) { ctx.fillStyle = PAL.warn; ctx.fillRect(Math.round(x) + 3, Math.round(y) - 5, 2, 2); }
+        if ((px.mood ?? 60) < 35 && Math.floor(visualTime * 2) % 2 === 0) { ctx.fillStyle = PAL.warn; ctx.fillRect(Math.round(x) + 3, Math.round(y) - 5, 2, 2); }
       });
     }
 
@@ -933,32 +946,43 @@ export class InteriorScene implements Scene {
       }
     }
 
-    // tooltips
-    const near = nearestTile(this.deck, this.px, this.py, "CELRWGMBKSH");
+    // Keep interaction text clear of room names and walking routes.
+    const deckTip=(_ctx:CanvasRenderingContext2D,_ox:number,_oy:number,tx:number,ty:number,label:string,hint:string,col:string=PAL.ui)=>{
+      ctx.fillStyle="#0d1422";ctx.fillRect(8,211,VW-16,22);
+      drawText(ctx,clippedText(label,450),14,214,col);
+      drawText(ctx,clippedText(hint,450),14,224,PAL.gold);
+      ctx.strokeStyle=col;ctx.strokeRect(ox+tx*T-1,oy+ty*T-1,T+2,T+2);
+    };
+    const near = nearestTile(this.deck, this.px, this.py, "ACELRWGMBKSH");
     const fire = p.fires.find((f) => dist(f.tx * T + T / 2, f.ty * T + T / 2, this.px, this.py) < 16);
     const breach = p.breaches.find((b) => dist(b.tx * T + T / 2, b.ty * T + T / 2, this.px, this.py) < 16);
     const crewNear = p.crew.map((c, i) => ({ c, spot: spots[i], at: this.crewAt(i) })).find((x) => x.at && dist(x.at.x, x.at.y, this.px, this.py) < 16);
     const atWall = dist(1 * T + T / 2, 1 * T + T / 2, this.px, this.py) < 14;
-    if (atWall && !fire && !breach) tooltip(ctx, ox, oy, 1, 0, "WALL OF RECORD", "[E] READ", "#c7a54a");
-    else if (p.cat && !p.catAway && dist(this.cat.x, this.cat.y, this.px, this.py) < 14 && !crewNear) tooltip(ctx, ox, oy, Math.floor(this.cat.x / T), Math.floor(this.cat.y / T), p.cat.name.toUpperCase(), "[E] PAT", "#e0b070");
-    else if (fire) tooltip(ctx, ox, oy, fire.tx, fire.ty, "FIRE", "[HOLD E] EXTINGUISH", PAL.danger);
-    else if (breach) tooltip(ctx, ox, oy, breach.tx, breach.ty, "HULL BREACH", "[HOLD E] SEAL (1 PART)", PAL.danger);
-    else if (crewNear) tooltip(ctx, ox, oy, Math.floor(crewNear.at!.x / T), Math.floor(crewNear.at!.y / T), `${crewNear.c.name} - ${ROLE_INFO[crewNear.c.role].label}`, crewNear.c.sick ? "[E] TALK" : "[E] TALK  [C] CARDS", PAL.ui);
-    else if (passenger && this.passengerNear(p)) { const m = this.passengerNear(p)!; const pp = this.paxPos[m.id]; tooltip(ctx, ox, oy, Math.floor(pp.x / T), Math.floor(pp.y / T), m.passengerName ?? "PASSENGER", "[E] TALK", "#b28fe0"); }
-    else if (near) {
+    const panelTip=()=>{if(!near)return;
       const def = PANELS.find((x) => x.ch === near.ch)!;
       const sys = def.sysId ? p.systems.find((s) => s.id === def.sysId)! : null;
       const label = sys ? `${def.label} ${Math.round(sys.health)}%` : def.label;
-      const hint = def.ch === "C" ? "[E] TAKE HELM" : sys && sys.health < 100 ? "[HOLD E] REPAIR" : `[E] ${def.desc.toUpperCase()}`;
-      tooltip(ctx, ox, oy, near.tx, near.ty, label, hint, sys && sys.health < 100 ? PAL.warn : PAL.ui);
-    }
+      const hint = def.ch === "C" ? "[E] TAKE HELM" : def.ch==="A" ? "[E] RETURN TO FLIGHT" : sys && sys.health < 100 ? "[HOLD E] REPAIR" : `[E] ${def.desc.toUpperCase()}`;
+      deckTip(ctx, ox, oy, near.tx, near.ty, label, hint, sys && sys.health < 100 ? PAL.warn : PAL.ui);
+    };
+    if (atWall && !fire && !breach) deckTip(ctx, ox, oy, 1, 0, "WALL OF RECORD", "[E] READ", "#c7a54a");
+    else if (p.cat && !p.catAway && dist(this.cat.x, this.cat.y, this.px, this.py) < 14 && !crewNear) deckTip(ctx, ox, oy, Math.floor(this.cat.x / T), Math.floor(this.cat.y / T), p.cat.name.toUpperCase(), "[E] PAT", "#e0b070");
+    else if (fire) deckTip(ctx, ox, oy, fire.tx, fire.ty, "FIRE", "[HOLD E] EXTINGUISH", PAL.danger);
+    else if (breach) deckTip(ctx, ox, oy, breach.tx, breach.ty, "HULL BREACH", "[HOLD E] SEAL (1 PART)", PAL.danger);
+    else if(near&&((this.guide===near.ch&&"AC".includes(near.ch))||this.repairing))panelTip();
+    else if (crewNear) deckTip(ctx, ox, oy, Math.floor(crewNear.at!.x / T), Math.floor(crewNear.at!.y / T), `${crewNear.c.name} - ${ROLE_INFO[crewNear.c.role].label}`, crewNear.c.sick ? "[E] TALK" : "[E] TALK  [C] CARDS", PAL.ui);
+    else if (passenger && this.passengerNear(p)) { const m = this.passengerNear(p)!; const pp = this.paxPos[m.id]; deckTip(ctx, ox, oy, Math.floor(pp.x / T), Math.floor(pp.y / T), m.passengerName ?? "PASSENGER", "[E] TALK", "#b28fe0"); }
+    else if(near)panelTip();
     if (this.repairing) {
       const px = Math.round(ox + this.px), py = Math.round(oy + this.py);
       ctx.fillStyle = PAL.greyDark; ctx.fillRect(px - 10, py - 10, 20, 3);
       ctx.fillStyle = PAL.good; ctx.fillRect(px - 10, py - 10, Math.round(20 * clamp(this.repairing.progress / 1.2, 0, 1)), 3);
     }
-    drawText(ctx, `${(p.shipName ?? hull(p.hullId).name).toUpperCase()} - INTERIOR - SD ${stardate(g.world)}`, 8, 6, PAL.white);
-    drawText(ctx, `PARTS ${p.cargo.parts ?? 0}  FOOD ${p.cargo.food ?? 0}  CARGO ${cargoUsed(p)}/${p.cargoMax}  CREW ${p.crew.length}/${hull(p.hullId).crewSlots}  PILOT ${(p.skills.piloting ?? 0).toFixed(1)} ENG ${(p.skills.engineering ?? 0).toFixed(1)}`, 8, 15, PAL.grey);
+    drawText(ctx,clippedText(`${(p.shipName ?? hull(p.hullId).name).toUpperCase()} / DECK / SD ${stardate(g.world)}`,340),8,6,PAL.white);
+    drawText(ctx, `HULL ${Math.round(p.hull)}/${p.hullMax}  WEAR ${Math.round(p.wear??0)}%  PARTS ${p.cargo.parts ?? 0}  CARGO ${cargoUsed(p)}/${p.cargoMax}  CREW ${p.crew.length}/${hull(p.hullId).crewSlots}`, 8, 15, PAL.grey);
+    const here=this.compartments.find(r=>r.id===this.rooms[Math.floor(this.py/T)]?.[Math.floor(this.px/T)]);
+    drawText(ctx,clippedText(`YOU: ${here?.name??"PASSAGE"} / ${target?`${target.label}${target.health===undefined?"":` ${Math.round(target.health)}%`} / ${path.length?`${path.length} TILES` : Math.hypot(this.px-(target.tx*T+T/2),this.py-(target.ty*T+T/2))<16?"NEARBY":"NO SAFE ROUTE"}`:"CHOOSE A PANEL"}`,464),8,30,PAL.ui);
+    [[8,"TAB DECK GUIDE"],[120,"Q NEXT DAMAGE"],[232,"B BRIDGE"],[344,"G AIRLOCK"]].forEach(([x,label])=>mapButton(ctx,{x:Number(x),y:42,w:108,h:15},String(label)));
     drawText(ctx, "ESC/I RETURN TO FLIGHT", VW - textWidth("ESC/I RETURN TO FLIGHT") - 6, 6, PAL.greyDark);
     if (p.breaches.length || p.fires.length) drawText(ctx, `! ${p.breaches.length} BREACH  ${p.fires.length} FIRE`, VW - 90, 15, PAL.danger);
     if (this.talk) {
@@ -966,6 +990,5 @@ export class InteriorScene implements Scene {
       drawText(ctx, this.talk.slice(0, 116), 10, VH - 30, PAL.ui);
       if (this.talk.length > 116) drawText(ctx, this.talk.slice(116, 232), 10, VH - 21, PAL.ui);
     } else footer(ctx, g, this.msg);
-    if (g.hint) drawText(ctx, g.hint, VW / 2 - textWidth(g.hint) / 2, 24, PAL.gold);
   }
 }
