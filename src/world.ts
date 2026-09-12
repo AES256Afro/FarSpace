@@ -286,6 +286,8 @@ export interface PlayerState {
   fires: { tx: number; ty: number }[];
   arcs: Record<string, number>; // faction id → completed stage count
   tutorial?: number; // flight school step; -1 = off/done
+  objectiveFocusId?: string;
+  lastContractReceipt?: import("./core/journey").ContractReceipt;
   flightSchool?: import("./core/flightschool").FlightSchoolState;
   torpedoes?: number; // homing torpedo ammo
   flags?: Record<string, boolean>;   // one-off deeds for achievements

@@ -69,6 +69,7 @@ describe("quest locations",()=>{
   });
   it("uses a crew journey's current stage and removes completed journeys",()=>{
     const {world,p,from,to}=fixture();const generated=generateWorld(123).player.crew[0];
+    to.wrecks.push({ ...to.wrecks[0], id: "old-ship" });
     p.crew=[{...generated,name:"Alex",role:"engineer",arc:{id:"engineer",stage:0,targetSystemId:to.id,targetStationId:from.stations[0].id,wreckId:"old-ship"}}];
     expect(questLocations(world)[0].contactId).toBe("wreck:old-ship");p.crew[0].arc!.stage=1;
     expect(questLocations(world)[0]).toMatchObject({systemId:from.id,contactId:`station:${from.stations[0].id}`});

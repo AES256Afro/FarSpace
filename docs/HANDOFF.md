@@ -8,10 +8,58 @@ UTC, or 06:31:03 America/Chicago. The task continuation uses the existing id
 farspace-six-hour-development, renamed FarSpace nine hour milestones, and is
 active every ten minutes. Read WORKLOG-2026-09-12.md on each continuation.
 At the deadline, stop new implementation, finish a safe checkpoint and pause.
-M421 player acceptance, M422 through M427 and M433 through M435 remain open
+M421 player acceptance, M423 through M427 and M433 through M435 remain open
 in NEXT-MILESTONES.md.
 
-## Current checkpoint: v0.273.1, M421 first voyage implementation
+## Current checkpoint: v0.274.0, M422 return briefing
+
+- Continue, local load and accepted imports enter a paused voyage briefing.
+  F4 opens the same screen during flight or at a station. Escape continues to
+  the saved location or the existing visit. Opening it preserves the current
+  flight population. Station F9 now uses the same saved voyage load path.
+- The briefing reads location, ship condition, cargo, materials, crew,
+  passengers and survivors from the current world. L opens complete records,
+  contract terms and the existing captain's log. No second journal is stored.
+- Enter pins one existing objective, C clears it. The seven row list supports
+  wheel, arrows, paging, Home/End and search. Pinning retains list position.
+  A removed row cannot pin the adjacent objective. Readers own their search
+  input and hold the full voyage state while open.
+- The chosen objective appears in the flight HUD, flight record and mission
+  log. A star marks its system and local contact on the maps; selected system
+  details place its terms first. The focus does not change the actual course,
+  accept a contract, pay rewards or start autopilot. Explicit map travel stays
+  with the existing navigation controls.
+- Save schema 18 adds only optional objectiveFocusId and lastContractReceipt.
+  Actual port contract completion records the receipt once. Existing saves do
+  not reconstruct missing history from credit or activity counters. Mission,
+  service and council identities follow their owners; crew identities use
+  name, role, home and arc rather than mutable roster indices. Ambiguous
+  identities cannot be pinned. Finished or unavailable work clears the focus.
+- Fourteen new tests cover source reads, no mutation on viewing/pinning,
+  identity changes, missing targets, duplicate owners, actual payment,
+  paused runtime, load routing, late rows, stale selection, complete readers,
+  input ownership and schema validation. All 801 tests in 52 files pass.
+  TypeScript and production build pass with the existing bundle size advisory.
+- Native isolated browser checks loaded an 80-objective save, reached row 80,
+  pinned it at offset 73, searched the full terms and reached END TERMS 79.
+  Reading and pinning kept world time at zero. F4 from active flight preserved
+  the population; the complete world remained unchanged while it was open.
+  The HUD and both maps showed the chosen objective; galaxy F9 restored its
+  saved selection. No course was set and autopilot stayed off.
+- A native port fixture used the actual mission board to consume one part and
+  pay 300cr, moving credits from 600 to 900. The receipt appeared, focus cleared,
+  and F5 then the new station F9 restored the same receipt, 16 parts and 900cr
+  into the paused briefing. No app warnings/errors. Fixture storage was in
+  memory, online calls disabled and both temporary tabs closed.
+- Correction to the prior M421 note: station F9 was absent in v0.273.1, so that
+  earlier keypress did not prove a reload. The saved school bytes were checked.
+  Station F9 is implemented and its actual scene transition verified here.
+- Release CI, container publication and hosted acceptance are pending. Dev5199
+  now runs v0.274.0. Next is M423 support job continuity. M421 uncoached player
+  acceptance, M423-M427 and M433-M435 remain open. Deadline remains
+  2026-09-12 11:31:03 UTC. No extension.
+
+## Previous checkpoint: v0.273.1, M421 first voyage implementation
 
 - Flight School is six lessons: real thrust and braking, dock at the starting
   port, accept First post, deliver and collect payment, return home, then save.
@@ -70,8 +118,8 @@ in NEXT-MILESTONES.md.
   mission log is a ReaderScene populated by StationScene.openMissionLog. Local
   title continue, Game.load and adoptWorld enter station/flight directly. F4 has
   no current binding. M426 should also audit legacy hints with fixed key names.
-  Next implementation is M422 return briefing and selected objective. M422-M427
-  and M433-M435 remain open, alongside M421 player acceptance. Deadline remains
+  M422-M427 and M433-M435 were open at this checkpoint, alongside M421
+  player acceptance. Deadline remains
   2026-09-12 11:31:03 UTC. No extension.
 
 ## Previous checkpoint: v0.272.0, M420 contact presentation

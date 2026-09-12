@@ -135,7 +135,7 @@ export class GalaxyScene implements Scene {
   openInfo(g: Game, all = false): void {
     const sys = g.world.systems[this.selected ?? g.world.player.systemId] ?? g.world.systems[g.world.player.systemId];
     if (!sys) return;
-    const sections: [string, string[]][] = all ? questLocations(g.world).map(q => [q.title, [g.world.systems[q.systemId]?.name ?? q.systemId, q.source, q.action]])
+    const sections: [string, string[]][] = all ? questLocations(g.world).map(q => [`${q.focused ? "CHOSEN: " : ""}${q.title}`, [g.world.systems[q.systemId]?.name ?? q.systemId, q.source, q.action]])
       : [[sys.name, this.infoLines(g, null).map(line => line.text)]];
     this.info = new ReaderOverlay(all ? "GALAXY OBJECTIVES" : "SYSTEM DETAILS", sections.length ? sections : [["Objectives", ["No current quest locations."]]], () => { this.info = undefined; });
   }
@@ -209,10 +209,10 @@ export class GalaxyScene implements Scene {
     };
       let y = 0; const px = 0;
       line( sys.name.toUpperCase(), px + 6, y, PAL.white); y += 9;
-      const quests = questLocations(w).filter(q=>q.systemId === sys.id);
+      const quests = questLocations(w).filter(q=>q.systemId === sys.id).sort((a,b)=>Number(!!b.focused)-Number(!!a.focused));
       line(`QUEST OBJECTIVES: ${quests.length}`,px,y,PAL.gold);
       for (const q of quests) {
-        line(`${q.ready ? "READY" : q.source}: ${q.title.toUpperCase()}`,px,y,q.ready ? PAL.good : PAL.gold);
+        line(`${q.focused ? "CHOSEN" : q.ready ? "READY" : q.source}: ${q.title.toUpperCase()}`,px,y,q.ready ? PAL.good : PAL.gold);
         const location=q.contactId?.startsWith("station:") ? findStation(w,q.contactId.slice(8))?.st.name : q.contactId?.startsWith("planet:") ? sys.planets[Number(q.contactId.slice(7))]?.name : q.contactId?.startsWith("wreck:") ? sys.wrecks.find(x=>`wreck:${x.id}`===q.contactId)?.name : undefined;
         if(location) line(`AT ${location.toUpperCase()}`,px,y,PAL.white);
         line(q.action.toUpperCase(),px,y,PAL.grey);
@@ -297,7 +297,7 @@ export class GalaxyScene implements Scene {
       if (w.wars.some(war => war.systemId === s.id) || (w.crisis?.systemId === s.id && w.crisis.delivered < w.crisis.need && w.time < w.crisis.until)) { ctx.fillStyle = PAL.danger; ctx.fillRect(at.x+5,at.y-5,3,3); }
       if (s.permit && permitDenied(w,s.id)) { ctx.strokeStyle = PAL.warn; ctx.beginPath(); ctx.arc(at.x,at.y,7,0,Math.PI*2); ctx.stroke(); }
       if (this.layers && infraAt(w,s.id).length) { ctx.fillStyle = PAL.gold; ctx.fillRect(at.x+5,at.y+4,2,2); }
-      labels.push({ id:s.id,text:`${objectives.length ? "Q " : ""}${s.name.toUpperCase()}`,...at,color:current ? PAL.white : selected ? PAL.ui : objectives.length ? PAL.gold : route?.includes(s.id) ? PAL.gold : PAL.grey,priority:selected ? 100 : current ? 90 : objectives.length ? 85 : route?.includes(s.id) ? 80 : p.bookmarks?.includes(s.id) ? 70 : sys.links.includes(s.id) ? 60 : 0 });
+      labels.push({ id:s.id,text:`${objectives.some(q=>q.focused) ? "* " : objectives.length ? "Q " : ""}${s.name.toUpperCase()}`,...at,color:current ? PAL.white : selected ? PAL.ui : objectives.length ? PAL.gold : route?.includes(s.id) ? PAL.gold : PAL.grey,priority:objectives.some(q=>q.focused) ? 110 : selected ? 100 : current ? 90 : objectives.length ? 85 : route?.includes(s.id) ? 80 : p.bookmarks?.includes(s.id) ? 70 : sys.links.includes(s.id) ? 60 : 0 });
     }
     this.labels = drawMapLabels(ctx,labels); ctx.restore();
     drawText(ctx, `ZOOM ${(this.camera.scale/this.camera.baseScale).toFixed(1)}X`, MAP_RECT.x+5, MAP_RECT.y+5,PAL.greyDark);

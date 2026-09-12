@@ -1,3 +1,4 @@
+import { JourneyScene } from "./scenes/journey";
 import { runGlobalShortcuts } from "./core/globalshortcuts";
 import { WorkshopScene } from "./scenes/workshop";
 // FarSpace entry point: boot the game, register scenes, run the loop.
@@ -43,6 +44,7 @@ import { updateVoyageSystems } from "./core/runtime";
 const canvas = document.getElementById("game") as HTMLCanvasElement;
 const game = new Game(canvas);
 
+game.scenes["journey"] = new JourneyScene();
 game.scenes["title"] = new TitleScene();
 game.scenes["flight"] = new FlightScene();
 game.scenes["station"] = new StationScene();

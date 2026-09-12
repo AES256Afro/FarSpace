@@ -1,3 +1,4 @@
+import { openJourney } from "../journey";
 import { flightRecordSections, FLIGHT_RECORD } from "./display";
 import { ReaderOverlay } from "../reader";
 import { contains } from "../../core/mapview";
@@ -190,6 +191,7 @@ export class FlightScene implements Scene {
       { label: "SETTINGS", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("settings"); } },
       { label: "CONTROLS", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("help"); } },
       { label: "HANDBOOK", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("almanac"); } },
+      { label: "YOUR VOYAGE / F4", act: () => { this.paused = false; openJourney(g); } },
       { label: "THE CHRONICLE", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("chronicle"); } },
       { label: "THE ROSTER", act: () => { this.paused = false; g.settingsReturn = "flight"; this.resumeNext = true; g.setScene("roster"); } },
       ...(g.world.player.crew.length >= 1 && !this.addressed && !this.docking ? [{ label: "ADDRESS THE CREW", act: () => { this.paused = false; this.addressCrew(g); } }] : []),
@@ -270,6 +272,7 @@ export class FlightScene implements Scene {
       else this.logReader.update(g);
       return;
     }
+    if (!this.docking && this.launching <= 0 && !this.systemMap.info && g.input.wasPressed("F4")) { openJourney(g); return; }
     this.recordNotices(g); this.recordComms(w.time);
     if (this.mapOpen) { this.systemMap.update(g, dt); return; }
     if (!this.paused && !this.docking && this.launching <= 0 && (g.input.wasPressed("l") || g.input.mousePressed && contains(FLIGHT_RECORD, g.input.mouseX, g.input.mouseY))) { this.openFlightRecord(g); return; }

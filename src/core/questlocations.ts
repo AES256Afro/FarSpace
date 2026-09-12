@@ -12,19 +12,25 @@ export interface QuestLocation {
   poiId?: string;
   action: string;
   ready?: boolean;
+  focused?: boolean;
 }
 
 // Read current objectives without advancing a quest or revealing a hidden signal.
 export function questLocations(w: World): QuestLocation[] {
   const p = w.player, out: QuestLocation[] = [];
-  const add = (q: QuestLocation) => { if (w.systems[q.systemId]) out.push(q); };
+  const add = (q: QuestLocation) => {
+    const sys = w.systems[q.systemId]; if (!sys) return;
+    if (q.contactId?.startsWith("wreck:") && !sys.wrecks.some(r => `wreck:${r.id}` === q.contactId)) return;
+    if (q.contactId?.startsWith("infra:") && !w.infra?.some(i => i.systemId === sys.id && `infra:${i.id}` === q.contactId)) return;
+    out.push(q);
+  };
   const station = (q: Omit<QuestLocation, "systemId" | "contactId">, id?: string) => {
     const found = id ? findStation(w, id) : null;
     if (found) add({ ...q, systemId: found.sys.id, contactId: `station:${found.st.id}` });
   };
   const planet = (q: Omit<QuestLocation, "contactId">, idx?: number) => {
     if (idx !== undefined && w.systems[q.systemId]?.planets[idx]) add({ ...q, contactId: `planet:${idx}` });
-    else add(q);
+    else if (idx === undefined) add(q);
   };
   const signal = (q: Omit<QuestLocation, "contactId">, id?: string) => {
     const an = w.systems[q.systemId]?.anomalies.find(a => a.id === id && a.discovered && !a.claimed);
@@ -71,9 +77,9 @@ export function questLocations(w: World): QuestLocation[] {
     add({ id: "story:keeper", title: "The Keeper", source: "STORY", systemId: keeper.systemId, contactId: discovered ? `signal:${discovered.id}` : found ? `infra:${found.id}` : undefined, action: p.story3 === 0 ? "BRING SPARE PARTS. E TO REPAIR." : discovered ? "E TO INVESTIGATE THE CONTACT." : "HOLD V BESIDE THE KEEPER'S LIGHT." });
   }
   if (keeper && p.story3 === 1) add({ id: "story:keeper", title: "The Keeper's log", source: "STORY", systemId: keeper.wreckSystemId, contactId: `wreck:${keeper.wreckId}`, action: "E TO BOARD. RECOVER THE SHIP'S LOG." });
-  for (const [crewIndex, crew] of p.crew.entries()) {
+  for (const crew of p.crew) {
     const a = crew.arc; if (!a || a.done || a.stage < 0 || a.stage > 1) continue;
-    const q = { id: `crew:${crewIndex}:${a.id}`, title: `${crew.name}'s journey`, source: "CREW" as const, systemId: a.targetSystemId ?? "", action: "" };
+    const q = { id: `crew:${JSON.stringify([crew.name, crew.role, crew.home ?? "", a.id])}`, title: `${crew.name}'s journey`, source: "CREW" as const, systemId: a.targetSystemId ?? "", action: "" };
     if (a.id === "engineer" && a.stage === 0 && a.wreckId) add({ ...q, contactId: `wreck:${a.wreckId}`, action: "E TO BOARD THE OLD SHIP." });
     if (a.id === "engineer" && a.stage === 1) station({ ...q, action: "DOCK WITH TWO SPARE PARTS." }, a.targetStationId);
     if (a.id === "medic" && a.stage === 0) station({ ...q, action: "DOCK WITH THREE MEDICAL SUPPLIES." }, a.targetStationId);
@@ -86,7 +92,8 @@ export function questLocations(w: World): QuestLocation[] {
     if (dest.stationId) station(q, dest.stationId); else if (dest.singer) add({ ...q, contactId: "singers" }); else planet(q, order.planetIndex);
   }
   const council = p.council?.mandate;
-  if (council) station({ id: "council:mandate", title: "Council journey", source: "COUNCIL", action: council.stage === "outbound" ? "DOCK. P TO WALK THE DECK; E AT THE OFFICE." : "DOCK AND BRING THE REPLY TO THE COUNCIL." }, council.stage === "outbound" ? council.targetStationId : council.fromStationId);
+  if (council) station({ id: `council:${JSON.stringify([council.week, council.fromStationId, council.targetStationId])}`, title: "Council journey", source: "COUNCIL", action: council.stage === "outbound" ? "DOCK. P TO WALK THE DECK; E AT THE OFFICE." : "DOCK AND BRING THE REPLY TO THE COUNCIL." }, council.stage === "outbound" ? council.targetStationId : council.fromStationId);
+  for (const q of out) if (q.id === p.objectiveFocusId && out.filter(other => other.id === q.id).length === 1) q.focused = true;
   return out;
 }
 function missionAction(m: Mission, cargo: Record<string, number>): string {

@@ -1,3 +1,4 @@
+import { focusedObjective, objectiveDetails } from "../../core/journey";
 import type { Game } from "../../game";
 import type { FlightScene } from "./index";
 import { bearing, flightDirections } from "../../core/flightdirections";
@@ -96,6 +97,8 @@ export function flightDisplay(fs: FlightScene, g: Game) {
   const channel = presence.status === "on" ? `SYSTEM CHANNEL / ${presence.ghosts.size} PILOTS / T HAIL` : "";
   const standing = `${faction(sys.factionId).name} / ${repLabel(p.rep?.[sys.factionId] ?? 0)}`;
   const directions = flightDirections(p.angle, p.vx, p.vy, hull(p.hullId).spriteSize, fs.zoom);
+  const chosen = focusedObjective(g.world);
+  const focus = chosen ? `CHOSEN: ${chosen.title} / ${g.world.systems[chosen.systemId].name} / ${chosen.action} / F4 VOYAGE` : null;
   const objectives = questLocations(g.world).map(q => `${q.title}: ${g.world.systems[q.systemId]?.name ?? q.systemId} / ${q.action}`);
   const missions = p.missions.filter(m => m.accepted && !m.done).map(m => {
     const progress = m.kind === "patrol" || m.kind === "observe" ? `${Math.floor(m.patrolT ?? 0)}/${m.patrolNeed ?? 90}S${m.observeBlown ? " / OBSERVATION SEEN" : ""}` : m.kind === "emergency" && m.byT !== undefined ? (g.world.time > m.byT ? "LATE / HALF PAY" : `${Math.ceil((m.byT - g.world.time) / 60)}M LEFT`) : m.kind === "bounty" ? `${m.kills ?? 0}/${m.killsNeeded ?? 0}` : m.kind === "ground" ? `${m.groundDone ?? 0}/${m.groundNeed ?? 1}` : m.shipTotal ? `${(m.shipDone ?? 0) + 1}/${m.shipTotal}` : "";
@@ -106,7 +109,7 @@ export function flightDisplay(fs: FlightScene, g: Game) {
     return `${m.title}: ${[progress, patient, custody, treaty, request, m.desc].filter(Boolean).join(" / ")}`;
   });
   const stage = tutorialStage(g), tutorial = stage >= 0 && stage < STEPS.length ? `FLIGHT SCHOOL ${stage + 1}/${STEPS.length}: ${tutorialText(g)} / K SKIP` : null;
-  return { contacts: flightContacts(fs, g), ship: (p.shipName ?? hull(p.hullId).name).toUpperCase(), system: sys.name, security, channel, standing, nose: degrees(p.angle), drift: directions.drift ? degrees(directions.drift.angle) : directions.speed >= .05 ? "<2 M/S" : "STOPPED", aim: degrees(fs.mouseAim ? fs.aim : p.angle), speed: Math.round(directions.speed), route, notices, activity, urgent, action, objectives, missions, tutorial };
+  return { focus, contacts: flightContacts(fs, g), ship: (p.shipName ?? hull(p.hullId).name).toUpperCase(), system: sys.name, security, channel, standing, nose: degrees(p.angle), drift: directions.drift ? degrees(directions.drift.angle) : directions.speed >= .05 ? "<2 M/S" : "STOPPED", aim: degrees(fs.mouseAim ? fs.aim : p.angle), speed: Math.round(directions.speed), route, notices, activity, urgent, action, objectives, missions, tutorial };
 }
 
 export function flightRecordSections(fs: FlightScene, g: Game): [string, string[]][] {
@@ -117,6 +120,7 @@ export function flightRecordSections(fs: FlightScene, g: Game): [string, string[
     ...d.contacts.map(c => [`${c.primary ? "CURRENT ACTION: " : "CONTACT: "}${c.name}`, [`${c.relationship} / ${Math.round(c.distance)}m`, c.intent, ...c.details]] as [string, string[]]),
     ["CURRENT STATUS", [...d.notices, ...d.activity].map(n => n.text)],
     ...(d.tutorial ? [["FLIGHT SCHOOL", [d.tutorial, ...tutorialDetails(g)]] as [string, string[]]] : []),
+    ["CHOSEN OBJECTIVE / F4 TO CHOOSE", focusedObjective(g.world) ? objectiveDetails(g.world, focusedObjective(g.world)!) : ["No objective chosen. F4 opens your voyage briefing."]],
     ["OBJECTIVES", d.objectives.length ? d.objectives : ["No active quest locations."]],
     ["CONTRACT TERMS", d.missions.length ? d.missions : ["No active contracts."]],
     ...fs.commsLog.map(c => [`${Math.floor(c.t / 3600)}H${String(Math.floor(c.t % 3600 / 60)).padStart(2, "0")} ${c.from}`, [c.text]] as [string, string[]]),

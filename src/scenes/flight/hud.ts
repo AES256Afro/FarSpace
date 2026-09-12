@@ -27,7 +27,7 @@ export function renderFlightHud(fs: FlightScene, g: Game, ctx: CanvasRenderingCo
   const hidden = Math.max(0, d.notices.length - 2) + Math.max(0, d.activity.length - 1);
   if (hidden) { panel(y - 2, 10); text(`${hidden} MORE STATUS ITEMS / L RECORD`, 6, y, 468, PAL.grey); y += 10; }
   if (!d.urgent) {
-    const guidance = d.tutorial ?? d.objectives[0];
+    const guidance = d.focus ?? d.tutorial ?? d.objectives[0];
     if (guidance) {
       const lines = wrapText(guidance.toUpperCase(), 112).slice(0, 2);
       panel(y - 2, lines.length * 9 + 3); lines.forEach((line, i) => text(line, 6, y + i * 9, 468, PAL.gold));
@@ -59,5 +59,5 @@ export function renderFlightHud(fs: FlightScene, g: Game, ctx: CanvasRenderingCo
   bar(216, "O2", p.oxygen, p.oxygenMax, p.oxygen < 40 ? PAL.danger : PAL.info);
   text(`${p.credits}CR / TORP ${p.torpedoes ?? 0}${p.seismic ? ` / CHG ${p.seismic}` : ""}`, 290, 242, 184, PAL.gold);
   text(d.system, 290, 253, 184, PAL.grey);
-  text(`${d.security} / ${g.cloudStatus || "ESC MENU / F2 WORKSHOP"}${d.channel ? " / T CHANNEL" : ""}`, 6, 263, 468, PAL.greyDark);
+  text(`${d.security} / ${g.cloudStatus || "F4 VOYAGE / F2 WORKSHOP"}${d.channel ? " / T CHANNEL" : ""}`, 6, 263, 468, PAL.greyDark);
 }

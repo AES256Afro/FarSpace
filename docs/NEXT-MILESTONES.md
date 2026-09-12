@@ -20,9 +20,10 @@ menu keeps one layout across all three.
 
 ## Current milestone status
 
-v0.273.1 implements M421. Uncoached player acceptance remains pending.
-M422 through M427 and M433 through M435 remain open. M428 through M432 and
-M436 are released. Next implementation: M422 return briefing and focus.
+v0.274.0 implements M422; release checks are pending. M421 uncoached player
+acceptance remains pending. M423 through M427 and M433 through M435 remain
+open. M428 through M432 and M436 are released. Next implementation: M423
+support job continuity.
 The existing nine hour deadline is unchanged.
 
 ## Nine hour work window and quest visibility
@@ -388,6 +389,10 @@ Acceptance:
   developer coaching. If that review is unavailable, record it as pending.
 
 ### M422: Pick up the journey
+
+Implemented in v0.274.0 with 801 passing tests. Native checks cover long
+objective lists, retained selection, complete terms, paused state, map and HUD
+focus, real port payment and saved receipt restoration. Release checks pending.
 
 Build a short return briefing from existing event history, missions, passenger
 manifest, service orders and ship condition. Let the player focus one existing

@@ -1,3 +1,4 @@
+import { openJourney } from "./journey";
 // A scene-owned HTML menu over decorative pixel artwork.
 import { Game, Scene } from "../game";
 import { TitleBackdrop } from "../gfx/titlebackdrop";
@@ -280,7 +281,7 @@ export class TitleScene implements Scene {
   private loadLocal(g: Game): void {
     const preview = titlePreview();
     if (!preview.world) { this.preview = preview; this.show(g, "home"); this.say(preview.error ?? "No local save is available."); return; }
-    g.world = preview.world; g.spriteCache.clear(); g.setScene(g.world.player.dockedAt ? "station" : "flight");
+    g.world = preview.world; g.spriteCache.clear(); openJourney(g, true);
   }
   private continue(g: Game): void {
     const code = cloud.getCode(); if (!code) { this.loadLocal(g); return; }

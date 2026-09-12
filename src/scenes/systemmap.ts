@@ -33,7 +33,7 @@ export function systemContacts(g: Game, knownTarget?: string): SystemContact[] {
   for (const w of wondersIn(g.world,sys.id)) if (w.seen || p.flags?.[`rumour:${w.id}`]) out.push({ id:`wonder:${w.id}`,name:w.seen ? w.name : "RUMOURED SITE",kind:"SIGNAL",x:w.x,y:w.y,color:PAL.gold,detail:w.kind.toUpperCase(),range:100 });
   const berth = singersBerth(g.world);
   if (berth) out.push({ id:"singers",name:"SINGERS' BERTH",kind:"STATION",...berth,color:PAL.ui,detail:"APPROACH TO VISIT",range:60 });
-  for (const c of out) c.quests = quests.filter(q => q.contactId === c.id);
+  for (const c of out) c.quests = quests.filter(q => q.contactId === c.id).sort((a,b) => Number(!!b.focused) - Number(!!a.focused));
   return out;
 }
 export function resolveLocalTarget(g: Game, target: LocalMapTarget | null): SystemContact | null {
@@ -79,7 +79,7 @@ export class SystemMap {
     const quests = allObjectives || !contact ? questLocations(g.world).filter(q => q.systemId === sys.id) : contact.quests ?? [];
     const sections: [string, string[]][] = allObjectives || !contact ? [[sys.name.toUpperCase(), [`${quests.length} CURRENT OBJECTIVES. UNKNOWN SIGNALS REQUIRE A SCAN.`]]]
       : [[contact.name.toUpperCase(), [contact.kind, contact.detail, `DISTANCE ${Math.round(Math.hypot(contact.x - g.world.player.x, contact.y - g.world.player.y))}M.`, "CLOSE DETAILS TO PLOT OR FLY TO THIS DESTINATION."]]];
-    sections.push(...quests.map(q => [q.title.toUpperCase(), [`${q.source}${q.ready ? " / READY TO HAND IN" : ""}`, q.action]] as [string, string[]]));
+    sections.push(...quests.map(q => [`${q.focused ? "CHOSEN: " : ""}${q.title.toUpperCase()}`, [`${q.source}${q.ready ? " / READY TO HAND IN" : ""}`, q.action]] as [string, string[]]));
     this.info = new ReaderOverlay(allObjectives ? "SYSTEM OBJECTIVES" : "DESTINATION DETAILS", sections, () => { this.info = undefined; });
   }
   contacts(g: Game): SystemContact[] { return systemContacts(g, this.selected ?? undefined).filter(c=>this.filter==="ALL" || (this.filter==="QUEST" ? !!c.quests?.length : c.kind===this.filter)).sort((a,b)=>Number(!!b.quests?.length)-Number(!!a.quests?.length)||a.kind.localeCompare(b.kind)||a.name.localeCompare(b.name)); }
@@ -146,7 +146,7 @@ export class SystemMap {
   draw(g: Game, ctx: CanvasRenderingContext2D): void {
     if (this.info) { this.info.draw(g, ctx); return; }
     const p=g.world.player, sys=g.world.systems[p.systemId], fs=g.scenes.flight as FlightScene;
-    mapFrame(ctx,`SYSTEM MAP / ${sys.name.toUpperCase()}`,"SELECT A CONTACT TO INSPECT IT OR SET A DESTINATION");
+    mapFrame(ctx,`SYSTEM MAP / ${sys.name.toUpperCase()}`,"SELECT A CONTACT / * CHOSEN OBJECTIVE / Q QUEST LOCATION");
     if (stormBlind(g.world,sys.id)) { drawText(ctx,"ION STORM / CHART UNAVAILABLE",20,115,PAL.warn);drawText(ctx,"TAB OR ESC CLOSE / G GALAXY",20,250,PAL.grey);return; }
     const quests=questLocations(g.world).filter(q=>q.systemId===sys.id);
     const contacts=this.contacts(g), selected=systemContacts(g, this.selected ?? undefined).find(c=>c.id===this.selected);
@@ -161,7 +161,7 @@ export class SystemMap {
       const at=this.camera.project(c);ctx.fillStyle=c.color;ctx.fillRect(at.x-2,at.y-2,4,4);
       if (c.quests?.length) drawQuestMarker(ctx,at.x,at.y,c.quests.some(q=>q.ready));
       if (c.id===this.selected) { ctx.strokeStyle=PAL.white;ctx.strokeRect(at.x-5.5,at.y-5.5,11,11); }
-      labels.push({id:c.id,text:`${c.quests?.length ? "Q " : ""}${c.name.toUpperCase()}`,...at,color:c.quests?.length ? PAL.gold : c.color,priority:c.id===this.selected ? 100 : c.quests?.length ? 85 : c.kind==="STATION" ? 60 : c.kind==="WRECK" ? 50 : 0});
+      labels.push({id:c.id,text:`${c.quests?.some(q=>q.focused) ? "* " : c.quests?.length ? "Q " : ""}${c.name.toUpperCase()}`,...at,color:c.quests?.length ? PAL.gold : c.color,priority:c.quests?.some(q=>q.focused) ? 110 : c.id===this.selected ? 100 : c.quests?.length ? 85 : c.kind==="STATION" ? 60 : c.kind==="WRECK" ? 50 : 0});
     }
     ctx.save();ctx.translate(you.x,you.y);ctx.rotate(p.angle);ctx.fillStyle=PAL.white;ctx.beginPath();ctx.moveTo(6,0);ctx.lineTo(-4,-4);ctx.lineTo(-2,0);ctx.lineTo(-4,4);ctx.closePath();ctx.fill();ctx.restore();
     labels.push({id:"you",text:"YOU",...you,color:PAL.white,priority:90});this.labels=drawMapLabels(ctx,labels);ctx.restore();
@@ -174,12 +174,12 @@ export class SystemMap {
     ctx.strokeStyle = PAL.uiBorder; ctx.strokeRect(DETAILS.x, DETAILS.y, DETAILS.w, DETAILS.h);
     drawText(ctx, `I DETAILS / ${selected?.quests?.length ?? 0} OBJECTIVES`, 320, 78, PAL.ui);
     if (objective) {
-      drawText(ctx, clippedText(`${objective.ready ? "READY" : "QUEST"}: ${objective.title.toUpperCase()}`, 142), 320, 89, objective.ready ? PAL.good : PAL.gold);
+      drawText(ctx, clippedText(`${objective.focused ? "CHOSEN" : objective.ready ? "READY" : "QUEST"}: ${objective.title.toUpperCase()}`, 142), 320, 89, objective.ready ? PAL.good : PAL.gold);
       drawText(ctx, clippedText(objective.action, 142), 320, 100, PAL.gold);
     } else drawText(ctx, quests.length ? "O SHOWS ALL SYSTEM OBJECTIVES" : "READ LOCATION AND APPROACH DETAILS", 320, 94, PAL.greyDark);
     drawText(ctx,`${this.filter} CONTACTS / ${contacts.length}`,318,115,PAL.greyDark);
     this.drawnRows = contacts.slice(this.scroll,this.scroll+7).map(c=>c.id);
-    contacts.slice(this.scroll,this.scroll+7).forEach((c,i)=>{const y=127+i*12;if(c.id===this.selected){ctx.fillStyle="#20374b";ctx.fillRect(316,y,152,12);}drawText(ctx,clippedText(`${c.quests?.length ? "Q " : ""}${c.name.toUpperCase()}`,140),320,y+3,c.quests?.length ? PAL.gold : c.color);});
+    contacts.slice(this.scroll,this.scroll+7).forEach((c,i)=>{const y=127+i*12;if(c.id===this.selected){ctx.fillStyle="#20374b";ctx.fillRect(316,y,152,12);}drawText(ctx,clippedText(`${c.quests?.some(q=>q.focused) ? "* " : c.quests?.length ? "Q " : ""}${c.name.toUpperCase()}`,140),320,y+3,c.quests?.length ? PAL.gold : c.color);});
     drawText(ctx,contacts.length ? `${this.scroll+1}..${Math.min(this.scroll+7,contacts.length)} / ${contacts.length} / SCROLL LIST` : "NO CONTACTS IN THIS CATEGORY",318,215,PAL.greyDark);
     mapButton(ctx,QUESTS,`Q QUESTS ${quests.length}`,this.filter==="QUEST");
     mapButton(ctx,OBJECTIVES,"O OBJECTIVES");

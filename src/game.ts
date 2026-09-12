@@ -1,3 +1,4 @@
+import { openJourney } from "./scenes/journey";
 // Game shell: canvas, scaling, scene management, sprite cache, save/load, hints.
 
 import { prepareTutorialSave } from "./core/tutorial";
@@ -159,7 +160,7 @@ export class Game {
     if (!result.ok) { this.toast(result.error); return false; }
     this.world = w;
     this.spriteCache.clear();
-    this.setScene(w.player.dockedAt ? "station" : "flight");
+    openJourney(this, true);
     return true;
   }
 
@@ -169,7 +170,7 @@ export class Game {
     this.world = w;
     this.spriteCache.clear();
     this.toast("GAME LOADED");
-    this.setScene(this.world.player.dockedAt ? "station" : "flight");
+    openJourney(this, true);
   }
 
   newGame(realGalaxy: boolean, maxLy = 20): void {

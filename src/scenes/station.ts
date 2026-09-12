@@ -1,3 +1,4 @@
+import { openJourney } from "./journey";
 import { openWorkshop } from "./workshop";
 import { ReaderOverlay, type ReaderScene } from "./reader";
 import { stationRecords, type StationRecord } from "./stationrecords";
@@ -667,6 +668,7 @@ export class StationScene implements Scene {
     const pressed = (key: string) => pointerAction === key || (!(key === "k" && tutorialActive(g)) && inp.wasPressed(key));
     const click = (rect: Rect) => inp.mousePressed && contains(rect, inp.mouseX, inp.mouseY);
     for (const button of this.documentButtons()) if (click(button.rect)) { pointerAction = button.key; break; }
+    if (pressed("F4")) { openJourney(g); return; }
     if (pressed("F2") || click(WORKSHOP)) { openWorkshop(g); return; }
     music.setMood(this.station.factionId, 0);
     this.paTimer -= dt;
@@ -682,6 +684,7 @@ export class StationScene implements Scene {
     }
     if (pressed("p") && TABS[this.tab] !== "RECORD") { g.setScene("stationwalk"); return; }
     if (pressed("F5")) g.save();
+    if (pressed("F9")) { g.load(); return; }
     this.tannoyT -= dt;
     if (this.tannoyT <= 0) { if (this.tannoy) { this.tannoy = ""; this.tannoyT = 20 + Math.random() * 20; } else { const rng = new RNG((Math.random() * 1e9) >>> 0); this.tannoy = rng.pick(tannoyLines(g.world, this.station, rng)); this.tannoyT = this.tannoyDur = 5 + this.tannoy.length * 0.07; } }
     const oldTab = this.tab;
@@ -1102,8 +1105,10 @@ export class StationScene implements Scene {
 
   completeMission(g: Game, m: Mission): void {
     const p = g.world.player;
+    const receiptDue = !m.done && p.missions.includes(m) && p.dockedAt === this.station.id && missionDeliverable(g.world, m, this.station);
     const schoolDelivery = p.flightSchool?.missionId === m.id && p.dockedAt === this.station.id && missionDeliverable(g.world, m, this.station);
     ledgerAround(p, m.kind === "passenger" ? "fares" : "contracts", () => this.completeMissionInner(g, m));
+    if (receiptDue && m.done) p.lastContractReceipt = { id: m.id, title: m.title, time: g.world.time, stationId: this.station.id };
     if (schoolDelivery && m.done && p.flightSchool) p.flightSchool.delivered = true;
   }
   completeMissionInner(g: Game, m: Mission): void {
@@ -1856,7 +1861,7 @@ export class StationScene implements Scene {
         if (m.demand) lines.push(`REQUESTED ABOARD: ${commodity(m.demand).name}.`);
         if (m.passengerKind === "tourist") lines.push(m.sightSeen ? "BOOKED SIGHT SEEN." : "BOOKED SIGHT STILL PENDING.");
       }
-      sections.push({ title: `${m.accepted ? "ACTIVE" : "POSTING"}: ${m.title}`, lines, mission: m });
+      sections.push({ title: `${g.world.player.objectiveFocusId === `mission:${m.id}` ? "CHOSEN / " : ""}${m.accepted ? "ACTIVE" : "POSTING"}: ${m.title}`, lines, mission: m });
     }
     return sections;
   }
@@ -1874,7 +1879,7 @@ export class StationScene implements Scene {
     this.prepareListDraw(g);
     const p = g.world.player, tier = missionTier(p.rep[this.station.factionId] ?? 0), rows = this.missionRows(g);
     drawText(ctx, `MISSION BOARD - ${["CIVILIAN", "TRUSTED", "MILITARY"][tier]}`, 8, top, PAL.grey);
-    drawText(ctx, "[ J FULL LOG ]", 400, top, PAL.ui);
+    drawText(ctx, "F4 VOYAGE  J LOG", 400, top, PAL.ui);
     drawText(ctx, `${rows.filter(r => r.ready).length} READY HERE / ${rows.filter(r => !r.ready).length} POSTED / ${p.missions.filter(m => m.accepted && !m.done).length} ACTIVE`, 8, top + 12, PAL.greyDark);
     for (const { m, ready, index, y } of this.missionWindow(g, top)) {
       const locked = !ready && (m.tier ?? 0) > tier;
