@@ -40,7 +40,8 @@ in NEXT-MILESTONES.md.
   recipients/resources, sick or missing workers, hull changes, deck retention,
   exact costs, repeated restores, missing patients, berth capacity, payments,
   port receipts, peaceful calls, lost contacts and read-only projections.
-  All 822 tests in 53 files pass before final release checks.
+  All 822 tests in 53 files, TypeScript and production build pass. The existing
+  Vite bundle size advisory remains.
 - Native repair fixture accepted a ship through E, delivered two parts, sent
   Ada, saved around 20 percent and loaded through the paused briefing. The
   restored ship kept aid:423:1 and its position. Resuming completed the work
@@ -58,7 +59,20 @@ in NEXT-MILESTONES.md.
 - These were scripted developer fixtures. Storage writes stayed in memory and
   online requests were disabled. No browser warnings/errors. Temporary tab
   closed; real saves, identity and user tabs were untouched.
-- Release CI, container and hosted validation are pending. M424 through M427,
+- Published 59073427198181bf6a3207e6e80f4d1e0a2f55d3, tag v0.275.0. CI
+  34688520479 passed, including Cloudflare deployment. Container 34688519670
+  passed. Hosted health returned ok. Normal TLS downloads matched dist:
+  JS index-C6uTyKb7.js SHA-256
+  64d25279c1e53f002f7b536100d1a3344c3fbd5231f5f4862a4c9a3a85ae674c;
+  CSS index-CwZdn5Vi.css SHA-256
+  4f9ba0bcb103d7e5d276c53d483e014ca4cc6c86a417f6d91da0474ff6e1e085.
+- Fresh hosted title showed v0.275.0. Native E delivered two parts to a
+  disposable contact. F5/F9 showed the same job and supplied state in the
+  briefing; continuing restored one ship at its saved position, two parts
+  remaining, 600cr and schema 19. No warnings/errors; temporary tab closed.
+  Storage stayed in memory and online requests were disabled. Dev5199 now
+  runs v0.275.0 in session 93474.
+- M424 through M427,
   M433 through M435 and M421 uncoached acceptance remain open. The original
   deadline remains 2026-09-12 11:31:03 UTC.
 

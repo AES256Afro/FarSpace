@@ -20,8 +20,8 @@ menu keeps one layout across all three.
 
 ## Current milestone status
 
-v0.275.0 implements M423 support continuity. Local checks pass; release CI and
-hosted checks are pending. M421 uncoached player acceptance remains pending.
+v0.275.0 releases M423 support continuity. Local, CI, container and hosted
+checks pass. M421 uncoached player acceptance remains pending.
 M424 through M427 and M433 through M435 remain open. M428 through M432 and
 M436 are released. Next implementation: M424 visible port response.
 The existing nine hour deadline is unchanged.
@@ -420,7 +420,8 @@ Twenty one new tests cover persistence, partial help, loss, requirements and
 settlement; all 822 tests pass. Native isolated checks completed repair after
 F5/F9, medical treatment and patient delivery, fuel transfer, and a saved tow
 through actual map flight and docking. Loaded station visits did not repeat
-payments. Release CI and hosted verification are pending.
+payments. CI, container and hosted verification passed. A hosted partial
+parts delivery retained one ship, its supplied state and credits through F5/F9.
 
 Build three bounded job chains using existing services: a disabled freighter
 needing parts and an engineer, a casualty transfer needing a medic and berth,
