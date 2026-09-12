@@ -22,6 +22,16 @@ This is a scoped display follow-up. The nine hour continuation stays paused.
   and retains hidden Yellow Alert status. No browser warnings or errors.
 - Browser fixtures isolate storage in memory and disable online requests.
   Actual saves and identity are untouched. Save schema remains 19.
+- Published commit b0c12a5649666558d656b175c766c20c975e4f7d, tag v0.279.0.
+  CI 34703785022 passed, including Cloudflare deployment. Container publication
+  34703784919 passed. Hosted title shows v0.279.0 and health returns ok.
+  Hosted index-BGOQal_8.js matches local SHA-256
+  3db36f313804c4003ecb5ae8a282922dde241f7132823107ec511133ccf4ac7e.
+  Hosted Settings shows the defaults; clicking Minimal and returning to flight
+  preserves critical hull/fuel warnings. Record opens and retains hidden
+  status. No browser errors. Local keyboard arrows adjust display settings;
+  returning keeps autopilot and its destination. Dev5199 now runs v0.279.0
+  in session 74653. Temporary viewport override was reset.
 - This does not complete M426 portrait, physical device or performance and
   accessibility acceptance. Other remaining milestones are unchanged.
 

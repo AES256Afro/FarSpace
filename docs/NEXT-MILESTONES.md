@@ -22,7 +22,8 @@ menu keeps one layout across all three.
 
 v0.279.0 adds adjustable HUD density, opacity and canvas fitting after the
 v0.278.1 input follow-up. All 863 tests, typecheck, build and local display
-checks pass. M426 still needs portrait canvas readability, physical touch and
+checks pass. Release CI, container publication and hosted v0.279.0 checks
+pass. M426 still needs portrait canvas readability, physical touch and
 pad use and the complete performance/accessibility matrix. M421 uncoached
 acceptance, M427 and M433-M435 remain open. M428-M432 and M436 are released.
 The nine hour window closed at 11:31:03 UTC on September 12. The continuation
