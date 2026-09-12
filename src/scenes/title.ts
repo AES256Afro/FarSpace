@@ -193,7 +193,7 @@ export class TitleScene implements Scene {
     if (this.page === "help") return [
       { id: "controls", label: "Controls", sub: "Every key, grouped by where you are.", primary: true, act: () => this.open(g, "help") },
       { id: "handbook", label: "Handbook", sub: "Find a system, activity or explanation.", act: () => this.open(g, "almanac") },
-      { id: "school", label: "Flight School", sub: "New voyages include ten optional lessons. K skips the course.", act: () => this.say("Start a new voyage for Flight School. Existing saves continue their current course or free exploration.") },
+      { id: "school", label: "Flight School", sub: "Six optional lessons follow a postal job, safe return and save. K skips school.", act: () => this.say("Start a new voyage for Flight School. Existing voyages stay in free exploration and keep their contracts.") },
     ];
     if (this.page === "identity") return [
       { id: "callsign", label: wire.getCallsign() ? `Callsign: ${wire.getCallsign()}` : "Choose a callsign", sub: "Your name on Fleet Wire and the leaderboards.", act: () => this.callsign(g) },

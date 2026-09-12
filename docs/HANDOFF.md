@@ -11,7 +11,7 @@ At the deadline, stop new implementation, finish a safe checkpoint and pause.
 M421 player acceptance, M422 through M427 and M433 through M435 remain open
 in NEXT-MILESTONES.md.
 
-## Current checkpoint: v0.273.0, M421 first voyage implementation
+## Current checkpoint: v0.273.1, M421 first voyage implementation
 
 - Flight School is six lessons: real thrust and braking, dock at the starting
   port, accept First post, deliver and collect payment, return home, then save.

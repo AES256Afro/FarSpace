@@ -146,7 +146,7 @@ portraits — is procedurally generated from the world seed.
 
 ## Status
 
-Current release: v0.273.0. M416 through M421, mining and industry M428 through
+Current release: v0.273.1. M416 through M421, mining and industry M428 through
 M432, and quest locations M436 are implemented. M418 includes a scrolling roster, shared readers, bounded orbital lists,
 complete local quest details, letters that keep their position and paged
 settlement desks with explicit trade, hire and contract controls. Service and

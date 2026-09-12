@@ -20,7 +20,7 @@ menu keeps one layout across all three.
 
 ## Current milestone status
 
-v0.273.0 implements M421. Uncoached player acceptance remains pending.
+v0.273.1 implements M421. Uncoached player acceptance remains pending.
 M422 through M427 and M433 through M435 remain open. M428 through M432 and
 M436 are released. Next implementation: M422 return briefing and focus.
 The existing nine hour deadline is unchanged.
@@ -366,7 +366,7 @@ Acceptance:
 
 ### M421: The first useful voyage
 
-Implemented in v0.273.0 with 787 passing tests and a complete native scripted
+Implemented in v0.273.1 with 787 passing tests and a complete native scripted
 postal round trip, return and save/load check. Uncoached new-player observation
 is unavailable and remains pending. Release verification is pending.
 
