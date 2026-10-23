@@ -27,8 +27,8 @@ the repository secret `CLOUDFLARE_API_TOKEN` exists. One-time setup:
 
 1. **Create the token** (Cloudflare dashboard → profile icon, top right →
    *My Profile* → *API Tokens* → *Create Token* → use the **"Edit Cloudflare
-   Workers"** template). Scope it to account `Chris@chriscourtney.guru's Account`
-   (c3975c2a296ba301ef3ec984049ceb5b) and zone `fsociety.work`. That template
+   Workers"** template). Scope it to your Cloudflare account
+   (account ID is shown in the dashboard sidebar) and zone `fsociety.work`. That template
    grants Workers Scripts:Edit, Workers Routes:Edit, and the account/zone reads
    wrangler needs for custom domains. Copy the token — it is shown once.
 2. **Add it as a GitHub Actions secret**, either in the browser
