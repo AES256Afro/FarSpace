@@ -1177,7 +1177,7 @@ map navigation and boarding work, not those entire milestones.
 - Release commit/tag: `28bb0ef4f40a9d5d369fa014ac28f97cb1f376bf`, `v0.257.1`.
   Documentation checkpoints may advance `main` beyond that release commit.
 - Repository: `https://github.com/AES256Afro/FarSpace`.
-- Local workspace: `/Users/chris/Projects/FarSpace`.
+- Local workspace: `~/Projects/FarSpace`.
 - Tests: **473 passing**. TypeScript and production build passed.
 - JavaScript: `index-CnOESIfc.js`, 1242.31 kB raw / 438.78 kB gzip,
   SHA-256 `1aab1fd10f95a2813d711dd1f7bc9a2fe210ca87644dc8b23a8c8c7f0d4a7704`.
